@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuantivaHQ Frontend Blueprint
 
-## Getting Started
+## Overview
+QuantivaHQ is a Next.js 14 (App Router) application that delivers a 40-screen trading intelligence experience spanning onboarding/KYC, AI trading automation, sentiment intelligence, charts, portfolio, community, and settings. This repository contains the full route scaffold, shared UI shell, and state/data foundations to begin implementing the production UI.
 
-First, run the development server:
+## Quick Start
+1. Install dependencies (includes `zustand` + `zod` for state/validation):
+   ```bash
+   npm install
+   ```
+2. Launch the development server:
+   ```bash
+   npm run dev
+   ```
+3. Open `http://localhost:3000` to explore the interactive blueprint.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Project Structure
+```
+src/
+  app/
+    (auth)/               # Onboarding + KYC flow (11 screens)
+      onboarding/
+        splash/ ...        # Splash, welcome, region, risk, etc.
+      layout.tsx
+      loading.tsx
+      error.tsx
+    (dashboard)/          # Authenticated shell (31 screens)
+      dashboard/ ...       # Core trading screens
+      ai/ ...              # AI trading flows
+      sentiment/ ...       # News & sentiment intelligence
+      charts/ ...          # Charts & analytics suite
+      portfolio/ ...       # Portfolio & performance
+      community/ ...       # Social & copy trading
+      settings/ ...        # Profile + AI preferences
+      layout.tsx
+      loading.tsx
+      error.tsx
+    layout.tsx             # Root layout w/ global theming
+    page.tsx               # Marketing hero to start onboarding
+  components/
+    common/                # `ScreenScaffold` placeholder component
+    layout/                # Logo, sidebar, top bar
+  config/                  # Navigation maps for sidebar/onboarding
+  lib/
+    api/                   # API placeholders
+    forms/                 # Helpers that bridge validation + state
+    mock-data/             # Dashboard mock positions/signals
+    validation/            # Zod schemas for onboarding forms
+    visualization/         # Chart overlay helpers
+    news-feed.ts           # Sentiment summarization utilities
+  state/                   # Zustand stores for onboarding, session, trading
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Shared Systems
+- **Design tokens** defined in `app/globals.css` provide brand-ready dark/light palettes, typography, and radii.
+- **Layout shell** (`components/layout`) delivers the navigation sidebar, top bar, and responsive scaffolding reused across dashboard routes.
+- **State management** uses `zustand`:
+  - `state/onboarding-store.ts` keeps track of step progress and selections.
+  - `state/session-store.ts` stores preferences and subscription tier.
+  - `state/trading-store.ts` hydrates dashboard widgets with placeholder data.
+- **Validation** via `zod` in `lib/validation/onboarding.ts` plus helpers in `lib/forms/onboarding.ts`.
+- **Mock data** lives under `lib/mock-data` to demonstrate future API wiring.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Implementation Notes
+- Route placeholders consume the `ScreenScaffold` component so teams can swap in real UI incrementally.
+- Add real data fetching by replacing `lib/api/client.ts` with production HTTP logic and wiring stores to React Query/SWR as needed.
+- Update the navigation map (`config/navigation.ts`) if routes evolve; the sidebar picks up changes automatically.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Next Steps
+- Connect forms to API layer and wire actual submissions.
+- Replace placeholder sections with high-fidelity components from the design system.
+- Integrate charting/sentiment services (TradingView, custom WebSockets, etc.).
+- Implement authentication and session management, plugging into `useSessionStore` for global availability.
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For deployment, follow QuantivaHQ’s manual release process (no automated deploys in this repo).
