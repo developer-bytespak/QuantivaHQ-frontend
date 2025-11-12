@@ -76,3 +76,131 @@ a {
 .text-balance {
   text-wrap: balance;
 }
+
+/* Splash Screen Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes logo-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  50% {
+    transform: scale(1.05) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes text-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out forwards;
+}
+
+.animate-logo-enter {
+  animation: logo-enter 1s ease-out forwards;
+}
+
+.animate-text-enter {
+  animation: text-enter 0.8s ease-out forwards;
+  opacity: 0;
+}
+/* Select dropdown styling */
+select {
+  z-index: 9999;
+  position: static !important;
+}
+
+select:focus {
+  z-index: 9999;
+  position: static !important;
+}
+
+select option {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+select option:disabled {
+  background-color: #1e293b !important;
+  color: #64748b !important;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+/* Ensure select dropdown opens downward */
+select {
+  transform-origin: top center;
+}
+
+/* Style the dropdown list container */
+@supports (-webkit-appearance: none) {
+  select {
+    -webkit-appearance: none;
+  }
+}
+
+/* Force dropdown to open downward by ensuring parent has static positioning */
+select {
+  position: static !important;
+}
+
+/* Custom dropdown scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #0f172a;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

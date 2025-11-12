@@ -1,16 +1,148 @@
-import { ScreenScaffold } from "@/components/common/screen-scaffold";
+"use client";
 
-export default function WelcomeScreen() {
+import { useRouter } from "next/navigation";
+import { QuantivaLogo } from "@/components/common/quantiva-logo";
+import { useState } from "react";
+
+interface FeatureCardProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  delay: string;
+  gradient: string;
+}
+
+function FeatureCard({ icon, title, description, delay, gradient }: FeatureCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
   return (
-    <ScreenScaffold
-      title="Welcome & Value Proposition"
-      description="Introduce the AI-driven trading edge with concise bulletproof messaging and video loop."
-      highlights={[
-        "Hero statement: Trade smarter, not harder",
-        "One-line proof points about AI signals, automation, and news graph",
-        "Embedded looping hero or interactive story",
-        "CTA: Continue to region selection",
-      ]}
-    />
+    <div
+      className={`group relative overflow-hidden rounded-xl border border-[--color-border] bg-[--color-surface-alt]/60 p-6 backdrop-blur transition-all duration-300 hover:border-[#FF6B35]/50 hover:shadow-2xl hover:shadow-[#FF6B35]/20 ${delay}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ animationDelay: delay }}
+    >
+      {/* Gradient overlay on hover */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 transition-opacity duration-300 ${
+          isHovered ? "opacity-10" : ""
+        }`}
+      />
+      
+      {/* Content */}
+      <div className="relative z-10">
+        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20 transition-transform duration-300 group-hover:scale-110">
+          {icon}
+        </div>
+        <h3 className="mb-2 text-lg font-semibold text-white">{title}</h3>
+        <p className="text-sm leading-relaxed text-slate-400">{description}</p>
+      </div>
+
+      {/* Shine effect */}
+      <div
+        className={`absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 ${
+          isHovered ? "translate-x-full" : ""
+        }`}
+      />
+    </div>
   );
 }
+
+export default function WelcomePage() {
+  const router = useRouter();
+
+  const features = [
+    {
+      icon: (
+        <svg className="h-8 w-8 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      ),
+      title: "AI Trading",
+      description: "Leverage advanced machine learning algorithms to identify patterns, predict market movements, and execute trades with precision. Your intelligent trading partner.",
+      gradient: "from-[#FF6B35] to-[#FF8C5A]",
+    },
+    {
+      icon: (
+        <svg className="h-8 w-8 text-[#1d4ed8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+        </svg>
+      ),
+      title: "Sentiment Intelligence",
+      description: "Real-time sentiment analysis from news, social media, and market data. Make informed decisions backed by comprehensive market intelligence.",
+      gradient: "from-[#1d4ed8] to-[#3b82f6]",
+    },
+    {
+      icon: (
+        <svg className="h-8 w-8 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      ),
+      title: "Automation",
+      description: "Set it and forget it. Automate your trading strategies with confidence. Risk management, position sizing, and execution all handled seamlessly.",
+      gradient: "from-[#10b981] to-[#34d399]",
+    },
+  ];
+
+  return (
+    <div className="relative flex h-full w-full overflow-hidden">
+      {/* Gradient background matching splash screen */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
+        {/* Animated gradient orbs */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#1d4ed8]/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#10b981]/10 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-between overflow-y-auto px-8 py-6 sm:px-12 sm:py-8 lg:px-16">
+        <div className="w-full max-w-6xl">
+          {/* Header Section */}
+          <div className="mb-10 text-center">
+            <div className="mb-5 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-14 w-14 md:h-16 md:w-16" />
+            </div>
+            <h1 className="mb-4 text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-4xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+              Welcome to <span className="text-[#FF6B35]">QuantivaHQ</span>
+            </h1>
+            <p className="mx-auto max-w-xl text-sm text-slate-400 md:text-base animate-text-enter" style={{ animationDelay: "0.4s" }}>
+              Your intelligent trading platform that combines AI-powered insights, real-time sentiment analysis, and automated execution.
+            </p>
+          </div>
+
+          {/* Feature Cards */}
+          <div className="grid gap-6 md:grid-cols-3 animate-text-enter" style={{ animationDelay: "0.6s" }}>
+            {features.map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                delay={`${index * 0.1}s`}
+                gradient={feature.gradient}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* CTA Section - Positioned at bottom */}
+        <div className="w-full max-w-6xl">
+          <div className="text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
+            <button
+              onClick={() => router.push("/onboarding/region")}
+              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-4 text-lg font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40"
+            >
+              <span className="relative z-10">Get Started</span>
+              {/* Shine effect */}
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+            </button>
+            <p className="mt-4 text-sm text-slate-500">
+              Start your journey in less than 5 minutes
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
