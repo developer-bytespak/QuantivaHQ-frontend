@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { OnboardingSidebar } from "@/components/common/onboarding-sidebar";
 
 export const metadata: Metadata = {
   title: "QuantivaHQ Onboarding",
@@ -13,8 +12,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="relative flex h-screen overflow-hidden bg-[--color-background] text-[--color-foreground]">
-      <OnboardingSidebar />
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden w-full">
         {children}
       </main>
     </div>

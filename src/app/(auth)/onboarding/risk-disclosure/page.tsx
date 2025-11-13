@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
+import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect } from "react";
 
 const RISK_DISCLOSURE_TEXT = `
@@ -153,9 +154,10 @@ export default function RiskDisclosurePage() {
     router.push("/onboarding/account-type");
   };
 
-  return (
-    <div className="relative flex h-full w-full overflow-hidden">
-      {/* Gradient background matching other onboarding pages */}
+      return (
+        <div className="relative flex h-full w-full overflow-hidden">
+          <BackButton />
+          {/* Gradient background matching other onboarding pages */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
         {/* Animated gradient orbs */}
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />

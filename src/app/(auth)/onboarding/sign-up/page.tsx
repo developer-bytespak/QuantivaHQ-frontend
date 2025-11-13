@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
+import { BackButton } from "@/components/common/back-button";
 import { useState } from "react";
 
 type AuthTab = "signup" | "login";
@@ -69,6 +70,7 @@ export default function SignUpPage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
+      <BackButton />
       {/* Gradient background matching other onboarding pages */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
         {/* Animated gradient orbs */}

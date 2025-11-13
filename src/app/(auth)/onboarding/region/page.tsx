@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
+import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect, useRef } from "react";
 
 interface Country {
@@ -123,9 +124,10 @@ export default function RegionPage() {
     ? COUNTRIES.find((c) => c.code === selectedCountry)
     : null;
 
-  return (
-    <div className="relative flex h-full w-full overflow-hidden">
-      {/* Gradient background matching welcome page */}
+    return (
+      <div className="relative flex h-full w-full overflow-hidden">
+        <BackButton />
+        {/* Gradient background matching welcome page */}
       <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
         {/* Animated gradient orbs */}
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />
