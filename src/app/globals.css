@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0f19;
-  --foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1d4ed8;
-  --accent-foreground: #e0f2fe;
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #a0a0a0;
+  --accent: #FF6B35;
+  --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #fee2e2;
-  --surface: #111827;
-  --surface-alt: #0f172a;
-  --border: rgba(148, 163, 184, 0.12);
+  --surface: #1a1a1a;
+  --surface-alt: #0f0f0f;
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 @media (prefers-color-scheme: light) {
@@ -75,4 +75,158 @@ a {
 
 .text-balance {
   text-wrap: balance;
+}
+
+/* Splash Screen Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes logo-enter {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  50% {
+    transform: scale(1.05) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes logo-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logo-rotate-splash {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes text-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out forwards;
+}
+
+.animate-logo-enter {
+  animation: logo-enter 1s ease-out forwards;
+}
+
+.animate-logo-rotate {
+  animation: logo-rotate 2s linear infinite;
+}
+
+.animate-logo-rotate-splash {
+  animation: logo-rotate-splash 3.5s ease-in-out forwards;
+}
+
+.animate-text-enter {
+  animation: text-enter 0.8s ease-out forwards;
+  opacity: 0;
+}
+/* Select dropdown styling */
+select {
+  z-index: 9999;
+  position: static !important;
+}
+
+select:focus {
+  z-index: 9999;
+  position: static !important;
+}
+
+select option {
+  background-color: #1a1a1a !important;
+  color: #ffffff !important;
+  padding: 8px 12px !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+}
+
+select option:disabled {
+  background-color: #0f0f0f !important;
+  color: #666666 !important;
+}
+
+select option:checked,
+select option:hover {
+  background-color: #2a2a2a !important;
+  color: #ffffff !important;
+}
+
+/* Ensure select dropdown opens downward */
+select {
+  transform-origin: top center;
+}
+
+/* Style the dropdown list container */
+@supports (-webkit-appearance: none) {
+  select {
+    -webkit-appearance: none;
+  }
+}
+
+/* Force dropdown to open downward by ensuring parent has static positioning */
+select {
+  position: static !important;
+}
+
+/* Custom dropdown scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #0f0f0f;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
 }
