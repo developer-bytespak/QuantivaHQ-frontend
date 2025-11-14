@@ -39,8 +39,8 @@ export function SplashScreen() {
       <div className="relative z-10 flex flex-col items-center justify-center space-y-8">
         {/* Logo with animation */}
         <div className="relative">
-          <div className="animate-logo-enter">
-            <QuantivaLogo className="h-32 w-32 md:h-40 md:w-40 animate-logo-rotate-splash" style={{ animationDelay: "1s" }} />
+          <div className="animate-logo-enter" style={{ animationDelay: "1s" }}>
+            <QuantivaLogo className="h-32 w-32 md:h-40 md:w-40 animate-logo-rotate-splash" />
           </div>
         </div>
 
