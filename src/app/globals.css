@@ -112,6 +112,24 @@ a {
   }
 }
 
+@keyframes logo-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logo-rotate-splash {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes text-enter {
   from {
     opacity: 0;
@@ -133,6 +151,14 @@ a {
 
 .animate-logo-enter {
   animation: logo-enter 1s ease-out forwards;
+}
+
+.animate-logo-rotate {
+  animation: logo-rotate 2s linear infinite;
+}
+
+.animate-logo-rotate-splash {
+  animation: logo-rotate-splash 3.5s ease-in-out forwards;
 }
 
 .animate-text-enter {

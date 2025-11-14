@@ -9,13 +9,14 @@ export function SplashScreen() {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Auto-redirect after 2.5 seconds
+    // Auto-redirect after rotation completes (3.5s rotation + 0.3s fade-out)
+    // Total: 1s entrance delay + 3.5s rotation = 4.5s, then 0.3s fade-out
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(() => {
         router.push("/onboarding/welcome");
       }, 300); // Wait for fade-out animation
-    }, 2500);
+    }, 4800); // 1s entrance delay + 3.5s rotation + 0.3s fade-out
 
     return () => clearTimeout(timer);
   }, [router]);
@@ -37,8 +38,10 @@ export function SplashScreen() {
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center justify-center space-y-8">
         {/* Logo with animation */}
-        <div className="animate-logo-enter">
-          <QuantivaLogo className="h-32 w-32 md:h-40 md:w-40" />
+        <div className="relative">
+          <div className="animate-logo-enter">
+            <QuantivaLogo className="h-32 w-32 md:h-40 md:w-40 animate-logo-rotate-splash" style={{ animationDelay: "1s" }} />
+          </div>
         </div>
 
         {/* Brand name */}
