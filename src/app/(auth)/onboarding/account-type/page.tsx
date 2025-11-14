@@ -26,8 +26,8 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
       onMouseLeave={() => setIsHovered(false)}
       className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-300 p-4 sm:p-5 md:p-6 backdrop-blur text-left ${
         isSelected
-          ? "border-[#FF6B35] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 shadow-2xl shadow-[#FF6B35]/30"
-          : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#FF6B35]/50 hover:shadow-2xl hover:shadow-[#FF6B35]/20"
+          ? "border-[#fc4f02] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 shadow-2xl shadow-[#fc4f02]/30"
+          : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
       }`}
       style={{ animationDelay: delay }}
     >
@@ -40,7 +40,7 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Selected indicator */}
       {isSelected && (
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] shadow-lg shadow-[#FF6B35]/50">
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] shadow-lg shadow-[#fc4f02]/50">
           <svg className="h-3 w-3 sm:h-4 sm:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
@@ -49,7 +49,7 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Content */}
       <div className="relative z-10">
-        <div className={`mb-3 sm:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20 transition-transform duration-300 ${
+        <div className={`mb-3 sm:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 ${
           isSelected ? "scale-110" : "group-hover:scale-110"
         }`}>
           {icon}
@@ -102,9 +102,9 @@ export default function AccountTypePage() {
       value: "crypto" as const,
       title: "Crypto",
       description: "Trade cryptocurrencies with AI-powered insights. Access real-time market data, sentiment analysis, and automated trading strategies for Bitcoin, Ethereum, and altcoins.",
-      gradient: "from-[#FF6B35] to-[#FF8C5A]",
+      gradient: "from-[#fc4f02] to-[#fda300]",
       icon: (
-        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
@@ -136,12 +136,12 @@ export default function AccountTypePage() {
       return (
         <div className="relative flex h-full w-full overflow-hidden">
           <BackButton />
-          {/* Gradient background matching other onboarding pages */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#1d4ed8]/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#10b981]/10 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+          {/* Background matching Figma design */}
+      <div className="absolute inset-0 bg-black">
+        {/* Subtle gradient orbs for depth */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -153,7 +153,7 @@ export default function AccountTypePage() {
               <QuantivaLogo className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
             </div>
             <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Select Your <span className="text-[#FF6B35]">Account Type</span>
+              Select Your <span className="text-[#fc4f02]">Account Type</span>
             </h1>
             <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Choose your preferred trading markets. This will personalize your dashboard and optimize your trading experience.
@@ -183,7 +183,7 @@ export default function AccountTypePage() {
               <button
                 onClick={handleContinue}
                 disabled={!selectedType}
-                className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
                   Continue

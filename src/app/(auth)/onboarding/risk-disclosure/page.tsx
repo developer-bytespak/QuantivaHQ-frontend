@@ -157,12 +157,12 @@ export default function RiskDisclosurePage() {
       return (
         <div className="relative flex h-full w-full overflow-hidden">
           <BackButton />
-          {/* Gradient background matching other onboarding pages */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#1d4ed8]/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#10b981]/10 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+          {/* Background matching Figma design */}
+      <div className="absolute inset-0 bg-black">
+        {/* Subtle gradient orbs for depth */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -174,7 +174,7 @@ export default function RiskDisclosurePage() {
               <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
             </div>
             <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Risk Disclosure <span className="text-[#FF6B35]">Acknowledgement</span>
+              Risk Disclosure <span className="text-[#fc4f02]">Acknowledgement</span>
             </h1>
             <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please read the following risk disclosure statement carefully. You must acknowledge and accept these risks before proceeding.
@@ -183,15 +183,15 @@ export default function RiskDisclosurePage() {
 
           {/* Risk Disclosure Content */}
           <div className="mb-4 animate-text-enter" style={{ animationDelay: "0.6s", position: "relative", zIndex: 100 }}>
-            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
+            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
               {/* Subtle gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
               <div className="relative z-10">
                 {/* Label with icon */}
                 <div className="mb-3 flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                    <svg className="h-4 w-4 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                    <svg className="h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
@@ -203,11 +203,11 @@ export default function RiskDisclosurePage() {
                 {/* Button to View Risk Disclosure */}
                 <button
                   onClick={openModal}
-                  className="mb-3 w-full rounded-xl border-2 border-[#FF6B35]/50 bg-gradient-to-r from-[#FF6B35]/10 to-[#FF8C5A]/10 px-4 py-3 text-left transition-all duration-300 hover:border-[#FF6B35] hover:bg-gradient-to-r hover:from-[#FF6B35]/20 hover:to-[#FF8C5A]/20 hover:shadow-lg hover:shadow-[#FF6B35]/20"
+                  className="mb-3 w-full rounded-xl border-2 border-[#fc4f02]/50 bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 px-4 py-3 text-left transition-all duration-300 hover:border-[#fc4f02] hover:bg-gradient-to-r hover:from-[#FF6B35]/20 hover:to-[#FF8C5A]/20 hover:shadow-lg hover:shadow-[#fc4f02]/20"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <svg className="h-5 w-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                       <div>
@@ -215,7 +215,7 @@ export default function RiskDisclosurePage() {
                         <p className="text-xs text-slate-400">Click to read the full disclosure document</p>
                       </div>
                     </div>
-                    <svg className="h-5 w-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -263,7 +263,7 @@ export default function RiskDisclosurePage() {
               <button
                 onClick={handleContinue}
                 disabled={!isAcknowledged}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   Continue
@@ -294,10 +294,10 @@ export default function RiskDisclosurePage() {
           {/* Modal Content */}
           <div className="relative z-10 w-full max-w-4xl max-h-[90vh] rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt] to-[--color-surface] shadow-2xl shadow-black/50 overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[--color-border] bg-gradient-to-r from-[#FF6B35]/10 to-[#1d4ed8]/10 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-[--color-border] bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                  <svg className="h-5 w-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                  <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
@@ -368,7 +368,7 @@ export default function RiskDisclosurePage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-[--color-border] bg-gradient-to-r from-[#FF6B35]/5 to-[#1d4ed8]/5 px-6 py-4">
+            <div className="border-t border-[--color-border] bg-gradient-to-r from-[#fc4f02]/5 to-[#fda300]/5 px-6 py-4">
               <div className="flex items-center justify-between">
                 {!hasScrolled && (
                   <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -388,7 +388,7 @@ export default function RiskDisclosurePage() {
                 )}
                 <button
                   onClick={closeModal}
-                  className="rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40"
+                  className="rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
                 >
                   Close
                 </button>

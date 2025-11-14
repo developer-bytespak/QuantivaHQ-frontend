@@ -187,12 +187,12 @@ export default function ProofUploadPage() {
   return (
     <div className="relative flex h-full w-full overflow-hidden">
       <BackButton />
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#1d4ed8]/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#10b981]/10 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+      {/* Background matching Figma design */}
+      <div className="absolute inset-0 bg-black">
+        {/* Subtle gradient orbs for depth */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -204,7 +204,7 @@ export default function ProofUploadPage() {
               <QuantivaLogo className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
             </div>
             <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Upload <span className="text-[#FF6B35]">ID Document</span>
+              Upload <span className="text-[#fc4f02]">ID Document</span>
             </h1>
             <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please upload a clear photo or scan of your government-issued ID card or passport for verification.
@@ -219,7 +219,7 @@ export default function ProofUploadPage() {
             </div>
             <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
               <div
-                className="h-full bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] transition-all duration-1000 ease-out shadow-lg shadow-[#FF6B35]/50 rounded-full"
+                className="h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-1000 ease-out shadow-lg shadow-[#fc4f02]/50 rounded-full"
                 style={{ width: `${animatedProgress}%` }}
               />
             </div>
@@ -229,8 +229,8 @@ export default function ProofUploadPage() {
           <form onSubmit={handleSubmit} className="animate-text-enter flex-1 flex flex-col" style={{ animationDelay: "0.6s" }}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0">
               {/* Left Side - Upload Requirements */}
-              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 flex flex-col">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10 flex flex-col">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10 flex flex-col h-full">
                   <div className="rounded-lg sm:rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-3 sm:p-4 backdrop-blur flex-1 flex flex-col">
@@ -258,8 +258,8 @@ export default function ProofUploadPage() {
               </div>
 
               {/* Right Side - File Upload Area */}
-              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 overflow-hidden flex flex-col">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10 overflow-hidden flex flex-col">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10 flex flex-col flex-1 min-h-0">
                   {/* File Upload Area */}
@@ -272,8 +272,8 @@ export default function ProofUploadPage() {
                     onClick={() => fileInputRef.current?.click()}
                     className={`relative cursor-pointer rounded-xl border-2 border-dashed transition-all duration-300 flex items-center justify-center h-[200px] sm:h-[220px] md:h-[240px] ${
                       isDragging
-                        ? "border-[#FF6B35] bg-[#FF6B35]/10 scale-[1.02]"
-                        : "border-[--color-border] bg-[--color-surface]/40 hover:border-[#FF6B35]/50 hover:bg-[--color-surface]/60"
+                        ? "border-[#fc4f02] bg-[#fc4f02]/10 scale-[1.02]"
+                        : "border-[--color-border] bg-[--color-surface]/40 hover:border-[#fc4f02]/50 hover:bg-[--color-surface]/60"
                     }`}
                   >
                     <input
@@ -284,8 +284,8 @@ export default function ProofUploadPage() {
                       className="hidden"
                     />
                     <div className="flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 text-center">
-                      <div className="mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                        <svg className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                        <svg className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
@@ -293,7 +293,7 @@ export default function ProofUploadPage() {
                         {isDragging ? "Drop your file here" : "Drag & drop your ID document"}
                       </h3>
                       <p className="mb-2 sm:mb-3 text-xs sm:text-sm text-slate-400 px-2">
-                        or <span className="text-[#FF6B35] font-medium">browse files</span>
+                        or <span className="text-[#fc4f02] font-medium">browse files</span>
                       </p>
                       <p className="text-[10px] sm:text-xs text-slate-500 px-2">
                         Supported formats: JPEG, PNG, WebP, PDF (Max 10MB)
@@ -330,8 +330,8 @@ export default function ProofUploadPage() {
                           onClick={() => setIsPreviewModalOpen(true)}
                           className="flex flex-col items-center justify-center p-3 sm:p-4 cursor-zoom-in w-full h-full absolute inset-0"
                         >
-                          <div className="mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                            <svg className="h-5 w-5 sm:h-6 sm:w-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <div className="mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                            <svg className="h-5 w-5 sm:h-6 sm:w-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                           </div>
@@ -358,7 +358,7 @@ export default function ProofUploadPage() {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-medium text-white transition-colors hover:border-[#FF6B35] hover:bg-[--color-surface-alt] flex-shrink-0"
+                          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-medium text-white transition-colors hover:border-[#fc4f02] hover:bg-[--color-surface-alt] flex-shrink-0"
                         >
                           Change
                         </button>
@@ -434,8 +434,8 @@ export default function ProofUploadPage() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex flex-col items-center justify-center">
-                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                        <svg className="h-6 w-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                        <svg className="h-6 w-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                       </div>
@@ -455,7 +455,7 @@ export default function ProofUploadPage() {
               <button
                 type="submit"
                 disabled={isLoading || !uploadedFile}
-                className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (

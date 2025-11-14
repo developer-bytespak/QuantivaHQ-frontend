@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0f19;
-  --foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1d4ed8;
-  --accent-foreground: #e0f2fe;
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #a0a0a0;
+  --accent: #FF6B35;
+  --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --destructive-foreground: #fee2e2;
-  --surface: #111827;
-  --surface-alt: #0f172a;
-  --border: rgba(148, 163, 184, 0.12);
+  --surface: #1a1a1a;
+  --surface-alt: #0f0f0f;
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 @media (prefers-color-scheme: light) {
@@ -151,7 +151,7 @@ select:focus {
 }
 
 select option {
-  background-color: #0f172a !important;
+  background-color: #1a1a1a !important;
   color: #ffffff !important;
   padding: 8px 12px !important;
   font-size: 14px !important;
@@ -159,13 +159,13 @@ select option {
 }
 
 select option:disabled {
-  background-color: #1e293b !important;
-  color: #64748b !important;
+  background-color: #0f0f0f !important;
+  color: #666666 !important;
 }
 
 select option:checked,
 select option:hover {
-  background-color: #1e293b !important;
+  background-color: #2a2a2a !important;
   color: #ffffff !important;
 }
 
@@ -192,15 +192,15 @@ select {
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #0f0f0f;
   border-radius: 4px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #2a2a2a;
   border-radius: 4px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #3a3a3a;
 }

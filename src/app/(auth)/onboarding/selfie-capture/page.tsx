@@ -339,12 +339,12 @@ export default function SelfieCapturePage() {
   return (
     <div className="relative flex h-full w-full overflow-hidden">
       <BackButton />
-      {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#1d4ed8]/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#10b981]/10 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+      {/* Background matching Figma design */}
+      <div className="absolute inset-0 bg-black">
+        {/* Subtle gradient orbs for depth */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Permission Dialog */}
@@ -353,8 +353,8 @@ export default function SelfieCapturePage() {
           <div className="relative w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 sm:p-8 shadow-2xl">
             <div className="text-center mb-6">
               <div className="mb-4 flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                  <svg className="h-8 w-8 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                  <svg className="h-8 w-8 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
@@ -369,13 +369,13 @@ export default function SelfieCapturePage() {
             <div className="space-y-3">
               <button
                 onClick={handleAllowEveryTime}
-                className="w-full rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40"
+                className="w-full rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
               >
                 Allow Every Time
               </button>
               <button
                 onClick={handleAllowOnlyThisTime}
-                className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-[#FF6B35]/50 hover:bg-[--color-surface-alt]"
+                className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
               >
                 Allow Only This Time
               </button>
@@ -399,7 +399,7 @@ export default function SelfieCapturePage() {
               <QuantivaLogo className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10" />
             </div>
             <h1 className="mb-1 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Take a <span className="text-[#FF6B35]">Live Selfie</span>
+              Take a <span className="text-[#fc4f02]">Live Selfie</span>
             </h1>
             <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please take a clear selfie to verify your identity. Make sure your face is clearly visible and well-lit.
@@ -414,7 +414,7 @@ export default function SelfieCapturePage() {
             </div>
             <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
               <div
-                className="h-full bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] transition-all duration-1000 ease-out shadow-lg shadow-[#FF6B35]/50 rounded-full"
+                className="h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-1000 ease-out shadow-lg shadow-[#fc4f02]/50 rounded-full"
                 style={{ width: `${animatedProgress}%` }}
               />
             </div>
@@ -424,8 +424,8 @@ export default function SelfieCapturePage() {
           <div className="animate-text-enter" style={{ animationDelay: "0.6s" }}>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               {/* Left Side - Selfie Requirements */}
-              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 flex flex-col min-h-[250px] sm:min-h-[300px] md:min-h-[350px]">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10 flex flex-col min-h-[250px] sm:min-h-[300px] md:min-h-[350px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10 flex flex-col h-full">
                   <div className="rounded-lg sm:rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-3 sm:p-4 backdrop-blur flex-1 flex flex-col">
@@ -453,8 +453,8 @@ export default function SelfieCapturePage() {
               </div>
 
               {/* Right Side - Camera View */}
-              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 overflow-hidden flex flex-col min-h-[250px] sm:min-h-[300px] md:min-h-[350px]">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10 overflow-hidden flex flex-col min-h-[250px] sm:min-h-[300px] md:min-h-[350px]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10 flex flex-col flex-1 min-h-0">
                   {/* Camera View / Preview */}
@@ -489,7 +489,7 @@ export default function SelfieCapturePage() {
                   {isLoading && !capturedPhoto && (
                     <div className="absolute inset-0 flex items-center justify-center bg-[--color-surface]/80 backdrop-blur-sm z-10">
                       <div className="text-center">
-                        <svg className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-2 sm:mb-3 text-[#FF6B35] animate-spin" fill="none" viewBox="0 0 24 24">
+                        <svg className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-2 sm:mb-3 text-[#fc4f02] animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
@@ -514,7 +514,7 @@ export default function SelfieCapturePage() {
                               setShowPermissionDialog(true);
                               setError("");
                             }}
-                            className="rounded-lg bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105"
+                            className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105"
                           >
                             Grant Permission
                           </button>
@@ -525,7 +525,7 @@ export default function SelfieCapturePage() {
                               setShowPermissionDialog(true);
                               setError("");
                             }}
-                            className="rounded-lg bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105"
+                            className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105"
                           >
                             Try Again
                           </button>
@@ -561,7 +561,7 @@ export default function SelfieCapturePage() {
                     <button
                       onClick={handleCapture}
                       disabled={isLoading || !!error || !cameraPermission}
-                      className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                      className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                     >
                       <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
                         <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -576,14 +576,14 @@ export default function SelfieCapturePage() {
                     <>
                       <button
                         onClick={handleRetake}
-                        className="rounded-lg sm:rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-white transition-all duration-300 hover:border-[#FF6B35]/50 hover:bg-[--color-surface-alt]"
+                        className="rounded-lg sm:rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
                       >
                         Retake
                       </button>
                       <button
                         onClick={handleSubmit}
                         disabled={isLoading}
-                        className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
                         <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
                           {isLoading ? (

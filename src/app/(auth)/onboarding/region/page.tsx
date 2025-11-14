@@ -127,12 +127,12 @@ export default function RegionPage() {
     return (
       <div className="relative flex h-full w-full overflow-hidden">
         <BackButton />
-        {/* Gradient background matching welcome page */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f19] via-[#1a1f2e] to-[#0b0f19]">
-        {/* Animated gradient orbs */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#FF6B35]/10 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#1d4ed8]/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#10b981]/10 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        {/* Background matching Figma design */}
+      <div className="absolute inset-0 bg-black">
+        {/* Subtle gradient orbs for depth */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -144,7 +144,7 @@ export default function RegionPage() {
               <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
             </div>
             <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Select Your <span className="text-[#FF6B35]">Region</span>
+              Select Your <span className="text-[#fc4f02]">Region</span>
             </h1>
             <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               We need to know your location to ensure compliance with local trading regulations and provide you with the appropriate services.
@@ -153,15 +153,15 @@ export default function RegionPage() {
 
           {/* Region Selection Form */}
           <div className="mb-4 animate-text-enter" style={{ animationDelay: "0.6s", position: "relative", zIndex: 100 }}>
-              <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
+              <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
                 {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10">
                   {/* Label with icon */}
                   <div className="mb-3 flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                      <svg className="h-4 w-4 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                      <svg className="h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
@@ -176,13 +176,13 @@ export default function RegionPage() {
                     <button
                       type="button"
                       onClick={toggleDropdown}
-                      className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-3 pr-12 text-white transition-all duration-300 focus:border-[#FF6B35] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 hover:border-[#FF6B35]/50 cursor-pointer ${
+                      className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-3 pr-12 text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 hover:border-[#fc4f02]/50 cursor-pointer ${
                         selectedCountry ? "pl-12" : "pl-5"
                       } ${
                         error
                           ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                           : selectedCountry
-                          ? "border-[#FF6B35] shadow-lg shadow-[#FF6B35]/20"
+                          ? "border-[#fc4f02] shadow-lg shadow-[#fc4f02]/20"
                           : "border-[--color-border]"
                       }`}
                     >
@@ -204,7 +204,7 @@ export default function RegionPage() {
                     <div
                       className={`absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200 z-10 ${
                         isDropdownOpen ? "rotate-180" : ""
-                      } ${selectedCountry ? "text-[#FF6B35]" : "text-slate-400"}`}
+                      } ${selectedCountry ? "text-[#fc4f02]" : "text-slate-400"}`}
                     >
                       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path
@@ -307,7 +307,7 @@ export default function RegionPage() {
                 <button
                   onClick={handleContinue}
                   disabled={!selectedCountry || !selectedCountryData?.supported}
-                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     Continue
