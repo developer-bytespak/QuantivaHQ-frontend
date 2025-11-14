@@ -232,24 +232,24 @@ export default function PersonalInfoPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-y-auto px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8">
         <div className="w-full max-w-6xl">
           {/* Header Section */}
-          <div className="mb-6 text-center">
-            <div className="mb-3 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
+          <div className="mb-2 sm:mb-3 text-center">
+            <div className="mb-1.5 sm:mb-2 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14" />
             </div>
-            <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Personal <span className="text-white">Information</span>
             </h1>
-            <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please provide your personal details as they appear on your official identification document.
             </p>
           </div>
 
           {/* Progress Bar */}
-          <div className="mb-6 animate-text-enter" style={{ animationDelay: "0.5s" }}>
-            <div className="flex items-center justify-between text-xs mb-2">
+          <div className="mb-2 sm:mb-3 animate-text-enter" style={{ animationDelay: "0.5s" }}>
+            <div className="flex items-center justify-between text-[10px] sm:text-xs mb-1 sm:mb-1.5">
               <span className="text-slate-400 font-medium">Progress</span>
               <span className="font-bold text-white">{Math.round(progress)}%</span>
             </div>
@@ -263,15 +263,15 @@ export default function PersonalInfoPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="animate-text-enter relative z-0" style={{ animationDelay: "0.6s" }}>
-            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-5 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10 overflow-visible">
+            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10 overflow-visible">
               <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               
-              <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 z-0">
+              <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 z-0">
                 {/* Left Column - 3 Fields */}
-                <div className="space-y-4">
+                <div className="space-y-2 sm:space-y-3">
                 {/* Full Legal Name */}
                 <div>
-                  <label htmlFor="fullLegalName" className="mb-1.5 block text-xs font-semibold text-white flex items-center gap-2">
+                  <label htmlFor="fullLegalName" className="mb-1 block text-xs font-semibold text-white flex items-center gap-2">
                     <span>Full Legal Name (as per ID)</span>
                     <span className="text-red-400">*</span>
                   </label>
@@ -283,7 +283,7 @@ export default function PersonalInfoPage() {
                       setFullLegalName(e.target.value);
                       setErrors({ ...errors, fullLegalName: "" });
                     }}
-                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-4 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
+                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
                       errors.fullLegalName
                         ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                         : "border-[--color-border]"
@@ -298,7 +298,7 @@ export default function PersonalInfoPage() {
 
                 {/* Date of Birth */}
                 <div>
-                  <label htmlFor="dateOfBirth" className="mb-1.5 block text-xs font-semibold text-white flex items-center gap-2">
+                  <label htmlFor="dateOfBirth" className="mb-1 block text-xs font-semibold text-white flex items-center gap-2">
                     <span>Date of Birth</span>
                     <span className="text-red-400">*</span>
                   </label>
@@ -311,7 +311,7 @@ export default function PersonalInfoPage() {
                       setErrors({ ...errors, dateOfBirth: "" });
                     }}
                     max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-4 py-2.5 text-sm text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
+                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
                       errors.dateOfBirth
                         ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                         : "border-[--color-border]"
@@ -325,14 +325,14 @@ export default function PersonalInfoPage() {
 
                 {/* Gender (Optional) */}
                 <div>
-                  <label htmlFor="gender" className="mb-1.5 block text-xs font-semibold text-white">
+                  <label htmlFor="gender" className="mb-1 block text-xs font-semibold text-white">
                     Gender <span className="text-slate-500 text-xs font-normal">(Optional)</span>
                   </label>
                   <select
                     id="gender"
                     value={gender}
                     onChange={(e) => setGender(e.target.value as typeof gender)}
-                    className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                    className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2 text-sm text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
                   >
                     <option value="">Select gender (optional)</option>
                     <option value="male">Male</option>
@@ -344,10 +344,10 @@ export default function PersonalInfoPage() {
                 </div>
 
                 {/* Right Column - 2 Fields */}
-                <div className="space-y-4 relative z-0">
+                <div className="space-y-2 sm:space-y-3 relative z-0">
                 {/* Nationality / Country of Citizenship */}
                 <div>
-                  <label htmlFor="nationality" className="mb-1.5 block text-xs font-semibold text-white flex items-center gap-2">
+                  <label htmlFor="nationality" className="mb-1 block text-xs font-semibold text-white flex items-center gap-2">
                     <span>Nationality / Country of Citizenship</span>
                     <span className="text-red-400">*</span>
                   </label>
@@ -423,7 +423,7 @@ export default function PersonalInfoPage() {
 
                 {/* Country of Residence */}
                 <div>
-                  <label htmlFor="countryOfResidence" className="mb-1.5 block text-xs font-semibold text-white flex items-center gap-2">
+                  <label htmlFor="countryOfResidence" className="mb-1 block text-xs font-semibold text-white flex items-center gap-2">
                     <span>Country of Residence</span>
                     <span className="text-red-400">*</span>
                   </label>
@@ -501,7 +501,7 @@ export default function PersonalInfoPage() {
             </div>
 
             {/* Submit Button */}
-            <div className="mt-5 text-center relative z-0">
+            <div className="mt-3 sm:mt-4 text-center relative z-0">
               <button
                 type="submit"
                 disabled={isLoading}

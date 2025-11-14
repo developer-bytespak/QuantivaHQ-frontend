@@ -196,7 +196,7 @@ export default function ProofUploadPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4 md:px-6 md:pt-6 md:pb-6 lg:px-8">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6 md:px-6 md:pt-6 md:pb-8 lg:px-8">
         <div className="w-full max-w-6xl flex flex-col flex-1 min-h-0">
           {/* Header Section */}
           <div className="mb-2 sm:mb-3 flex-shrink-0 text-center">
@@ -478,7 +478,7 @@ export default function ProofUploadPage() {
                 {/* Shine effect */}
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               </button>
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 mb-4 sm:mb-6 text-xs text-slate-400">
                 Your document is encrypted and securely stored
               </p>
             </div>
