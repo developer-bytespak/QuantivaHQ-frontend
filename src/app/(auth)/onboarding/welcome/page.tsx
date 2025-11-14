@@ -97,17 +97,17 @@ export default function WelcomePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-between overflow-y-auto px-8 py-6 sm:px-12 sm:py-8 lg:px-16">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-between overflow-y-auto px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
         <div className="w-full max-w-6xl">
           {/* Header Section */}
-          <div className="mb-10 text-center">
-            <div className="mb-5 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-14 w-14 md:h-16 md:w-16" />
+          <div className="mb-6 text-center">
+            <div className="mb-3 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
             </div>
-            <h1 className="mb-4 text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-4xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Welcome to <span className="text-[#FF6B35]">QuantivaHQ</span>
             </h1>
-            <p className="mx-auto max-w-xl text-sm text-slate-400 md:text-base animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Your intelligent trading platform that combines AI-powered insights, real-time sentiment analysis, and automated execution.
             </p>
           </div>

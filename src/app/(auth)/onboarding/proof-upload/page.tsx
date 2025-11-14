@@ -196,28 +196,28 @@ export default function ProofUploadPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-y-auto px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
-        <div className="w-full max-w-6xl">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4 md:px-6 md:pt-6 md:pb-6 lg:px-8">
+        <div className="w-full max-w-6xl flex flex-col flex-1 min-h-0">
           {/* Header Section */}
-          <div className="mb-6 text-center">
-            <div className="mb-3 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
+          <div className="mb-2 sm:mb-3 flex-shrink-0 text-center">
+            <div className="mb-1.5 sm:mb-2 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
             </div>
-            <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Upload <span className="text-[#FF6B35]">ID Document</span>
             </h1>
-            <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please upload a clear photo or scan of your government-issued ID card or passport for verification.
             </p>
           </div>
 
           {/* Progress Bar */}
-          <div className="mb-6 animate-text-enter" style={{ animationDelay: "0.5s" }}>
-            <div className="flex items-center justify-between text-xs mb-2">
+          <div className="mb-2 sm:mb-3 flex-shrink-0 animate-text-enter" style={{ animationDelay: "0.5s" }}>
+            <div className="flex items-center justify-between text-[10px] sm:text-xs mb-1.5 sm:mb-2">
               <span className="text-slate-400 font-medium">Progress</span>
               <span className="font-bold text-white">{Math.round(animatedProgress)}%</span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
+            <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
               <div
                 className="h-full bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] transition-all duration-1000 ease-out shadow-lg shadow-[#FF6B35]/50 rounded-full"
                 style={{ width: `${animatedProgress}%` }}
@@ -226,37 +226,39 @@ export default function ProofUploadPage() {
           </div>
 
           {/* Upload Form */}
-          <form onSubmit={handleSubmit} className="animate-text-enter" style={{ animationDelay: "0.6s" }}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <form onSubmit={handleSubmit} className="animate-text-enter flex-1 flex flex-col" style={{ animationDelay: "0.6s" }}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0">
               {/* Left Side - Upload Requirements */}
-              <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 flex flex-col min-h-[400px]">
+              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10 flex flex-col h-full">
-                  <div className="rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-5 backdrop-blur">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#10b981]/20">
-                        <svg className="h-4 w-4 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="rounded-lg sm:rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-3 sm:p-4 backdrop-blur flex-1 flex flex-col">
+                    <div className="flex items-start gap-2 sm:gap-3 flex-shrink-0">
+                      <div className="flex h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#10b981]/20">
+                        <svg className="h-3 w-3 sm:h-4 sm:w-4 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-[#10b981] mb-3">Upload Requirements</p>
-                        <ul className="text-xs text-slate-300 leading-relaxed space-y-2">
-                          <li>• Acceptable formats: JPEG, PNG, WebP, or PDF</li>
-                          <li>• Maximum file size: 10MB</li>
-                          <li>• Ensure the document is clear and all text is readable</li>
-                          <li>• Upload a valid government-issued ID (passport, driver's license, or national ID)</li>
-                          <li>• The document must not be expired</li>
-                        </ul>
+                        <p className="text-sm sm:text-base font-semibold text-[#10b981] mb-1.5 sm:mb-2">Upload Requirements</p>
                       </div>
+                    </div>
+                    <div className="flex-1 flex items-center">
+                      <ul className="text-xs sm:text-sm text-slate-300 leading-relaxed space-y-1.5 sm:space-y-2 w-full">
+                        <li>• Acceptable formats: JPEG, PNG, WebP, or PDF</li>
+                        <li>• Maximum file size: 10MB</li>
+                        <li>• Ensure the document is clear and all text is readable</li>
+                        <li>• Upload a valid government-issued ID (passport, driver's license, or national ID)</li>
+                        <li>• The document must not be expired</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Right Side - File Upload Area */}
-              <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 overflow-hidden flex flex-col min-h-[400px]">
+              <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10 overflow-hidden flex flex-col">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10 flex flex-col flex-1 min-h-0">
@@ -268,7 +270,7 @@ export default function ProofUploadPage() {
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`relative cursor-pointer rounded-xl border-2 border-dashed transition-all duration-300 flex-1 flex items-center justify-center ${
+                    className={`relative cursor-pointer rounded-xl border-2 border-dashed transition-all duration-300 flex items-center justify-center h-[200px] sm:h-[220px] md:h-[240px] ${
                       isDragging
                         ? "border-[#FF6B35] bg-[#FF6B35]/10 scale-[1.02]"
                         : "border-[--color-border] bg-[--color-surface]/40 hover:border-[#FF6B35]/50 hover:bg-[--color-surface]/60"
@@ -281,34 +283,34 @@ export default function ProofUploadPage() {
                       onChange={handleFileInputChange}
                       className="hidden"
                     />
-                    <div className="flex flex-col items-center justify-center p-8 text-center">
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                        <svg className="h-8 w-8 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex flex-col items-center justify-center p-3 sm:p-4 md:p-6 text-center">
+                      <div className="mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
+                        <svg className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                       </div>
-                      <h3 className="mb-2 text-base font-semibold text-white">
+                      <h3 className="mb-1 sm:mb-1.5 sm:mb-2 text-sm sm:text-base font-semibold text-white px-2">
                         {isDragging ? "Drop your file here" : "Drag & drop your ID document"}
                       </h3>
-                      <p className="mb-4 text-sm text-slate-400">
+                      <p className="mb-2 sm:mb-3 text-xs sm:text-sm text-slate-400 px-2">
                         or <span className="text-[#FF6B35] font-medium">browse files</span>
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-[10px] sm:text-xs text-slate-500 px-2">
                         Supported formats: JPEG, PNG, WebP, PDF (Max 10MB)
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col flex-1 min-h-0 space-y-4">
+                  <div className="flex flex-col flex-1 min-h-0 space-y-2 sm:space-y-3">
                     {/* File Preview */}
-                    <div className="relative rounded-xl border-2 border-[--color-border] bg-[--color-surface] overflow-hidden flex items-center justify-center h-[200px]">
+                    <div className="relative rounded-lg sm:rounded-xl border-2 border-[--color-border] bg-[--color-surface] overflow-hidden flex items-center justify-center h-[200px] sm:h-[220px] md:h-[240px]">
                       {preview ? (
-                        <div className="relative w-full h-full flex items-center justify-center">
+                        <div className="relative w-full h-full flex items-center justify-center p-2">
                           <img
                             src={preview}
                             alt="ID Preview"
                             onClick={() => setIsPreviewModalOpen(true)}
-                            className="max-w-full max-h-full object-contain cursor-zoom-in transition-transform duration-200 hover:scale-105"
+                            className="max-w-full max-h-full w-auto h-auto object-contain cursor-zoom-in transition-transform duration-200 hover:scale-105"
                           />
                           <button
                             type="button"
@@ -316,9 +318,9 @@ export default function ProofUploadPage() {
                               e.stopPropagation();
                               handleRemoveFile();
                             }}
-                            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-red-500/90 text-white shadow-lg transition-all duration-200 hover:bg-red-500 hover:scale-110 z-10"
+                            className="absolute top-2 right-2 sm:top-3 sm:right-3 flex h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 items-center justify-center rounded-full bg-red-500/90 text-white shadow-lg transition-all duration-200 hover:bg-red-500 hover:scale-110 z-10"
                           >
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                           </button>
@@ -326,37 +328,37 @@ export default function ProofUploadPage() {
                       ) : uploadedFile.type === 'application/pdf' ? (
                         <div 
                           onClick={() => setIsPreviewModalOpen(true)}
-                          className="flex flex-col items-center justify-center p-4 cursor-zoom-in w-full h-full"
+                          className="flex flex-col items-center justify-center p-3 sm:p-4 cursor-zoom-in w-full h-full absolute inset-0"
                         >
-                          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                            <svg className="h-6 w-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <div className="mb-2 sm:mb-3 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
+                            <svg className="h-5 w-5 sm:h-6 sm:w-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                           </div>
-                          <p className="text-xs font-medium text-white mb-1 truncate max-w-full px-2">{uploadedFile.name}</p>
-                          <p className="text-xs text-slate-400">{formatFileSize(uploadedFile.size)}</p>
+                          <p className="text-[10px] sm:text-xs font-medium text-white mb-1 truncate max-w-full px-2">{uploadedFile.name}</p>
+                          <p className="text-[9px] sm:text-xs text-slate-400">{formatFileSize(uploadedFile.size)}</p>
                         </div>
                       ) : null}
                     </div>
 
                     {/* File Info */}
-                    <div className="rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-3 flex-shrink-0">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#10b981]/20">
-                            <svg className="h-4 w-4 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="rounded-lg sm:rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-2.5 sm:p-3 flex-shrink-0">
+                      <div className="flex items-center justify-between gap-2 sm:gap-3">
+                        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                          <div className="flex h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#10b981]/20">
+                            <svg className="h-3 w-3 sm:h-4 sm:w-4 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-semibold text-white truncate">{uploadedFile.name}</p>
-                            <p className="text-[10px] text-slate-400">{formatFileSize(uploadedFile.size)}</p>
+                            <p className="text-[10px] sm:text-xs font-semibold text-white truncate">{uploadedFile.name}</p>
+                            <p className="text-[9px] sm:text-[10px] text-slate-400">{formatFileSize(uploadedFile.size)}</p>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-[10px] font-medium text-white transition-colors hover:border-[#FF6B35] hover:bg-[--color-surface-alt] flex-shrink-0"
+                          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-2 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-[10px] font-medium text-white transition-colors hover:border-[#FF6B35] hover:bg-[--color-surface-alt] flex-shrink-0"
                         >
                           Change
                         </button>
@@ -374,13 +376,13 @@ export default function ProofUploadPage() {
 
                   {/* Error Message */}
                   {error && (
-                    <div className="mt-4 flex items-center gap-3 rounded-xl border border-red-500/50 bg-gradient-to-r from-red-500/10 to-red-500/5 px-4 py-3 backdrop-blur">
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-500/20">
-                        <svg className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="mt-3 sm:mt-4 flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl border border-red-500/50 bg-gradient-to-r from-red-500/10 to-red-500/5 px-3 sm:px-4 py-2 sm:py-3 backdrop-blur">
+                      <div className="flex h-6 w-6 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-500/20">
+                        <svg className="h-3 w-3 sm:h-4 sm:w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-xs font-medium text-red-400">{error}</p>
+                      <p className="text-[10px] sm:text-xs font-medium text-red-400">{error}</p>
                     </div>
                   )}
                 </div>
@@ -390,13 +392,13 @@ export default function ProofUploadPage() {
             {/* Preview Modal Overlay */}
             {isPreviewModalOpen && preview && (
               <div 
-                className="fixed inset-0 z-[99999] flex items-center justify-center px-4 pt-4 pb-20 bg-black/80 backdrop-blur-sm overflow-y-auto"
+                className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
                 onClick={() => setIsPreviewModalOpen(false)}
               >
-                <div className="relative max-w-2xl w-full max-h-[50vh] my-auto">
+                <div className="relative w-full max-w-lg max-h-[45vh] flex items-center justify-center">
                   <button
                     onClick={() => setIsPreviewModalOpen(false)}
-                    className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-all duration-200 hover:bg-white/20 hover:scale-110 z-10"
+                    className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/80 text-white transition-all duration-200 hover:bg-black hover:scale-110 z-10 backdrop-blur-sm shadow-lg"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -406,7 +408,7 @@ export default function ProofUploadPage() {
                     src={preview}
                     alt="ID Document - Full View"
                     onClick={(e) => e.stopPropagation()}
-                    className="w-full h-auto max-h-[50vh] object-contain shadow-2xl"
+                    className="max-w-full max-h-[45vh] w-auto h-auto object-contain shadow-2xl"
                   />
                 </div>
               </div>
@@ -415,31 +417,31 @@ export default function ProofUploadPage() {
             {/* PDF Preview Modal */}
             {isPreviewModalOpen && uploadedFile && uploadedFile.type === 'application/pdf' && (
               <div 
-                className="fixed inset-0 z-[99999] flex items-center justify-center px-4 pt-4 pb-20 bg-black/80 backdrop-blur-sm overflow-y-auto"
+                className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
                 onClick={() => setIsPreviewModalOpen(false)}
               >
-                <div className="relative max-w-xl w-full">
+                <div className="relative w-full max-w-xs">
                   <button
                     onClick={() => setIsPreviewModalOpen(false)}
-                    className="absolute -top-10 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-all duration-200 hover:bg-white/20 hover:scale-110 z-10"
+                    className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/80 text-white transition-all duration-200 hover:bg-black hover:scale-110 z-10 backdrop-blur-sm shadow-lg"
                   >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                   <div 
-                    className="relative rounded-xl bg-[#0f172a] shadow-2xl p-6"
+                    className="relative rounded-xl bg-[#0f172a] shadow-2xl p-4"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="flex flex-col items-center justify-center">
-                      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
-                        <svg className="h-8 w-8 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
+                        <svg className="h-6 w-6 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <h3 className="text-base font-semibold text-white mb-2 text-center">{uploadedFile.name}</h3>
-                      <p className="text-xs text-slate-400 mb-3">{formatFileSize(uploadedFile.size)}</p>
-                      <p className="text-xs text-slate-500 text-center">
+                      <h3 className="text-sm font-semibold text-white mb-1.5 text-center truncate w-full px-2">{uploadedFile.name}</h3>
+                      <p className="text-[10px] text-slate-400 mb-2">{formatFileSize(uploadedFile.size)}</p>
+                      <p className="text-[10px] text-slate-500 text-center">
                         PDF preview is not available. Please download the file to view it.
                       </p>
                     </div>
@@ -449,11 +451,11 @@ export default function ProofUploadPage() {
             )}
 
             {/* Submit Button */}
-            <div className="mt-6 text-center">
+            <div className="mt-3 sm:mt-4 flex-shrink-0 text-center">
               <button
                 type="submit"
                 disabled={isLoading || !uploadedFile}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (

@@ -24,7 +24,7 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
       onClick={() => onSelect(value)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-300 p-5 backdrop-blur text-left ${
+      className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-300 p-4 sm:p-5 md:p-6 backdrop-blur text-left ${
         isSelected
           ? "border-[#FF6B35] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 shadow-2xl shadow-[#FF6B35]/30"
           : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#FF6B35]/50 hover:shadow-2xl hover:shadow-[#FF6B35]/20"
@@ -40,8 +40,8 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Selected indicator */}
       {isSelected && (
-        <div className="absolute top-4 right-4 flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] shadow-lg shadow-[#FF6B35]/50">
-          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#FF6B35] to-[#FF8C5A] shadow-lg shadow-[#FF6B35]/50">
+          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
@@ -49,13 +49,13 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Content */}
       <div className="relative z-10">
-        <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20 transition-transform duration-300 ${
+        <div className={`mb-3 sm:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20 transition-transform duration-300 ${
           isSelected ? "scale-110" : "group-hover:scale-110"
         }`}>
           {icon}
         </div>
-        <h3 className="mb-2 text-base font-semibold text-white">{title}</h3>
-        <p className="text-xs leading-relaxed text-slate-400">{description}</p>
+        <h3 className="mb-2 text-base sm:text-lg font-semibold text-white">{title}</h3>
+        <p className="text-xs sm:text-sm leading-relaxed text-slate-400">{description}</p>
       </div>
 
       {/* Shine effect */}
@@ -104,7 +104,7 @@ export default function AccountTypePage() {
       description: "Trade cryptocurrencies with AI-powered insights. Access real-time market data, sentiment analysis, and automated trading strategies for Bitcoin, Ethereum, and altcoins.",
       gradient: "from-[#FF6B35] to-[#FF8C5A]",
       icon: (
-        <svg className="h-8 w-8 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
@@ -115,7 +115,7 @@ export default function AccountTypePage() {
       description: "Trade stocks and equities with intelligent automation. Get AI-driven analysis, portfolio optimization, and automated execution for traditional markets.",
       gradient: "from-[#1d4ed8] to-[#3b82f6]",
       icon: (
-        <svg className="h-8 w-8 text-[#1d4ed8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#1d4ed8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
       ),
@@ -126,7 +126,7 @@ export default function AccountTypePage() {
       description: "Access both crypto and stock markets in one unified platform. Maximize your trading opportunities with cross-market analysis and diversified strategies.",
       gradient: "from-[#10b981] to-[#34d399]",
       icon: (
-        <svg className="h-8 w-8 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
@@ -145,24 +145,23 @@ export default function AccountTypePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-y-auto px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
-        <div className="w-full max-w-6xl flex-1 flex flex-col justify-between">
-          <div>
-            {/* Header Section */}
-            <div className="mb-6 text-center">
-              <div className="mb-3 flex justify-center animate-logo-enter">
-                <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
-              </div>
-              <h1 className="mb-2 text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-4xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-                Select Your <span className="text-[#FF6B35]">Account Type</span>
-              </h1>
-              <p className="mx-auto max-w-xl text-sm text-slate-400 md:text-base animate-text-enter" style={{ animationDelay: "0.4s" }}>
-                Choose your preferred trading markets. This will personalize your dashboard and optimize your trading experience.
-              </p>
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8">
+        <div className="w-full max-w-6xl flex flex-col justify-center">
+          {/* Header Section */}
+          <div className="mb-6 sm:mb-8 text-center flex-shrink-0">
+            <div className="mb-2 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
             </div>
+            <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+              Select Your <span className="text-[#FF6B35]">Account Type</span>
+            </h1>
+            <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
+              Choose your preferred trading markets. This will personalize your dashboard and optimize your trading experience.
+            </p>
+          </div>
 
-            {/* Account Type Cards */}
-            <div className="grid gap-4 md:grid-cols-3 animate-text-enter" style={{ animationDelay: "0.6s" }}>
+          {/* Account Type Cards */}
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-3 animate-text-enter mb-4 sm:mb-5 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
               {accountTypes.map((type, index) => (
                 <AccountTypeCard
                   key={type.value}
@@ -177,26 +176,25 @@ export default function AccountTypePage() {
                 />
               ))}
             </div>
-          </div>
 
-          {/* CTA Section - Positioned at bottom */}
-          <div className="w-full mt-6">
+          {/* CTA Section */}
+          <div className="w-full flex-shrink-0">
             <div className="text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
               <button
                 onClick={handleContinue}
                 disabled={!selectedType}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-3 text-base font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
-                <span className="relative z-10 flex items-center justify-center gap-2">
+                <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
                   Continue
-                  <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 </span>
                 {/* Shine effect */}
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               </button>
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs text-slate-400">
                 Your selection will personalize your trading dashboard
               </p>
             </div>
