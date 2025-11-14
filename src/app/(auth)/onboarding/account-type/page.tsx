@@ -104,9 +104,12 @@ export default function AccountTypePage() {
       description: "Trade cryptocurrencies with AI-powered insights. Access real-time market data, sentiment analysis, and automated trading strategies for Bitcoin, Ethereum, and altcoins.",
       gradient: "from-[#fc4f02] to-[#fda300]",
       icon: (
-        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <div className="relative h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 flex items-center justify-center">
+          {/* Circular golden background */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600"></div>
+          {/* Bitcoin symbol (₿) */}
+          <span className="relative z-10 text-white font-bold text-sm sm:text-base md:text-lg">₿</span>
+        </div>
       ),
     },
     {
@@ -115,8 +118,22 @@ export default function AccountTypePage() {
       description: "Trade stocks and equities with intelligent automation. Get AI-driven analysis, portfolio optimization, and automated execution for traditional markets.",
       gradient: "from-[#1d4ed8] to-[#3b82f6]",
       icon: (
-        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#1d4ed8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none">
+          {/* Three candlestick charts: green, red, green */}
+          {/* First candlestick (green) */}
+          <rect x="4" y="8" width="3" height="6" fill="#10b981" />
+          <line x1="5.5" y1="6" x2="5.5" y2="8" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="5.5" y1="14" x2="5.5" y2="16" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
+          
+          {/* Second candlestick (red) */}
+          <rect x="10" y="10" width="3" height="4" fill="#ef4444" />
+          <line x1="11.5" y1="8" x2="11.5" y2="10" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="11.5" y1="14" x2="11.5" y2="18" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+          
+          {/* Third candlestick (green) */}
+          <rect x="16" y="7" width="3" height="7" fill="#10b981" />
+          <line x1="17.5" y1="5" x2="17.5" y2="7" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
+          <line x1="17.5" y1="14" x2="17.5" y2="16" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       ),
     },
@@ -150,10 +167,10 @@ export default function AccountTypePage() {
           {/* Header Section */}
           <div className="mb-6 sm:mb-8 text-center flex-shrink-0">
             <div className="mb-2 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
+              <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14" />
             </div>
             <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Select Your <span className="text-[#fc4f02]">Account Type</span>
+              Select Your <span className="text-white">Account Type</span>
             </h1>
             <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Choose your preferred trading markets. This will personalize your dashboard and optimize your trading experience.

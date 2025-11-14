@@ -43,11 +43,11 @@ export function BackButton() {
   return (
     <button
       onClick={handleBack}
-      className="absolute top-6 left-6 z-20 flex items-center gap-2 rounded-xl border border-[--color-border] bg-[--color-surface-alt]/80 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition-all duration-300 hover:border-[#FF6B35]/50 hover:bg-[--color-surface-alt] hover:shadow-lg hover:shadow-[#FF6B35]/10"
+      className="absolute top-6 left-6 z-20 flex items-center gap-2 rounded-xl border-2 border-[#fc4f02] bg-black px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition-all duration-300 hover:border-[#fda300] hover:bg-[#1a1a1a] hover:shadow-lg hover:shadow-[#fc4f02]/30"
       aria-label="Go back"
     >
-      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+      <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
       </svg>
       <span>Back</span>
     </button>

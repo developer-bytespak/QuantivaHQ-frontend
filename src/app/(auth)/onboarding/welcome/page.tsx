@@ -102,10 +102,10 @@ export default function WelcomePage() {
           {/* Header Section */}
           <div className="mb-6 text-center">
             <div className="mb-3 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
+              <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
             </div>
             <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Welcome to <span className="text-[#fc4f02]">QuantivaHQ</span>
+              Welcome to <span className="text-white">QuantivaHQ</span>
             </h1>
             <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Your intelligent trading platform that combines AI-powered insights, real-time sentiment analysis, and automated execution.

@@ -141,10 +141,10 @@ export default function RegionPage() {
           {/* Header Section */}
           <div className="mb-6 text-center">
             <div className="mb-3 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
+              <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
             </div>
             <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Select Your <span className="text-[#fc4f02]">Region</span>
+              Select Your <span className="text-white">Region</span>
             </h1>
             <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               We need to know your location to ensure compliance with local trading regulations and provide you with the appropriate services.

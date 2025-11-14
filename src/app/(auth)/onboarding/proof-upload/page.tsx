@@ -201,10 +201,10 @@ export default function ProofUploadPage() {
           {/* Header Section */}
           <div className="mb-2 sm:mb-3 flex-shrink-0 text-center">
             <div className="mb-1.5 sm:mb-2 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12" />
+              <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14" />
             </div>
             <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Upload <span className="text-[#fc4f02]">ID Document</span>
+              Upload <span className="text-white">ID Document</span>
             </h1>
             <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please upload a clear photo or scan of your government-issued ID card or passport for verification.

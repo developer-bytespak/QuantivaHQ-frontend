@@ -81,7 +81,7 @@ export function OnboardingSidebar() {
             >
               <div className="absolute inset-0 bg-[#0b0f19] rounded-lg blur-sm opacity-60" />
               <div className="relative bg-[#0b0f19]/80 rounded-lg p-2 shadow-lg">
-                <QuantivaLogo className="h-12 w-12 brightness-0 invert" />
+                <QuantivaLogo className="h-14 w-14 brightness-0 invert" />
               </div>
             </button>
             {isExpanded && (

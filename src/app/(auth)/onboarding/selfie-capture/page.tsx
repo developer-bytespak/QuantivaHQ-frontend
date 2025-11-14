@@ -396,10 +396,10 @@ export default function SelfieCapturePage() {
           {/* Header Section */}
           <div className="mb-3 sm:mb-4 text-center">
             <div className="mb-1.5 sm:mb-2 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10" />
+              <QuantivaLogo className="h-9 w-9 sm:h-10 sm:w-10 md:h-12 md:w-12" />
             </div>
             <h1 className="mb-1 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
-              Take a <span className="text-[#fc4f02]">Live Selfie</span>
+              Take a <span className="text-white">Live Selfie</span>
             </h1>
             <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please take a clear selfie to verify your identity. Make sure your face is clearly visible and well-lit.
