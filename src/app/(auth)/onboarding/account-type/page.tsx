@@ -145,7 +145,7 @@ export default function AccountTypePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-hidden px-8 pt-12 pb-6 sm:px-12 sm:pt-16 sm:pb-8 lg:px-16">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-y-auto px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
         <div className="w-full max-w-6xl flex-1 flex flex-col justify-between">
           <div>
             {/* Header Section */}

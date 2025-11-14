@@ -10,6 +10,7 @@ const ONBOARDING_PAGES = [
   "/onboarding/sign-up",
   "/onboarding/personal-info",
   "/onboarding/proof-upload",
+  "/onboarding/selfie-capture",
   "/onboarding/verification-status",
   "/onboarding/experience",
   "/onboarding/api-setup",

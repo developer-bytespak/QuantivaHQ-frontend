@@ -45,14 +45,28 @@ export default function SignUpPage() {
 
     // Simulate API call
     setTimeout(() => {
-      // Store auth data in localStorage
-      localStorage.setItem("quantivahq_user_email", email);
-      localStorage.setItem("quantivahq_user_name", fullName || email.split("@")[0]);
-      localStorage.setItem("quantivahq_auth_method", "email");
-      localStorage.setItem("quantivahq_is_authenticated", "true");
-
-      setIsLoading(false);
-      router.push("/onboarding/personal-info");
+      if (activeTab === "signup") {
+        // Store auth data in localStorage
+        localStorage.setItem("quantivahq_user_email", email);
+        localStorage.setItem("quantivahq_user_name", fullName || email.split("@")[0]);
+        localStorage.setItem("quantivahq_auth_method", "email");
+        
+        setIsLoading(false);
+        // Switch to login tab after account creation
+        setActiveTab("login");
+        setPassword("");
+        setConfirmPassword("");
+        setFullName("");
+        setError("");
+      } else {
+        // Login flow
+        localStorage.setItem("quantivahq_user_email", email);
+        localStorage.setItem("quantivahq_auth_method", "email");
+        localStorage.setItem("quantivahq_is_authenticated", "true");
+        
+        setIsLoading(false);
+        router.push("/onboarding/personal-info");
+      }
     }, 1000);
   };
 
@@ -80,17 +94,17 @@ export default function SignUpPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-hidden px-8 pt-12 pb-6 sm:px-12 sm:pt-16 sm:pb-8 lg:px-16">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-hidden px-4 pt-6 pb-4 sm:px-6 sm:pt-8 sm:pb-6 lg:px-8">
         <div className="w-full max-w-6xl">
           {/* Header Section */}
           <div className="mb-8 text-center">
-            <div className="mb-4 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
+            <div className="mb-3 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
             </div>
-            <h1 className="mb-3 text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-4xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter min-h-[1.5em]" style={{ animationDelay: "0.2s" }}>
               {activeTab === "signup" ? "Create Your" : "Welcome"} <span className="text-[#FF6B35]">Account</span>
             </h1>
-            <p className="mx-auto max-w-xl text-sm text-slate-400 md:text-base animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               {activeTab === "signup" 
                 ? "Sign up to start your AI-powered trading journey" 
                 : "Sign in to continue to your trading dashboard"}
@@ -101,12 +115,12 @@ export default function SignUpPage() {
           <div className="flex items-center gap-8 animate-text-enter" style={{ animationDelay: "0.6s" }}>
             {/* Left Side: Tabs and OAuth */}
             <div className="flex-1 flex items-center justify-center">
-              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-7 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
+              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10">
                   {/* Tabs */}
-                  <div className="mb-4 flex gap-2 rounded-xl bg-[--color-surface]/60 p-1">
+                  <div className="mb-3 flex gap-2 rounded-xl bg-[--color-surface]/60 p-1">
                     <button
                       onClick={() => {
                         setActiveTab("signup");
@@ -187,12 +201,12 @@ export default function SignUpPage() {
 
             {/* Right Side: Email Form */}
             <div className="flex-1 flex items-center justify-center">
-              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-7 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
+              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10">
                   {/* Email Form */}
-                  <form onSubmit={handleSubmit} className="space-y-2.5">
+                  <form onSubmit={handleSubmit} className="space-y-2">
                   {activeTab === "signup" && (
                     <div>
                         <label htmlFor="fullName" className="mb-1.5 block text-xs font-medium text-white">

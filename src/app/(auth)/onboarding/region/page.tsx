@@ -136,31 +136,31 @@ export default function RegionPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-hidden px-8 pt-12 pb-6 sm:px-12 sm:pt-16 sm:pb-8 lg:px-16">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8">
         <div className="w-full max-w-2xl" style={{ position: "relative", zIndex: 1 }}>
           {/* Header Section */}
-          <div className="mb-8 text-center">
-            <div className="mb-4 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
+          <div className="mb-4 text-center">
+            <div className="mb-2 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
             </div>
-            <h1 className="mb-3 text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-4xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-1 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Select Your <span className="text-[#FF6B35]">Region</span>
             </h1>
-            <p className="mx-auto max-w-xl text-sm text-slate-400 md:text-base animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               We need to know your location to ensure compliance with local trading regulations and provide you with the appropriate services.
             </p>
           </div>
 
           {/* Region Selection Form */}
-          <div className="mb-6 animate-text-enter" style={{ animationDelay: "0.6s", position: "relative", zIndex: 100 }}>
-              <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
+          <div className="mb-4 animate-text-enter" style={{ animationDelay: "0.6s", position: "relative", zIndex: 100 }}>
+              <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
                 {/* Subtle gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10">
                   {/* Label with icon */}
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
+                  <div className="mb-3 flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
                       <svg className="h-4 w-4 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -171,12 +171,12 @@ export default function RegionPage() {
                   </div>
                   
                   {/* Custom Dropdown */}
-                  <div className="relative mb-4" ref={dropdownRef} style={{ zIndex: 9999 }}>
+                  <div className="relative mb-3" ref={dropdownRef} style={{ zIndex: 9999 }}>
                     {/* Dropdown Button */}
                     <button
                       type="button"
                       onClick={toggleDropdown}
-                      className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-4 pr-12 text-white transition-all duration-300 focus:border-[#FF6B35] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 hover:border-[#FF6B35]/50 cursor-pointer ${
+                      className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-3 pr-12 text-white transition-all duration-300 focus:border-[#FF6B35] focus:outline-none focus:ring-4 focus:ring-[#FF6B35]/20 hover:border-[#FF6B35]/50 cursor-pointer ${
                         selectedCountry ? "pl-12" : "pl-5"
                       } ${
                         error
@@ -280,7 +280,7 @@ export default function RegionPage() {
                   )}
 
                   {/* Legal Disclaimer - Enhanced */}
-                  <div className="mt-4 rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-4 backdrop-blur">
+                  <div className="mt-3 rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-3 backdrop-blur">
                     <div className="flex items-start gap-3">
                       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#10b981]/20">
                         <svg className="h-4 w-4 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -302,12 +302,12 @@ export default function RegionPage() {
             </div>
 
             {/* CTA Section - Positioned at bottom */}
-            <div className="w-full mt-6">
+            <div className="w-full mt-4">
               <div className="text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
                 <button
                   onClick={handleContinue}
                   disabled={!selectedCountry || !selectedCountryData?.supported}
-                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-3 text-base font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     Continue

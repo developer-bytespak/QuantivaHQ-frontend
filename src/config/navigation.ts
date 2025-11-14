@@ -88,6 +88,7 @@ export const AUTH_STEPS: NavItem[] = [
   { label: "Sign Up", href: `${onboardingBase}/sign-up` },
   { label: "Personal Info", href: `${onboardingBase}/personal-info` },
   { label: "Proof Upload", href: `${onboardingBase}/proof-upload` },
+  { label: "Selfie Capture", href: `${onboardingBase}/selfie-capture` },
   { label: "Verification Status", href: `${onboardingBase}/verification-status` },
   { label: "Experience", href: `${onboardingBase}/experience` },
   { label: "API Setup", href: `${onboardingBase}/api-setup` },

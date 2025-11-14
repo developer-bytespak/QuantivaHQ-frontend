@@ -166,31 +166,31 @@ export default function RiskDisclosurePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-8 pt-12 pb-6 sm:px-12 sm:pt-16 sm:pb-8 lg:px-16">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8">
         <div className="w-full max-w-2xl" style={{ position: "relative", zIndex: 1 }}>
           {/* Header Section */}
-          <div className="mb-6 text-center">
-            <div className="mb-3 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
+          <div className="mb-4 text-center">
+            <div className="mb-2 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-10 w-10 md:h-12 md:w-12" />
             </div>
-            <h1 className="mb-2 text-2xl font-bold tracking-tight text-white md:text-3xl lg:text-4xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-1 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Risk Disclosure <span className="text-[#FF6B35]">Acknowledgement</span>
             </h1>
-            <p className="mx-auto max-w-xl text-sm text-slate-400 md:text-base animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
               Please read the following risk disclosure statement carefully. You must acknowledge and accept these risks before proceeding.
             </p>
           </div>
 
           {/* Risk Disclosure Content */}
-          <div className="mb-6 animate-text-enter" style={{ animationDelay: "0.6s", position: "relative", zIndex: 100 }}>
-            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
+          <div className="mb-4 animate-text-enter" style={{ animationDelay: "0.6s", position: "relative", zIndex: 100 }}>
+            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#FF6B35]/30 hover:shadow-[#FF6B35]/10">
               {/* Subtle gradient overlay */}
               <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B35]/5 via-transparent to-[#1d4ed8]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
               <div className="relative z-10">
                 {/* Label with icon */}
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FF6B35]/20 to-[#1d4ed8]/20">
                     <svg className="h-4 w-4 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
@@ -203,7 +203,7 @@ export default function RiskDisclosurePage() {
                 {/* Button to View Risk Disclosure */}
                 <button
                   onClick={openModal}
-                  className="mb-4 w-full rounded-xl border-2 border-[#FF6B35]/50 bg-gradient-to-r from-[#FF6B35]/10 to-[#FF8C5A]/10 px-6 py-4 text-left transition-all duration-300 hover:border-[#FF6B35] hover:bg-gradient-to-r hover:from-[#FF6B35]/20 hover:to-[#FF8C5A]/20 hover:shadow-lg hover:shadow-[#FF6B35]/20"
+                  className="mb-3 w-full rounded-xl border-2 border-[#FF6B35]/50 bg-gradient-to-r from-[#FF6B35]/10 to-[#FF8C5A]/10 px-4 py-3 text-left transition-all duration-300 hover:border-[#FF6B35] hover:bg-gradient-to-r hover:from-[#FF6B35]/20 hover:to-[#FF8C5A]/20 hover:shadow-lg hover:shadow-[#FF6B35]/20"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -222,7 +222,7 @@ export default function RiskDisclosurePage() {
                 </button>
 
                 {/* Acknowledgment Checkbox */}
-                <div className="mt-4 rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-4 backdrop-blur">
+                <div className="mt-3 rounded-xl border border-[#10b981]/30 bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 p-3 backdrop-blur">
                   <label className="flex cursor-pointer items-start gap-3">
                     <div className="relative flex-shrink-0">
                       <input
@@ -258,12 +258,12 @@ export default function RiskDisclosurePage() {
           </div>
 
           {/* CTA Section */}
-          <div className="w-full mt-6">
+          <div className="w-full mt-4">
             <div className="text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
               <button
                 onClick={handleContinue}
                 disabled={!isAcknowledged}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-3 text-base font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#FF8C5A] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#FF6B35]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#FF6B35]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   Continue
