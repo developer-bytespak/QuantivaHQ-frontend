@@ -132,10 +132,6 @@ export default function ConnectingPage() {
     router.push("/dashboard");
   };
 
-  const handleAddAnotherExchange = () => {
-    router.push("/onboarding/crypto-exchange");
-  };
-
   return (
     <div className="relative flex h-full w-full overflow-hidden">
       {/* Background matching Figma design */}
@@ -210,8 +206,8 @@ export default function ConnectingPage() {
                 </p>
               </div>
 
-              {/* Success Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {/* Success Button */}
+              <div className="flex justify-center">
                 <button
                   onClick={handleGoToDashboard}
                   className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
@@ -223,13 +219,6 @@ export default function ConnectingPage() {
                     </svg>
                   </span>
                   <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                </button>
-
-                <button
-                  onClick={handleAddAnotherExchange}
-                  className="rounded-xl border-2 border-slate-700/50 bg-slate-800/40 px-8 py-3.5 text-base font-semibold text-white backdrop-blur transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-slate-700/60"
-                >
-                  Add Another Exchange
                 </button>
               </div>
             </>
