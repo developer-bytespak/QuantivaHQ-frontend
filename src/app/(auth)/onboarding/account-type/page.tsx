@@ -71,6 +71,7 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 export default function AccountTypePage() {
   const router = useRouter();
   const [selectedType, setSelectedType] = useState<"crypto" | "stocks" | "both" | null>(null);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
     // Load saved account type from localStorage if available
@@ -81,20 +82,18 @@ export default function AccountTypePage() {
   }, []);
 
   const handleSelect = (value: "crypto" | "stocks" | "both") => {
-    setSelectedType(value);
-    localStorage.setItem("quantivahq_account_type", value);
-  };
-
-  const handleContinue = () => {
-    if (!selectedType) {
-      return;
+    if (value === "crypto" || value === "both") {
+      // Navigate to crypto exchange selection
+      setSelectedType(value);
+      localStorage.setItem("quantivahq_account_type", value);
+      router.push("/onboarding/crypto-exchange");
+    } else if (value === "stocks") {
+      // Show coming soon message
+      setShowComingSoon(true);
+      setTimeout(() => {
+        setShowComingSoon(false);
+      }, 3000);
     }
-
-    // Store in localStorage (already done in handleSelect, but ensure it's saved)
-    localStorage.setItem("quantivahq_account_type", selectedType);
-
-    // Navigate to next step
-    router.push("/onboarding/sign-up");
   };
 
   const accountTypes = [
@@ -194,28 +193,19 @@ export default function AccountTypePage() {
               ))}
             </div>
 
-          {/* CTA Section */}
-          <div className="w-full flex-shrink-0">
-            <div className="text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
-              <button
-                onClick={handleContinue}
-                disabled={!selectedType}
-                className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
-                  Continue
-                  <svg className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          {/* Coming Soon Toast */}
+          {showComingSoon && (
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+              <div className="rounded-lg bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] px-6 py-3 shadow-2xl border border-[#3b82f6]/50 backdrop-blur-sm">
+                <div className="flex items-center gap-3">
+                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                </span>
-                {/* Shine effect */}
-                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-              </button>
-              <p className="mt-2 sm:mt-3 text-[10px] sm:text-xs text-slate-400">
-                Your selection will personalize your trading dashboard
-              </p>
+                  <p className="text-sm font-semibold text-white">Stocks trading coming soon!</p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
