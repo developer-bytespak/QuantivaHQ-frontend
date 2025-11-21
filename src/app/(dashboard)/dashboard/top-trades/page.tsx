@@ -2,197 +2,312 @@
 
 import { useState, useMemo } from "react";
 
-const topTradesData = [
-    {
-      id: 1,
-      pair: "BTC/USDT",
-      type: "LONG",
-      entry: "$42,350",
-      exit: "$44,820",
-      profit: "+5.83%",
-      profitAmount: "+$2,470",
-      volume: "$42,350",
-      winRate: "92%",
-      trades: 24,
-      status: "closed",
-      time: "2 hours ago",
-      positive: true,
-      profitValue: 5.83,
-      volumeValue: 42350,
-      winRateValue: 92,
-      hoursAgo: 2,
-    },
-    {
-      id: 2,
-      pair: "ETH/USDT",
-      type: "LONG",
-      entry: "$2,340",
-      exit: "$2,480",
-      profit: "+5.98%",
-      profitAmount: "+$1,400",
-      volume: "$23,400",
-      winRate: "88%",
-      trades: 18,
-      status: "closed",
-      time: "5 hours ago",
-      positive: true,
-      profitValue: 5.98,
-      volumeValue: 23400,
-      winRateValue: 88,
-      hoursAgo: 5,
-    },
-    {
-      id: 3,
-      pair: "SOL/USDT",
-      type: "SHORT",
-      entry: "$98.50",
-      exit: "$92.20",
-      profit: "+6.39%",
-      profitAmount: "+$630",
-      volume: "$9,850",
-      winRate: "85%",
-      trades: 12,
-      status: "closed",
-      time: "8 hours ago",
-      positive: true,
-      profitValue: 6.39,
-      volumeValue: 9850,
-      winRateValue: 85,
-      hoursAgo: 8,
-    },
-    {
-      id: 4,
-      pair: "BNB/USDT",
-      type: "LONG",
-      entry: "$315",
-      exit: "$328",
-      profit: "+4.13%",
-      profitAmount: "+$1,300",
-      volume: "$31,500",
-      winRate: "90%",
-      trades: 20,
-      status: "closed",
-      time: "12 hours ago",
-      positive: true,
-      profitValue: 4.13,
-      volumeValue: 31500,
-      winRateValue: 90,
-      hoursAgo: 12,
-    },
-    {
-      id: 5,
-      pair: "XRP/USDT",
-      type: "LONG",
-      entry: "$0.58",
-      exit: "$0.61",
-      profit: "+5.17%",
-      profitAmount: "+$580",
-      volume: "$11,200",
-      winRate: "82%",
-      trades: 15,
-      status: "closed",
-      time: "1 day ago",
-      positive: true,
-      profitValue: 5.17,
-      volumeValue: 11200,
-      winRateValue: 82,
-      hoursAgo: 24,
-    },
-    {
-      id: 6,
-      pair: "ADA/USDT",
-      type: "SHORT",
-      entry: "$0.48",
-      exit: "$0.45",
-      profit: "+6.25%",
-      profitAmount: "+$300",
-      volume: "$4,800",
-      winRate: "78%",
-      trades: 9,
-      status: "closed",
-      time: "2 days ago",
-      positive: true,
-      profitValue: 6.25,
-      volumeValue: 4800,
-      winRateValue: 78,
-      hoursAgo: 48,
-    },
-    {
-      id: 7,
-      pair: "DOGE/USDT",
-      type: "LONG",
-      entry: "$0.082",
-      exit: "$0.089",
-      profit: "+8.54%",
-      profitAmount: "+$850",
-      volume: "$9,950",
-      winRate: "75%",
-      trades: 8,
-      status: "closed",
-      time: "3 days ago",
-      positive: true,
-      profitValue: 8.54,
-      volumeValue: 9950,
-      winRateValue: 75,
-      hoursAgo: 72,
-    },
-    {
-      id: 8,
-      pair: "MATIC/USDT",
-      type: "SHORT",
-      entry: "$0.85",
-      exit: "$0.78",
-      profit: "+8.24%",
-      profitAmount: "+$700",
-      volume: "$8,500",
-      winRate: "80%",
-      trades: 10,
-      status: "closed",
-      time: "5 days ago",
-      positive: true,
-      profitValue: 8.24,
-      volumeValue: 8500,
-      winRateValue: 80,
-      hoursAgo: 120,
-    },
-    {
-      id: 9,
-      pair: "LINK/USDT",
-      type: "LONG",
-      entry: "$14.20",
-      exit: "$15.10",
-      profit: "+6.34%",
-      profitAmount: "+$900",
-      volume: "$14,200",
-      winRate: "88%",
-      trades: 16,
-      status: "closed",
-      time: "10 days ago",
-      positive: true,
-      profitValue: 6.34,
-      volumeValue: 14200,
-      winRateValue: 88,
-      hoursAgo: 240,
-    },
-    {
-      id: 10,
-      pair: "AVAX/USDT",
-      type: "LONG",
-      entry: "$36.50",
-      exit: "$38.90",
-      profit: "+6.58%",
-      profitAmount: "+$2,400",
-      volume: "$36,500",
-      winRate: "91%",
-      trades: 22,
-      status: "closed",
-      time: "15 days ago",
-      positive: true,
-      profitValue: 6.58,
-      volumeValue: 36500,
-      winRateValue: 91,
-      hoursAgo: 360,
-    },
+interface Trade {
+  id: number;
+  pair: string;
+  type: "BUY" | "SELL";
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  ext: string;
+  entry: string;
+  stopLoss: string;
+  progressMin: number;
+  progressMax: number;
+  progressValue: number;
+  entryPrice: string;
+  stopLossPrice: string;
+  takeProfit1: string;
+  target: string;
+  insights: string[];
+  profit: string;
+  profitValue: number;
+  volume: string;
+  volumeValue: number;
+  winRate: string;
+  winRateValue: number;
+  hoursAgo: number;
+}
+
+const topTradesData: Trade[] = [
+  {
+    id: 1,
+    pair: "ETH / USDT",
+    type: "BUY",
+    confidence: "HIGH",
+    ext: "22,000",
+    entry: "1,020",
+    stopLoss: "1.317 $",
+    progressMin: 790,
+    progressMax: 200,
+    progressValue: 75,
+    entryPrice: "$2,120",
+    stopLossPrice: "$120",
+    takeProfit1: "$240",
+    target: "20,045-",
+    insights: [
+      "Bullish momentum on 1h and 4h charts",
+      "Sentiment improved 20% in last 3 hours",
+      "High liquidity reduces execution risk",
+    ],
+    profit: "+5.83%",
+    profitValue: 5.83,
+    volume: "$42,350",
+    volumeValue: 42350,
+    winRate: "92%",
+    winRateValue: 92,
+    hoursAgo: 2,
+  },
+  {
+    id: 2,
+    pair: "BTC / USDT",
+    type: "BUY",
+    confidence: "HIGH",
+    ext: "34,500",
+    entry: "34,200",
+    stopLoss: "33,800",
+    progressMin: 800,
+    progressMax: 150,
+    progressValue: 80,
+    entryPrice: "$34,200",
+    stopLossPrice: "$33,800",
+    takeProfit1: "$35,500",
+    target: "35,200-",
+    insights: [
+      "Strong support level at $34,000",
+      "Volume spike indicates accumulation",
+      "RSI showing bullish divergence",
+    ],
+    profit: "+4.12%",
+    profitValue: 4.12,
+    volume: "$68,400",
+    volumeValue: 68400,
+    winRate: "88%",
+    winRateValue: 88,
+    hoursAgo: 5,
+  },
+  {
+    id: 3,
+    pair: "SOL / USDT",
+    type: "SELL",
+    confidence: "MEDIUM",
+    ext: "98.50",
+    entry: "98.20",
+    stopLoss: "100.50",
+    progressMin: 600,
+    progressMax: 300,
+    progressValue: 65,
+    entryPrice: "$98.20",
+    stopLossPrice: "$100.50",
+    takeProfit1: "$95.00",
+    target: "94,500-",
+    insights: [
+      "Resistance level at $100 holding strong",
+      "Bearish divergence on MACD",
+      "Decreasing volume suggests weakness",
+    ],
+    profit: "+3.25%",
+    profitValue: 3.25,
+    volume: "$19,640",
+    volumeValue: 19640,
+    winRate: "85%",
+    winRateValue: 85,
+    hoursAgo: 8,
+  },
+  {
+    id: 4,
+    pair: "BNB / USDT",
+    type: "BUY",
+    confidence: "HIGH",
+    ext: "315",
+    entry: "314",
+    stopLoss: "310",
+    progressMin: 750,
+    progressMax: 200,
+    progressValue: 78,
+    entryPrice: "$314",
+    stopLossPrice: "$310",
+    takeProfit1: "$325",
+    target: "32,200-",
+    insights: [
+      "Breakout above key resistance",
+      "Institutional buying detected",
+      "Positive funding rate shift",
+    ],
+    profit: "+3.50%",
+    profitValue: 3.5,
+    volume: "$31,400",
+    volumeValue: 31400,
+    winRate: "90%",
+    winRateValue: 90,
+    hoursAgo: 12,
+  },
+  {
+    id: 5,
+    pair: "XRP / USDT",
+    type: "BUY",
+    confidence: "MEDIUM",
+    ext: "0.58",
+    entry: "0.575",
+    stopLoss: "0.550",
+    progressMin: 550,
+    progressMax: 250,
+    progressValue: 68,
+    entryPrice: "$0.575",
+    stopLossPrice: "$0.550",
+    takeProfit1: "$0.610",
+    target: "60,500-",
+    insights: [
+      "Support bounce from $0.55 level",
+      "Increasing social sentiment",
+      "Low volatility entry point",
+    ],
+    profit: "+6.09%",
+    profitValue: 6.09,
+    volume: "$11,500",
+    volumeValue: 11500,
+    winRate: "82%",
+    winRateValue: 82,
+    hoursAgo: 15,
+  },
+  {
+    id: 6,
+    pair: "ADA / USDT",
+    type: "SELL",
+    confidence: "LOW",
+    ext: "0.48",
+    entry: "0.475",
+    stopLoss: "0.490",
+    progressMin: 500,
+    progressMax: 350,
+    progressValue: 58,
+    entryPrice: "$0.475",
+    stopLossPrice: "$0.490",
+    takeProfit1: "$0.450",
+    target: "45,200-",
+    insights: [
+      "Overbought conditions on RSI",
+      "Weak volume on recent rally",
+      "Approaching resistance zone",
+    ],
+    profit: "+5.26%",
+    profitValue: 5.26,
+    volume: "$4,750",
+    volumeValue: 4750,
+    winRate: "78%",
+    winRateValue: 78,
+    hoursAgo: 20,
+  },
+  {
+    id: 7,
+    pair: "DOGE / USDT",
+    type: "BUY",
+    confidence: "MEDIUM",
+    ext: "0.082",
+    entry: "0.081",
+    stopLoss: "0.078",
+    progressMin: 650,
+    progressMax: 200,
+    progressValue: 72,
+    entryPrice: "$0.081",
+    stopLossPrice: "$0.078",
+    takeProfit1: "$0.089",
+    target: "88,500-",
+    insights: [
+      "Meme coin momentum building",
+      "High retail interest returning",
+      "Breakout from consolidation",
+    ],
+    profit: "+9.88%",
+    profitValue: 9.88,
+    volume: "$8,100",
+    volumeValue: 8100,
+    winRate: "75%",
+    winRateValue: 75,
+    hoursAgo: 24,
+  },
+  {
+    id: 8,
+    pair: "MATIC / USDT",
+    type: "BUY",
+    confidence: "HIGH",
+    ext: "0.85",
+    entry: "0.845",
+    stopLoss: "0.820",
+    progressMin: 700,
+    progressMax: 180,
+    progressValue: 79,
+    entryPrice: "$0.845",
+    stopLossPrice: "$0.820",
+    takeProfit1: "$0.880",
+    target: "87,200-",
+    insights: [
+      "Strong fundamentals support",
+      "Partnership announcements pending",
+      "Technical breakout confirmed",
+    ],
+    profit: "+4.14%",
+    profitValue: 4.14,
+    volume: "$16,900",
+    volumeValue: 16900,
+    winRate: "80%",
+    winRateValue: 80,
+    hoursAgo: 30,
+  },
+  {
+    id: 9,
+    pair: "LINK / USDT",
+    type: "BUY",
+    confidence: "HIGH",
+    ext: "14.20",
+    entry: "14.15",
+    stopLoss: "13.80",
+    progressMin: 720,
+    progressMax: 200,
+    progressValue: 76,
+    entryPrice: "$14.15",
+    stopLossPrice: "$13.80",
+    takeProfit1: "$15.10",
+    target: "15,050-",
+    insights: [
+      "Oracle network growth accelerating",
+      "Institutional adoption increasing",
+      "Strong technical setup",
+    ],
+    profit: "+6.71%",
+    profitValue: 6.71,
+    volume: "$14,150",
+    volumeValue: 14150,
+    winRate: "88%",
+    winRateValue: 88,
+    hoursAgo: 36,
+  },
+  {
+    id: 10,
+    pair: "AVAX / USDT",
+    type: "BUY",
+    confidence: "MEDIUM",
+    ext: "36.50",
+    entry: "36.20",
+    stopLoss: "35.00",
+    progressMin: 680,
+    progressMax: 250,
+    progressValue: 71,
+    entryPrice: "$36.20",
+    stopLossPrice: "$35.00",
+    takeProfit1: "$38.90",
+    target: "38,500-",
+    insights: [
+      "Ecosystem expansion continues",
+      "TVL growth supporting price",
+      "Bullish chart pattern forming",
+    ],
+    profit: "+7.46%",
+    profitValue: 7.46,
+    volume: "$36,200",
+    volumeValue: 36200,
+    winRate: "91%",
+    winRateValue: 91,
+    hoursAgo: 42,
+  },
 ];
 
 export default function TopTradesPage() {
@@ -236,18 +351,18 @@ export default function TopTradesPage() {
     }
 
     const totalProfit = filteredAndSortedTrades.reduce((sum, trade) => {
-      const amount = parseFloat(trade.profitAmount.replace(/[+$,]/g, ""));
+      const amount = parseFloat(trade.profit.replace(/[+%,]/g, ""));
       return sum + amount;
     }, 0);
 
     const avgWinRate = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.winRateValue, 0) / filteredAndSortedTrades.length;
-    const totalTrades = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.trades, 0);
+    const totalTrades = filteredAndSortedTrades.length;
     const avgReturn = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.profitValue, 0) / filteredAndSortedTrades.length;
 
     return [
       { 
         label: "Total Profit", 
-        value: `+$${totalProfit.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 
+        value: `+${totalProfit.toFixed(1)}%`, 
         change: "+12.5%", 
         positive: true 
       },
@@ -315,223 +430,156 @@ export default function TopTradesPage() {
         ))}
       </div>
 
-      {/* Top Trades Table */}
-      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-2xl hover:shadow-[#fc4f02]/10">
-        <div className="border-b border-[--color-border] p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-lg font-semibold text-white">Top Performing Trades</h2>
-            
-            {/* Sort Options */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as "profit" | "volume" | "winrate")}
-                className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
-              >
-                <option value="profit">Profit</option>
-                <option value="volume">Volume</option>
-                <option value="winrate">Win Rate</option>
-              </select>
-            </div>
+      {/* Top Trades List */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Top Performing Trades</h2>
+          
+          {/* Sort Options */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">Sort by:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "profit" | "volume" | "winrate")}
+              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
+            >
+              <option value="profit">Profit</option>
+              <option value="volume">Volume</option>
+              <option value="winrate">Win Rate</option>
+            </select>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-[--color-border]">
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Pair</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Type</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Entry</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Exit</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Profit</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Volume</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Win Rate</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Trades</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase text-slate-400">Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[--color-border]">
-              {filteredAndSortedTrades.length > 0 ? (
-                filteredAndSortedTrades.map((trade) => (
-                <tr key={trade.id} className="cursor-pointer transition-all duration-200 hover:bg-[--color-surface]/60 hover:border-l-2 hover:border-[#fc4f02]/50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-white">{trade.pair}</span>
+        {filteredAndSortedTrades.length > 0 ? (
+          <div className="space-y-4">
+            {filteredAndSortedTrades.map((trade) => (
+              <div
+                key={trade.id}
+                className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]"
+              >
+                {/* Header */}
+                <div className="mb-4 flex items-center gap-2">
+                  <span
+                    className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${
+                      trade.type === "BUY"
+                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                        : "bg-gradient-to-r from-red-500 to-rose-500"
+                    }`}
+                  >
+                    {trade.type}
+                  </span>
+                  <span className="text-sm font-medium text-white">{trade.pair}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${
+                      trade.confidence === "HIGH"
+                        ? "bg-green-500/20 text-green-400"
+                        : trade.confidence === "MEDIUM"
+                        ? "bg-yellow-500/20 text-yellow-400"
+                        : "bg-slate-700 text-slate-300"
+                    }`}
+                  >
+                    {trade.confidence}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                  {/* Left Column - Trade Parameters */}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-400">Ext. {trade.ext}</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400">Entry</span>
+                        <span className="font-medium text-white">{trade.entry}</span>
+                        <span className="text-slate-500">&gt;</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400">Stop Loss</span>
+                        <span className="font-medium text-white">{trade.stopLoss}</span>
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        trade.type === "LONG"
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-red-500/20 text-red-400"
-                      }`}
-                    >
-                      {trade.type}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-300">{trade.entry}</td>
-                  <td className="px-6 py-4 text-sm text-slate-300">{trade.exit}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className={`text-sm font-semibold ${trade.positive ? "text-green-400" : "text-red-400"}`}>
-                        {trade.profit}
-                      </span>
-                      <span className={`text-xs ${trade.positive ? "text-green-400/70" : "text-red-400/70"}`}>
-                        {trade.profitAmount}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-300">{trade.volume}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-white">{trade.winRate}</span>
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-700">
+
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>${trade.progressMin}</span>
+                        <span>${trade.progressMax}</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
                         <div
                           className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
-                          style={{ width: trade.winRate }}
+                          style={{ width: `${trade.progressValue}%` }}
                         />
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-300">{trade.trades}</td>
-                  <td className="px-6 py-4 text-xs text-slate-400">{trade.time}</td>
-                </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-sm text-slate-400">
-                    No trades found for the selected time period
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                  </div>
 
-      {/* Trade Insights */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Best Performing Asset */}
-        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
-          <h2 className="mb-4 text-lg font-semibold text-white">Best Performing Asset</h2>
-          <div className="space-y-4">
-            <div className="cursor-pointer rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 group-hover:scale-110">
-                  <span className="text-lg font-bold text-[#fc4f02]">BTC</span>
+                  {/* Middle Column - Trade Details */}
+                  <div className="space-y-4">
+                    <div className="group/details cursor-pointer space-y-2 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-3 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Entry</span>
+                        <span className="text-white">{trade.entryPrice}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Stop-Loss</span>
+                        <span className="text-white">{trade.stopLossPrice}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">Take Profit 1</span>
+                        <span className="text-white">{trade.takeProfit1}</span>
+                      </div>
+                      <div className="text-xs text-slate-500">{trade.target}</div>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Insights & Actions */}
+                  <div className="space-y-4">
+                    {/* Insights */}
+                    <div className="space-y-2">
+                      {trade.insights.map((insight, idx) => (
+                        <div key={idx} className="flex items-start gap-2">
+                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-400" />
+                          <p className="text-xs text-slate-300">{insight}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
+                        Approve Trade
+                      </button>
+                      <button className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white">
+                        View Details
+                      </button>
+                    </div>
+
+                    {/* Performance Metrics */}
+                    <div className="flex items-center gap-4 pt-2 text-xs">
+                      <div>
+                        <span className="text-slate-400">Profit: </span>
+                        <span className="font-medium text-green-400">{trade.profit}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Volume: </span>
+                        <span className="font-medium text-white">{trade.volume}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400">Win Rate: </span>
+                        <span className="font-medium text-green-400">{trade.winRate}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-semibold text-white">Bitcoin</p>
-                  <p className="text-xs text-slate-400">BTC/USDT</p>
-                </div>
               </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-green-400">+5.83%</p>
-                <p className="text-xs text-slate-400">24 trades</p>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Total Profit</span>
-                <span className="font-medium text-white">+$2,470</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Win Rate</span>
-                <span className="font-medium text-green-400">92%</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-400">Avg. Hold Time</span>
-                <span className="font-medium text-white">4.2 hours</span>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
-
-        {/* Trade Distribution */}
-        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
-          <h2 className="mb-4 text-lg font-semibold text-white">Trade Distribution</h2>
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">Long Positions</span>
-                <span className="text-sm font-medium text-white">78%</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
-                <div className="h-full w-[78%] bg-gradient-to-r from-green-500 to-emerald-500" />
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-400">Short Positions</span>
-                <span className="text-sm font-medium text-white">22%</span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700">
-                <div className="h-full w-[22%] bg-gradient-to-r from-red-500 to-rose-500" />
-              </div>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 group-hover:border-[#fc4f02]/30">
-              <div>
-                <p className="text-xs text-slate-400">Total Long</p>
-                <p className="text-lg font-bold text-green-400">76</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Total Short</p>
-                <p className="text-lg font-bold text-red-400">22</p>
-              </div>
-            </div>
+        ) : (
+          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-8 text-center backdrop-blur shadow-xl shadow-blue-900/10">
+            <p className="text-sm text-slate-400">No trades found for the selected time period</p>
           </div>
-        </div>
-      </div>
-
-      {/* Recent Top Trades */}
-      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Recent Top Trades</h2>
-          <button className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors">
-            View All
-          </button>
-        </div>
-        <div className="space-y-3">
-          {filteredAndSortedTrades.slice(0, 4).map((trade) => (
-            <div
-              key={trade.id}
-              className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]"
-            >
-              <div className="flex items-center gap-4">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-lg ${
-                    trade.type === "LONG" ? "bg-green-500/20" : "bg-red-500/20"
-                  }`}
-                >
-                  {trade.type === "LONG" ? (
-                    <svg className="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
-                    </svg>
-                  )}
-                </div>
-                <div>
-                  <p className="font-medium text-white">{trade.pair}</p>
-                  <p className="text-xs text-slate-400">{trade.time}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`text-sm font-semibold ${trade.positive ? "text-green-400" : "text-red-400"}`}>
-                  {trade.profit}
-                </p>
-                <p className="text-xs text-slate-400">{trade.profitAmount}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        )}
       </div>
     </div>
   );
 }
-
