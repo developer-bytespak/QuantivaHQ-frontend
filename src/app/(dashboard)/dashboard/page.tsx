@@ -12,7 +12,7 @@ export default function DashboardPage() {
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Portfolio Snapshot */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
             <h2 className="mb-4 text-lg font-semibold text-white">Portfolio Snapshot</h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
@@ -35,7 +35,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Action Center</h2>
               <button className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors">
@@ -44,7 +44,7 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4">
               {/* Activity Item 1 */}
-              <div className="flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
                   <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -58,7 +58,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Activity Item 2 */}
-              <div className="flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/20">
                   <svg className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -72,7 +72,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Activity Item 3 */}
-              <div className="flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
                   <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -87,7 +87,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Holdings & Market */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20">
             <div className="border-b border-[--color-border] p-6 pb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
@@ -128,37 +128,41 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
-                  <tr>
+                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors">
                     <td className="py-3 text-sm font-medium text-white">BTC</td>
                     <td className="py-3 text-sm text-slate-300">2.20 ETH</td>
                     <td className="py-3 text-sm text-slate-300">$5,114.50</td>
                     <td className="py-3 text-sm text-slate-300">$2,890</td>
                     <td className="py-3 text-sm font-medium text-green-400">+0.94%</td>
                     <td className="py-3 text-sm text-slate-400">244</td>
+                    <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300] opacity-0 transition-opacity duration-300 group-hover/row:opacity-100" />
                   </tr>
-                  <tr>
+                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors">
                     <td className="py-3 text-sm font-medium text-white">ETH</td>
                     <td className="py-3 text-sm text-slate-300">$2,1114</td>
                     <td className="py-3 text-sm text-slate-300">$2,045</td>
                     <td className="py-3 text-sm text-slate-300">12.045</td>
                     <td className="py-3 text-sm font-medium text-red-400">-1.37%</td>
                     <td className="py-3 text-sm text-slate-400">4,144</td>
+                    <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300] opacity-0 transition-opacity duration-300 group-hover/row:opacity-100" />
                   </tr>
-                  <tr>
+                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors">
                     <td className="py-3 text-sm font-medium text-white">SOL</td>
                     <td className="py-3 text-sm text-slate-300">$2,114</td>
                     <td className="py-3 text-sm text-slate-300">$1,114</td>
                     <td className="py-3 text-sm text-slate-300">$343</td>
                     <td className="py-3 text-sm font-medium text-red-400">-1.13%</td>
                     <td className="py-3 text-sm text-slate-400">-</td>
+                    <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300] opacity-0 transition-opacity duration-300 group-hover/row:opacity-100" />
                   </tr>
-                  <tr>
+                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors">
                     <td className="py-3 text-sm font-medium text-white">XRP</td>
                     <td className="py-3 text-sm text-slate-300">5.485</td>
                     <td className="py-3 text-sm text-slate-300">$1,094</td>
                     <td className="py-3 text-sm text-slate-300">$2,048</td>
                     <td className="py-3 text-sm font-medium text-red-400">-1.3%</td>
                     <td className="py-3 text-sm text-slate-400">-</td>
+                    <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300] opacity-0 transition-opacity duration-300 group-hover/row:opacity-100" />
                   </tr>
                 </tbody>
               </table>
@@ -169,7 +173,7 @@ export default function DashboardPage() {
         {/* Right Column - Trade & News */}
         <div className="space-y-6">
           {/* Trade Section */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
             <h2 className="mb-4 text-lg font-semibold text-white">Trade</h2>
             
             {/* Top Trade Opportunity */}
@@ -207,7 +211,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Trade Details */}
-              <div className="space-y-2 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-3">
+              <div className="group/details cursor-pointer space-y-2 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-3 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400">Entry</span>
                   <span className="text-white">$2,120</span>
@@ -252,7 +256,7 @@ export default function DashboardPage() {
           </div>
 
           {/* News Section */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20">

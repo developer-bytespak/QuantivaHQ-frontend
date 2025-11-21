@@ -128,7 +128,7 @@ export default function ProfilePage() {
       )}
 
       {/* Profile Header Card */}
-      <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-2xl font-bold text-white shadow-lg shadow-[#fc4f02]/30">
             {userInitial}
@@ -223,11 +223,11 @@ export default function ProfilePage() {
       </div>
 
       {/* Trading Statistics */}
-      <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
         <h2 className="mb-4 text-lg font-semibold text-white">Trading Statistics</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tradingStats.map((stat, index) => (
-            <div key={index} className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div key={index} className="cursor-pointer rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.02]">
               <p className="mb-1 text-xs text-slate-400">{stat.label}</p>
               <p className="mb-2 text-2xl font-bold text-white">{stat.value}</p>
               <div className="flex items-center gap-1">
@@ -244,7 +244,7 @@ export default function ProfilePage() {
       {/* Account Information & Settings Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Account Information */}
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
           <h2 className="mb-4 text-lg font-semibold text-white">Account Information</h2>
           <div className="space-y-4">
             {accountInfo.map((info, index) => (
@@ -271,7 +271,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Connected Exchanges */}
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Connected Exchanges</h2>
             <button className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors">
@@ -280,7 +280,7 @@ export default function ProfilePage() {
           </div>
           <div className="space-y-3">
             {selectedExchange ? (
-              <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
                     <span className="text-lg font-bold text-[#fc4f02]">
@@ -311,10 +311,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Security Settings */}
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
           <h2 className="mb-4 text-lg font-semibold text-white">Security</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
               <div>
                 <p className="font-medium text-white">Password</p>
                 <p className="text-xs text-slate-400">Last changed 30 days ago</p>
@@ -323,7 +323,7 @@ export default function ProfilePage() {
                 Change
               </button>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
               <div>
                 <p className="font-medium text-white">Two-Factor Authentication</p>
                 <p className="text-xs text-slate-400">Add an extra layer of security</p>
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                 Enable
               </button>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
               <div>
                 <p className="font-medium text-white">API Keys</p>
                 <p className="text-xs text-slate-400">Manage your exchange API keys</p>
@@ -345,10 +345,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Trading Preferences */}
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
           <h2 className="mb-4 text-lg font-semibold text-white">Trading Preferences</h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
               <div>
                 <p className="font-medium text-white">Risk Level</p>
                 <p className="text-xs text-slate-400">Current: Medium</p>
@@ -357,7 +357,7 @@ export default function ProfilePage() {
                 Adjust
               </button>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
               <div>
                 <p className="font-medium text-white">Auto-Trading</p>
                 <p className="text-xs text-slate-400">AI-powered automated trading</p>
@@ -367,7 +367,7 @@ export default function ProfilePage() {
                 <div className="peer h-6 w-11 rounded-full bg-slate-700 after:absolute after:left-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-slate-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-gradient-to-r peer-checked:from-[#fc4f02] peer-checked:to-[#fda300] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#fc4f02]/20"></div>
               </label>
             </div>
-            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
               <div>
                 <p className="font-medium text-white">Email Notifications</p>
                 <p className="text-xs text-slate-400">Trade alerts and updates</p>
@@ -382,7 +382,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Recent Activity */}
-      <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
           <button className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors">
@@ -396,7 +396,7 @@ export default function ProfilePage() {
             { action: "Password changed", time: "30 days ago", icon: "lock", bgColor: "bg-slate-500/20", iconColor: "text-slate-400" },
             { action: "Profile updated", time: "45 days ago", icon: "user", bgColor: "bg-slate-500/20", iconColor: "text-slate-400" },
           ].map((activity, index) => (
-            <div key={index} className="flex items-center gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div key={index} className="cursor-pointer flex items-center gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
               <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${activity.bgColor}`}>
                 {activity.icon === "check" && (
                   <svg className={`h-4 w-4 ${activity.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
