@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./logo";
@@ -77,10 +77,8 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
       className={`group/dashboard relative flex h-screen flex-col border-r border-[--color-border] bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
     >
       {/* Header */}
-      <div className="border-b border-[--color-border] bg-[--color-surface-alt]/50 px-4 py-5">
-        <div className="flex items-center justify-center">
-          <Logo collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
-        </div>
+      <div className="flex h-24 items-center justify-center bg-[--color-surface-alt]/50 px-8">
+        <Logo collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
       </div>
 
       {/* Navigation */}
@@ -134,49 +132,6 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
         ))}
       </nav>
 
-      {/* Footer - User Profile Section */}
-      <UserProfileSection collapsed={collapsed} />
     </aside>
-  );
-}
-
-// Separate component for user profile to handle client-side localStorage
-function UserProfileSection({ collapsed }: { collapsed: boolean }) {
-  const [userName, setUserName] = useState<string>("User");
-  const [userEmail, setUserEmail] = useState<string>("user@example.com");
-  const [userInitial, setUserInitial] = useState<string>("U");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const name = localStorage.getItem("quantivahq_user_name") || "User";
-      const email = localStorage.getItem("quantivahq_user_email") || "user@example.com";
-      setUserName(name);
-      setUserEmail(email);
-      setUserInitial(name.charAt(0).toUpperCase());
-    }
-  }, []);
-
-  return (
-    <div className="border-t border-[--color-border] bg-[--color-surface-alt]/50 px-4 py-4">
-      {!collapsed ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 rounded-lg border border-[--color-border] bg-[--color-surface] p-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
-              {userInitial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{userName}</p>
-              <p className="truncate text-xs text-slate-400">{userEmail}</p>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="flex justify-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
-            {userInitial}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }

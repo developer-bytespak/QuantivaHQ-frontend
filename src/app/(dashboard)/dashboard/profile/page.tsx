@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 export default function ProfilePage() {
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
   const [userInitial, setUserInitial] = useState<string>("U");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [personalInfo, setPersonalInfo] = useState<any>(null);
   const [selectedExchange, setSelectedExchange] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(false);
@@ -13,6 +15,14 @@ export default function ProfilePage() {
   const [editEmail, setEditEmail] = useState<string>("");
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [showImageOptions, setShowImageOptions] = useState<boolean>(false);
+  const [showCameraPreview, setShowCameraPreview] = useState<boolean>(false);
+  const [showImageOverlay, setShowImageOverlay] = useState<boolean>(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const imageButtonRef = useRef<HTMLDivElement>(null);
+  const imageMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -20,6 +30,7 @@ export default function ProfilePage() {
       const email = localStorage.getItem("quantivahq_user_email") || "user@example.com";
       const exchange = localStorage.getItem("quantivahq_selected_exchange") || "";
       const personalInfoStr = localStorage.getItem("quantivahq_personal_info");
+      const savedImage = localStorage.getItem("quantivahq_profile_image");
       
       setUserName(name);
       setUserEmail(email);
@@ -27,6 +38,9 @@ export default function ProfilePage() {
       setEditEmail(email);
       setUserInitial(name.charAt(0).toUpperCase());
       setSelectedExchange(exchange);
+      if (savedImage) {
+        setProfileImage(savedImage);
+      }
       
       if (personalInfoStr) {
         try {
@@ -37,6 +51,51 @@ export default function ProfilePage() {
       }
     }
   }, []);
+
+  // Setup video stream for camera preview
+  useEffect(() => {
+    if (showCameraPreview && videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play();
+    }
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [showCameraPreview, stream]);
+
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [stream]);
+
+  // Close image options when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        imageButtonRef.current &&
+        !imageButtonRef.current.contains(event.target as Node) &&
+        imageMenuRef.current &&
+        !imageMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowImageOptions(false);
+      }
+    };
+
+    if (showImageOptions) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showImageOptions]);
 
   const handleEdit = () => {
     setEditName(userName);
@@ -70,6 +129,11 @@ export default function ProfilePage() {
       setUserEmail(editEmail.trim());
       setUserInitial(editName.trim().charAt(0).toUpperCase());
       
+      // Dispatch custom event to update top bar
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("profileImageUpdated"));
+      }
+      
       setIsEditing(false);
       setIsSaving(false);
       setSaveSuccess(true);
@@ -79,6 +143,75 @@ export default function ProfilePage() {
         setSaveSuccess(false);
       }, 3000);
     }, 500);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setProfileImage(base64String);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("quantivahq_profile_image", base64String);
+          // Dispatch custom event to update top bar
+          window.dispatchEvent(new Event("profileImageUpdated"));
+        }
+        setShowImageOptions(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCaptureImage = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "user" } 
+      });
+      setStream(mediaStream);
+      setShowCameraPreview(true);
+      setShowImageOptions(false);
+    } catch (error) {
+      console.error("Error accessing camera:", error);
+      alert("Unable to access camera. Please check your permissions.");
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        canvas.width = videoRef.current.videoWidth;
+        canvas.height = videoRef.current.videoHeight;
+        ctx.drawImage(videoRef.current, 0, 0);
+        const imageData = canvas.toDataURL("image/png");
+        setProfileImage(imageData);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("quantivahq_profile_image", imageData);
+          // Dispatch custom event to update top bar
+          window.dispatchEvent(new Event("profileImageUpdated"));
+        }
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+        setStream(null);
+        setShowCameraPreview(false);
+      }
+    }
+  };
+
+  const cancelCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    setStream(null);
+    setShowCameraPreview(false);
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowImageOptions(!showImageOptions);
   };
 
   const tradingStats = [
@@ -99,8 +232,7 @@ export default function ProfilePage() {
     <div className="space-y-6 pb-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Profile Settings</h1>
-        <p className="mt-1 text-sm text-slate-400">Manage your account information and trading preferences</p>
+        <p className="text-sm text-slate-400">Manage your account information and trading preferences</p>
       </div>
 
       {/* Success Message */}
@@ -130,8 +262,50 @@ export default function ProfilePage() {
       {/* Profile Header Card */}
       <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-2xl font-bold text-white shadow-lg shadow-[#fc4f02]/30">
-            {userInitial}
+          <div className="relative">
+            <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-2xl font-bold text-white shadow-lg shadow-[#fc4f02]/30">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt={userName}
+                  className="h-full w-full object-cover rounded-full"
+                />
+              ) : (
+                userInitial
+              )}
+            </div>
+            {/* Camera Icon Overlay */}
+            <div
+              ref={imageButtonRef}
+              onClick={handleImageClick}
+              className="absolute bottom-0 right-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] shadow-lg shadow-[#fc4f02]/50 transition-all duration-200 hover:scale-110 hover:shadow-xl hover:shadow-[#fc4f02]/70"
+            >
+              <svg
+                className="h-4 w-4 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </div>
           <div className="flex-1 text-center sm:text-left">
             {isEditing ? (
@@ -142,6 +316,12 @@ export default function ProfilePage() {
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSave();
+                      }
+                    }}
                     className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
                     placeholder="Enter your name"
                   />
@@ -152,6 +332,12 @@ export default function ProfilePage() {
                     type="email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSave();
+                      }
+                    }}
                     className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
                     placeholder="Enter your email"
                   />
@@ -427,6 +613,201 @@ export default function ProfilePage() {
           ))}
         </div>
       </div>
+
+      {/* Image Options Menu */}
+      {showImageOptions && typeof window !== "undefined" && imageButtonRef.current && createPortal(
+        <div
+          ref={imageMenuRef}
+          className="fixed z-[100] w-56 rounded-xl border border-[--color-border] bg-white p-2 shadow-2xl shadow-black/50"
+          style={{
+            top: `${imageButtonRef.current.getBoundingClientRect().bottom + 8}px`,
+            left: `${imageButtonRef.current.getBoundingClientRect().left}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="space-y-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+            >
+              <svg className="h-5 w-5 text-slate-600 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Upload from Media</span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCaptureImage();
+              }}
+              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+            >
+              <svg className="h-5 w-5 text-slate-600 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Capture Photo</span>
+            </button>
+            {profileImage && (
+              <>
+                <div className="my-2 border-t border-slate-200" />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowImageOverlay(true);
+                    setShowImageOptions(false);
+                  }}
+                  className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+                >
+                  <svg className="h-5 w-5 text-slate-600 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">View Photo</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setProfileImage(null);
+                    if (typeof window !== "undefined") {
+                      localStorage.removeItem("quantivahq_profile_image");
+                      // Dispatch custom event to update top bar
+                      window.dispatchEvent(new Event("profileImageUpdated"));
+                    }
+                    setShowImageOptions(false);
+                  }}
+                  className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:border hover:border-red-200 hover:shadow-sm"
+                >
+                  <svg className="h-5 w-5 transition-colors group-hover:text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <span className="transition-colors group-hover:text-red-700 group-hover:font-semibold">Remove Photo</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Camera Preview Modal */}
+      {showCameraPreview && typeof window !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={cancelCamera}
+        >
+          <div
+            className="relative mx-4 w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Capture Photo</h3>
+              <button
+                onClick={cancelCamera}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4 overflow-hidden rounded-xl bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="h-auto w-full"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={cancelCamera}
+                className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={capturePhoto}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+              >
+                Capture
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Image Overlay Modal */}
+      {showImageOverlay && profileImage && typeof window !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+          onClick={() => setShowImageOverlay(false)}
+        >
+          <div
+            className="relative mx-4 w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-4 shadow-2xl shadow-black/50 backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-base font-semibold text-white">Profile Photo</h3>
+              <button
+                onClick={() => setShowImageOverlay(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-3 overflow-hidden rounded-xl bg-black">
+              <img
+                src={profileImage}
+                alt={userName}
+                className="h-auto w-full max-h-96 object-contain"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowImageOverlay(false)}
+                className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

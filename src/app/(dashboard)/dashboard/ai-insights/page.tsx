@@ -89,8 +89,7 @@ export default function AIInsightsPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">AI Insights</h1>
-          <p className="mt-1 text-sm text-slate-400">AI-powered market news and analysis</p>
+          <p className="text-sm text-slate-400">AI-powered market news and analysis</p>
         </div>
         
         {/* Asset Filter */}
