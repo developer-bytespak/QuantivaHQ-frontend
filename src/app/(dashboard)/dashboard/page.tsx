@@ -108,6 +108,13 @@ const allActivities: Activity[] = [
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
   const [showAllActivities, setShowAllActivities] = useState(false);
+  const [showNewsOverlay, setShowNewsOverlay] = useState(false);
+
+  const newsData = {
+    title: "Bitcoin Momentum Building",
+    description: "Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500",
+    timestamp: "2 min ago",
+  };
 
   return (
     <div className="space-y-6 pb-8">
@@ -359,7 +366,10 @@ export default function DashboardPage() {
           </div>
 
           {/* AI Insights Section */}
-          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
+          <div
+            onClick={() => setShowNewsOverlay(true)}
+            className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]"
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">AI Insights</h2>
               <div className="flex items-center gap-2">
@@ -373,13 +383,10 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <p className="mb-2 text-xs font-medium text-slate-400">Sentiment:</p>
-                <span className="inline-block rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-400">
-                  Bullish
-                </span>
-              </div>
+              {/* News Heading */}
+              <h3 className="text-base font-semibold text-white">Bitcoin Momentum Building</h3>
 
+              {/* Description */}
               <div className="space-y-2 text-sm text-slate-300">
                 <p>
                   Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500
@@ -389,6 +396,55 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* News Overlay */}
+      {showNewsOverlay && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowNewsOverlay(false)}
+        >
+          <div
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">{newsData.title}</h2>
+              <button
+                onClick={() => setShowNewsOverlay(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Timestamp */}
+            <div className="mb-4 flex items-center gap-2">
+              <span className="text-xs text-slate-400">{newsData.timestamp}</span>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-4">
+              <div className="space-y-2 text-sm leading-relaxed text-slate-300">
+                <p>{newsData.description}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* All Activities Overlay */}
       {showAllActivities && (
