@@ -27,7 +27,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} bg-[--color-background] text-[--color-foreground]`}
       >
-        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(29,78,216,0.18),_transparent_55%),_radial-gradient(circle_at_bottom,_rgba(14,116,144,0.14),_transparent_50%)]">
+        <div className="min-h-screen bg-black">
           {children}
         </div>
       </body>

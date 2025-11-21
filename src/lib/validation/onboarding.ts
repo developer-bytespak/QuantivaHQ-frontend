@@ -1,17 +1,16 @@
 import { z } from "zod";
 
 export const personalInfoSchema = z.object({
-  fullName: z
+  fullLegalName: z
     .string()
-    .min(2, "Full name is required")
-    .max(120, "Full name is too long"),
+    .min(2, "Full legal name is required")
+    .max(120, "Full legal name is too long"),
   dateOfBirth: z
     .string()
     .refine((value) => Boolean(Date.parse(value)), "Date of birth must be valid"),
-  country: z.string().min(2, "Country is required"),
-  regionConsent: z.literal(true, {
-    errorMap: () => ({ message: "You must acknowledge regional compliance" }),
-  }),
+  gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional(),
+  nationality: z.string().min(2, "Nationality is required"),
+  countryOfResidence: z.string().min(2, "Country of residence is required"),
 });
 
 export const experienceSchema = z.object({

@@ -1,16 +1,243 @@
-import { ScreenScaffold } from "@/components/common/screen-scaffold";
+"use client";
 
-export default function VerificationStatusScreen() {
+import { useRouter } from "next/navigation";
+import { QuantivaLogo } from "@/components/common/quantiva-logo";
+import { BackButton } from "@/components/common/back-button";
+import { useState, useEffect } from "react";
+
+type VerificationStatus = "pending" | "verified" | "rejected";
+
+export default function VerificationStatusPage() {
+  const router = useRouter();
+  const [status, setStatus] = useState<VerificationStatus>("pending");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Check if verification data exists
+    const selfieData = localStorage.getItem("quantivahq_selfie");
+    const proofData = localStorage.getItem("quantivahq_proof_upload");
+    
+    if (!selfieData || !proofData) {
+      // If data is missing, redirect back to proof upload
+      router.push("/onboarding/proof-upload");
+      return;
+    }
+
+    // Simulate checking verification status
+    // In production, this would check with the backend
+    const checkStatus = async () => {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // For demo purposes, set to pending initially
+      // In production, this would come from the backend
+      const savedStatus = localStorage.getItem("quantivahq_verification_status") as VerificationStatus | null;
+      if (savedStatus && ["pending", "verified", "rejected"].includes(savedStatus)) {
+        setStatus(savedStatus);
+      } else {
+        setStatus("pending");
+        localStorage.setItem("quantivahq_verification_status", "pending");
+      }
+    };
+
+    checkStatus();
+  }, [router]);
+
+  const handleRetry = () => {
+    // Clear verification data and redirect to proof upload
+    localStorage.removeItem("quantivahq_verification_status");
+    localStorage.removeItem("quantivahq_proof_upload");
+    localStorage.removeItem("quantivahq_selfie");
+    router.push("/onboarding/proof-upload");
+  };
+
+  const getStatusConfig = () => {
+    switch (status) {
+      case "verified":
+        return {
+          badge: "Verified",
+          badgeColor: "bg-gradient-to-r from-[#10b981] to-[#34d399]",
+          badgeText: "text-white",
+          icon: (
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          ),
+          message: "Your identity has been successfully verified!",
+          description: "You can now proceed to set up your trading account.",
+          progress: 100,
+        };
+      case "rejected":
+        return {
+          badge: "Rejected",
+          badgeColor: "bg-gradient-to-r from-red-500 to-red-600",
+          badgeText: "text-white",
+          icon: (
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ),
+          message: "Verification was not successful",
+          description: "Please review the requirements and try again with clearer documents.",
+          progress: 0,
+        };
+      default: // pending
+        return {
+          badge: "Pending",
+          badgeColor: "bg-gradient-to-r from-yellow-500 to-yellow-600",
+          badgeText: "text-white",
+          icon: (
+            <svg className="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          ),
+          message: "Your verification is under review",
+          description: "We're processing your documents. This usually takes a few minutes.",
+          progress: 50,
+        };
+    }
+  };
+
+  const statusConfig = getStatusConfig();
+
   return (
-    <ScreenScaffold
-      title="Verification Status"
-      description="Track ongoing KYC checks and provide real-time progress updates."
-      highlights={[
-        "Timeline showing submission, review, approval states",
-        "Estimated verification time and support contact",
-        "Compliance team notes placeholder",
-        "Conditional CTA to continue once approved",
-      ]}
-    />
+    <div className="relative flex h-full w-full overflow-hidden">
+      <BackButton />
+      {/* Background matching Figma design */}
+      <div className="absolute inset-0 bg-black">
+        {/* Subtle gradient orbs for depth */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
+        <div className="w-full max-w-2xl">
+          {/* Header Section */}
+          <div className="mb-6 text-center">
+            <div className="mb-3 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14" />
+            </div>
+            <h1 className="mb-2 text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+              Verification <span className="text-white">Status</span>
+            </h1>
+            <p className="mx-auto max-w-xl text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
+              Track your KYC verification progress and status
+            </p>
+          </div>
+
+          {/* Status Card */}
+          <div className="animate-text-enter" style={{ animationDelay: "0.6s" }}>
+            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 sm:p-8 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              
+              <div className="relative z-10">
+                {/* Status Badge */}
+                <div className="mb-6 flex justify-center">
+                  <div className={`inline-flex items-center gap-2 rounded-full ${statusConfig.badgeColor} ${statusConfig.badgeText} px-4 py-2 shadow-lg`}>
+                    {statusConfig.icon}
+                    <span className="text-sm font-semibold">{statusConfig.badge}</span>
+                  </div>
+                </div>
+
+                {/* Status Message */}
+                <div className="mb-6 text-center">
+                  <h2 className="mb-2 text-lg sm:text-xl font-semibold text-white">
+                    {statusConfig.message}
+                  </h2>
+                  <p className="text-sm text-slate-400">
+                    {statusConfig.description}
+                  </p>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between text-xs mb-2">
+                    <span className="text-slate-400 font-medium">Verification Progress</span>
+                    <span className="font-bold text-white">{statusConfig.progress}%</span>
+                  </div>
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-500 ease-out shadow-lg shadow-[#fc4f02]/50 rounded-full"
+                      style={{ width: `${statusConfig.progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Status Steps */}
+                <div className="mb-6">
+                  <div className="relative flex items-center justify-between">
+                    {/* Progress line */}
+                    <div className="absolute top-5 left-0 right-0 h-0.5 bg-[--color-border] -z-10">
+                      <div 
+                        className={`h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-500 ${
+                          status === "verified" ? "w-full" : status === "pending" ? "w-0" : "w-1/2"
+                        }`}
+                      />
+                    </div>
+                    
+                    {["Pending", "Reviewing", "Verified"].map((step, index) => {
+                      const isActive = status === "verified" ? true :
+                                       status === "rejected" ? index === 0 :
+                                       index === 0;
+                      const isCompleted = status === "verified" && index < 3;
+                      
+                      return (
+                        <div key={step} className="flex flex-col items-center flex-1 relative z-10">
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                            isActive || isCompleted
+                              ? "border-[#fc4f02] bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20" 
+                              : "border-[--color-border] bg-[--color-surface]"
+                          }`}>
+                            {isCompleted ? (
+                              <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            ) : (
+                              <div className={`h-2 w-2 rounded-full ${isActive ? "bg-[#fc4f02]" : "bg-slate-500"}`} />
+                            )}
+                          </div>
+                          <span className={`mt-2 text-xs font-medium ${isActive || isCompleted ? "text-white" : "text-slate-500"}`}>
+                            {step}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {status === "rejected" && (
+                    <button
+                      onClick={handleRetry}
+                      className="flex-1 rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-6 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+                    >
+                      Retry Upload
+                    </button>
+                  )}
+                  {status === "verified" && (
+                    <button
+                      onClick={() => router.push("/onboarding/experience")}
+                      className="group relative overflow-hidden flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        Continue
+                        <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </span>
+                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
+
