@@ -94,7 +94,15 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
             )}
             <div className="space-y-1">
               {section.items.map((item) => {
-                const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                // More precise active state detection
+                // For /dashboard, only match exactly
+                // For other paths, match exactly or if pathname starts with href + "/"
+                let isActive = false;
+                if (item.href === "/dashboard") {
+                  isActive = pathname === "/dashboard";
+                } else {
+                  isActive = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
+                }
 
                 return (
                   <Link

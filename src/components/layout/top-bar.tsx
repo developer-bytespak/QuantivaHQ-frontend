@@ -3,42 +3,53 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const crumbs: Record<string, string[]> = {
-  "/dashboard": ["Dashboard"],
-  "/dashboard/screener": ["Dashboard", "Market Screener"],
-  "/ai/strategy-mode": ["AI Trading", "Strategy Mode"],
-  "/sentiment/news": ["News & Sentiment", "Live News"],
-  "/charts/advanced": ["Charts", "Advanced"],
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/dashboard/top-trades": "Top Trades",
+  "/dashboard/ai-insights": "AI Insights",
+  "/dashboard/vc-pool": "VC Pool",
+  "/dashboard/profile": "Profile",
+  "/dashboard/screener": "Market Screener",
+  "/ai/strategy-mode": "Strategy Mode",
+  "/sentiment/news": "Live News",
+  "/charts/advanced": "Advanced Charts",
 };
 
-function getBreadcrumb(pathname: string | null) {
-  if (!pathname) return ["Home"];
-  const entry = Object.entries(crumbs).find(([key]) => pathname.startsWith(key));
-  if (!entry) {
-    const segments = pathname
-      .split("/")
-      .filter(Boolean)
-      .map((segment) => segment.replace(/-/g, " "));
-    return ["Home", ...segments];
+function getPageTitle(pathname: string | null): string {
+  if (!pathname) return "Dashboard";
+  
+  // Check for exact match first
+  if (pageTitles[pathname]) {
+    return pageTitles[pathname];
   }
-  return ["Home", ...entry[1]];
+  
+  // Check for paths that start with known paths
+  const matchedPath = Object.keys(pageTitles)
+    .sort((a, b) => b.length - a.length) // Sort by length descending to match longest first
+    .find((path) => pathname.startsWith(path));
+  
+  if (matchedPath) {
+    return pageTitles[matchedPath];
+  }
+  
+  // Fallback: format the pathname
+  const segments = pathname
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => segment.replace(/-/g, " "));
+  return segments.length > 0 
+    ? segments[segments.length - 1].replace(/\b\w/g, (l) => l.toUpperCase())
+    : "Dashboard";
 }
 
 export function TopBar() {
   const pathname = usePathname();
-  const trail = getBreadcrumb(pathname);
+  const pageTitle = getPageTitle(pathname);
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-[--color-border] bg-[--color-surface-alt]/80 px-6 backdrop-blur">
-      <div className="flex items-center gap-3 text-sm text-slate-400">
-        {trail.map((crumb, index) => (
-          <span key={crumb} className="flex items-center gap-3 uppercase tracking-[0.35em]">
-            {index > 0 && <span className="text-slate-600">/</span>}
-            <span className={index === trail.length - 1 ? "text-slate-200" : "text-slate-500"}>
-              {crumb}
-            </span>
-          </span>
-        ))}
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-white">{pageTitle}</h1>
       </div>
       <div className="flex items-center gap-4 text-sm text-slate-300">
         <Link
