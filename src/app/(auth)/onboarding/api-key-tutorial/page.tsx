@@ -145,24 +145,40 @@ export default function ApiKeyTutorialPage() {
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
   const exchangeName = selectedExchange ? exchangeInfo[selectedExchange].name : "Binance";
 
-  const steps = [
+  const allSteps = [
     {
       number: 1,
       title: `Log in to ${exchangeName}`,
       description: `First, make sure you're logged into your ${exchangeName} account. If you don't have an account yet, you'll need to create one and complete the verification process first.`,
       action: (
-        <button
-          onClick={handleOpenExchange}
-          className="group relative overflow-hidden rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#fc4f02]/40"
-        >
-          <span className="relative z-10 flex items-center justify-center gap-2">
-            Open {exchangeName}
-            <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </span>
-          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleOpenExchange}
+            className="group relative overflow-hidden rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#fc4f02]/40"
+          >
+            <span className="relative z-10 flex items-center justify-center gap-2">
+              Open {exchangeName}
+              <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </span>
+            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+          </button>
+
+          {selectedExchange === "ibkr" && (
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="group relative overflow-hidden rounded-lg border border-slate-600 bg-slate-800/50 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-slate-700/50 hover:scale-[1.02]"
+            >
+              <span className="relative z-10 flex items-center justify-center gap-2">
+                Demo
+                <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            </button>
+          )}
+        </div>
       ),
     },
     {
@@ -423,6 +439,8 @@ export default function ApiKeyTutorialPage() {
     },
   ];
 
+  const steps = selectedExchange === "ibkr" ? [allSteps[0]] : allSteps;
+
   const handleContinue = () => {
     // Navigate to API key entry page
     router.push("/onboarding/api-keys");
@@ -473,23 +491,27 @@ export default function ApiKeyTutorialPage() {
           </div>
 
           {/* Continue Button */}
-          <div className="flex justify-center">
-            <button
-              onClick={handleContinue}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                Next: Enter API Keys
-                <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
-              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-            </button>
-          </div>
-          <p className="mt-3 text-center text-sm text-slate-500">
-            Make sure you've copied both keys before continuing
-          </p>
+          {selectedExchange !== "ibkr" && (
+            <div className="flex justify-center">
+              <button
+                onClick={handleContinue}
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  Next: Enter API Keys
+                  <svg className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </span>
+                <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+              </button>
+            </div>
+          )}
+          {selectedExchange !== "ibkr" && (
+            <p className="mt-3 text-center text-sm text-slate-500">
+              Make sure you've copied both keys before continuing
+            </p>
+          )}
         </div>
       </div >
     </div >
