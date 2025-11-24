@@ -113,6 +113,7 @@ export default function DashboardPage() {
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedNews, setSelectedNews] = useState<number>(0);
+  const [selectedTrade, setSelectedTrade] = useState<number>(0);
 
   const newsItems = [
     {
@@ -129,20 +130,50 @@ export default function DashboardPage() {
     },
   ];
 
-  const tradeData = {
-    pair: "ETH / USDT",
-    type: "BUY",
-    confidence: "HIGH",
-    entry: "$2,120",
-    stopLoss: "$120",
-    takeProfit1: "$240",
-    additionalInfo: "20,045-",
-    reasons: [
-      "Bullish momentum on 1h and 4h charts",
-      "Sentiment improved 20% in last 3 hours",
-      "High liquidity reduces execution risk"
-    ]
-  };
+  const trades = [
+    {
+      id: 1,
+      pair: "ETH / USDT",
+      type: "BUY",
+      confidence: "HIGH",
+      entry: "$2,120",
+      stopLoss: "$120",
+      takeProfit1: "$240",
+      additionalInfo: "20,045-",
+      ext: "22,000",
+      entryShort: "1,020",
+      stopLossShort: "1.317 $",
+      progressMin: "$790",
+      progressMax: "$200",
+      progressPercent: 75,
+      reasons: [
+        "Bullish momentum on 1h and 4h charts",
+        "Sentiment improved 20% in last 3 hours",
+        "High liquidity reduces execution risk"
+      ]
+    },
+    {
+      id: 2,
+      pair: "BTC / USDT",
+      type: "SELL",
+      confidence: "MEDIUM",
+      entry: "$34,500",
+      stopLoss: "$35,200",
+      takeProfit1: "$33,800",
+      additionalInfo: "15,230-",
+      ext: "18,500",
+      entryShort: "34,500",
+      stopLossShort: "35,200 $",
+      progressMin: "$520",
+      progressMax: "$150",
+      progressPercent: 60,
+      reasons: [
+        "Resistance level at $35,000 showing strong rejection",
+        "Volume declining on upward moves",
+        "RSI showing bearish divergence on 4h timeframe"
+      ]
+    },
+  ];
 
   return (
     <div className="space-y-6 pb-8">
@@ -325,55 +356,72 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Trade Box */}
-            <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
-              {/* Top Trade Opportunity */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1 text-sm font-semibold text-white">
-                    BUY
-                  </span>
-                  <span className="text-sm font-medium text-white">ETH / USDT</span>
-                  <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-300">HIGH</span>
-                </div>
+            {/* Trade Cards */}
+            <div className="space-y-3">
+              {trades.map((trade, index) => (
+                <div key={trade.id} className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+                  {/* Top Trade Opportunity */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY"
+                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                        : "bg-gradient-to-r from-red-500 to-red-600"
+                        }`}>
+                        {trade.type}
+                      </span>
+                      <span className="text-sm font-medium text-white">{trade.pair}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
+                        }`}>{trade.confidence}</span>
+                    </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs text-slate-400">Ext. 22,000</p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-slate-400">Entry</span>
-                    <span className="font-medium text-white">1,020</span>
-                    <span className="text-slate-500">&gt;</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-slate-400">Stop Loss</span>
-                    <span className="font-medium text-white">1.317 $</span>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-400">Ext. {trade.ext}</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400">Entry</span>
+                        <span className="font-medium text-white">{trade.entryShort}</span>
+                        <span className="text-slate-500">&gt;</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400">Stop Loss</span>
+                        <span className="font-medium text-white">{trade.stopLossShort}</span>
+                      </div>
+                    </div>
 
-                {/* Progress Bar */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>$790</span>
-                    <span>$200</span>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                    <div className="h-full w-[75%] bg-gradient-to-r from-green-500 to-emerald-500" />
-                  </div>
-                </div>
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>{trade.progressMin}</span>
+                        <span>{trade.progressMax}</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                        <div
+                          className={`h-full bg-gradient-to-r ${trade.type === "BUY"
+                            ? "from-green-500 to-emerald-500"
+                            : "from-red-500 to-red-600"
+                            }`}
+                          style={{ width: `${trade.progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2 pt-2">
-                  <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
-                    Auto Trade
-                  </button>
-                  <button
-                    onClick={() => setShowTradeOverlay(true)}
-                    className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
-                  >
-                    View Trade
-                  </button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
+                        Auto Trade
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedTrade(index);
+                          setShowTradeOverlay(true);
+                        }}
+                        className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                      >
+                        View Trade
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -517,37 +565,40 @@ export default function DashboardPage() {
             <div className="space-y-6">
               {/* Pair and Type */}
               <div className="flex items-center gap-3">
-                <span className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-base font-semibold text-white">
-                  {tradeData.type}
+                <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${trades[selectedTrade].type === "BUY"
+                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                    : "bg-gradient-to-r from-red-500 to-red-600"
+                  }`}>
+                  {trades[selectedTrade].type}
                 </span>
-                <span className="text-lg font-medium text-white">{tradeData.pair}</span>
-                <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{tradeData.confidence}</span>
+                <span className="text-lg font-medium text-white">{trades[selectedTrade].pair}</span>
+                <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{trades[selectedTrade].confidence}</span>
               </div>
 
               {/* Trade Details */}
               <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Entry</span>
-                  <span className="text-base font-medium text-white">{tradeData.entry}</span>
+                  <span className="text-base font-medium text-white">{trades[selectedTrade].entry}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Stop-Loss</span>
-                  <span className="text-base font-medium text-white">{tradeData.stopLoss}</span>
+                  <span className="text-base font-medium text-white">{trades[selectedTrade].stopLoss}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Take Profit 1</span>
-                  <span className="text-base font-medium text-white">{tradeData.takeProfit1}</span>
+                  <span className="text-base font-medium text-white">{trades[selectedTrade].takeProfit1}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Additional Info</span>
-                  <span className="text-base font-medium text-slate-300">{tradeData.additionalInfo}</span>
+                  <span className="text-base font-medium text-slate-300">{trades[selectedTrade].additionalInfo}</span>
                 </div>
               </div>
 
               {/* Reasons */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-white">Reasons</h3>
-                {tradeData.reasons.map((reason, index) => (
+                {trades[selectedTrade].reasons.map((reason: string, index: number) => (
                   <div key={index} className="flex items-start gap-2">
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-400" />
                     <p className="text-sm text-slate-300">{reason}</p>
