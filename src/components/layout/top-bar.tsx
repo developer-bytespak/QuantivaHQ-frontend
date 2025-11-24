@@ -1,59 +1,229 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
-const crumbs: Record<string, string[]> = {
-  "/dashboard": ["Dashboard"],
-  "/dashboard/screener": ["Dashboard", "Market Screener"],
-  "/ai/strategy-mode": ["AI Trading", "Strategy Mode"],
-  "/sentiment/news": ["News & Sentiment", "Live News"],
-  "/charts/advanced": ["Charts", "Advanced"],
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/dashboard/top-trades": "Top Trades",
+  "/dashboard/ai-insights": "AI Insights",
+  "/dashboard/vc-pool": "VC Pool",
+  "/dashboard/profile": "Profile",
+  "/dashboard/screener": "Market Screener",
+  "/ai/strategy-mode": "Strategy Mode",
+  "/sentiment/news": "Live News",
+  "/charts/advanced": "Advanced Charts",
 };
 
-function getBreadcrumb(pathname: string | null) {
-  if (!pathname) return ["Home"];
-  const entry = Object.entries(crumbs).find(([key]) => pathname.startsWith(key));
-  if (!entry) {
-    const segments = pathname
-      .split("/")
-      .filter(Boolean)
-      .map((segment) => segment.replace(/-/g, " "));
-    return ["Home", ...segments];
+function getPageTitle(pathname: string | null): string {
+  if (!pathname) return "Dashboard";
+  
+  // Check for exact match first
+  if (pageTitles[pathname]) {
+    return pageTitles[pathname];
   }
-  return ["Home", ...entry[1]];
+  
+  // Check for paths that start with known paths
+  const matchedPath = Object.keys(pageTitles)
+    .sort((a, b) => b.length - a.length) // Sort by length descending to match longest first
+    .find((path) => pathname.startsWith(path));
+  
+  if (matchedPath) {
+    return pageTitles[matchedPath];
+  }
+  
+  // Fallback: format the pathname
+  const segments = pathname
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => segment.replace(/-/g, " "));
+  return segments.length > 0 
+    ? segments[segments.length - 1].replace(/\b\w/g, (l) => l.toUpperCase())
+    : "Dashboard";
+}
+
+// User Profile Component
+function UserProfileSection() {
+  const [userName, setUserName] = useState<string>("User");
+  const [userInitial, setUserInitial] = useState<string>("U");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  const loadProfileData = () => {
+    if (typeof window !== "undefined") {
+      const name = localStorage.getItem("quantivahq_user_name") || "User";
+      const savedImage = localStorage.getItem("quantivahq_profile_image");
+      setUserName(name);
+      setUserInitial(name.charAt(0).toUpperCase());
+      if (savedImage) {
+        setProfileImage(savedImage);
+      } else {
+        setProfileImage(null);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadProfileData();
+
+    // Listen for storage changes (when profile image is updated)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "quantivahq_profile_image" || e.key === "quantivahq_user_name") {
+        loadProfileData();
+      }
+    };
+
+    // Listen for custom event (for same-tab updates)
+    const handleProfileImageUpdate = () => {
+      loadProfileData();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("profileImageUpdated", handleProfileImageUpdate);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("profileImageUpdated", handleProfileImageUpdate);
+    };
+  }, []);
+
+  // Calculate dropdown position
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8, // 8px = mt-2
+        right: window.innerWidth - rect.right,
+      });
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [isOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("quantivahq_user_email");
+      localStorage.removeItem("quantivahq_user_name");
+      localStorage.removeItem("quantivahq_auth_method");
+      localStorage.removeItem("quantivahq_is_authenticated");
+      localStorage.removeItem("quantivahq_selected_exchange");
+      localStorage.removeItem("quantivahq_personal_info");
+      localStorage.removeItem("quantivahq_profile_image");
+      router.push("/onboarding/splash");
+    }
+  };
+
+
+  return (
+    <>
+      <div className="relative z-50">
+        <button
+          ref={buttonRef}
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-3 rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] cursor-pointer"
+        >
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
+          {profileImage ? (
+            <img
+              src={profileImage}
+              alt={userName}
+              className="h-full w-full object-cover rounded-full"
+            />
+          ) : (
+            userInitial
+          )}
+        </div>
+        <div className="flex items-center min-w-0">
+          <p className="truncate text-sm font-semibold text-white">{userName}</p>
+        </div>
+        <svg
+          className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      </div>
+
+      {/* Dropdown Menu - Rendered via Portal */}
+      {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[100] w-64 rounded-xl border border-[--color-border] bg-white p-2 shadow-2xl shadow-black/50"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            right: `${dropdownPosition.right}px`,
+          }}
+        >
+          <div className="space-y-1">
+            <Link
+              href="/dashboard/profile"
+              onClick={() => setIsOpen(false)}
+              className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+            >
+              <svg className="h-5 w-5 text-slate-600 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">View Profile</span>
+            </Link>
+            <div className="my-2 border-t border-slate-200" />
+            <button
+              onClick={handleLogout}
+              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:border hover:border-red-200 hover:shadow-sm"
+            >
+              <svg className="h-5 w-5 transition-colors group-hover:text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span className="transition-colors group-hover:text-red-700 group-hover:font-semibold">Logout</span>
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
 }
 
 export function TopBar() {
   const pathname = usePathname();
-  const trail = getBreadcrumb(pathname);
+  const pageTitle = getPageTitle(pathname);
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-[--color-border] bg-[--color-surface-alt]/80 px-6 backdrop-blur">
-      <div className="flex items-center gap-3 text-sm text-slate-400">
-        {trail.map((crumb, index) => (
-          <span key={crumb} className="flex items-center gap-3 uppercase tracking-[0.35em]">
-            {index > 0 && <span className="text-slate-600">/</span>}
-            <span className={index === trail.length - 1 ? "text-slate-200" : "text-slate-500"}>
-              {crumb}
-            </span>
-          </span>
-        ))}
+    <header className="sticky top-0 z-50 flex h-24 items-center justify-between gap-8 border-b border-[--color-border] bg-[--color-surface-alt]/80 px-8 backdrop-blur">
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-white">{pageTitle}</h1>
       </div>
-      <div className="flex items-center gap-4 text-sm text-slate-300">
-        <Link
-          href="/sentiment/news"
-          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 font-medium transition hover:border-[--color-accent] hover:text-[--color-accent]"
-        >
-          Pulse Feed
-        </Link>
-        <Link
-          href="/ai/strategy-mode"
-          className="rounded-lg bg-linear-to-r from-blue-500 via-sky-500 to-cyan-400 px-4 py-2 font-semibold text-slate-950 shadow-lg shadow-blue-900/40 transition hover:opacity-90"
-        >
-          Launch AI Trade
-        </Link>
-      </div>
+      <UserProfileSection />
     </header>
   );
 }

@@ -11,6 +11,7 @@ export type SidebarSection = {
     label: string;
     href: string;
     description?: string;
+    icon?: React.ReactNode;
   }>;
 };
 
@@ -18,45 +19,111 @@ interface DashboardSidebarProps {
   sections: SidebarSection[];
 }
 
+// Icon components for menu items
+const DashboardIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-5 w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+  </svg>
+);
+
+const TradesIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-5 w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+  </svg>
+);
+
+const AIInsightsIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-5 w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+  </svg>
+);
+
+const VCPoolIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-5 w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+  </svg>
+);
+
+const ProfileIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-5 w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+  </svg>
+);
+
+const getIcon = (label: string, isActive: boolean) => {
+  const iconProps = { isActive };
+  switch (label.toLowerCase()) {
+    case "dashboard":
+      return <DashboardIcon {...iconProps} />;
+    case "top trades":
+      return <TradesIcon {...iconProps} />;
+    case "ai insights":
+      return <AIInsightsIcon {...iconProps} />;
+    case "vc pool":
+      return <VCPoolIcon {...iconProps} />;
+    case "profile":
+      return <ProfileIcon {...iconProps} />;
+    default:
+      return null;
+  }
+};
+
 export function DashboardSidebar({ sections }: DashboardSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <aside
-      className={`group/dashboard relative flex h-full flex-col border-r border-[--color-border] bg-[--color-surface] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[92px]" : "w-[260px]"}`}
+      className={`group/dashboard relative flex h-screen flex-col border-r border-[--color-border] bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
     >
-      <div className="flex items-center justify-between px-5 pb-4 pt-6">
-        <Logo collapsed={collapsed} />
-        <button
-          type="button"
-          onClick={() => setCollapsed((prev) => !prev)}
-          className="rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-1 text-xs text-slate-300 transition hover:border-slate-500/40 hover:text-white"
-        >
-          {collapsed ? "Expand" : "Collapse"}
-        </button>
+      {/* Header */}
+      <div className="flex h-24 items-center justify-center bg-[--color-surface-alt]/50 px-8">
+        <Logo collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-4 pb-8">
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {sections.map((section) => (
-          <div key={section.title} className="space-y-3">
-            {!collapsed && (
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          <div key={section.title} className="space-y-1">
+            {!collapsed && section.title && (
+              <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 {section.title}
               </p>
             )}
-            <div className="space-y-2">
+            <div className="space-y-1">
               {section.items.map((item) => {
-                const isActive = pathname?.startsWith(item.href);
+                // More precise active state detection
+                // For /dashboard, only match exactly
+                // For other paths, match exactly or if pathname starts with href + "/"
+                let isActive = false;
+                if (item.href === "/dashboard") {
+                  isActive = pathname === "/dashboard";
+                } else {
+                  isActive = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
+                }
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`group flex items-center gap-3 rounded-xl border border-transparent px-4 py-3 text-sm font-medium transition-all ${isActive ? "bg-[--color-accent]/10 text-[--color-accent]" : "text-slate-300 hover:border-slate-700/40 hover:bg-slate-900/60 hover:text-white"}`}
+                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                      isActive
+                        ? "bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-[#fc4f02] shadow-lg shadow-[#fc4f02]/10"
+                        : "text-slate-300 hover:bg-[--color-surface-alt] hover:text-white"
+                    }`}
                   >
-                    <span className="h-2 w-2 rounded-full border border-slate-600 bg-slate-800 group-hover:border-[--color-accent] group-hover:bg-[--color-accent]" />
-                    <span className="truncate">{item.label}</span>
+                    {isActive && (
+                      <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]" />
+                    )}
+                    <div className={`flex-shrink-0 transition-transform duration-200 ${isActive ? "scale-110" : "group-hover:scale-105"}`}>
+                      {getIcon(item.label, isActive)}
+                    </div>
+                    {!collapsed && (
+                      <span className="truncate font-medium">{item.label}</span>
+                    )}
+                    {isActive && !collapsed && (
+                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#fc4f02]" />
+                    )}
                   </Link>
                 );
               })}
@@ -65,32 +132,6 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
         ))}
       </nav>
 
-      <div className="border-t border-[--color-border] bg-[--color-surface-alt] px-4 py-5 text-xs text-slate-500">
-        {!collapsed ? (
-          <div className="space-y-2">
-            <p className="font-semibold text-slate-300">Upgrade your edge</p>
-            <p className="leading-relaxed">
-              Unlock Elite AI strategies, multi-account automation, and 24/7 smart alerts.
-            </p>
-            <Link
-              href="/settings/subscription"
-              className="inline-flex items-center justify-center rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-semibold text-[--color-accent] transition hover:border-[--color-accent] hover:bg-[--color-accent]/10"
-            >
-              Upgrade
-            </Link>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-2">
-            <span className="text-sm font-semibold text-[--color-accent]">Pro</span>
-            <Link
-              href="/settings/subscription"
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-2 text-xs text-slate-300 transition hover:border-[--color-accent] hover:text-white"
-            >
-              Upgrade
-            </Link>
-          </div>
-        )}
-      </div>
     </aside>
   );
 }
