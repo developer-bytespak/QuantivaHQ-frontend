@@ -6,27 +6,21 @@ import { useRouter } from "next/navigation";
 
 interface LogoProps {
   collapsed?: boolean;
-  onToggle?: () => void;
 }
 
-export function Logo({ collapsed = false, onToggle }: LogoProps) {
+export function Logo({ collapsed = false }: LogoProps) {
   const [imageError, setImageError] = useState(false);
   const router = useRouter();
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (onToggle) {
-      e.preventDefault();
-      onToggle();
-    } else {
-      router.push("/dashboard");
-    }
+  const handleClick = () => {
+    router.push("/dashboard");
   };
 
   return (
     <button
       onClick={handleClick}
       className="group flex items-center gap-3 text-lg font-semibold tracking-tight text-slate-100 transition-opacity hover:opacity-80 cursor-pointer"
-      aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      aria-label="Go to dashboard"
     >
       <div className="relative flex h-14 w-14 items-center justify-center transition-transform duration-300 group-hover:scale-105">
         {imageError ? (

@@ -70,15 +70,17 @@ const getIcon = (label: string, isActive: boolean) => {
 
 export function DashboardSidebar({ sections }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <aside
+      onMouseEnter={() => setCollapsed(false)}
+      onMouseLeave={() => setCollapsed(true)}
       className={`group/dashboard relative flex h-screen flex-col border-r border-[--color-border] bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
     >
       {/* Header */}
       <div className="flex h-24 items-center justify-center bg-[--color-surface-alt]/50 px-8">
-        <Logo collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
+        <Logo collapsed={collapsed} />
       </div>
 
       {/* Navigation */}
@@ -106,11 +108,10 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                      isActive
+                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${isActive
                         ? "bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-[#fc4f02] shadow-lg shadow-[#fc4f02]/10"
                         : "text-slate-300 hover:bg-[--color-surface-alt] hover:text-white"
-                    }`}
+                      }`}
                   >
                     {isActive && (
                       <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]" />
