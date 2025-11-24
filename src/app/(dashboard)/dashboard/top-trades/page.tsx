@@ -168,162 +168,24 @@ const topTradesData: Trade[] = [
     winRateValue: 82,
     hoursAgo: 15,
   },
-  {
-    id: 6,
-    pair: "ADA / USDT",
-    type: "SELL",
-    confidence: "LOW",
-    ext: "0.48",
-    entry: "0.475",
-    stopLoss: "0.490",
-    progressMin: 500,
-    progressMax: 350,
-    progressValue: 58,
-    entryPrice: "$0.475",
-    stopLossPrice: "$0.490",
-    takeProfit1: "$0.450",
-    target: "45,200-",
-    insights: [
-      "Overbought conditions on RSI",
-      "Weak volume on recent rally",
-      "Approaching resistance zone",
-    ],
-    profit: "+5.26%",
-    profitValue: 5.26,
-    volume: "$4,750",
-    volumeValue: 4750,
-    winRate: "78%",
-    winRateValue: 78,
-    hoursAgo: 20,
-  },
-  {
-    id: 7,
-    pair: "DOGE / USDT",
-    type: "BUY",
-    confidence: "MEDIUM",
-    ext: "0.082",
-    entry: "0.081",
-    stopLoss: "0.078",
-    progressMin: 650,
-    progressMax: 200,
-    progressValue: 72,
-    entryPrice: "$0.081",
-    stopLossPrice: "$0.078",
-    takeProfit1: "$0.089",
-    target: "88,500-",
-    insights: [
-      "Meme coin momentum building",
-      "High retail interest returning",
-      "Breakout from consolidation",
-    ],
-    profit: "+9.88%",
-    profitValue: 9.88,
-    volume: "$8,100",
-    volumeValue: 8100,
-    winRate: "75%",
-    winRateValue: 75,
-    hoursAgo: 24,
-  },
-  {
-    id: 8,
-    pair: "MATIC / USDT",
-    type: "BUY",
-    confidence: "HIGH",
-    ext: "0.85",
-    entry: "0.845",
-    stopLoss: "0.820",
-    progressMin: 700,
-    progressMax: 180,
-    progressValue: 79,
-    entryPrice: "$0.845",
-    stopLossPrice: "$0.820",
-    takeProfit1: "$0.880",
-    target: "87,200-",
-    insights: [
-      "Strong fundamentals support",
-      "Partnership announcements pending",
-      "Technical breakout confirmed",
-    ],
-    profit: "+4.14%",
-    profitValue: 4.14,
-    volume: "$16,900",
-    volumeValue: 16900,
-    winRate: "80%",
-    winRateValue: 80,
-    hoursAgo: 30,
-  },
-  {
-    id: 9,
-    pair: "LINK / USDT",
-    type: "BUY",
-    confidence: "HIGH",
-    ext: "14.20",
-    entry: "14.15",
-    stopLoss: "13.80",
-    progressMin: 720,
-    progressMax: 200,
-    progressValue: 76,
-    entryPrice: "$14.15",
-    stopLossPrice: "$13.80",
-    takeProfit1: "$15.10",
-    target: "15,050-",
-    insights: [
-      "Oracle network growth accelerating",
-      "Institutional adoption increasing",
-      "Strong technical setup",
-    ],
-    profit: "+6.71%",
-    profitValue: 6.71,
-    volume: "$14,150",
-    volumeValue: 14150,
-    winRate: "88%",
-    winRateValue: 88,
-    hoursAgo: 36,
-  },
-  {
-    id: 10,
-    pair: "AVAX / USDT",
-    type: "BUY",
-    confidence: "MEDIUM",
-    ext: "36.50",
-    entry: "36.20",
-    stopLoss: "35.00",
-    progressMin: 680,
-    progressMax: 250,
-    progressValue: 71,
-    entryPrice: "$36.20",
-    stopLossPrice: "$35.00",
-    takeProfit1: "$38.90",
-    target: "38,500-",
-    insights: [
-      "Ecosystem expansion continues",
-      "TVL growth supporting price",
-      "Bullish chart pattern forming",
-    ],
-    profit: "+7.46%",
-    profitValue: 7.46,
-    volume: "$36,200",
-    volumeValue: 36200,
-    winRate: "91%",
-    winRateValue: 91,
-    hoursAgo: 42,
-  },
 ];
 
 export default function TopTradesPage() {
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
   const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
+  const [showTradeOverlay, setShowTradeOverlay] = useState(false);
+  const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
 
   // Filter and sort trades based on selected criteria
   const filteredAndSortedTrades = useMemo(() => {
     // First, filter by time
     let filtered = [...topTradesData];
-    
+
     if (timeFilter !== "all") {
       const hoursLimit = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 168 : 720; // 30d = 720 hours
       filtered = filtered.filter((trade) => trade.hoursAgo <= hoursLimit);
     }
-    
+
     // Then, sort by selected criteria
     return filtered.sort((a, b) => {
       switch (sortBy) {
@@ -360,29 +222,29 @@ export default function TopTradesPage() {
     const avgReturn = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.profitValue, 0) / filteredAndSortedTrades.length;
 
     return [
-      { 
-        label: "Total Profit", 
-        value: `+${totalProfit.toFixed(1)}%`, 
-        change: "+12.5%", 
-        positive: true 
+      {
+        label: "Total Profit",
+        value: `+${totalProfit.toFixed(1)}%`,
+        change: "+12.5%",
+        positive: true
       },
-      { 
-        label: "Win Rate", 
-        value: `${avgWinRate.toFixed(1)}%`, 
-        change: "+3.2%", 
-        positive: true 
+      {
+        label: "Win Rate",
+        value: `${avgWinRate.toFixed(1)}%`,
+        change: "+3.2%",
+        positive: true
       },
-      { 
-        label: "Total Trades", 
-        value: totalTrades.toString(), 
-        change: "+15", 
-        positive: true 
+      {
+        label: "Total Trades",
+        value: totalTrades.toString(),
+        change: "+15",
+        positive: true
       },
-      { 
-        label: "Avg. Return", 
-        value: `+${avgReturn.toFixed(1)}%`, 
-        change: "+0.8%", 
-        positive: true 
+      {
+        label: "Avg. Return",
+        value: `+${avgReturn.toFixed(1)}%`,
+        change: "+0.8%",
+        positive: true
       },
     ];
   }, [filteredAndSortedTrades]);
@@ -394,18 +256,17 @@ export default function TopTradesPage() {
         <div>
           <p className="text-sm text-slate-400">Track your best performing trades and strategies</p>
         </div>
-        
+
         {/* Time Filter */}
         <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}
               onClick={() => setTimeFilter(period)}
-              className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${
-                timeFilter === period
-                  ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
-                  : "text-slate-400 hover:text-white"
-              }`}
+              className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${timeFilter === period
+                ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                : "text-slate-400 hover:text-white"
+                }`}
             >
               {period === "all" ? "All Time" : period}
             </button>
@@ -416,7 +277,7 @@ export default function TopTradesPage() {
       {/* Performance Statistics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {performanceStats.map((stat, index) => (
-          <div key={index} className="group cursor-pointer rounded-xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
+          <div key={index} className="rounded-xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-xl shadow-blue-900/10">
             <p className="mb-1 text-xs text-slate-400">{stat.label}</p>
             <p className="mb-2 text-2xl font-bold text-white">{stat.value}</p>
             <div className="flex items-center gap-1">
@@ -433,7 +294,7 @@ export default function TopTradesPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Top Performing Trades</h2>
-          
+
           {/* Sort Options */}
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400">Sort by:</span>
@@ -450,124 +311,94 @@ export default function TopTradesPage() {
         </div>
 
         {filteredAndSortedTrades.length > 0 ? (
-          <div className="space-y-4">
-            {filteredAndSortedTrades.map((trade) => (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {filteredAndSortedTrades.map((trade, index) => (
               <div
                 key={trade.id}
-                className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]"
+                className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
               >
-                {/* Header */}
-                <div className="mb-4 flex items-center gap-2">
-                  <span
-                    className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${
-                      trade.type === "BUY"
+                {/* Trade Card Content */}
+                <div className="space-y-4">
+                  {/* Header with Type, Pair, and Confidence */}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY"
                         ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                        : "bg-gradient-to-r from-red-500 to-rose-500"
-                    }`}
-                  >
-                    {trade.type}
-                  </span>
-                  <span className="text-sm font-medium text-white">{trade.pair}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      trade.confidence === "HIGH"
-                        ? "bg-green-500/20 text-green-400"
-                        : trade.confidence === "MEDIUM"
-                        ? "bg-yellow-500/20 text-yellow-400"
-                        : "bg-slate-700 text-slate-300"
-                    }`}
-                  >
-                    {trade.confidence}
-                  </span>
-                </div>
+                        : "bg-gradient-to-r from-red-500 to-red-600"
+                        }`}
+                    >
+                      {trade.type}
+                    </span>
+                    <span className="text-sm font-medium text-white">{trade.pair}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : trade.confidence === "MEDIUM" ? "bg-slate-600" : "bg-slate-500"
+                        }`}
+                    >
+                      {trade.confidence}
+                    </span>
+                  </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                  {/* Left Column - Trade Parameters */}
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Ext. {trade.ext}</p>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-slate-400">Entry</span>
-                        <span className="font-medium text-white">{trade.entry}</span>
-                        <span className="text-slate-500">&gt;</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-slate-400">Stop Loss</span>
-                        <span className="font-medium text-white">{trade.stopLoss}</span>
-                      </div>
+                  {/* Entry and Stop Loss Info */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-slate-400">Ext. {trade.ext}</p>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-slate-400">Entry</span>
+                      <span className="font-medium text-white">{trade.entry}</span>
+                      <span className="text-slate-500">&gt;</span>
                     </div>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>${trade.progressMin}</span>
-                        <span>${trade.progressMax}</span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                        <div
-                          className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
-                          style={{ width: `${trade.progressValue}%` }}
-                        />
-                      </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-slate-400">Stop Loss</span>
+                      <span className="font-medium text-white">{trade.stopLoss}</span>
                     </div>
                   </div>
 
-                  {/* Middle Column - Trade Details */}
-                  <div className="space-y-4">
-                    <div className="group/details cursor-pointer space-y-2 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-3 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Entry</span>
-                        <span className="text-white">{trade.entryPrice}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Stop-Loss</span>
-                        <span className="text-white">{trade.stopLossPrice}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400">Take Profit 1</span>
-                        <span className="text-white">{trade.takeProfit1}</span>
-                      </div>
-                      <div className="text-xs text-slate-500">{trade.target}</div>
+                  {/* Progress Bar */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>${trade.progressMin}</span>
+                      <span>${trade.progressMax}</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className={`h-full bg-gradient-to-r ${trade.type === "BUY"
+                          ? "from-green-500 to-emerald-500"
+                          : "from-red-500 to-red-600"
+                          }`}
+                        style={{ width: `${trade.progressValue}%` }}
+                      />
                     </div>
                   </div>
 
-                  {/* Right Column - Insights & Actions */}
-                  <div className="space-y-4">
-                    {/* Insights */}
-                    <div className="space-y-2">
-                      {trade.insights.map((insight, idx) => (
-                        <div key={idx} className="flex items-start gap-2">
-                          <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-400" />
-                          <p className="text-xs text-slate-300">{insight}</p>
-                        </div>
-                      ))}
+                  {/* Performance Metrics */}
+                  <div className="flex items-center gap-4 text-xs border-t border-[--color-border] pt-3">
+                    <div>
+                      <span className="text-slate-400">Profit: </span>
+                      <span className="font-medium text-green-400">{trade.profit}</span>
                     </div>
+                    <div>
+                      <span className="text-slate-400">Volume: </span>
+                      <span className="font-medium text-white">{trade.volume}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">Win Rate: </span>
+                      <span className="font-medium text-green-400">{trade.winRate}</span>
+                    </div>
+                  </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 pt-2">
-                      <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
-                        Approve Trade
-                      </button>
-                      <button className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white">
-                        View Details
-                      </button>
-                    </div>
-
-                    {/* Performance Metrics */}
-                    <div className="flex items-center gap-4 pt-2 text-xs">
-                      <div>
-                        <span className="text-slate-400">Profit: </span>
-                        <span className="font-medium text-green-400">{trade.profit}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400">Volume: </span>
-                        <span className="font-medium text-white">{trade.volume}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400">Win Rate: </span>
-                        <span className="font-medium text-green-400">{trade.winRate}</span>
-                      </div>
-                    </div>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
+                      Auto Trade
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedTradeIndex(index);
+                        setShowTradeOverlay(true);
+                      }}
+                      className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                    >
+                      View Trade
+                    </button>
                   </div>
                 </div>
               </div>
@@ -579,6 +410,107 @@ export default function TopTradesPage() {
           </div>
         )}
       </div>
+
+      {/* Trade Details Overlay */}
+      {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
+        <div
+          className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowTradeOverlay(false)}
+        >
+          <div
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Trade Details</h2>
+              <button
+                onClick={() => setShowTradeOverlay(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Trade Info */}
+            <div className="space-y-6">
+              {/* Pair and Type */}
+              <div className="flex items-center gap-3">
+                <span
+                  className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY"
+                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                    : "bg-gradient-to-r from-red-500 to-red-600"
+                    }`}
+                >
+                  {filteredAndSortedTrades[selectedTradeIndex].type}
+                </span>
+                <span className="text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].pair}</span>
+                <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
+              </div>
+
+              {/* Trade Details */}
+              <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Entry</span>
+                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].entryPrice}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Stop-Loss</span>
+                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].stopLossPrice}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Take Profit 1</span>
+                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit1}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Additional Info</span>
+                  <span className="text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span>
+                </div>
+              </div>
+
+              {/* Insights/Reasons */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-white">Insights</h3>
+                {filteredAndSortedTrades[selectedTradeIndex].insights.map((insight: string, idx: number) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-400" />
+                    <p className="text-sm text-slate-300">{insight}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Performance Metrics */}
+              <div className="flex items-center gap-6 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div>
+                  <p className="text-xs text-slate-400">Profit</p>
+                  <p className="text-lg font-semibold text-green-400">{filteredAndSortedTrades[selectedTradeIndex].profit}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Volume</p>
+                  <p className="text-lg font-semibold text-white">{filteredAndSortedTrades[selectedTradeIndex].volume}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Win Rate</p>
+                  <p className="text-lg font-semibold text-green-400">{filteredAndSortedTrades[selectedTradeIndex].winRate}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
