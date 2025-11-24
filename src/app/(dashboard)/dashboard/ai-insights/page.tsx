@@ -91,16 +91,15 @@ export default function AIInsightsPage() {
         <div>
           <p className="text-sm text-slate-400">AI-powered market news and analysis</p>
         </div>
-        
+
         {/* Asset Filter */}
         <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <button
             onClick={() => setSelectedAsset("all")}
-            className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${
-              selectedAsset === "all"
+            className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${selectedAsset === "all"
                 ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                 : "text-slate-400 hover:text-white"
-            }`}
+              }`}
           >
             All Assets
           </button>
@@ -108,11 +107,10 @@ export default function AIInsightsPage() {
             <button
               key={asset}
               onClick={() => setSelectedAsset(asset)}
-              className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${
-                selectedAsset === asset
+              className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${selectedAsset === asset
                   ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                   : "text-slate-400 hover:text-white"
-              }`}
+                }`}
             >
               {asset}
             </button>
@@ -126,7 +124,7 @@ export default function AIInsightsPage() {
           <div
             key={news.id}
             onClick={() => handleNewsClick(news)}
-            className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]"
+            className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
           >
             {/* Header */}
             <div className="mb-4 flex items-center justify-between">

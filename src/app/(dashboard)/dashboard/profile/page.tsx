@@ -31,7 +31,7 @@ export default function ProfilePage() {
       const exchange = localStorage.getItem("quantivahq_selected_exchange") || "";
       const personalInfoStr = localStorage.getItem("quantivahq_personal_info");
       const savedImage = localStorage.getItem("quantivahq_profile_image");
-      
+
       setUserName(name);
       setUserEmail(email);
       setEditName(name);
@@ -41,7 +41,7 @@ export default function ProfilePage() {
       if (savedImage) {
         setProfileImage(savedImage);
       }
-      
+
       if (personalInfoStr) {
         try {
           setPersonalInfo(JSON.parse(personalInfoStr));
@@ -117,27 +117,27 @@ export default function ProfilePage() {
     }
 
     setIsSaving(true);
-    
+
     // Simulate API call
     setTimeout(() => {
       // Update localStorage
       localStorage.setItem("quantivahq_user_name", editName.trim());
       localStorage.setItem("quantivahq_user_email", editEmail.trim());
-      
+
       // Update state
       setUserName(editName.trim());
       setUserEmail(editEmail.trim());
       setUserInitial(editName.trim().charAt(0).toUpperCase());
-      
+
       // Dispatch custom event to update top bar
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("profileImageUpdated"));
       }
-      
+
       setIsEditing(false);
       setIsSaving(false);
       setSaveSuccess(true);
-      
+
       // Hide success message after 3 seconds
       setTimeout(() => {
         setSaveSuccess(false);
@@ -165,8 +165,8 @@ export default function ProfilePage() {
 
   const handleCaptureImage = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "user" } 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" }
       });
       setStream(mediaStream);
       setShowCameraPreview(true);
@@ -260,7 +260,7 @@ export default function ProfilePage() {
       )}
 
       {/* Profile Header Card */}
-      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
+      <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           <div className="relative">
             <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-2xl font-bold text-white shadow-lg shadow-[#fc4f02]/30">
@@ -409,11 +409,11 @@ export default function ProfilePage() {
       </div>
 
       {/* Trading Statistics */}
-      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
+      <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
         <h2 className="mb-4 text-lg font-semibold text-white">Trading Statistics</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {tradingStats.map((stat, index) => (
-            <div key={index} className="cursor-pointer rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.02]">
+            <div key={index} className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
               <p className="mb-1 text-xs text-slate-400">{stat.label}</p>
               <p className="mb-2 text-2xl font-bold text-white">{stat.value}</p>
               <div className="flex items-center gap-1">
@@ -430,7 +430,7 @@ export default function ProfilePage() {
       {/* Account Information & Settings Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Account Information */}
-        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
+        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
           <h2 className="mb-4 text-lg font-semibold text-white">Account Information</h2>
           <div className="space-y-4">
             {accountInfo.map((info, index) => (
@@ -457,7 +457,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Connected Exchanges */}
-        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
+        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-white">Connected Exchanges</h2>
             <button className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors">
@@ -466,7 +466,7 @@ export default function ProfilePage() {
           </div>
           <div className="space-y-3">
             {selectedExchange ? (
-              <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+              <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
                     <span className="text-lg font-bold text-[#fc4f02]">
@@ -497,10 +497,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Security Settings */}
-        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
+        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
           <h2 className="mb-4 text-lg font-semibold text-white">Security</h2>
           <div className="space-y-4">
-            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
               <div>
                 <p className="font-medium text-white">Password</p>
                 <p className="text-xs text-slate-400">Last changed 30 days ago</p>
@@ -531,10 +531,10 @@ export default function ProfilePage() {
         </div>
 
         {/* Trading Preferences */}
-        <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
+        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
           <h2 className="mb-4 text-lg font-semibold text-white">Trading Preferences</h2>
           <div className="space-y-4">
-            <div className="cursor-pointer flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+            <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
               <div>
                 <p className="font-medium text-white">Risk Level</p>
                 <p className="text-xs text-slate-400">Current: Medium</p>
@@ -568,7 +568,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Recent Activity */}
-      <div className="group rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.01]">
+      <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
           <button className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors">
@@ -582,7 +582,7 @@ export default function ProfilePage() {
             { action: "Password changed", time: "30 days ago", icon: "lock", bgColor: "bg-slate-500/20", iconColor: "text-slate-400" },
             { action: "Profile updated", time: "45 days ago", icon: "user", bgColor: "bg-slate-500/20", iconColor: "text-slate-400" },
           ].map((activity, index) => (
-            <div key={index} className="cursor-pointer flex items-center gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+            <div key={index} className="flex items-center gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
               <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${activity.bgColor}`}>
                 {activity.icon === "check" && (
                   <svg className={`h-4 w-4 ${activity.iconColor}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -691,124 +691,129 @@ export default function ProfilePage() {
           </div>
         </div>,
         document.body
-      )}
+      )
+      }
 
       {/* Camera Preview Modal */}
-      {showCameraPreview && typeof window !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={cancelCamera}
-        >
+      {
+        showCameraPreview && typeof window !== "undefined" && createPortal(
           <div
-            className="relative mx-4 w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+            onClick={cancelCamera}
           >
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Capture Photo</h3>
-              <button
-                onClick={cancelCamera}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            <div
+              className="relative mx-4 w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">Capture Photo</h3>
+                <button
+                  onClick={cancelCamera}
+                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                  aria-label="Close"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
 
-            <div className="mb-4 overflow-hidden rounded-xl bg-black">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="h-auto w-full"
-              />
-            </div>
+              <div className="mb-4 overflow-hidden rounded-xl bg-black">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="h-auto w-full"
+                />
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={cancelCamera}
-                className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={capturePhoto}
-                className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
-              >
-                Capture
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelCamera}
+                  className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={capturePhoto}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                >
+                  Capture
+                </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body
+        )
+      }
 
       {/* Image Overlay Modal */}
-      {showImageOverlay && profileImage && typeof window !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
-          onClick={() => setShowImageOverlay(false)}
-        >
+      {
+        showImageOverlay && profileImage && typeof window !== "undefined" && createPortal(
           <div
-            className="relative mx-4 w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-4 shadow-2xl shadow-black/50 backdrop-blur"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+            onClick={() => setShowImageOverlay(false)}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-base font-semibold text-white">Profile Photo</h3>
-              <button
-                onClick={() => setShowImageOverlay(false)}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            <div
+              className="relative mx-4 w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-4 shadow-2xl shadow-black/50 backdrop-blur"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-base font-semibold text-white">Profile Photo</h3>
+                <button
+                  onClick={() => setShowImageOverlay(false)}
+                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                  aria-label="Close"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
 
-            <div className="mb-3 overflow-hidden rounded-xl bg-black">
-              <img
-                src={profileImage}
-                alt={userName}
-                className="h-auto w-full max-h-96 object-contain"
-              />
-            </div>
+              <div className="mb-3 overflow-hidden rounded-xl bg-black">
+                <img
+                  src={profileImage}
+                  alt={userName}
+                  className="h-auto w-full max-h-96 object-contain"
+                />
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowImageOverlay(false)}
-                className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
-              >
-                Close
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowImageOverlay(false)}
+                  className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+                >
+                  Close
+                </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
+          </div>,
+          document.body
+        )
+      }
+    </div >
   );
 }
 
