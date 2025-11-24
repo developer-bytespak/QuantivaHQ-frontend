@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
+  "/dashboard": "Crypto Dashboard",
   "/dashboard/top-trades": "Top Trades",
   "/dashboard/ai-insights": "AI Insights",
   "/dashboard/vc-pool": "VC Pool",
@@ -19,27 +19,27 @@ const pageTitles: Record<string, string> = {
 
 function getPageTitle(pathname: string | null): string {
   if (!pathname) return "Dashboard";
-  
+
   // Check for exact match first
   if (pageTitles[pathname]) {
     return pageTitles[pathname];
   }
-  
+
   // Check for paths that start with known paths
   const matchedPath = Object.keys(pageTitles)
     .sort((a, b) => b.length - a.length) // Sort by length descending to match longest first
     .find((path) => pathname.startsWith(path));
-  
+
   if (matchedPath) {
     return pageTitles[matchedPath];
   }
-  
+
   // Fallback: format the pathname
   const segments = pathname
     .split("/")
     .filter(Boolean)
     .map((segment) => segment.replace(/-/g, " "));
-  return segments.length > 0 
+  return segments.length > 0
     ? segments[segments.length - 1].replace(/\b\w/g, (l) => l.toUpperCase())
     : "Dashboard";
 }
@@ -150,29 +150,29 @@ function UserProfileSection() {
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-3 rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] cursor-pointer"
         >
-        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
-          {profileImage ? (
-            <img
-              src={profileImage}
-              alt={userName}
-              className="h-full w-full object-cover rounded-full"
-            />
-          ) : (
-            userInitial
-          )}
-        </div>
-        <div className="flex items-center min-w-0">
-          <p className="truncate text-sm font-semibold text-white">{userName}</p>
-        </div>
-        <svg
-          className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt={userName}
+                className="h-full w-full object-cover rounded-full"
+              />
+            ) : (
+              userInitial
+            )}
+          </div>
+          <div className="flex items-center min-w-0">
+            <p className="truncate text-sm font-semibold text-white">{userName}</p>
+          </div>
+          <svg
+            className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
       </div>
 
       {/* Dropdown Menu - Rendered via Portal */}
