@@ -214,21 +214,6 @@ select option:hover {
 }
 
 /* Ensure select dropdown opens downward */
-select {
-  transform-origin: top center;
-}
-
-/* Style the dropdown list container */
-@supports (-webkit-appearance: none) {
-  select {
-    -webkit-appearance: none;
-  }
-}
-
-/* Force dropdown to open downward by ensuring parent has static positioning */
-select {
-  position: static !important;
-}
 
 /* Custom dropdown scrollbar styling */
 .overflow-y-auto::-webkit-scrollbar {

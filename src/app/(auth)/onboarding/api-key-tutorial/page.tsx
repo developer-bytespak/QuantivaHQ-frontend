@@ -29,7 +29,7 @@ function StepCard({ number, title, description, action, warning, diagram, tip, d
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xl font-bold text-white shadow-lg shadow-[#fc4f02]/30">
           {number}
         </div>
-        
+
         {/* Title and description */}
         <div className="flex-1">
           <h3 className="mb-1.5 text-xl font-bold text-white">{title}</h3>
@@ -74,12 +74,12 @@ function StepCard({ number, title, description, action, warning, diagram, tip, d
 
 export default function ApiKeyTutorialPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
 
   useEffect(() => {
     // Get selected exchange from localStorage
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
-    if (exchange === "binance" || exchange === "bybit") {
+    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr") {
       setSelectedExchange(exchange);
     } else {
       // Default to Binance if not set
@@ -88,9 +88,10 @@ export default function ApiKeyTutorialPage() {
   }, []);
 
   const handleOpenExchange = () => {
-    const url = selectedExchange === "binance" 
-      ? "https://www.binance.com/en/login"
-      : "https://www.bybit.com/login";
+    let url = "https://www.binance.com/en/login";
+    if (selectedExchange === "bybit") url = "https://www.bybit.com/login";
+    if (selectedExchange === "ibkr") url = "https://www.interactivebrokers.com/sso/Login";
+
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -123,6 +124,22 @@ export default function ApiKeyTutorialPage() {
       gradient: "from-[#f59e0b] to-[#d97706]",
       apiManagementPath: "API Management",
     },
+    ibkr: {
+      name: "Interactive Brokers",
+      logo: (
+        <div className="flex h-16 w-16 items-center justify-center p-2">
+          <Image
+            src="/IBKR_logo.png"
+            alt="Interactive Brokers"
+            width={64}
+            height={64}
+            className="h-full w-full object-contain"
+          />
+        </div>
+      ),
+      gradient: "from-[#ce2029] to-[#e63946]",
+      apiManagementPath: "Settings > API Settings",
+    },
   };
 
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
@@ -134,7 +151,7 @@ export default function ApiKeyTutorialPage() {
       title: `Log in to ${exchangeName}`,
       description: `First, make sure you're logged into your ${exchangeName} account. If you don't have an account yet, you'll need to create one and complete the verification process first.`,
       action: (
-          <button
+        <button
           onClick={handleOpenExchange}
           className="group relative overflow-hidden rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#fc4f02]/40"
         >
@@ -167,7 +184,7 @@ export default function ApiKeyTutorialPage() {
                   <p className="text-xs text-slate-300">Click on your <span className="font-semibold text-white">profile icon</span> (👤) in the top right corner</p>
                 </div>
               </div>
-              
+
               {/* Step 2 */}
               <div className="flex items-center gap-2">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-500/20 border border-blue-500/30 text-xs font-semibold text-blue-400">
@@ -177,7 +194,7 @@ export default function ApiKeyTutorialPage() {
                   <p className="text-xs text-slate-300">Select <span className="font-semibold text-white">"Account Settings"</span> or <span className="font-semibold text-white">"Security"</span> from the dropdown menu</p>
                 </div>
               </div>
-              
+
               {/* Step 3 */}
               <div className="flex items-center gap-2">
                 <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xs font-semibold text-white shadow-md shadow-[#fc4f02]/30">
@@ -189,13 +206,13 @@ export default function ApiKeyTutorialPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Visual representation of the settings page */}
           <div className="rounded-lg border border-slate-700/50 bg-gradient-to-br from-slate-800/80 to-slate-900/80 p-3 shadow-xl">
             <div className="mb-2 flex items-center justify-between border-b border-slate-700/50 pb-1.5">
               <h5 className="text-xs font-semibold text-white">What you'll see:</h5>
             </div>
-            
+
             <div className="flex gap-3">
               {/* Left sidebar - Settings menu */}
               <div className="w-48 space-y-1.5">
@@ -207,12 +224,12 @@ export default function ApiKeyTutorialPage() {
                   <div className="flex h-9 items-center rounded-lg bg-slate-700/50 border border-slate-600/40 px-3">
                     <span className="text-xs font-medium text-slate-400">Security</span>
                   </div>
-                  
+
                   {/* Menu Item 2 */}
                   <div className="flex h-9 items-center rounded-lg bg-slate-700/50 border border-slate-600/40 px-3">
                     <span className="text-xs font-medium text-slate-400">Account</span>
                   </div>
-                  
+
                   {/* Highlighted API Management option */}
                   <div className="flex h-9 items-center rounded-lg bg-gradient-to-r from-[#fc4f02]/40 to-[#fda300]/40 border-2 border-[#fc4f02]/60 px-3 shadow-lg shadow-[#fc4f02]/30">
                     <div className="flex items-center gap-2">
@@ -220,19 +237,19 @@ export default function ApiKeyTutorialPage() {
                       <span className="text-xs font-semibold text-white">API Management</span>
                     </div>
                   </div>
-                  
+
                   {/* Menu Item 4 */}
                   <div className="flex h-9 items-center rounded-lg bg-slate-700/50 border border-slate-600/40 px-3">
                     <span className="text-xs font-medium text-slate-400">Notifications</span>
                   </div>
-                  
+
                   {/* Menu Item 5 */}
                   <div className="flex h-9 items-center rounded-lg bg-slate-700/50 border border-slate-600/40 px-3">
                     <span className="text-xs font-medium text-slate-400">Preferences</span>
                   </div>
                 </div>
               </div>
-              
+
               {/* Right content area */}
               <div className="flex-1 rounded-lg bg-slate-800/70 border border-slate-700/60 p-4">
                 <div className="flex h-full items-center justify-center">
@@ -412,18 +429,18 @@ export default function ApiKeyTutorialPage() {
   };
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
+    <div className="relative flex h-full w-full overflow-hidden" >
       <BackButton />
       {/* Background matching Figma design */}
-      <div className="absolute inset-0 bg-black">
+      <div className="absolute inset-0 bg-black" >
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        < div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
-      </div>
+      </div >
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col overflow-y-auto">
+      < div className="relative z-10 flex h-full w-full flex-col overflow-y-auto" >
         <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
           {/* Header Section */}
           <div className="mb-4 text-center">
@@ -474,7 +491,7 @@ export default function ApiKeyTutorialPage() {
             Make sure you've copied both keys before continuing
           </p>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
