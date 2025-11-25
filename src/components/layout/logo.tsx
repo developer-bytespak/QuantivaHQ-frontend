@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface LogoProps {
   collapsed?: boolean;
@@ -11,9 +11,15 @@ interface LogoProps {
 export function Logo({ collapsed = false }: LogoProps) {
   const [imageError, setImageError] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
   const handleClick = () => {
-    router.push("/dashboard");
+    // Navigate to the appropriate dashboard based on current path
+    if (pathname?.startsWith("/stocks-dashboard")) {
+      router.push("/stocks-dashboard");
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   return (

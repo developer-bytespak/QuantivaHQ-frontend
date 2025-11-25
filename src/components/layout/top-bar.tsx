@@ -60,6 +60,7 @@ function UserProfileSection() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   const loadProfileData = () => {
     if (typeof window !== "undefined") {
@@ -193,7 +194,7 @@ function UserProfileSection() {
         >
           <div className="space-y-1">
             <Link
-              href="/dashboard/profile"
+              href={pathname?.startsWith("/stocks-dashboard") ? "/stocks-dashboard/profile" : "/dashboard/profile"}
               onClick={() => setIsOpen(false)}
               className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
             >

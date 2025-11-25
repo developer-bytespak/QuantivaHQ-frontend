@@ -1,3 +1,5 @@
+/// <reference types="react" />
+/// <reference types="react-dom" />
 "use client";
 
 import { useState } from "react";
