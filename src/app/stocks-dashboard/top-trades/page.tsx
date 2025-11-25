@@ -4,19 +4,13 @@ import { useState, useMemo } from "react";
 
 interface Trade {
   id: number;
-  pair: string;
+  symbol: string;
   type: "BUY" | "SELL";
   confidence: "HIGH" | "MEDIUM" | "LOW";
-  ext: string;
-  entry: string;
-  stopLoss: string;
-  progressMin: number;
-  progressMax: number;
-  progressValue: number;
   entryPrice: string;
   stopLossPrice: string;
   takeProfit1: string;
-  target: string;
+  takeProfit2: string;
   insights: string[];
   profit: string;
   profitValue: number;
@@ -30,147 +24,117 @@ interface Trade {
 const topTradesData: Trade[] = [
   {
     id: 1,
-    pair: "ETH / USDT",
+    symbol: "AAPL",
     type: "BUY",
     confidence: "HIGH",
-    ext: "22,000",
-    entry: "1,020",
-    stopLoss: "1.317 $",
-    progressMin: 790,
-    progressMax: 200,
-    progressValue: 75,
-    entryPrice: "$2,120",
-    stopLossPrice: "$120",
-    takeProfit1: "$240",
-    target: "20,045-",
+    entryPrice: "$182.45",
+    stopLossPrice: "$176.20",
+    takeProfit1: "$189.50",
+    takeProfit2: "$195.00",
     insights: [
-      "Bullish momentum on 1h and 4h charts",
-      "Sentiment improved 20% in last 3 hours",
-      "High liquidity reduces execution risk",
+      "Earnings beat, guidance raised 12%",
+      "Breakout above 200-day MA with volume",
+      "Sentiment improving: 78% positive mentions",
     ],
-    profit: "+5.83%",
-    profitValue: 5.83,
-    volume: "$42,350",
-    volumeValue: 42350,
+    profit: "+8.20%",
+    profitValue: 8.2,
+    volume: "$27,367",
+    volumeValue: 27367,
     winRate: "92%",
     winRateValue: 92,
     hoursAgo: 2,
   },
   {
     id: 2,
-    pair: "BTC / USDT",
+    symbol: "MSFT",
     type: "BUY",
     confidence: "HIGH",
-    ext: "34,500",
-    entry: "34,200",
-    stopLoss: "33,800",
-    progressMin: 800,
-    progressMax: 150,
-    progressValue: 80,
-    entryPrice: "$34,200",
-    stopLossPrice: "$33,800",
-    takeProfit1: "$35,500",
-    target: "35,200-",
+    entryPrice: "$203.64",
+    stopLossPrice: "$198.00",
+    takeProfit1: "$210.00",
+    takeProfit2: "$218.50",
     insights: [
-      "Strong support level at $34,000",
-      "Volume spike indicates accumulation",
-      "RSI showing bullish divergence",
+      "Azure cloud revenue surges 25% YoY",
+      "AI integration driving enterprise adoption",
+      "Strong technical breakout pattern",
     ],
-    profit: "+4.12%",
-    profitValue: 4.12,
-    volume: "$68,400",
-    volumeValue: 68400,
+    profit: "+4.27%",
+    profitValue: 4.27,
+    volume: "$24,436",
+    volumeValue: 24436,
     winRate: "88%",
     winRateValue: 88,
     hoursAgo: 5,
   },
   {
     id: 3,
-    pair: "SOL / USDT",
-    type: "SELL",
-    confidence: "MEDIUM",
-    ext: "98.50",
-    entry: "98.20",
-    stopLoss: "100.50",
-    progressMin: 600,
-    progressMax: 300,
-    progressValue: 65,
-    entryPrice: "$98.20",
-    stopLossPrice: "$100.50",
-    takeProfit1: "$95.00",
-    target: "94,500-",
+    symbol: "NVDA",
+    type: "BUY",
+    confidence: "HIGH",
+    entryPrice: "$254.86",
+    stopLossPrice: "$245.00",
+    takeProfit1: "$265.00",
+    takeProfit2: "$275.00",
     insights: [
-      "Resistance level at $100 holding strong",
-      "Bearish divergence on MACD",
-      "Decreasing volume suggests weakness",
+      "AI chip demand accelerating",
+      "Data center revenue up 32%",
+      "Strong support at $250 level",
     ],
-    profit: "+3.25%",
-    profitValue: 3.25,
-    volume: "$19,640",
-    volumeValue: 19640,
-    winRate: "85%",
-    winRateValue: 85,
+    profit: "+3.77%",
+    profitValue: 3.77,
+    volume: "$20,388",
+    volumeValue: 20388,
+    winRate: "90%",
+    winRateValue: 90,
     hoursAgo: 8,
   },
   {
     id: 4,
-    pair: "BNB / USDT",
+    symbol: "GOOGL",
     type: "BUY",
-    confidence: "HIGH",
-    ext: "315",
-    entry: "314",
-    stopLoss: "310",
-    progressMin: 750,
-    progressMax: 200,
-    progressValue: 78,
-    entryPrice: "$314",
-    stopLossPrice: "$310",
-    takeProfit1: "$325",
-    target: "32,200-",
+    confidence: "MEDIUM",
+    entryPrice: "$122.93",
+    stopLossPrice: "$118.00",
+    takeProfit1: "$128.50",
+    takeProfit2: "$135.00",
     insights: [
-      "Breakout above key resistance",
-      "Institutional buying detected",
-      "Positive funding rate shift",
+      "YouTube ad revenue recovery",
+      "Cloud growth stabilizing",
+      "Attractive valuation metrics",
     ],
-    profit: "+3.50%",
-    profitValue: 3.5,
-    volume: "$31,400",
-    volumeValue: 31400,
-    winRate: "90%",
-    winRateValue: 90,
+    profit: "+2.02%",
+    profitValue: 2.02,
+    volume: "$17,210",
+    volumeValue: 17210,
+    winRate: "85%",
+    winRateValue: 85,
     hoursAgo: 12,
   },
   {
     id: 5,
-    pair: "XRP / USDT",
+    symbol: "AMZN",
     type: "BUY",
-    confidence: "MEDIUM",
-    ext: "0.58",
-    entry: "0.575",
-    stopLoss: "0.550",
-    progressMin: 550,
-    progressMax: 250,
-    progressValue: 68,
-    entryPrice: "$0.575",
-    stopLossPrice: "$0.550",
-    takeProfit1: "$0.610",
-    target: "60,500-",
+    confidence: "HIGH",
+    entryPrice: "$150.93",
+    stopLossPrice: "$145.00",
+    takeProfit1: "$158.00",
+    takeProfit2: "$165.00",
     insights: [
-      "Support bounce from $0.55 level",
-      "Increasing social sentiment",
-      "Low volatility entry point",
+      "AWS margins expanding",
+      "E-commerce holiday season strong",
+      "Breakout from consolidation",
     ],
-    profit: "+6.09%",
-    profitValue: 6.09,
-    volume: "$11,500",
-    volumeValue: 11500,
-    winRate: "82%",
-    winRateValue: 82,
+    profit: "+1.84%",
+    profitValue: 1.84,
+    volume: "$13,584",
+    volumeValue: 13584,
+    winRate: "87%",
+    winRateValue: 87,
     hoursAgo: 15,
   },
 ];
 
-export default function TopTradesPage() {
+export default function StocksTopTradesPage() {
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
   const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
@@ -178,30 +142,28 @@ export default function TopTradesPage() {
 
   // Filter and sort trades based on selected criteria
   const filteredAndSortedTrades = useMemo(() => {
-    // First, filter by time
     let filtered = [...topTradesData];
 
     if (timeFilter !== "all") {
-      const hoursLimit = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 168 : 720; // 30d = 720 hours
+      const hoursLimit = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 168 : 720;
       filtered = filtered.filter((trade) => trade.hoursAgo <= hoursLimit);
     }
 
-    // Then, sort by selected criteria
     return filtered.sort((a, b) => {
       switch (sortBy) {
         case "profit":
-          return b.profitValue - a.profitValue; // Descending order (highest first)
+          return b.profitValue - a.profitValue;
         case "volume":
-          return b.volumeValue - a.volumeValue; // Descending order (highest first)
+          return b.volumeValue - a.volumeValue;
         case "winrate":
-          return b.winRateValue - a.winRateValue; // Descending order (highest first)
+          return b.winRateValue - a.winRateValue;
         default:
           return 0;
       }
     });
   }, [timeFilter, sortBy]);
 
-  // Calculate performance stats based on filtered trades
+  // Calculate performance stats
   const performanceStats = useMemo(() => {
     if (filteredAndSortedTrades.length === 0) {
       return [
@@ -212,11 +174,7 @@ export default function TopTradesPage() {
       ];
     }
 
-    const totalProfit = filteredAndSortedTrades.reduce((sum, trade) => {
-      const amount = parseFloat(trade.profit.replace(/[+%,]/g, ""));
-      return sum + amount;
-    }, 0);
-
+    const totalProfit = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.profitValue, 0);
     const avgWinRate = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.winRateValue, 0) / filteredAndSortedTrades.length;
     const totalTrades = filteredAndSortedTrades.length;
     const avgReturn = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.profitValue, 0) / filteredAndSortedTrades.length;
@@ -254,7 +212,7 @@ export default function TopTradesPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-slate-400">Track your best performing trades and strategies</p>
+          <p className="text-sm text-slate-400">Track your best performing stock trades and strategies</p>
         </div>
 
         {/* Time Filter */}
@@ -315,11 +273,10 @@ export default function TopTradesPage() {
             {filteredAndSortedTrades.map((trade, index) => (
               <div
                 key={trade.id}
-                className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+                className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
               >
-                {/* Trade Card Content */}
                 <div className="space-y-4">
-                  {/* Header with Type, Pair, and Confidence */}
+                  {/* Header */}
                   <div className="flex items-center gap-2">
                     <span
                       className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY"
@@ -329,43 +286,28 @@ export default function TopTradesPage() {
                     >
                       {trade.type}
                     </span>
-                    <span className="text-sm font-medium text-white">{trade.pair}</span>
+                    <span className="text-sm font-medium text-white">{trade.symbol}</span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : trade.confidence === "MEDIUM" ? "bg-slate-600" : "bg-slate-500"
+                      className={`rounded-full px-2 py-0.5 text-xs ${trade.confidence === "HIGH" ? "bg-green-500/20 text-green-400" : trade.confidence === "MEDIUM" ? "bg-yellow-500/20 text-yellow-400" : "bg-slate-600 text-slate-300"
                         }`}
                     >
                       {trade.confidence}
                     </span>
                   </div>
 
-                  {/* Entry and Stop Loss Info */}
+                  {/* Entry and Stop Loss */}
                   <div className="space-y-2">
-                    <p className="text-xs text-slate-400">Ext. {trade.ext}</p>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-slate-400">Entry</span>
-                      <span className="font-medium text-white">{trade.entry}</span>
-                      <span className="text-slate-500">&gt;</span>
+                      <span className="font-medium text-white">{trade.entryPrice}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <span className="text-slate-400">Stop Loss</span>
-                      <span className="font-medium text-white">{trade.stopLoss}</span>
+                      <span className="font-medium text-red-400">{trade.stopLossPrice}</span>
                     </div>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <span>${trade.progressMin}</span>
-                      <span>${trade.progressMax}</span>
-                    </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                      <div
-                        className={`h-full bg-gradient-to-r ${trade.type === "BUY"
-                          ? "from-green-500 to-emerald-500"
-                          : "from-red-500 to-red-600"
-                          }`}
-                        style={{ width: `${trade.progressValue}%` }}
-                      />
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-slate-400">TP1</span>
+                      <span className="font-medium text-green-400">{trade.takeProfit1}</span>
                     </div>
                   </div>
 
@@ -421,7 +363,6 @@ export default function TopTradesPage() {
             className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Trade Details</h2>
               <button
@@ -429,25 +370,13 @@ export default function TopTradesPage() {
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
                 aria-label="Close"
               >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Trade Info */}
             <div className="space-y-6">
-              {/* Pair and Type */}
               <div className="flex items-center gap-3">
                 <span
                   className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY"
@@ -457,11 +386,10 @@ export default function TopTradesPage() {
                 >
                   {filteredAndSortedTrades[selectedTradeIndex].type}
                 </span>
-                <span className="text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].pair}</span>
+                <span className="text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].symbol}</span>
                 <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
               </div>
 
-              {/* Trade Details */}
               <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Entry</span>
@@ -476,12 +404,11 @@ export default function TopTradesPage() {
                   <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit1}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Additional Info</span>
-                  <span className="text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span>
+                  <span className="text-sm text-slate-400">Take Profit 2</span>
+                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit2}</span>
                 </div>
               </div>
 
-              {/* Insights/Reasons */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-white">Insights</h3>
                 {filteredAndSortedTrades[selectedTradeIndex].insights.map((insight: string, idx: number) => (
@@ -492,7 +419,6 @@ export default function TopTradesPage() {
                 ))}
               </div>
 
-              {/* Performance Metrics */}
               <div className="flex items-center gap-6 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
                 <div>
                   <p className="text-xs text-slate-400">Profit</p>
@@ -514,3 +440,5 @@ export default function TopTradesPage() {
     </div>
   );
 }
+
+

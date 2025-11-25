@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
-type ErrorType = 
+type ErrorType =
   | "invalid_api_key"
   | "incorrect_permissions"
   | "ip_whitelist_required"
@@ -14,14 +14,14 @@ type ErrorType =
 
 export default function ConnectingPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "success" | "error">("connecting");
   const [errorType, setErrorType] = useState<ErrorType>(null);
 
   useEffect(() => {
     // Get selected exchange from localStorage
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
-    if (exchange === "binance" || exchange === "bybit") {
+    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr") {
       setSelectedExchange(exchange);
     } else {
       setSelectedExchange("binance");
@@ -31,10 +31,10 @@ export default function ConnectingPage() {
     const timer = setTimeout(() => {
       // In a real app, this would be an actual API call to verify the keys
       // For demo purposes, you can simulate failure by uncommenting the error simulation below
-      
+
       // Simulate success (default)
       setConnectionStatus("success");
-      
+
       // Uncomment below to simulate different error types for testing:
       // const shouldFail = Math.random() > 0.7; // 30% chance of failure
       // if (shouldFail) {
@@ -80,8 +80,21 @@ export default function ConnectingPage() {
         />
       ),
     },
+    ibkr: {
+      name: "Interactive Brokers",
+      logo: (
+        <div className="flex h-20 w-20 items-center justify-center p-2">
+          <Image
+            src="/IBKR_logo.png"
+            alt="Interactive Brokers"
+            width={64}
+            height={64}
+            className="h-full w-full object-contain"
+          />
+        </div>
+      ),
+    },
   };
-
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
   const exchangeName = selectedExchange ? exchangeInfo[selectedExchange].name : "Binance";
 
@@ -133,17 +146,17 @@ export default function ConnectingPage() {
   };
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
+    <div className="relative flex h-full w-full overflow-hidden" >
       {/* Background matching Figma design */}
-      <div className="absolute inset-0 bg-black">
+      < div className="absolute inset-0 bg-black" >
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        < div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
-      </div>
+      </div >
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full items-center justify-center overflow-y-auto">
+      < div className="relative z-10 flex h-full w-full items-center justify-center overflow-y-auto" >
         <div className="mx-auto w-full max-w-lg px-4 py-6 text-center">
           {/* Exchange Logo */}
           <div className="mb-6 flex justify-center">
@@ -290,8 +303,8 @@ export default function ConnectingPage() {
             </>
           )}
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
 

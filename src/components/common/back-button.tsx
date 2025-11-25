@@ -24,19 +24,34 @@ export function BackButton() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const getPreviousPage = () => {
-    const currentIndex = ONBOARDING_PAGES.findIndex((page) => pathname === page || pathname.startsWith(page + "/"));
-    
-    if (currentIndex <= 0) {
-      // If on first page or not found, go to welcome
-      return "/onboarding/welcome";
-    }
-    
-    return ONBOARDING_PAGES[currentIndex - 1];
-  };
-
   const handleBack = () => {
-    router.push(getPreviousPage());
+    let prevPage = "";
+
+    // Handle branched navigation
+    if (pathname === "/onboarding/stock-exchange") {
+      prevPage = "/onboarding/account-type";
+    } else if (pathname === "/onboarding/crypto-exchange") {
+      prevPage = "/onboarding/account-type";
+    } else if (pathname === "/onboarding/api-key-tutorial") {
+      // Check account type to determine previous page
+      const accountType = localStorage.getItem("quantivahq_account_type");
+      if (accountType === "stocks") {
+        prevPage = "/onboarding/stock-exchange";
+      } else {
+        prevPage = "/onboarding/crypto-exchange";
+      }
+    } else {
+      // Default linear navigation
+      const currentIndex = ONBOARDING_PAGES.findIndex((page) => pathname === page || pathname.startsWith(page + "/"));
+
+      if (currentIndex <= 0) {
+        prevPage = "/onboarding/welcome";
+      } else {
+        prevPage = ONBOARDING_PAGES[currentIndex - 1];
+      }
+    }
+
+    router.push(prevPage);
   };
 
   // Don't show back button on welcome page

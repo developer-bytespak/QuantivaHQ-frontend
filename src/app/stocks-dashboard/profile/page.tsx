@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
-export default function ProfilePage() {
+export default function StocksProfilePage() {
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
   const [userInitial, setUserInitial] = useState<string>("U");
@@ -816,4 +816,3 @@ export default function ProfilePage() {
     </div >
   );
 }
-

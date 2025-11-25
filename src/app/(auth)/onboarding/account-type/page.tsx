@@ -24,18 +24,16 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
       onClick={() => onSelect(value)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-300 p-4 sm:p-5 md:p-6 backdrop-blur text-left ${
-        isSelected
+      className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-300 p-4 sm:p-5 md:p-6 backdrop-blur text-left ${isSelected
           ? "border-[#fc4f02] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 shadow-2xl shadow-[#fc4f02]/30"
           : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
-      }`}
+        }`}
       style={{ animationDelay: delay }}
     >
       {/* Gradient overlay on hover/select */}
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${gradient} transition-opacity duration-300 ${
-          isSelected ? "opacity-20" : isHovered ? "opacity-10" : "opacity-0"
-        }`}
+        className={`absolute inset-0 bg-gradient-to-br ${gradient} transition-opacity duration-300 ${isSelected ? "opacity-20" : isHovered ? "opacity-10" : "opacity-0"
+          }`}
       />
 
       {/* Selected indicator */}
@@ -49,9 +47,8 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Content */}
       <div className="relative z-10">
-        <div className={`mb-3 sm:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 ${
-          isSelected ? "scale-110" : "group-hover:scale-110"
-        }`}>
+        <div className={`mb-3 sm:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-110"
+          }`}>
           {icon}
         </div>
         <h3 className="mb-2 text-base sm:text-lg font-semibold text-white">{title}</h3>
@@ -60,9 +57,8 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Shine effect */}
       <div
-        className={`absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 ${
-          isHovered || isSelected ? "translate-x-full" : ""
-        }`}
+        className={`absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 ${isHovered || isSelected ? "translate-x-full" : ""
+          }`}
       />
     </button>
   );
@@ -88,11 +84,10 @@ export default function AccountTypePage() {
       localStorage.setItem("quantivahq_account_type", value);
       router.push("/onboarding/crypto-exchange");
     } else if (value === "stocks") {
-      // Show coming soon message
-      setShowComingSoon(true);
-      setTimeout(() => {
-        setShowComingSoon(false);
-      }, 3000);
+      // Navigate to stock exchange selection
+      setSelectedType(value);
+      localStorage.setItem("quantivahq_account_type", value);
+      router.push("/onboarding/stock-exchange");
     }
   };
 
@@ -123,12 +118,12 @@ export default function AccountTypePage() {
           <rect x="4" y="8" width="3" height="6" fill="#10b981" />
           <line x1="5.5" y1="6" x2="5.5" y2="8" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
           <line x1="5.5" y1="14" x2="5.5" y2="16" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
-          
+
           {/* Second candlestick (red) */}
           <rect x="10" y="10" width="3" height="4" fill="#ef4444" />
           <line x1="11.5" y1="8" x2="11.5" y2="10" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
           <line x1="11.5" y1="14" x2="11.5" y2="18" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
-          
+
           {/* Third candlestick (green) */}
           <rect x="16" y="7" width="3" height="7" fill="#10b981" />
           <line x1="17.5" y1="5" x2="17.5" y2="7" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
@@ -149,10 +144,10 @@ export default function AccountTypePage() {
     },
   ];
 
-      return (
-        <div className="relative flex h-full w-full overflow-hidden">
-          <BackButton />
-          {/* Background matching Figma design */}
+  return (
+    <div className="relative flex h-full w-full overflow-hidden">
+      <BackButton />
+      {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
@@ -178,20 +173,20 @@ export default function AccountTypePage() {
 
           {/* Account Type Cards */}
           <div className="grid gap-3 sm:gap-4 md:grid-cols-3 animate-text-enter mb-4 sm:mb-5 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
-              {accountTypes.map((type, index) => (
-                <AccountTypeCard
-                  key={type.value}
-                  icon={type.icon}
-                  title={type.title}
-                  description={type.description}
-                  value={type.value}
-                  gradient={type.gradient}
-                  delay={`${index * 0.1}s`}
-                  isSelected={selectedType === type.value}
-                  onSelect={handleSelect}
-                />
-              ))}
-            </div>
+            {accountTypes.map((type, index) => (
+              <AccountTypeCard
+                key={type.value}
+                icon={type.icon}
+                title={type.title}
+                description={type.description}
+                value={type.value}
+                gradient={type.gradient}
+                delay={`${index * 0.1}s`}
+                isSelected={selectedType === type.value}
+                onSelect={handleSelect}
+              />
+            ))}
+          </div>
 
           {/* Coming Soon Toast */}
           {showComingSoon && (

@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 
 export default function ApiKeysPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [passphrase, setPassphrase] = useState("");
@@ -22,7 +22,7 @@ export default function ApiKeysPage() {
   useEffect(() => {
     // Get selected exchange from localStorage
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
-    if (exchange === "binance" || exchange === "bybit") {
+    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr") {
       setSelectedExchange(exchange);
     } else {
       // Default to Binance if not set
@@ -57,6 +57,21 @@ export default function ApiKeysPage() {
       ),
       requiresPassphrase: false,
     },
+    ibkr: {
+      name: "Interactive Brokers",
+      logo: (
+        <div className="flex h-12 w-12 items-center justify-center p-2">
+          <Image
+            src="/IBKR_logo.png"
+            alt="Interactive Brokers"
+            width={48}
+            height={48}
+            className="h-full w-full object-contain"
+          />
+        </div>
+      ),
+      requiresPassphrase: false,
+    },
   };
 
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
@@ -83,7 +98,7 @@ export default function ApiKeysPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -104,18 +119,18 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
+    <div className="relative flex h-full w-full overflow-hidden" >
       <BackButton />
       {/* Background matching Figma design */}
-      <div className="absolute inset-0 bg-black">
+      <div className="absolute inset-0 bg-black" >
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        < div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
-      </div>
+      </div >
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden">
+      < div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden" >
         <div className="mx-auto w-full max-w-2xl px-4 py-4 sm:px-6 lg:px-8">
           {/* Header Section */}
           <div className="mb-4 text-center">
@@ -149,11 +164,10 @@ export default function ApiKeysPage() {
                         setErrors({ ...errors, apiKey: "" });
                       }
                     }}
-                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${
-                      errors.apiKey
-                        ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
-                        : "border-slate-700/50"
-                    }`}
+                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.apiKey
+                      ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-slate-700/50"
+                      }`}
                     placeholder={`Enter your ${exchangeName} API Key`}
                   />
                   <button
@@ -194,11 +208,10 @@ export default function ApiKeysPage() {
                         setErrors({ ...errors, secretKey: "" });
                       }
                     }}
-                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${
-                      errors.secretKey
-                        ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
-                        : "border-slate-700/50"
-                    }`}
+                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.secretKey
+                      ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
+                      : "border-slate-700/50"
+                      }`}
                     placeholder={`Enter your ${exchangeName} Secret Key`}
                   />
                   <button
@@ -274,14 +287,12 @@ export default function ApiKeysPage() {
                     <button
                       type="button"
                       onClick={() => setEnableTrading(!enableTrading)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${
-                        enableTrading ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-slate-700"
-                      }`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${enableTrading ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-slate-700"
+                        }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          enableTrading ? "translate-x-6" : "translate-x-1"
-                        }`}
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${enableTrading ? "translate-x-6" : "translate-x-1"
+                          }`}
                       />
                     </button>
                   </div>
@@ -329,8 +340,8 @@ export default function ApiKeysPage() {
             </div>
           </form>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }
 

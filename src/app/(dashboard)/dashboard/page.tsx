@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Activity {
   id: number;
@@ -106,15 +107,73 @@ const allActivities: Activity[] = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
+  const [showTradeOverlay, setShowTradeOverlay] = useState(false);
+  const [selectedNews, setSelectedNews] = useState<number>(0);
+  const [selectedTrade, setSelectedTrade] = useState<number>(0);
 
-  const newsData = {
-    title: "Bitcoin Momentum Building",
-    description: "Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500",
-    timestamp: "2 min ago",
-  };
+  const newsItems = [
+    {
+      id: 1,
+      title: "Bitcoin Momentum Building",
+      description: "Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500",
+      timestamp: "2 min ago",
+    },
+    {
+      id: 2,
+      title: "Ethereum Network Upgrade Success",
+      description: "ETH network successfully completed its latest upgrade, reducing gas fees by 40% and improving transaction speed. Validators report 99.9% uptime during transition.",
+      timestamp: "15 min ago",
+    },
+  ];
+
+  const trades = [
+    {
+      id: 1,
+      pair: "ETH / USDT",
+      type: "BUY",
+      confidence: "HIGH",
+      entry: "$2,120",
+      stopLoss: "$120",
+      takeProfit1: "$240",
+      additionalInfo: "20,045-",
+      ext: "22,000",
+      entryShort: "1,020",
+      stopLossShort: "1.317 $",
+      progressMin: "$790",
+      progressMax: "$200",
+      progressPercent: 75,
+      reasons: [
+        "Bullish momentum on 1h and 4h charts",
+        "Sentiment improved 20% in last 3 hours",
+        "High liquidity reduces execution risk"
+      ]
+    },
+    {
+      id: 2,
+      pair: "BTC / USDT",
+      type: "SELL",
+      confidence: "MEDIUM",
+      entry: "$34,500",
+      stopLoss: "$35,200",
+      takeProfit1: "$33,800",
+      additionalInfo: "15,230-",
+      ext: "18,500",
+      entryShort: "34,500",
+      stopLossShort: "35,200 $",
+      progressMin: "$520",
+      progressMax: "$150",
+      progressPercent: 60,
+      reasons: [
+        "Resistance level at $35,000 showing strong rejection",
+        "Volume declining on upward moves",
+        "RSI showing bearish divergence on 4h timeframe"
+      ]
+    },
+  ];
 
   return (
     <div className="space-y-6 pb-8">
@@ -122,20 +181,24 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Portfolio Snapshot */}
-          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
-            <h2 className="mb-4 text-lg font-semibold text-white">Portfolio Snapshot</h2>
+          {/* Portfolio - Main Box with Two Inner Boxes */}
+          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+            <h2 className="mb-4 text-lg font-semibold text-white">Portfolio</h2>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <p className="mb-1 text-xs text-slate-400">Total Portfolio Value</p>
+              {/* Total Profit Value Inner Box */}
+              <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <p className="mb-2 text-xs text-slate-400">Total Profit Value</p>
                 <p className="mb-2 text-2xl font-bold text-white">$12,340.52</p>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-green-400">+3742.10</span>
                   <span className="text-sm text-green-400">(+3.1% today)</span>
                 </div>
               </div>
-              <div>
-                <p className="mb-1 text-xs text-slate-400">Active Strategies</p>
+
+              {/* Active Strategies Inner Box */}
+              <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <p className="mb-2 text-xs text-slate-400">Active Strategies</p>
                 <p className="mb-2 text-2xl font-bold text-white">$7,480</p>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-green-400">+8%</span>
@@ -146,19 +209,19 @@ export default function DashboardPage() {
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
+          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Action Center</h2>
               <button
                 onClick={() => setShowAllActivities(true)}
-                className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors"
+                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
               >
                 View All Activity
               </button>
             </div>
             <div className="space-y-4">
               {/* Activity Item 1 */}
-              <div className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+              <div className="cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
                   <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -172,7 +235,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Activity Item 2 */}
-              <div className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+              <div className="cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/20">
                   <svg className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -186,7 +249,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Activity Item 3 */}
-              <div className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
+              <div className="cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
                   <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -201,28 +264,26 @@ export default function DashboardPage() {
           </div>
 
           {/* Holdings & Market */}
-          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20">
+          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
             <div className="border-b border-[--color-border] p-6 pb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
                 <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
                   <button
                     onClick={() => setActiveTab("holdings")}
-                    className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${
-                      activeTab === "holdings"
-                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
-                        : "text-slate-400 hover:text-white"
-                    }`}
+                    className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${activeTab === "holdings"
+                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      : "text-slate-400 hover:text-white"
+                      }`}
                   >
                     My Holdings
                   </button>
                   <button
                     onClick={() => setActiveTab("market")}
-                    className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${
-                      activeTab === "market"
-                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
-                        : "text-slate-400 hover:text-white"
-                    }`}
+                    className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${activeTab === "market"
+                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      : "text-slate-400 hover:text-white"
+                      }`}
                   >
                     Market
                   </button>
@@ -242,7 +303,7 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                  <tr className="hover:bg-[--color-surface]/40 transition-colors">
                     <td className="py-3 text-sm font-medium text-white">BTC</td>
                     <td className="py-3 text-sm text-slate-300">2.20 ETH</td>
                     <td className="py-3 text-sm text-slate-300">$5,114.50</td>
@@ -283,115 +344,135 @@ export default function DashboardPage() {
         {/* Right Column - Trade & AI Insights */}
         <div className="space-y-6">
           {/* Trade Section */}
-          <div className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
-            <h2 className="mb-4 text-lg font-semibold text-white">Trade</h2>
-            
-            {/* Top Trade Opportunity */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1 text-sm font-semibold text-white">
-                  BUY
-                </span>
-                <span className="text-sm font-medium text-white">ETH / USDT</span>
-                <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-300">HIGH</span>
-              </div>
+          <div className="space-y-2">
+            {/* Trade Header - Outside Box */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Trade</h2>
+              <button
+                onClick={() => router.push("/dashboard/top-trades")}
+                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
+              >
+                View All Trades
+              </button>
+            </div>
 
-              <div className="space-y-2">
-                <p className="text-xs text-slate-400">Ext. 22,000</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-slate-400">Entry</span>
-                  <span className="font-medium text-white">1,020</span>
-                  <span className="text-slate-500">&gt;</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-slate-400">Stop Loss</span>
-                  <span className="font-medium text-white">1.317 $</span>
-                </div>
-              </div>
+            {/* Trade Cards */}
+            <div className="space-y-3">
+              {trades.map((trade, index) => (
+                <div key={trade.id} className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+                  {/* Top Trade Opportunity */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY"
+                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                        : "bg-gradient-to-r from-red-500 to-red-600"
+                        }`}>
+                        {trade.type}
+                      </span>
+                      <span className="text-sm font-medium text-white">{trade.pair}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
+                        }`}>{trade.confidence}</span>
+                    </div>
 
-              {/* Progress Bar */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>$790</span>
-                  <span>$200</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                  <div className="h-full w-[75%] bg-gradient-to-r from-green-500 to-emerald-500" />
-                </div>
-              </div>
+                    <div className="space-y-2">
+                      <p className="text-xs text-slate-400">Ext. {trade.ext}</p>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400">Entry</span>
+                        <span className="font-medium text-white">{trade.entryShort}</span>
+                        <span className="text-slate-500">&gt;</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-slate-400">Stop Loss</span>
+                        <span className="font-medium text-white">{trade.stopLossShort}</span>
+                      </div>
+                    </div>
 
-              {/* Trade Details */}
-              <div className="group/details cursor-pointer space-y-2 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-3 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Entry</span>
-                  <span className="text-white">$2,120</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Stop-Loss</span>
-                  <span className="text-white">$120</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400">Take Profit 1</span>
-                  <span className="text-white">$240</span>
-                </div>
-                <div className="text-xs text-slate-500">20,045-</div>
-              </div>
+                    {/* Progress Bar */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>{trade.progressMin}</span>
+                        <span>{trade.progressMax}</span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                        <div
+                          className={`h-full bg-gradient-to-r ${trade.type === "BUY"
+                            ? "from-green-500 to-emerald-500"
+                            : "from-red-500 to-red-600"
+                            }`}
+                          style={{ width: `${trade.progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
 
-              {/* Reasons */}
-              <div className="space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-400" />
-                  <p className="text-xs text-slate-300">Bullish momentum on 1h and 4h charts</p>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 pt-2">
+                      <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
+                        Auto Trade
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedTrade(index);
+                          setShowTradeOverlay(true);
+                        }}
+                        className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                      >
+                        View Trade
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-400" />
-                  <p className="text-xs text-slate-300">Sentiment improved 20% in last 3 hours</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-400" />
-                  <p className="text-xs text-slate-300">High liquidity reduces execution risk</p>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
-                <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
-                  Approve Trade
-                </button>
-                <button className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white">
-                  View All Signals
-                </button>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* AI Insights Section */}
-          <div
-            onClick={() => setShowNewsOverlay(true)}
-            className="group cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]"
-          >
-            <div className="mb-4 flex items-center justify-between">
+          <div className="space-y-2">
+            {/* AI Insights Header - Outside Box */}
+            <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">AI Insights</h2>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">2 min</span>
-                <button className="text-slate-400 hover:text-white transition-colors">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-              </div>
+              <button
+                onClick={() => router.push("/dashboard/ai-insights")}
+                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
+              >
+                View All AI Insights
+              </button>
             </div>
 
-            <div className="space-y-4">
-              {/* News Heading */}
-              <h3 className="text-base font-semibold text-white">Bitcoin Momentum Building</h3>
+            {/* AI Insights News Cards */}
+            <div className="space-y-3">
+              {newsItems.map((news, index) => (
+                <div
+                  key={news.id}
+                  onClick={() => {
+                    setSelectedNews(index);
+                    setShowNewsOverlay(true);
+                  }}
+                  className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400">{news.timestamp}</span>
+                      <button className="text-slate-400 hover:text-white transition-colors">
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
 
-              {/* Description */}
-              <div className="space-y-2 text-sm text-slate-300">
-                <p>
-                  Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500
-                </p>
-              </div>
+                  <div className="space-y-4">
+                    {/* News Heading */}
+                    <h3 className="text-base font-semibold text-white">{news.title}</h3>
+
+                    {/* Description */}
+                    <div className="space-y-2 text-sm text-slate-300">
+                      <p className="line-clamp-2">
+                        {news.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -409,7 +490,7 @@ export default function DashboardPage() {
           >
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">{newsData.title}</h2>
+              <h2 className="text-2xl font-bold text-white">{newsItems[selectedNews].title}</h2>
               <button
                 onClick={() => setShowNewsOverlay(false)}
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
@@ -433,13 +514,96 @@ export default function DashboardPage() {
 
             {/* Timestamp */}
             <div className="mb-4 flex items-center gap-2">
-              <span className="text-xs text-slate-400">{newsData.timestamp}</span>
+              <span className="text-xs text-slate-400">{newsItems[selectedNews].timestamp}</span>
             </div>
 
             {/* Description */}
             <div className="space-y-4">
               <div className="space-y-2 text-sm leading-relaxed text-slate-300">
-                <p>{newsData.description}</p>
+                <p>{newsItems[selectedNews].description}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Trade Details Overlay */}
+      {showTradeOverlay && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowTradeOverlay(false)}
+        >
+          <div
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-white">Trade Details</h2>
+              <button
+                onClick={() => setShowTradeOverlay(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Trade Info */}
+            <div className="space-y-6">
+              {/* Pair and Type */}
+              <div className="flex items-center gap-3">
+                <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${trades[selectedTrade].type === "BUY"
+                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                    : "bg-gradient-to-r from-red-500 to-red-600"
+                  }`}>
+                  {trades[selectedTrade].type}
+                </span>
+                <span className="text-lg font-medium text-white">{trades[selectedTrade].pair}</span>
+                <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{trades[selectedTrade].confidence}</span>
+              </div>
+
+              {/* Trade Details */}
+              <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Entry</span>
+                  <span className="text-base font-medium text-white">{trades[selectedTrade].entry}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Stop-Loss</span>
+                  <span className="text-base font-medium text-white">{trades[selectedTrade].stopLoss}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Take Profit 1</span>
+                  <span className="text-base font-medium text-white">{trades[selectedTrade].takeProfit1}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Additional Info</span>
+                  <span className="text-base font-medium text-slate-300">{trades[selectedTrade].additionalInfo}</span>
+                </div>
+              </div>
+
+              {/* Reasons */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-white">Reasons</h3>
+                {trades[selectedTrade].reasons.map((reason: string, index: number) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-400" />
+                    <p className="text-sm text-slate-300">{reason}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -12,6 +12,17 @@
   --surface: #1a1a1a;
   --surface-alt: #0f0f0f;
   --border: rgba(255, 255, 255, 0.1);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-surface: var(--surface);
+  --color-surface-alt: var(--surface-alt);
+  --color-border: var(--border);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-outfit);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
 }
 
 @media (prefers-color-scheme: light) {
@@ -23,28 +34,7 @@
     --accent: #1d4ed8;
     --accent-foreground: #1e293b;
     --surface: #ffffff;
-    --surface-alt: #f8fafc;
-    --border: rgba(15, 23, 42, 0.08);
   }
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-surface: var(--surface);
-  --color-surface-alt: var(--surface-alt);
-  --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --radius-lg: 24px;
-  --radius-md: 16px;
-  --radius-sm: 10px;
 }
 
 *,
@@ -68,9 +58,42 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-outfit), var(--font-geist-sans), sans-serif;
+}
+
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* Global button cursor pointer */
+button,
+button[type="button"],
+button[type="submit"],
+button[type="reset"] {
+  cursor: pointer;
+}
+
+/* Ensure buttons show pointer cursor on hover */
+button:hover,
+button[type="button"]:hover,
+button[type="submit"]:hover,
+button[type="reset"]:hover {
+  cursor: pointer;
+}
+
+/* Disabled buttons should show not-allowed */
+button:disabled,
+button[type="button"]:disabled,
+button[type="submit"]:disabled,
+button[type="reset"]:disabled {
+  cursor: not-allowed;
 }
 
 .text-balance {
@@ -82,6 +105,7 @@ a {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -92,6 +116,7 @@ a {
     opacity: 0;
     transform: translateX(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -103,9 +128,11 @@ a {
     opacity: 0;
     transform: scale(0.8) translateY(-20px);
   }
+
   50% {
     transform: scale(1.05) translateY(0);
   }
+
   100% {
     opacity: 1;
     transform: scale(1) translateY(0);
@@ -116,6 +143,7 @@ a {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -125,6 +153,7 @@ a {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -135,6 +164,7 @@ a {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -165,6 +195,7 @@ a {
   animation: text-enter 0.8s ease-out forwards;
   opacity: 0;
 }
+
 /* Select dropdown styling */
 select {
   z-index: 9999;
@@ -196,21 +227,6 @@ select option:hover {
 }
 
 /* Ensure select dropdown opens downward */
-select {
-  transform-origin: top center;
-}
-
-/* Style the dropdown list container */
-@supports (-webkit-appearance: none) {
-  select {
-    -webkit-appearance: none;
-  }
-}
-
-/* Force dropdown to open downward by ensuring parent has static positioning */
-select {
-  position: static !important;
-}
 
 /* Custom dropdown scrollbar styling */
 .overflow-y-auto::-webkit-scrollbar {

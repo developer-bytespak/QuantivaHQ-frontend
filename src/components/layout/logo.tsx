@@ -2,21 +2,21 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface LogoProps {
   collapsed?: boolean;
-  onToggle?: () => void;
 }
 
-export function Logo({ collapsed = false, onToggle }: LogoProps) {
+export function Logo({ collapsed = false }: LogoProps) {
   const [imageError, setImageError] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (onToggle) {
-      e.preventDefault();
-      onToggle();
+  const handleClick = () => {
+    // Navigate to the appropriate dashboard based on current path
+    if (pathname?.startsWith("/stocks-dashboard")) {
+      router.push("/stocks-dashboard");
     } else {
       router.push("/dashboard");
     }
@@ -26,7 +26,7 @@ export function Logo({ collapsed = false, onToggle }: LogoProps) {
     <button
       onClick={handleClick}
       className="group flex items-center gap-3 text-lg font-semibold tracking-tight text-slate-100 transition-opacity hover:opacity-80 cursor-pointer"
-      aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      aria-label="Go to dashboard"
     >
       <div className="relative flex h-14 w-14 items-center justify-center transition-transform duration-300 group-hover:scale-105">
         {imageError ? (

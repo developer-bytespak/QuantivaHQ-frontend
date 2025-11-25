@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./logo";
@@ -11,7 +12,7 @@ export type SidebarSection = {
     label: string;
     href: string;
     description?: string;
-    icon?: React.ReactNode;
+    icon?: ReactNode;
   }>;
 };
 
@@ -50,6 +51,12 @@ const ProfileIcon = ({ isActive }: { isActive: boolean }) => (
   </svg>
 );
 
+const HoldingsIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-5 w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+  </svg>
+);
+
 const getIcon = (label: string, isActive: boolean) => {
   const iconProps = { isActive };
   switch (label.toLowerCase()) {
@@ -61,6 +68,8 @@ const getIcon = (label: string, isActive: boolean) => {
       return <AIInsightsIcon {...iconProps} />;
     case "vc pool":
       return <VCPoolIcon {...iconProps} />;
+    case "holdings":
+      return <HoldingsIcon {...iconProps} />;
     case "profile":
       return <ProfileIcon {...iconProps} />;
     default:
@@ -70,19 +79,21 @@ const getIcon = (label: string, isActive: boolean) => {
 
 export function DashboardSidebar({ sections }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
 
   return (
     <aside
+      onMouseEnter={() => setCollapsed(false)}
+      onMouseLeave={() => setCollapsed(true)}
       className={`group/dashboard relative flex h-screen flex-col border-r border-[--color-border] bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
     >
       {/* Header */}
       <div className="flex h-24 items-center justify-center bg-[--color-surface-alt]/50 px-8">
-        <Logo collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} />
+        <Logo collapsed={collapsed} />
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav className={`flex-1 space-y-1 overflow-y-auto py-4 ${collapsed ? "px-2" : "px-3"}`}>
         {sections.map((section) => (
           <div key={section.title} className="space-y-1">
             {!collapsed && section.title && (
@@ -93,11 +104,11 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
             <div className="space-y-1">
               {section.items.map((item) => {
                 // More precise active state detection
-                // For /dashboard, only match exactly
+                // For /dashboard and /stocks-dashboard, only match exactly
                 // For other paths, match exactly or if pathname starts with href + "/"
                 let isActive = false;
-                if (item.href === "/dashboard") {
-                  isActive = pathname === "/dashboard";
+                if (item.href === "/dashboard" || item.href === "/stocks-dashboard") {
+                  isActive = pathname === item.href;
                 } else {
                   isActive = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
                 }
@@ -106,17 +117,20 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
-                      isActive
+                    className={`group relative flex items-center ${collapsed ? "justify-center" : "gap-3"} rounded-xl ${collapsed ? "px-2" : "px-3"} py-2.5 text-sm font-medium transition-all duration-200 ${isActive
                         ? "bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-[#fc4f02] shadow-lg shadow-[#fc4f02]/10"
                         : "text-slate-300 hover:bg-[--color-surface-alt] hover:text-white"
-                    }`}
+                      }`}
                   >
                     {isActive && (
-                      <div className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]" />
+                      <div
+                        className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]"
+                      />
                     )}
-                    <div className={`flex-shrink-0 transition-transform duration-200 ${isActive ? "scale-110" : "group-hover:scale-105"}`}>
-                      {getIcon(item.label, isActive)}
+                    <div className="flex-shrink-0 flex items-center justify-center">
+                      {getIcon(item.label, isActive) || (
+                        <div className={`h-5 w-5 rounded ${isActive ? "bg-[#fc4f02]" : "bg-slate-400"}`}></div>
+                      )}
                     </div>
                     {!collapsed && (
                       <span className="truncate font-medium">{item.label}</span>

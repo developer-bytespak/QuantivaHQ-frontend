@@ -12,67 +12,67 @@ interface NewsItem {
 const newsItems: NewsItem[] = [
   {
     id: 1,
-    title: "Bitcoin Momentum Building",
-    description: "Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500",
+    title: "Apple Earnings Beat Expectations",
+    description: "AAPL reported strong Q4 earnings with revenue up 12%. iPhone sales exceeded forecasts. Guidance raised for next quarter. Strong demand for iPhone 15 Pro models driving margin expansion.",
     timestamp: "2 min ago",
   },
   {
     id: 2,
-    title: "Ethereum Sentiment Improved 20%",
-    description: "Bullish momentum on 1h and 4h charts. Sentiment improved 20% in last 3 hours. High liquidity reduces execution risk. Potential breakout above $2,500 resistance.",
+    title: "Microsoft Cloud Revenue Surges",
+    description: "MSFT Azure growth accelerates with enterprise adoption increasing. AI integration driving new contract signings. Positive momentum expected to continue through Q1. Strong demand for Copilot enterprise solutions.",
     timestamp: "15 min ago",
   },
   {
     id: 3,
-    title: "Solana Consolidation Phase",
-    description: "SOL trading in tight range between $95-$105. Waiting for breakout confirmation. Volume decreasing suggests accumulation phase. Monitor for directional move.",
+    title: "NVIDIA AI Chip Demand Accelerating",
+    description: "NVDA data center revenue up 32% YoY. AI chip demand from major cloud providers remains strong. New partnerships with enterprise AI companies. H200 GPU shipments starting Q1.",
     timestamp: "1 hour ago",
   },
   {
     id: 4,
-    title: "XRP Sentiment Spike Down",
-    description: "XRP sentiment spike down 18% in last 6 hours. Breaking below key support at $0.58. Risk of further decline if support fails. Consider short position or wait for reversal.",
+    title: "Google Cloud Stabilization",
+    description: "GOOGL cloud growth stabilizing with improved margins. YouTube ad revenue recovery stronger than expected. Search advertising revenue resilient. Attractive valuation metrics relative to peers.",
     timestamp: "2 hours ago",
   },
   {
     id: 5,
-    title: "BNB Breakout Above Key Resistance",
-    description: "BNB successfully broke above $315 resistance level with strong volume. Institutional buying detected. Positive funding rate shift indicates bullish sentiment. Target set at $325.",
+    title: "Amazon AWS Margins Expanding",
+    description: "AMZN AWS margins expanding with optimization efforts. E-commerce holiday season performance strong. Breakout from consolidation pattern. Prime membership growth accelerating.",
     timestamp: "3 hours ago",
   },
   {
     id: 6,
-    title: "ADA Overbought Conditions",
-    description: "ADA showing overbought conditions on RSI indicator. Weak volume on recent rally suggests potential pullback. Approaching resistance zone at $0.49. Caution advised for new positions.",
+    title: "Tesla Production Ramp Up",
+    description: "TSLA production ramp up for Cybertruck continues. Model Y demand remains strong globally. Supercharger network expansion accelerating. Energy storage business growing rapidly.",
     timestamp: "4 hours ago",
   },
   {
     id: 7,
-    title: "DOGE Meme Coin Momentum Building",
-    description: "Meme coin momentum building with high retail interest returning. Breakout from consolidation pattern detected. Social sentiment increasing significantly. Watch for volatility spikes.",
+    title: "Meta AI Integration Progress",
+    description: "META AI integration across platforms showing early positive signals. Reels monetization improving. Virtual reality investments paying off. Strong user engagement metrics.",
     timestamp: "5 hours ago",
   },
   {
     id: 8,
-    title: "MATIC Partnership Announcements Pending",
-    description: "Strong fundamentals support MATIC price action. Partnership announcements pending which could drive price higher. Technical breakout confirmed above $0.85. Strong buy signal.",
+    title: "Netflix Subscriber Growth",
+    description: "NFLX subscriber growth exceeds expectations with password sharing crackdown success. Content investments driving retention. International expansion accelerating. Free cash flow generation improving.",
     timestamp: "6 hours ago",
   },
   {
     id: 9,
-    title: "LINK Oracle Network Growth Accelerating",
-    description: "Oracle network growth accelerating with institutional adoption increasing. Strong technical setup with bullish chart pattern. Price action showing positive momentum above $14.20 support.",
+    title: "AMD Server Market Share Gains",
+    description: "AMD gaining server market share with EPYC processors. AI inference capabilities competitive. Strong positioning in data center refresh cycles. Client segment recovery underway.",
     timestamp: "7 hours ago",
   },
   {
     id: 10,
-    title: "AVAX Ecosystem Expansion Continues",
-    description: "Ecosystem expansion continues with TVL growth supporting price action. Bullish chart pattern forming on daily timeframe. Strong fundamentals align with technical indicators.",
+    title: "Intel Foundry Strategy Update",
+    description: "INTC foundry strategy showing progress with major customer wins. Process technology roadmap on track. Data center segment stabilizing. Investment in AI accelerators increasing.",
     timestamp: "8 hours ago",
   },
 ];
 
-export default function AIInsightsPage() {
+export default function StocksAIInsightsPage() {
   const [selectedAsset, setSelectedAsset] = useState<string>("all");
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
@@ -89,7 +89,7 @@ export default function AIInsightsPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-slate-400">AI-powered market news and analysis</p>
+          <p className="text-sm text-slate-400">AI-powered stock market news and analysis</p>
         </div>
 
         {/* Asset Filter */}
@@ -101,9 +101,9 @@ export default function AIInsightsPage() {
                 : "text-slate-400 hover:text-white"
               }`}
           >
-            All Assets
+            All Stocks
           </button>
-          {["BTC", "ETH", "SOL", "XRP"].map((asset) => (
+          {["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"].map((asset) => (
             <button
               key={asset}
               onClick={() => setSelectedAsset(asset)}
@@ -124,24 +124,19 @@ export default function AIInsightsPage() {
           <div
             key={news.id}
             onClick={() => handleNewsClick(news)}
-            className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+            className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:scale-[1.01]"
           >
             {/* Header */}
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">{news.title}</h2>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-slate-400">{news.timestamp}</span>
-                <button className="text-slate-400 hover:text-white transition-colors">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
               </div>
             </div>
 
             {/* Description */}
             <div className="space-y-2 text-sm text-slate-300">
-              <p>{news.description}</p>
+              <p className="line-clamp-2">{news.description}</p>
             </div>
           </div>
         ))}
@@ -198,3 +193,5 @@ export default function AIInsightsPage() {
     </div>
   );
 }
+
+
