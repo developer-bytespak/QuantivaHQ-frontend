@@ -15,6 +15,8 @@ interface Holding {
   plPercent: number;
   dayChange: number;
   weight: number;
+  type: "Stocks" | "ETFs";
+  sector: string;
 }
 
 const holdingsData: Holding[] = [
@@ -29,6 +31,8 @@ const holdingsData: Holding[] = [
     plPercent: 8.20,
     dayChange: 0.62,
     weight: 11.0,
+    type: "Stocks",
+    sector: "Technology",
   },
   {
     symbol: "MSFT",
@@ -41,6 +45,8 @@ const holdingsData: Holding[] = [
     plPercent: 4.27,
     dayChange: 0.45,
     weight: 9.8,
+    type: "Stocks",
+    sector: "Technology",
   },
   {
     symbol: "NVDA",
@@ -53,6 +59,8 @@ const holdingsData: Holding[] = [
     plPercent: 3.77,
     dayChange: 1.23,
     weight: 8.2,
+    type: "Stocks",
+    sector: "Technology",
   },
   {
     symbol: "GOOGL",
@@ -65,6 +73,8 @@ const holdingsData: Holding[] = [
     plPercent: 2.02,
     dayChange: 0.28,
     weight: 6.9,
+    type: "Stocks",
+    sector: "Technology",
   },
   {
     symbol: "AMZN",
@@ -77,6 +87,50 @@ const holdingsData: Holding[] = [
     plPercent: 1.84,
     dayChange: 0.51,
     weight: 5.5,
+    type: "Stocks",
+    sector: "Consumer",
+  },
+  {
+    symbol: "SPY",
+    name: "SPDR S&P 500 ETF Trust",
+    quantity: 200,
+    avgCost: 420.50,
+    currentPrice: 435.20,
+    marketValue: 87040,
+    pl: 2940,
+    plPercent: 3.49,
+    dayChange: 0.85,
+    weight: 35.0,
+    type: "ETFs",
+    sector: "Financials",
+  },
+  {
+    symbol: "QQQ",
+    name: "Invesco QQQ Trust",
+    quantity: 150,
+    avgCost: 380.30,
+    currentPrice: 392.45,
+    marketValue: 58868,
+    pl: 1823,
+    plPercent: 3.19,
+    dayChange: 0.92,
+    weight: 23.6,
+    type: "ETFs",
+    sector: "Technology",
+  },
+  {
+    symbol: "JNJ",
+    name: "Johnson & Johnson",
+    quantity: 100,
+    avgCost: 165.80,
+    currentPrice: 168.50,
+    marketValue: 16850,
+    pl: 270,
+    plPercent: 1.63,
+    dayChange: 0.35,
+    weight: 6.8,
+    type: "Stocks",
+    sector: "Healthcare",
   },
 ];
 
@@ -244,6 +298,29 @@ export default function HoldingsPage() {
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
 
+  // Filter holdings based on selected filter
+  const filteredHoldings = holdingsData.filter((holding) => {
+    if (filter === "All") return true;
+    return holding.type === filter;
+  });
+
+  // Group holdings by sector if grouping is enabled
+  const groupedHoldings = grouping === "Sector"
+    ? filteredHoldings.reduce((acc, holding) => {
+        const sector = holding.sector;
+        if (!acc[sector]) {
+          acc[sector] = [];
+        }
+        acc[sector].push(holding);
+        return acc;
+      }, {} as Record<string, Holding[]>)
+    : null;
+
+  // Get sorted sector names for display
+  const sectorNames = groupedHoldings
+    ? Object.keys(groupedHoldings).sort()
+    : [];
+
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
@@ -314,8 +391,104 @@ export default function HoldingsPage() {
       </div>
 
       {/* Holdings Cards */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {holdingsData.map((holding) => (
+      {grouping === "Sector" && groupedHoldings ? (
+        // Grouped by Sector
+        <div className="space-y-8">
+          {sectorNames.map((sector) => (
+            <div key={sector} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white">{sector}</h3>
+                <span className="text-sm text-slate-400">
+                  {groupedHoldings[sector].length} {groupedHoldings[sector].length === 1 ? "holding" : "holdings"}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {groupedHoldings[sector].map((holding) => (
+                  <div
+                    key={holding.symbol}
+                    onClick={() => {
+                      setSelectedHolding(holding);
+                      setShowOverlay(true);
+                    }}
+                    className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:border-[#fc4f02]/30 hover:shadow-2xl hover:shadow-[#fc4f02]/10"
+                  >
+                    <div className="flex flex-col h-full justify-between">
+                      {/* Header Section */}
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-lg font-bold text-white shadow-lg shadow-blue-500/20">
+                            {holding.symbol[0]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold text-white truncate">{holding.symbol}</h3>
+                            <p className="text-xs text-slate-400 truncate mt-0.5">{holding.name}</p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="text-xs font-medium text-slate-500">{holding.weight.toFixed(1)}%</span>
+                              <span className="text-xs text-slate-600">•</span>
+                              <span className="text-xs text-slate-500">{holding.type}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right ml-4">
+                          <div className="flex items-center gap-2">
+                            <p className="text-base font-bold text-white">${holding.currentPrice.toFixed(2)}</p>
+                            <div className="h-2 w-2 rounded-full bg-green-400 shadow-sm shadow-green-400/50"></div>
+                          </div>
+                          <p className="text-sm font-semibold text-green-400 mt-1">+{holding.dayChange.toFixed(2)}%</p>
+                        </div>
+                      </div>
+                      
+                      {/* Metrics Grid */}
+                      <div className="grid grid-cols-2 gap-4 pt-6 border-t border-[--color-border]/50">
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Quantity</p>
+                          <p className="text-xl font-bold text-white">{holding.quantity}</p>
+                          <p className="text-xs text-slate-500">shares</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Market Value</p>
+                          <p className="text-xl font-bold text-white">${holding.marketValue.toLocaleString()}</p>
+                          <p className="text-xs text-slate-500">total value</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">P/L</p>
+                          <p className="text-xl font-bold text-green-400">+${holding.pl.toLocaleString()}</p>
+                          <p className="text-xs text-green-400/70">{holding.plPercent.toFixed(2)}% gain</p>
+                        </div>
+                        <div className="space-y-1.5">
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Avg Cost</p>
+                          <p className="text-xl font-bold text-white">${holding.avgCost.toFixed(2)}</p>
+                          <p className="text-xs text-slate-500">per share</p>
+                        </div>
+                      </div>
+
+                      {/* Progress Indicator */}
+                      <div className="mt-6 pt-4 border-t border-[--color-border]/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-400">Performance</span>
+                          <span className="text-xs font-bold text-green-400">+{holding.plPercent.toFixed(2)}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                            style={{ width: `${Math.min(holding.plPercent * 10, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Hover Effect Border */}
+                    <div className="absolute inset-0 rounded-2xl border-2 border-[#fc4f02]/0 group-hover:border-[#fc4f02]/20 transition-all duration-300 pointer-events-none" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        // Not grouped - show all filtered holdings
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredHoldings.map((holding) => (
           <div
             key={holding.symbol}
             onClick={() => {
@@ -337,7 +510,7 @@ export default function HoldingsPage() {
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-xs font-medium text-slate-500">{holding.weight.toFixed(1)}%</span>
                       <span className="text-xs text-slate-600">•</span>
-                      <span className="text-xs text-slate-500">Portfolio</span>
+                      <span className="text-xs text-slate-500">{holding.type}</span>
                     </div>
                   </div>
                 </div>
@@ -394,6 +567,7 @@ export default function HoldingsPage() {
           </div>
         ))}
       </div>
+      )}
 
       {/* Dashboard Widgets */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
