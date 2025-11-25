@@ -23,6 +23,19 @@ export const DASHBOARD_NAV: NavSection[] = [
   },
 ];
 
+export const STOCKS_DASHBOARD_NAV: NavSection[] = [
+  {
+    title: "Main",
+    items: [
+      { label: "Dashboard", href: "/stocks-dashboard" },
+      { label: "Top trades", href: "/stocks-dashboard/top-trades" },
+      { label: "AI insights", href: "/stocks-dashboard/ai-insights" },
+      { label: "Holdings", href: "/stocks-dashboard/holdings" },
+      { label: "Profile", href: "/stocks-dashboard/profile" },
+    ],
+  },
+];
+
 export const AUTH_STEPS: NavItem[] = [
   { label: "Splash", href: `${onboardingBase}/splash` },
   { label: "Welcome", href: `${onboardingBase}/welcome` },

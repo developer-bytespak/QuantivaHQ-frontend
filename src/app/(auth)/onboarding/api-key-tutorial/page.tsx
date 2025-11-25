@@ -167,7 +167,7 @@ export default function ApiKeyTutorialPage() {
 
           {selectedExchange === "ibkr" && (
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/stocks-dashboard")}
               className="group relative overflow-hidden rounded-lg border border-slate-600 bg-slate-800/50 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-slate-700/50 hover:scale-[1.02]"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
