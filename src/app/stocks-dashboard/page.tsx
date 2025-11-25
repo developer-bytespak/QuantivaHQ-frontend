@@ -13,6 +13,19 @@ interface Activity {
   iconBg: string;
 }
 
+interface Holding {
+  symbol: string;
+  name: string;
+  quantity: number;
+  avgCost: number;
+  currentPrice: number;
+  marketValue: number;
+  pl: number;
+  plPercent: number;
+  dayChange: number;
+  weight: number;
+}
+
 const allActivities: Activity[] = [
   {
     id: 1,
@@ -118,6 +131,22 @@ export default function StocksDashboardPage() {
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
+  const [showHoldingOverlay, setShowHoldingOverlay] = useState(false);
+  const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
+
+  // Holding data for the card on dashboard
+  const dashboardHolding: Holding = {
+    symbol: "AAPL",
+    name: "Apple Inc.",
+    quantity: 150,
+    avgCost: 168.50,
+    currentPrice: 182.45,
+    marketValue: 27367.50,
+    pl: 2092.50,
+    plPercent: 8.20,
+    dayChange: 0.62,
+    weight: 11.0,
+  };
 
   return (
     <div className="space-y-6 pb-8">
@@ -173,7 +202,13 @@ export default function StocksDashboardPage() {
               </div>
 
               {/* Holding Card */}
-              <div className="flex-1 rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]">
+              <div
+                onClick={() => {
+                  setSelectedHolding(dashboardHolding);
+                  setShowHoldingOverlay(true);
+                }}
+                className="flex-1 rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+              >
                 <div className="flex flex-col h-full justify-between">
                   <div className="flex items-center justify-between pb-6">
                     <div className="flex items-center gap-3">
@@ -756,6 +791,106 @@ export default function StocksDashboardPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Holding Details Overlay */}
+      {showHoldingOverlay && selectedHolding && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowHoldingOverlay(false)}
+        >
+          <div
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-white">{selectedHolding.name}</h2>
+                <p className="mt-1 text-sm text-slate-400">{selectedHolding.symbol}</p>
+              </div>
+              <button
+                onClick={() => setShowHoldingOverlay(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Holding Details */}
+            <div className="space-y-6">
+              {/* Key Metrics */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                  <p className="text-xs text-slate-400">Quantity</p>
+                  <p className="mt-1 text-xl font-bold text-white">{selectedHolding.quantity} shares</p>
+                </div>
+                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                  <p className="text-xs text-slate-400">Current Price</p>
+                  <p className="mt-1 text-xl font-bold text-white">${selectedHolding.currentPrice.toFixed(2)}</p>
+                </div>
+                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                  <p className="text-xs text-slate-400">Average Cost</p>
+                  <p className="mt-1 text-xl font-bold text-white">${selectedHolding.avgCost.toFixed(2)}</p>
+                </div>
+                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                  <p className="text-xs text-slate-400">Market Value</p>
+                  <p className="mt-1 text-xl font-bold text-white">${selectedHolding.marketValue.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Performance Metrics */}
+              <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <h3 className="text-sm font-semibold text-white">Performance</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-slate-400">Profit/Loss</p>
+                    <p className="mt-1 text-lg font-bold text-green-400">
+                      +${selectedHolding.pl.toLocaleString()} ({selectedHolding.plPercent.toFixed(2)}%)
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">Daily Change</p>
+                    <p className="mt-1 text-lg font-bold text-green-400">+{selectedHolding.dayChange.toFixed(2)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">Portfolio Weight</p>
+                    <p className="mt-1 text-lg font-bold text-white">{selectedHolding.weight.toFixed(1)}%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">Total Investment</p>
+                    <p className="mt-1 text-lg font-bold text-white">
+                      ${(selectedHolding.quantity * selectedHolding.avgCost).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
+                  Buy More
+                </button>
+                <button className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]">
+                  Sell
+                </button>
+              </div>
             </div>
           </div>
         </div>
