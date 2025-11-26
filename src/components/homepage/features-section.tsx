@@ -224,7 +224,7 @@ export function FeaturesSection() {
   ];
 
   return (
-    <section id="features" className="relative pt-20 sm:pt-24 lg:pt-32 pb-0 overflow-hidden" style={{ perspective: "2000px" }}>
+    <section id="features" className="relative pt-20 sm:pt-24 lg:pt-32 pb-20 sm:pb-24 lg:pb-32 overflow-hidden" style={{ perspective: "2000px" }}>
       {/* Realistic 3D trading background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ transformStyle: "preserve-3d" }}>
         {/* Subtle gradient orbs for depth */}
@@ -486,7 +486,7 @@ export function FeaturesSection() {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
         {/* Enhanced Section Header with 3D effect */}
         <div className="text-center mb-16 sm:mb-20">
           <h2
@@ -510,7 +510,7 @@ export function FeaturesSection() {
         </div>
 
         {/* Features Grid with enhanced spacing */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10" style={{ transformStyle: "preserve-3d" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 pb-4" style={{ transformStyle: "preserve-3d" }}>
           {features.map((feature, index) => (
             <FeatureCard
               key={index}

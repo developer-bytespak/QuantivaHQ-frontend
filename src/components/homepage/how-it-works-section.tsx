@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 
 interface StepProps {
   number: number;
@@ -13,71 +12,63 @@ interface StepProps {
 
 function StepCard({ number, title, description, icon, delay }: StepProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateX = (y - centerY) / 12;
-    const rotateY = (centerX - x) / 12;
-    setMousePosition({ x: rotateY, y: rotateX });
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setMousePosition({ x: 0, y: 0 });
-  };
 
   return (
     <div
       className={`relative group ${delay}`}
-      style={{ perspective: "1000px" }}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Connection Line (for desktop) */}
       {number < 4 && (
-        <div className="hidden lg:block absolute top-16 left-full w-full h-0.5 bg-gradient-to-r from-[#fc4f02]/30 to-transparent z-0" style={{ width: "calc(100% - 4rem)" }}>
-          <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#fc4f02] transition-all duration-300 ${isHovered ? "scale-150" : ""}`} />
+        <div className="hidden lg:block absolute top-16 left-full w-full h-0.5 bg-gradient-to-r from-[#fc4f02]/30 to-transparent z-0 pointer-events-none" style={{ width: "calc(100% - 4rem)" }}>
+          <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#fc4f02] transition-transform duration-300 ${isHovered ? "scale-150" : "scale-100"}`} style={{ willChange: "transform" }} />
         </div>
       )}
 
       <div 
-        className="relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 sm:p-8 backdrop-blur transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
-        style={{
-          transform: isHovered
-            ? `perspective(1000px) rotateX(${mousePosition.y}deg) rotateY(${mousePosition.x}deg) translateZ(25px) scale(1.02)`
-            : "perspective(1000px) rotateX(0) rotateY(0) translateZ(0) scale(1)",
-          transformStyle: "preserve-3d",
-        }}
-        onMouseMove={handleMouseMove}
+        className="relative rounded-3xl border-2 border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 p-6 sm:p-8 backdrop-blur-xl transition-all duration-300 hover:border-[#fc4f02]/60 hover:shadow-2xl hover:shadow-[#fc4f02]/30"
+        style={{ willChange: "transform" }}
       >
-        {/* Step Number Badge with 3D effect */}
+        {/* Gradient overlay on hover */}
+        <div
+          className="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#fc4f02]/10 via-[#fda300]/5 to-[#fc4f02]/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        />
+
+        {/* Corner accents */}
+        <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-[#fc4f02]/15 to-transparent rounded-br-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute bottom-0 right-0 w-16 h-16 bg-gradient-to-tl from-[#fda300]/15 to-transparent rounded-tl-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+        {/* Step Number Badge */}
         <div 
-          className="absolute -top-4 -left-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xl font-bold text-white shadow-lg shadow-[#fc4f02]/30 transition-transform duration-300 group-hover:scale-110"
-          style={{ transform: "translateZ(30px)" }}
+          className="absolute -top-5 -left-5 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xl font-bold text-white shadow-xl shadow-[#fc4f02]/40 transition-all duration-300 group-hover:scale-110 group-hover:shadow-2xl group-hover:shadow-[#fc4f02]/50 z-20"
         >
           {number}
+          {/* Glow effect */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] blur-md opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
         </div>
-
-        {/* 3D Depth Shadow */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: "translateZ(-15px)" }} />
 
         {/* Icon */}
         <div 
-          className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 group-hover:scale-110"
-          style={{ transform: "translateZ(20px)" }}
+          className="mb-5 flex h-18 w-18 items-center justify-center rounded-2xl bg-gradient-to-br from-[#fc4f02]/30 via-[#fda300]/20 to-[#fc4f02]/30 backdrop-blur-sm border border-[#fc4f02]/20 transition-all duration-500 group-hover:scale-110 group-hover:shadow-xl group-hover:shadow-[#fc4f02]/40"
         >
-          {icon}
+          <div className="relative">
+            {icon}
+          </div>
+          {/* Icon glow effect */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#fc4f02]/40 to-[#fda300]/40 blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
         </div>
 
         {/* Content */}
-        <div style={{ transform: "translateZ(15px)" }}>
-          <h3 className="mb-3 text-xl font-bold text-white">{title}</h3>
-          <p className="text-sm leading-relaxed text-slate-400">{description}</p>
+        <div>
+          <h3 
+            className="mb-3 text-xl font-bold text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#fc4f02] group-hover:to-[#fda300]"
+          >
+            {title}
+          </h3>
+          <p className="text-sm leading-relaxed text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
+            {description}
+          </p>
         </div>
       </div>
     </div>
@@ -91,17 +82,40 @@ export function HowItWorksSection() {
       title: "Sign Up & Connect Accounts",
       description: "Create your account and securely connect your exchange accounts. We support Binance, Bybit, and Interactive Brokers with industry-standard encryption.",
       icon: (
-        <div className="flex items-center gap-2">
-          <div className="relative h-8 w-8">
-            <Image src="/binance logo.png" alt="Binance" width={32} height={32} className="object-contain" />
-          </div>
-          <div className="relative h-6 w-6">
-            <Image src="/bybit logo.png" alt="Bybit" width={24} height={24} className="object-contain" />
-          </div>
-          <div className="relative h-6 w-6">
-            <Image src="/IBKR_logo.png" alt="IBKR" width={24} height={24} className="object-contain" />
-          </div>
-        </div>
+        <svg className="h-10 w-10 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* Central hub */}
+          <circle cx="12" cy="12" r="3" strokeWidth="2" fill="currentColor" fillOpacity="0.2" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+          
+          {/* Connected platforms - Top */}
+          <circle cx="12" cy="4" r="2" strokeWidth="1.5" fill="currentColor" fillOpacity="0.3" />
+          <line x1="12" y1="6" x2="12" y2="9" strokeWidth="1.5" strokeLinecap="round" />
+          
+          {/* Connected platforms - Bottom */}
+          <circle cx="12" cy="20" r="2" strokeWidth="1.5" fill="currentColor" fillOpacity="0.3" />
+          <line x1="12" y1="18" x2="12" y2="15" strokeWidth="1.5" strokeLinecap="round" />
+          
+          {/* Connected platforms - Left */}
+          <circle cx="4" cy="12" r="2" strokeWidth="1.5" fill="currentColor" fillOpacity="0.3" />
+          <line x1="6" y1="12" x2="9" y2="12" strokeWidth="1.5" strokeLinecap="round" />
+          
+          {/* Connected platforms - Right */}
+          <circle cx="20" cy="12" r="2" strokeWidth="1.5" fill="currentColor" fillOpacity="0.3" />
+          <line x1="18" y1="12" x2="15" y2="12" strokeWidth="1.5" strokeLinecap="round" />
+          
+          {/* Diagonal connections */}
+          <circle cx="6" cy="6" r="1.5" strokeWidth="1.5" fill="currentColor" fillOpacity="0.2" />
+          <line x1="7.5" y1="7.5" x2="10" y2="10" strokeWidth="1" strokeLinecap="round" strokeDasharray="2 2" opacity="0.5" />
+          
+          <circle cx="18" cy="6" r="1.5" strokeWidth="1.5" fill="currentColor" fillOpacity="0.2" />
+          <line x1="16.5" y1="7.5" x2="14" y2="10" strokeWidth="1" strokeLinecap="round" strokeDasharray="2 2" opacity="0.5" />
+          
+          <circle cx="6" cy="18" r="1.5" strokeWidth="1.5" fill="currentColor" fillOpacity="0.2" />
+          <line x1="7.5" y1="16.5" x2="10" y2="14" strokeWidth="1" strokeLinecap="round" strokeDasharray="2 2" opacity="0.5" />
+          
+          <circle cx="18" cy="18" r="1.5" strokeWidth="1.5" fill="currentColor" fillOpacity="0.2" />
+          <line x1="16.5" y1="16.5" x2="14" y2="14" strokeWidth="1" strokeLinecap="round" strokeDasharray="2 2" opacity="0.5" />
+        </svg>
       ),
       delay: "animate-fade-in",
     },
@@ -144,15 +158,15 @@ export function HowItWorksSection() {
   ];
 
   return (
-    <section id="how-it-works" className="relative py-20 sm:py-24 lg:py-32">
+    <section id="how-it-works" className="relative pt-0 pb-0">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="text-center mb-16 sm:mb-20">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
             How It
             <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> Works</span>
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-slate-400">
+          <p className="mx-auto max-w-2xl text-xl text-slate-300">
             Get started in minutes and start trading smarter today
           </p>
         </div>
