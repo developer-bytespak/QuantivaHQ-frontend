@@ -17,6 +17,7 @@ export default function ConnectingPage() {
   const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "success" | "error">("connecting");
   const [errorType, setErrorType] = useState<ErrorType>(null);
+  const [accountType, setAccountType] = useState<"crypto" | "stocks" | "both" | null>(null);
 
   useEffect(() => {
     // Get selected exchange from localStorage
@@ -27,6 +28,12 @@ export default function ConnectingPage() {
       setSelectedExchange("binance");
     }
 
+    // Get account type from localStorage
+    const savedAccountType = localStorage.getItem("quantivahq_account_type");
+    if (savedAccountType === "crypto" || savedAccountType === "stocks" || savedAccountType === "both") {
+      setAccountType(savedAccountType);
+    }
+
     // Simulate API connection verification
     const timer = setTimeout(() => {
       // In a real app, this would be an actual API call to verify the keys
@@ -34,6 +41,21 @@ export default function ConnectingPage() {
 
       // Simulate success (default)
       setConnectionStatus("success");
+
+      // Set connection flags based on exchange type
+      if (exchange === "binance" || exchange === "bybit") {
+        localStorage.setItem("quantivahq_crypto_connected", "true");
+      } else if (exchange === "ibkr") {
+        localStorage.setItem("quantivahq_stocks_connected", "true");
+      }
+
+      // If account type is "both" and stocks is connected, navigate to crypto dashboard
+      if (savedAccountType === "both" && exchange === "ibkr") {
+        // Small delay before navigation to show success message
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
+      }
 
       // Uncomment below to simulate different error types for testing:
       // const shouldFail = Math.random() > 0.7; // 30% chance of failure
@@ -53,7 +75,7 @@ export default function ConnectingPage() {
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   const exchangeInfo = {
     binance: {
@@ -145,6 +167,16 @@ export default function ConnectingPage() {
     router.push("/dashboard");
   };
 
+  const handleConnectStocksAccount = () => {
+    router.push("/onboarding/stock-exchange");
+  };
+
+  // Check if we should show "Connect Stocks Account" button
+  const shouldShowConnectStocks = 
+    accountType === "both" && 
+    (selectedExchange === "binance" || selectedExchange === "bybit") &&
+    connectionStatus === "success";
+
   return (
     <div className="relative flex h-full w-full overflow-hidden" >
       {/* Background matching Figma design */}
@@ -221,18 +253,33 @@ export default function ConnectingPage() {
 
               {/* Success Button */}
               <div className="flex justify-center">
-                <button
-                  onClick={handleGoToDashboard}
-                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
-                >
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    Go to Dashboard
-                    <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                    </svg>
-                  </span>
-                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-                </button>
+                {shouldShowConnectStocks ? (
+                  <button
+                    onClick={handleConnectStocksAccount}
+                    className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      Connect Stocks Account
+                      <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleGoToDashboard}
+                    className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      Go to Dashboard
+                      <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                    <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  </button>
+                )}
               </div>
             </>
           )}

@@ -221,14 +221,238 @@ function UserProfileSection() {
   );
 }
 
+function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHeadingElement | null> }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false);
+  const [hasBothAccounts, setHasBothAccounts] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
+
+  const checkBothAccounts = () => {
+    if (typeof window !== "undefined") {
+      const cryptoConnected = localStorage.getItem("quantivahq_crypto_connected") === "true";
+      const stocksConnected = localStorage.getItem("quantivahq_stocks_connected") === "true";
+      setHasBothAccounts(cryptoConnected && stocksConnected);
+    }
+  };
+
+  useEffect(() => {
+    // Check if both accounts are connected
+    checkBothAccounts();
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "quantivahq_crypto_connected" || e.key === "quantivahq_stocks_connected") {
+        checkBothAccounts();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  // Re-check when pathname changes (in case flag was set just before navigation)
+  useEffect(() => {
+    checkBothAccounts();
+  }, [pathname]);
+
+  // Calculate dropdown position - position it below the heading and adjust for sidebar
+  useEffect(() => {
+    if (isOpen && headingRef.current) {
+      const updatePosition = () => {
+        if (headingRef.current) {
+          const headingRect = headingRef.current.getBoundingClientRect();
+          
+          // Check if sidebar is expanded by looking for the sidebar element
+          const sidebar = document.querySelector('aside[class*="w-[280px]"]');
+          const sidebarCollapsed = document.querySelector('aside[class*="w-[80px]"]');
+          
+          // Determine sidebar width (80px collapsed, 280px expanded)
+          let sidebarWidth = 80;
+          if (sidebar && !sidebarCollapsed) {
+            sidebarWidth = 280;
+          }
+          
+          // Position dropdown just below the heading, aligned with the left edge of the heading
+          // Ensure it doesn't collide with sidebar by checking if it would overlap
+          const dropdownWidth = 224; // w-56 = 14rem = 224px
+          const minLeftPosition = sidebarWidth + 16; // Add some padding
+          
+          let leftPosition = headingRect.left;
+          
+          // If dropdown would overlap with sidebar, adjust position
+          if (leftPosition < minLeftPosition) {
+            leftPosition = minLeftPosition;
+          }
+          
+          setDropdownPosition({
+            top: headingRect.bottom + 8,
+            left: leftPosition,
+          });
+        }
+      };
+      
+      // Update position immediately
+      updatePosition();
+      
+      // Use MutationObserver to watch for sidebar class changes (when it expands/collapses)
+      const observer = new MutationObserver(() => {
+        updatePosition();
+      });
+      
+      // Observe sidebar element for class changes
+      const sidebarElement = document.querySelector('aside');
+      if (sidebarElement) {
+        observer.observe(sidebarElement, {
+          attributes: true,
+          attributeFilter: ['class'],
+        });
+      }
+      
+      // Also observe the document body for any layout changes
+      if (document.body) {
+        observer.observe(document.body, {
+          childList: false,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['class'],
+        });
+      }
+      
+      // Update position on window resize or scroll
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+      
+      // Use requestAnimationFrame for smooth updates during sidebar hover
+      let animationFrameId: number;
+      const continuousUpdate = () => {
+        updatePosition();
+        if (isOpen) {
+          animationFrameId = requestAnimationFrame(continuousUpdate);
+        }
+      };
+      animationFrameId = requestAnimationFrame(continuousUpdate);
+      
+      return () => {
+        observer.disconnect();
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition, true);
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
+    } else {
+      setDropdownPosition(null);
+    }
+  }, [isOpen, headingRef]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Show switcher only on the main dashboard pages (not sub-pages) when both accounts are connected
+  const isCryptoDashboard = pathname === "/dashboard";
+  const isStocksDashboard = pathname === "/stocks-dashboard";
+  
+  if ((!isCryptoDashboard && !isStocksDashboard) || !hasBothAccounts) {
+    return null;
+  }
+
+  return (
+    <>
+      <button
+        ref={buttonRef}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] cursor-pointer"
+      >
+        <svg
+          className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[100] w-56 rounded-xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-2 shadow-2xl shadow-black/50 backdrop-blur"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            position: 'fixed',
+          }}
+        >
+          {isCryptoDashboard ? (
+            <button
+              onClick={() => {
+                router.push("/stocks-dashboard");
+                setIsOpen(false);
+              }}
+              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+            >
+              <svg className="h-5 w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Stocks Dashboard</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                router.push("/dashboard");
+                setIsOpen(false);
+              }}
+              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+            >
+              <svg className="h-5 w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Crypto Dashboard</span>
+            </button>
+          )}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 export function TopBar() {
   const pathname = usePathname();
   const pageTitle = getPageTitle(pathname);
+  const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
     <header className="sticky top-0 z-50 flex h-24 items-center justify-between gap-8 border-b border-[--color-border] bg-[--color-surface-alt]/80 px-8 backdrop-blur">
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-white">{pageTitle}</h1>
+      <div className="flex items-center gap-3 relative">
+        <h1 ref={headingRef} className="text-2xl font-bold text-white">{pageTitle}</h1>
+        <DashboardSwitcher headingRef={headingRef} />
       </div>
       <UserProfileSection />
     </header>

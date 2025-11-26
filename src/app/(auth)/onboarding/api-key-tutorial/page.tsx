@@ -167,7 +167,23 @@ export default function ApiKeyTutorialPage() {
 
           {selectedExchange === "ibkr" && (
             <button
-              onClick={() => router.push("/stocks-dashboard")}
+              onClick={() => {
+                // Check if account type is "both" and crypto is already connected
+                const accountType = localStorage.getItem("quantivahq_account_type");
+                const cryptoConnected = localStorage.getItem("quantivahq_crypto_connected") === "true";
+                
+                if (accountType === "both" && cryptoConnected) {
+                  // Set stocks connection flag since we're connecting stocks account
+                  localStorage.setItem("quantivahq_stocks_connected", "true");
+                  // Navigate to crypto dashboard when coming from "both" flow
+                  router.push("/dashboard");
+                } else {
+                  // Set stocks connection flag for normal flow too
+                  localStorage.setItem("quantivahq_stocks_connected", "true");
+                  // Navigate to stocks dashboard for normal flow
+                  router.push("/stocks-dashboard");
+                }
+              }}
               className="group relative overflow-hidden rounded-lg border border-slate-600 bg-slate-800/50 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-slate-700/50 hover:scale-[1.02]"
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
