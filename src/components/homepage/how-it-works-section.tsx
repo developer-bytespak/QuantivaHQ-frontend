@@ -147,7 +147,7 @@ export function HowItWorksSection() {
     <section id="how-it-works" className="relative py-20 sm:py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16">
+        <div className="text-center mb-16 sm:mb-20">
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
             How It
             <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> Works</span>

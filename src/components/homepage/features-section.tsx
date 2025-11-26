@@ -224,7 +224,7 @@ export function FeaturesSection() {
   ];
 
   return (
-    <section id="features" className="relative py-20 sm:py-24 lg:py-32 overflow-hidden" style={{ perspective: "2000px" }}>
+    <section id="features" className="relative pt-20 sm:pt-24 lg:pt-32 pb-0 overflow-hidden" style={{ perspective: "2000px" }}>
       {/* Realistic 3D trading background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ transformStyle: "preserve-3d" }}>
         {/* Subtle gradient orbs for depth */}
