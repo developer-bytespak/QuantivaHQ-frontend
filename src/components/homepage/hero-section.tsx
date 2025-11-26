@@ -1,0 +1,188 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { TradingChartBackground } from "./trading-chart-background";
+import { PriceTicker } from "./price-ticker";
+
+export function HeroSection() {
+  const router = useRouter();
+
+  const scrollToFeatures = () => {
+    const element = document.getElementById("features");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      {/* Trading Chart Backgrounds */}
+      <TradingChartBackground opacity={0.12} />
+      
+      {/* Additional Chart Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Large background chart (left side) */}
+        <div className="absolute top-1/4 left-0 w-1/3 h-1/2 opacity-5">
+          <svg viewBox="0 0 400 200" className="w-full h-full text-[#fc4f02]">
+            <defs>
+              <linearGradient id="bgChart1" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#fc4f02" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#fc4f02" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {/* Grid */}
+            {[0, 1, 2, 3, 4].map((i) => (
+              <line
+                key={`grid-${i}`}
+                x1="20"
+                y1={20 + i * 40}
+                x2="380"
+                y2={20 + i * 40}
+                stroke="currentColor"
+                strokeWidth="0.5"
+                opacity="0.1"
+              />
+            ))}
+            {/* Chart line */}
+            <polyline
+              points="20,150 60,120 100,140 140,100 180,110 220,80 260,90 300,70 340,60 380,50"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            {/* Area fill */}
+            <polygon
+              points="20,150 60,120 100,140 140,100 180,110 220,80 260,90 300,70 340,60 380,50 380,200 20,200"
+              fill="url(#bgChart1)"
+            />
+          </svg>
+        </div>
+
+        {/* Medium chart (right side) */}
+        <div className="absolute bottom-1/4 right-0 w-1/4 h-1/3 opacity-5">
+          <svg viewBox="0 0 300 150" className="w-full h-full text-[#fda300]">
+            <polyline
+              points="20,130 50,100 80,110 110,90 140,85 170,75 200,65 230,55 260,50 280,45"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+          </svg>
+        </div>
+
+        {/* Candlestick pattern (center-right) */}
+        <div className="absolute top-1/3 right-1/4 w-48 h-32 opacity-8">
+          <svg viewBox="0 0 200 100" className="w-full h-full">
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
+              const x = 15 + i * 18;
+              const isGreen = Math.random() > 0.4;
+              const open = 40 + Math.random() * 20;
+              const close = open + (isGreen ? Math.random() * 8 : -Math.random() * 8);
+              const high = Math.max(open, close) + Math.random() * 5;
+              const low = Math.min(open, close) - Math.random() * 5;
+              
+              return (
+                <g key={i}>
+                  <line
+                    x1={x}
+                    y1={100 - (high / 60) * 80}
+                    x2={x}
+                    y2={100 - (low / 60) * 80}
+                    stroke={isGreen ? "#10b981" : "#ef4444"}
+                    strokeWidth="1.5"
+                  />
+                  <rect
+                    x={x - 4}
+                    y={100 - (Math.max(open, close) / 60) * 80}
+                    width="8"
+                    height={Math.abs((close - open) / 60) * 80 || 2}
+                    fill={isGreen ? "#10b981" : "#ef4444"}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+
+      {/* Price Ticker */}
+      <PriceTicker />
+
+      {/* Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-16 sm:pt-20">
+        <div className="space-y-8">
+          {/* Headline */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white animate-fade-in">
+            Unlock Your Trading Potential
+            <br />
+            <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent">
+              with AI-Powered Insights
+            </span>
+          </h1>
+
+          {/* Subheading */}
+          <p className="mx-auto max-w-3xl text-lg sm:text-xl md:text-2xl text-slate-300 leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
+            Automate your crypto and stock trading with powerful AI strategies. 
+            Real-time sentiment analysis, portfolio optimization, and seamless multi-exchange connectivity.
+          </p>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+            <button
+              onClick={() => router.push("/onboarding/sign-up?tab=signup")}
+              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-4 text-base sm:text-lg font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#fc4f02]/40 cursor-pointer"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                Get Started
+                <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+            </button>
+
+            <button
+              onClick={scrollToFeatures}
+              className="group rounded-xl border-2 border-slate-600 bg-slate-900/40 backdrop-blur px-8 py-4 text-base sm:text-lg font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-slate-800/60 cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                Learn More
+                <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          {/* Stats or Trust Indicators */}
+          <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto animate-fade-in" style={{ animationDelay: "0.6s" }}>
+            <div className="text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">10K+</div>
+              <div className="text-sm text-slate-400">Active Traders</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">$500M+</div>
+              <div className="text-sm text-slate-400">Trading Volume</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">99.9%</div>
+              <div className="text-sm text-slate-400">Uptime</div>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">24/7</div>
+              <div className="text-sm text-slate-400">AI Monitoring</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Scroll Indicator */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+        <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+      </div>
+    </section>
+  );
+}
+

@@ -41,10 +41,10 @@ function getPageTitle(pathname: string | null): string {
   }
 
   // Fallback: format the pathname
-  const segments = pathname
-    .split("/")
-    .filter(Boolean)
-    .map((segment) => segment.replace(/-/g, " "));
+    const segments = pathname
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => segment.replace(/-/g, " "));
   return segments.length > 0
     ? segments[segments.length - 1].replace(/\b\w/g, (l) => l.toUpperCase())
     : "Dashboard";

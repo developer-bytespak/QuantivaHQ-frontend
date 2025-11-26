@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "./quantiva-logo";
 
-export function SplashScreen() {
+interface SplashScreenProps {
+  onComplete?: () => void;
+}
+
+export function SplashScreen({ onComplete }: SplashScreenProps) {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(true);
 
@@ -14,12 +18,16 @@ export function SplashScreen() {
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(() => {
-        router.push("/onboarding/welcome");
+        if (onComplete) {
+          onComplete();
+        } else {
+          router.push("/onboarding/welcome");
+        }
       }, 300); // Wait for fade-out animation
     }, 4800); // 1s entrance delay + 3.5s rotation + 0.3s fade-out
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [router, onComplete]);
 
   return (
     <div
