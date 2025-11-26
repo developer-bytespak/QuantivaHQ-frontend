@@ -13,12 +13,30 @@ interface StepProps {
 
 function StepCard({ number, title, description, icon, delay }: StepProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 12;
+    const rotateY = (centerX - x) / 12;
+    setMousePosition({ x: rotateY, y: rotateX });
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setMousePosition({ x: 0, y: 0 });
+  };
 
   return (
     <div
       className={`relative group ${delay}`}
+      style={{ perspective: "1000px" }}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Connection Line (for desktop) */}
       {number < 4 && (
@@ -27,20 +45,40 @@ function StepCard({ number, title, description, icon, delay }: StepProps) {
         </div>
       )}
 
-      <div className="relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 sm:p-8 backdrop-blur transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 hover:scale-[1.02]">
-        {/* Step Number Badge */}
-        <div className="absolute -top-4 -left-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xl font-bold text-white shadow-lg shadow-[#fc4f02]/30">
+      <div 
+        className="relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 sm:p-8 backdrop-blur transition-all duration-300 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
+        style={{
+          transform: isHovered
+            ? `perspective(1000px) rotateX(${mousePosition.y}deg) rotateY(${mousePosition.x}deg) translateZ(25px) scale(1.02)`
+            : "perspective(1000px) rotateX(0) rotateY(0) translateZ(0) scale(1)",
+          transformStyle: "preserve-3d",
+        }}
+        onMouseMove={handleMouseMove}
+      >
+        {/* Step Number Badge with 3D effect */}
+        <div 
+          className="absolute -top-4 -left-4 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xl font-bold text-white shadow-lg shadow-[#fc4f02]/30 transition-transform duration-300 group-hover:scale-110"
+          style={{ transform: "translateZ(30px)" }}
+        >
           {number}
         </div>
 
+        {/* 3D Depth Shadow */}
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: "translateZ(-15px)" }} />
+
         {/* Icon */}
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 group-hover:scale-110">
+        <div 
+          className="mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 group-hover:scale-110"
+          style={{ transform: "translateZ(20px)" }}
+        >
           {icon}
         </div>
 
         {/* Content */}
-        <h3 className="mb-3 text-xl font-bold text-white">{title}</h3>
-        <p className="text-sm leading-relaxed text-slate-400">{description}</p>
+        <div style={{ transform: "translateZ(15px)" }}>
+          <h3 className="mb-3 text-xl font-bold text-white">{title}</h3>
+          <p className="text-sm leading-relaxed text-slate-400">{description}</p>
+        </div>
       </div>
     </div>
   );

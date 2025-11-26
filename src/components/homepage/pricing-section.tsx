@@ -15,16 +15,34 @@ interface PricingTier {
 
 function PricingCard({ tier, delay }: { tier: PricingTier; delay: string }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const router = useRouter();
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 15;
+    const rotateY = (centerX - x) / 15;
+    setMousePosition({ x: rotateY, y: rotateX });
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setMousePosition({ x: 0, y: 0 });
+  };
 
   return (
     <div
       className={`relative group ${delay}`}
+      style={{ perspective: "1000px" }}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={handleMouseLeave}
     >
       {tier.popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10" style={{ transform: "translateZ(30px)" }}>
           <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">
             Popular
           </span>
@@ -36,7 +54,14 @@ function PricingCard({ tier, delay }: { tier: PricingTier; delay: string }) {
           tier.popular
             ? "border-[#fc4f02]/50 bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 shadow-2xl shadow-[#fc4f02]/20"
             : "border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60"
-        } ${isHovered ? "scale-[1.02] shadow-2xl" : ""}`}
+        }`}
+        style={{
+          transform: isHovered
+            ? `perspective(1000px) rotateX(${mousePosition.y}deg) rotateY(${mousePosition.x}deg) translateZ(30px) scale(1.02)`
+            : "perspective(1000px) rotateX(0) rotateY(0) translateZ(0) scale(1)",
+          transformStyle: "preserve-3d",
+        }}
+        onMouseMove={handleMouseMove}
       >
         {/* Gradient overlay on hover */}
         <div
@@ -45,7 +70,10 @@ function PricingCard({ tier, delay }: { tier: PricingTier; delay: string }) {
           }`}
         />
 
-        <div className="relative z-10">
+        {/* 3D Depth Shadow */}
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: "translateZ(-20px)" }} />
+
+        <div className="relative z-10" style={{ transform: "translateZ(20px)" }}>
           {/* Tier Name */}
           <h3 className="text-2xl font-bold text-white mb-2">{tier.name}</h3>
           <p className="text-sm text-slate-400 mb-6">{tier.description}</p>

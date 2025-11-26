@@ -1,11 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { TradingChartBackground } from "./trading-chart-background";
 import { PriceTicker } from "./price-ticker";
 
 export function HeroSection() {
   const router = useRouter();
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const scrollToFeatures = () => {
     const element = document.getElementById("features");
@@ -19,10 +30,16 @@ export function HeroSection() {
       {/* Trading Chart Backgrounds */}
       <TradingChartBackground opacity={0.12} />
       
-      {/* Additional Chart Elements */}
+      {/* Additional Chart Elements with Parallax */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large background chart (left side) */}
-        <div className="absolute top-1/4 left-0 w-1/3 h-1/2 opacity-5">
+        {/* Large background chart (left side) with parallax */}
+        <div 
+          className="absolute top-1/4 left-0 w-1/3 h-1/2 opacity-5"
+          style={{
+            transform: `translateY(${scrollY * 0.3}px) translateZ(-100px)`,
+            transition: "transform 0.1s ease-out",
+          }}
+        >
           <svg viewBox="0 0 400 200" className="w-full h-full text-[#fc4f02]">
             <defs>
               <linearGradient id="bgChart1" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -58,8 +75,14 @@ export function HeroSection() {
           </svg>
         </div>
 
-        {/* Medium chart (right side) */}
-        <div className="absolute bottom-1/4 right-0 w-1/4 h-1/3 opacity-5">
+        {/* Medium chart (right side) with parallax */}
+        <div 
+          className="absolute bottom-1/4 right-0 w-1/4 h-1/3 opacity-5"
+          style={{
+            transform: `translateY(${scrollY * 0.2}px) translateZ(-80px)`,
+            transition: "transform 0.1s ease-out",
+          }}
+        >
           <svg viewBox="0 0 300 150" className="w-full h-full text-[#fda300]">
             <polyline
               points="20,130 50,100 80,110 110,90 140,85 170,75 200,65 230,55 260,50 280,45"
@@ -70,8 +93,14 @@ export function HeroSection() {
           </svg>
         </div>
 
-        {/* Candlestick pattern (center-right) */}
-        <div className="absolute top-1/3 right-1/4 w-48 h-32 opacity-8">
+        {/* Candlestick pattern (center-right) with parallax */}
+        <div 
+          className="absolute top-1/3 right-1/4 w-48 h-32 opacity-8"
+          style={{
+            transform: `translateY(${scrollY * 0.15}px) translateZ(-60px)`,
+            transition: "transform 0.1s ease-out",
+          }}
+        >
           <svg viewBox="0 0 200 100" className="w-full h-full">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
               const x = 15 + i * 18;
@@ -109,10 +138,16 @@ export function HeroSection() {
       <PriceTicker />
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-16 sm:pt-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-16 sm:pt-20" style={{ perspective: "1000px" }}>
         <div className="space-y-8">
-          {/* Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white animate-fade-in">
+          {/* Headline with 3D effect */}
+          <h1 
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white animate-fade-in"
+            style={{
+              textShadow: "0 10px 40px rgba(252, 79, 2, 0.3), 0 5px 20px rgba(252, 79, 2, 0.2)",
+              transform: "translateZ(50px)",
+            }}
+          >
             Unlock Your Trading Potential
             <br />
             <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent">
@@ -154,23 +189,82 @@ export function HeroSection() {
             </button>
           </div>
 
-          {/* Stats or Trust Indicators */}
-          <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto animate-fade-in" style={{ animationDelay: "0.6s" }}>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">10K+</div>
-              <div className="text-sm text-slate-400">Active Traders</div>
+          {/* Stats or Trust Indicators with 3D effect */}
+          <div 
+            className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto animate-fade-in" 
+            style={{ animationDelay: "0.6s", transform: "translateZ(30px)" }}
+          >
+            <div 
+              className="text-center group relative"
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              <div className="relative inline-flex items-center justify-center">
+                <div 
+                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  style={{
+                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    transform: "translateZ(20px)",
+                  }}
+                >
+                  10K+
+                </div>
+              </div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>Active Traders</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">$500M+</div>
-              <div className="text-sm text-slate-400">Trading Volume</div>
+            <div 
+              className="text-center group relative"
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              <div className="relative inline-flex items-center justify-center">
+                <div 
+                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  style={{
+                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    transform: "translateZ(20px)",
+                  }}
+                >
+                  $500M+
+                </div>
+              </div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>Trading Volume</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">99.9%</div>
-              <div className="text-sm text-slate-400">Uptime</div>
+            <div 
+              className="text-center group relative"
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              <div className="relative inline-flex items-center justify-center">
+                <div 
+                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  style={{
+                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    transform: "translateZ(20px)",
+                  }}
+                >
+                  99.9%
+                </div>
+                <div 
+                  className="absolute -top-1 -right-1 h-2 w-2 bg-[#10b981] rounded-full animate-pulse"
+                  style={{ transform: "translateZ(25px)", boxShadow: "0 0 10px rgba(16, 185, 129, 0.8)" }}
+                ></div>
+              </div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>Uptime</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2">24/7</div>
-              <div className="text-sm text-slate-400">AI Monitoring</div>
+            <div 
+              className="text-center group relative"
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              <div className="relative inline-flex items-center justify-center">
+                <div 
+                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  style={{
+                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    transform: "translateZ(20px)",
+                  }}
+                >
+                  24/7
+                </div>
+              </div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>AI Monitoring</div>
             </div>
           </div>
         </div>
