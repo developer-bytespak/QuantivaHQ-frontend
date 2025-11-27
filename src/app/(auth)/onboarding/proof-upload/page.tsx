@@ -5,6 +5,7 @@ import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { AUTH_STEPS } from "@/config/navigation";
+import { uploadDocument } from "@/lib/api/kyc";
 
 export default function ProofUploadPage() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function ProofUploadPage() {
   const [error, setError] = useState("");
   const [animatedProgress, setAnimatedProgress] = useState(25);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [documentType, setDocumentType] = useState<string>("id_card");
+  const [documentId, setDocumentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
@@ -158,22 +161,37 @@ export default function ProofUploadPage() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Store in localStorage
+    try {
+      // Upload document to backend
+      const response = await uploadDocument(uploadedFile, documentType);
+      
+      // Store document ID for later use
+      setDocumentId(response.document_id);
+      
+      // Also store in localStorage as fallback
       const fileData = {
         fileName: uploadedFile.name,
         fileSize: uploadedFile.size,
         fileType: uploadedFile.type,
         preview: preview,
-        uploadDate: new Date().toISOString()
+        uploadDate: new Date().toISOString(),
+        documentId: response.document_id,
+        documentType: documentType,
       };
       localStorage.setItem("quantivahq_proof_upload", JSON.stringify(fileData));
       
-      setIsLoading(false);
       // Navigate to next step
       router.push("/onboarding/selfie-capture");
-    }, 1000);
+    } catch (err) {
+      console.error("Document upload failed:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to upload document. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -223,6 +241,22 @@ export default function ProofUploadPage() {
                 style={{ width: `${animatedProgress}%` }}
               />
             </div>
+          </div>
+
+          {/* Document Type Selector */}
+          <div className="mb-3 sm:mb-4 animate-text-enter" style={{ animationDelay: "0.55s" }}>
+            <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
+              Document Type
+            </label>
+            <select
+              value={documentType}
+              onChange={(e) => setDocumentType(e.target.value)}
+              className="w-full rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[#fc4f02] transition-colors"
+            >
+              <option value="id_card">National ID Card</option>
+              <option value="passport">Passport</option>
+              <option value="drivers_license">Driver's License</option>
+            </select>
           </div>
 
           {/* Upload Form */}
