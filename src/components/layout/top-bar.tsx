@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import { authService } from "@/lib/auth/auth.service";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Crypto Dashboard",
@@ -135,16 +136,29 @@ function UserProfileSection() {
     };
   }, [isOpen]);
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("quantivahq_user_email");
-      localStorage.removeItem("quantivahq_user_name");
-      localStorage.removeItem("quantivahq_auth_method");
-      localStorage.removeItem("quantivahq_is_authenticated");
-      localStorage.removeItem("quantivahq_selected_exchange");
-      localStorage.removeItem("quantivahq_personal_info");
-      localStorage.removeItem("quantivahq_profile_image");
-      router.push("/onboarding/splash");
+  const handleLogout = async () => {
+    try {
+      // Call backend logout API to revoke session and clear cookies
+      await authService.logout();
+    } catch (error) {
+      console.error("Logout API error:", error);
+      // Continue with logout even if API call fails
+    } finally {
+      // Clear all local storage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_user_email");
+        localStorage.removeItem("quantivahq_user_name");
+        localStorage.removeItem("quantivahq_user_id");
+        localStorage.removeItem("quantivahq_auth_method");
+        localStorage.removeItem("quantivahq_is_authenticated");
+        localStorage.removeItem("quantivahq_selected_exchange");
+        localStorage.removeItem("quantivahq_personal_info");
+        localStorage.removeItem("quantivahq_profile_image");
+        localStorage.removeItem("quantivahq_pending_email");
+        localStorage.removeItem("quantivahq_pending_password");
+        localStorage.removeItem("quantivahq_device_id");
+        router.push("/onboarding/splash");
+      }
     }
   };
 
