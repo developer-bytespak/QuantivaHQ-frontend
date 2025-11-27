@@ -13,7 +13,7 @@ export function HomepageFooter() {
   };
 
   return (
-    <footer id="contact" className="relative border-t border-[--color-border] bg-gradient-to-b from-[--color-surface-alt] to-[--color-surface-alt] py-12 sm:py-16">
+    <footer className="relative border-t border-[--color-border] bg-gradient-to-b from-[--color-surface-alt] to-[--color-surface-alt] py-12 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
           {/* Brand Column */}
