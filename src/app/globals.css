@@ -205,6 +205,8 @@ button[type="reset"]:disabled {
 
 .animate-logo-rotate-splash {
   animation: logo-rotate-splash 3.5s ease-in-out forwards;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
 }
 
 .animate-text-enter {
