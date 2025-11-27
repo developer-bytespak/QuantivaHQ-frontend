@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
@@ -36,96 +35,77 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
 }
 
 function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string; index: number }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const router = useRouter();
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const rotateX = (y - centerY) / 15;
-    const rotateY = (centerX - x) / 15;
-    setMousePosition({ x: rotateY, y: rotateX });
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setMousePosition({ x: 0, y: 0 });
-  };
-
 
   return (
     <div
       ref={cardRef}
-      className="relative group"
-      style={{ 
-        perspective: "1000px",
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={handleMouseLeave}
+      className="relative h-full"
     >
+      {/* Popular Badge */}
       {tier.popular && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10" style={{ transform: "translateZ(30px)" }}>
-          <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
+          <span className="inline-block bg-[#fc4f02] text-white text-[10px] font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">
             Popular
           </span>
         </div>
       )}
 
       <div
-        className={`relative rounded-2xl border transition-all duration-700 p-6 sm:p-8 h-full ${
+        className={`relative rounded-lg border-2 bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 backdrop-blur-xl p-5 h-full flex flex-col transition-all duration-200 ${
           tier.popular
-            ? "border-[#fc4f02]/50 bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 shadow-2xl shadow-[#fc4f02]/20"
-            : "border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60"
+            ? "border-[#fc4f02]/60"
+            : "border-[--color-border]"
         } ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        }`}
+        } hover:border-[#fc4f02]/60`}
         style={{
-          transform: isHovered
-            ? `perspective(1000px) rotateX(${mousePosition.y}deg) rotateY(${mousePosition.x}deg) translateZ(30px) scale(1.02)`
-            : "perspective(1000px) rotateX(0) rotateY(0) translateZ(0) scale(1)",
-          transformStyle: "preserve-3d",
           transitionDelay: isVisible ? `${index * 100}ms` : "0ms",
         }}
-        onMouseMove={handleMouseMove}
       >
-        {/* Gradient overlay on hover */}
-        <div
-          className={`absolute inset-0 bg-gradient-to-br ${tier.gradient} opacity-0 transition-opacity duration-300 rounded-2xl ${
-            isHovered ? "opacity-10" : ""
-          }`}
-        />
-
-        {/* 3D Depth Shadow */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ transform: "translateZ(-20px)" }} />
-
-        <div className="relative z-10" style={{ transform: "translateZ(20px)" }}>
+        {/* Content */}
+        <div className="flex flex-col h-full">
           {/* Tier Name */}
-          <h3 className={`text-2xl font-bold text-white mb-2 transition-all duration-700 ${
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`} style={{ transitionDelay: isVisible ? `${(index * 100) + 100}ms` : "0ms" }}>{tier.name}</h3>
-          <p className="text-sm text-slate-400 mb-6">{tier.description}</p>
-
-          {/* Price */}
-          <div className="mb-6">
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-white">{tier.price}</span>
-              <span className="text-slate-400">/{tier.period}</span>
-            </div>
+          <div className="mb-4">
+            <h3 className={`text-lg font-semibold text-white mb-1 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`} style={{ transitionDelay: isVisible ? `${(index * 100) + 150}ms` : "0ms" }}>
+              {tier.name}
+            </h3>
+            <p className="text-xs text-slate-500">{tier.description}</p>
           </div>
 
-          {/* Features */}
-          <ul className="space-y-3 mb-8">
-            {tier.features.map((feature, index) => (
-              <li key={index} className="flex items-start gap-3">
-                <svg className="h-5 w-5 text-[#10b981] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          {/* Price Section */}
+          <div className="mb-5 pb-4 border-b border-[--color-border]">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-bold text-white">
+                {tier.price}
+              </span>
+              {tier.price !== "Custom" && (
+                <span className="text-sm text-slate-500 font-normal">
+                  /{tier.period}
+                </span>
+              )}
+            </div>
+            {tier.price === "Custom" && (
+              <p className="text-xs text-slate-500 mt-1">Contact for pricing</p>
+            )}
+          </div>
+
+          {/* Features List */}
+          <ul className="space-y-2.5 mb-5 flex-grow">
+            {tier.features.map((feature, featureIndex) => (
+              <li 
+                key={featureIndex} 
+                className="flex items-start gap-2"
+              >
+                <svg className="h-3.5 w-3.5 text-[#10b981] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-sm text-slate-300">{feature}</span>
+                <span className="text-xs text-slate-400 leading-snug">
+                  {feature}
+                </span>
               </li>
             ))}
           </ul>
@@ -133,13 +113,13 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
           {/* CTA Button */}
           <button
             onClick={() => router.push("/onboarding/sign-up?tab=signup")}
-            className={`w-full rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-300 cursor-pointer ${
+            className={`w-full rounded-md px-4 py-2.5 text-xs font-semibold transition-all duration-200 ${
               tier.popular
-                ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
-                : "border-2 border-slate-600 bg-slate-900/40 text-white hover:border-[#fc4f02]/50 hover:bg-slate-800/60"
+                ? "bg-[#fc4f02] text-white hover:bg-[#e04502]"
+                : "border border-[--color-border] bg-[--color-surface] text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
             }`}
           >
-            Get Started
+            {tier.price === "Custom" ? "Contact Sales" : "Get Started"}
           </button>
         </div>
       </div>
@@ -222,7 +202,7 @@ export function PricingSection() {
         />
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
           {tiers.map((tier, index) => (
             <PricingCard
               key={index}
@@ -234,14 +214,14 @@ export function PricingSection() {
         </div>
 
         {/* Additional CTA */}
-        <div className="text-center mt-12">
-          <p className="text-slate-400 mb-4">Need help choosing? Contact our sales team</p>
+        <div className="text-center mt-16">
+          <p className="text-slate-400 mb-4 text-sm">Need help choosing a plan?</p>
           <button
             onClick={() => {
               const element = document.getElementById("contact");
               if (element) element.scrollIntoView({ behavior: "smooth" });
             }}
-            className="text-[#fc4f02] hover:text-[#fda300] font-semibold transition-colors cursor-pointer"
+            className="text-[#fc4f02] hover:text-[#e04502] font-semibold transition-colors cursor-pointer text-sm"
           >
             Contact Sales →
           </button>
