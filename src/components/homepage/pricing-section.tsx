@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 interface PricingTier {
   name: string;
@@ -14,40 +15,16 @@ interface PricingTier {
 }
 
 function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (headerRef.current) {
-      observer.observe(headerRef.current);
-    }
-
-    return () => {
-      if (headerRef.current) {
-        observer.unobserve(headerRef.current);
-      }
-    };
-  }, []);
+  const { ref: headerRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
     <div
       ref={headerRef}
-      className={`text-center mb-12 sm:mb-16 transition-all duration-700 ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className="text-center mb-12 sm:mb-16"
     >
-      <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
+      <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}>
         {title}
         <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
       </h2>
@@ -60,9 +37,8 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
 
 function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const cardRef = useRef<HTMLDivElement>(null);
+  const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const router = useRouter();
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -81,38 +57,13 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
     setMousePosition({ x: 0, y: 0 });
   };
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
-      }
-    };
-  }, []);
 
   return (
     <div
       ref={cardRef}
-      className={`relative group ${delay} transition-all duration-700 ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className="relative group"
       style={{ 
         perspective: "1000px",
-        transitionDelay: isVisible ? `${index * 100}ms` : "0ms"
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
@@ -126,16 +77,19 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
       )}
 
       <div
-        className={`relative rounded-2xl border transition-all duration-300 p-6 sm:p-8 h-full ${
+        className={`relative rounded-2xl border transition-all duration-700 p-6 sm:p-8 h-full ${
           tier.popular
             ? "border-[#fc4f02]/50 bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 shadow-2xl shadow-[#fc4f02]/20"
             : "border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60"
+        } ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         }`}
         style={{
           transform: isHovered
             ? `perspective(1000px) rotateX(${mousePosition.y}deg) rotateY(${mousePosition.x}deg) translateZ(30px) scale(1.02)`
             : "perspective(1000px) rotateX(0) rotateY(0) translateZ(0) scale(1)",
           transformStyle: "preserve-3d",
+          transitionDelay: isVisible ? `${index * 100}ms` : "0ms",
         }}
         onMouseMove={handleMouseMove}
       >
@@ -151,7 +105,9 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
 
         <div className="relative z-10" style={{ transform: "translateZ(20px)" }}>
           {/* Tier Name */}
-          <h3 className="text-2xl font-bold text-white mb-2">{tier.name}</h3>
+          <h3 className={`text-2xl font-bold text-white mb-2 transition-all duration-700 ${
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`} style={{ transitionDelay: isVisible ? `${(index * 100) + 100}ms` : "0ms" }}>{tier.name}</h3>
           <p className="text-sm text-slate-400 mb-6">{tier.description}</p>
 
           {/* Price */}
@@ -256,7 +212,7 @@ export function PricingSection() {
   ];
 
   return (
-    <section id="pricing" className="relative py-20 sm:py-24 lg:py-32">
+    <section id="pricing" className="relative pb-20 sm:pb-24 lg:pb-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <ScrollAnimatedHeader

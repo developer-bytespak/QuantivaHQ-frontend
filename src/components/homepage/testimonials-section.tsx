@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 interface Testimonial {
   name: string;
@@ -11,31 +11,7 @@ interface Testimonial {
 }
 
 function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; index: number }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
-      }
-    };
-  }, []);
+  const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
     <div
@@ -86,10 +62,28 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
   );
 }
 
-export function TestimonialsSection() {
-  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement>(null);
+function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
+  const { ref: headerRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
+  return (
+    <div
+      ref={headerRef}
+      className="text-center mb-12 sm:mb-16"
+    >
+      <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}>
+        {title}
+        <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
+      </h2>
+      <p className="mx-auto max-w-2xl text-xl text-slate-300">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+export function TestimonialsSection() {
   const testimonials: Testimonial[] = [
     {
       name: "Alex Chen",
@@ -121,42 +115,15 @@ export function TestimonialsSection() {
     },
   ];
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsHeaderVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => {
-      if (sectionRef.current) {
-        observer.unobserve(sectionRef.current);
-      }
-    };
-  }, []);
-
   return (
-    <section ref={sectionRef} id="testimonials" className="relative pt-20 sm:pt-24 lg:pt-32 pb-20 sm:pb-24 lg:pb-32">
+    <section id="testimonials" className="relative pt-20 sm:pt-24 lg:pt-32 pb-20 sm:pb-24 lg:pb-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className={`text-center mb-12 sm:mb-16 transition-all duration-700 ${isHeaderVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
-            Trusted by
-            <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> Traders</span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-xl text-slate-300">
-            See what our users are saying about QuantivaHQ
-          </p>
-        </div>
+        <ScrollAnimatedHeader
+          title="Trusted by"
+          titleHighlight="Traders"
+          description="See what our users are saying about QuantivaHQ"
+        />
 
         {/* Testimonials Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">

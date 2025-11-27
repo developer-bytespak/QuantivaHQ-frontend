@@ -12,27 +12,76 @@ import { useEffect } from "react";
 
 export function Homepage() {
   useEffect(() => {
-    // Add smooth scroll behavior
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: "0px 0px -100px 0px",
-    };
+    let lastScrollY = window.scrollY;
+    
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const isScrollingDown = currentScrollY > lastScrollY;
+      lastScrollY = currentScrollY;
 
-    const observerCallback = (entries: IntersectionObserverEntry[]) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("animate-fade-in");
+      // Get all animated elements (sections, headings, and content)
+      const animatedElements = document.querySelectorAll(
+        'section, .animate-on-scroll, [data-animate]'
+      );
+
+      animatedElements.forEach((element) => {
+        const elementTop = element.getBoundingClientRect().top;
+        const elementBottom = element.getBoundingClientRect().bottom;
+        const isInView = elementTop < window.innerHeight * 0.9 && elementBottom > 0;
+        
+        if (isInView) {
+          if (isScrollingDown || currentScrollY < 100) {
+            // When scrolling down or at top of page
+            element.classList.add('animate-fade-in');
+            element.classList.remove('animate-fade-out');
+            
+            // Add staggered animation for child elements
+            const animatedChildren = element.querySelectorAll('.animate-child');
+            animatedChildren.forEach((child, index) => {
+              (child as HTMLElement).style.animationDelay = `${index * 0.1}s`;
+              child.classList.add('animate-fade-in');
+              child.classList.remove('animate-fade-out');
+            });
+          }
+        } else if (elementTop > window.innerHeight * 0.2 && isScrollingDown) {
+          // When element is scrolled past and we're scrolling down
+          element.classList.remove('animate-fade-in');
+          element.classList.add('animate-fade-out');
         }
       });
     };
 
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    // Add initial animation to visible elements
+    const initialCheck = () => {
+      const animatedElements = document.querySelectorAll(
+        'section, .animate-on-scroll, [data-animate]'
+      );
+      
+      animatedElements.forEach((element) => {
+        const elementTop = element.getBoundingClientRect().top;
+        if (elementTop < window.innerHeight * 0.9) {
+          element.classList.add('animate-fade-in');
+          
+          // Animate children with delay
+          const animatedChildren = element.querySelectorAll('.animate-child');
+          animatedChildren.forEach((child, index) => {
+            (child as HTMLElement).style.animationDelay = `${index * 0.1}s`;
+            child.classList.add('animate-fade-in');
+          });
+        }
+      });
+    };
 
-    // Observe all sections
-    const sections = document.querySelectorAll("section");
-    sections.forEach((section) => observer.observe(section));
-
-    return () => observer.disconnect();
+    // Run initial check after a small delay to ensure DOM is ready
+    const timer = setTimeout(initialCheck, 100);
+    
+    // Add scroll event listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   return (
