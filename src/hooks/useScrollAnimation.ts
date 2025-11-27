@@ -6,11 +6,11 @@ import { useEffect, useRef, useState } from "react";
  * Hook that triggers animation every time element scrolls into view
  * Only triggers on scroll down, not on scroll up
  */
-export function useScrollAnimation(options?: {
+export function useScrollAnimation<T extends HTMLElement = HTMLDivElement>(options?: {
   threshold?: number;
   rootMargin?: string;
 }) {
-  const elementRef = useRef<HTMLElement | null>(null);
+  const elementRef = useRef<T | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const lastScrollY = useRef(0);
   const wasIntersecting = useRef(false);
