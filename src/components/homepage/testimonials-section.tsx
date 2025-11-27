@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface Testimonial {
   name: string;
@@ -10,12 +10,40 @@ interface Testimonial {
   metric: string;
 }
 
-function TestimonialCard({ testimonial, isActive }: { testimonial: Testimonial; isActive: boolean }) {
+function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; index: number }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
-      className={`relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 sm:p-8 backdrop-blur transition-all duration-500 ${
-        isActive ? "opacity-100 scale-100" : "opacity-0 scale-95 absolute inset-0"
+      ref={cardRef}
+      className={`relative rounded-3xl border-2 border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 p-6 sm:p-8 backdrop-blur-xl transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
       }`}
+      style={{ transitionDelay: isVisible ? `${index * 100}ms` : "0ms" }}
     >
       {/* Quote Icon */}
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
@@ -59,7 +87,8 @@ function TestimonialCard({ testimonial, isActive }: { testimonial: Testimonial; 
 }
 
 export function TestimonialsSection() {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
 
   const testimonials: Testimonial[] = [
     {
@@ -93,54 +122,51 @@ export function TestimonialsSection() {
   ];
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % testimonials.length);
-    }, 5000);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsHeaderVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
 
-    return () => clearInterval(interval);
-  }, [testimonials.length]);
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <section className="relative py-20 sm:py-24 lg:py-32">
+    <section ref={sectionRef} id="testimonials" className="relative pt-20 sm:pt-24 lg:pt-32 pb-20 sm:pb-24 lg:pb-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+        <div className={`text-center mb-12 sm:mb-16 transition-all duration-700 ${isHeaderVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
             Trusted by
             <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> Traders</span>
           </h2>
-          <p className="mx-auto max-w-2xl text-lg text-slate-400">
+          <p className="mx-auto max-w-2xl text-xl text-slate-300">
             See what our users are saying about QuantivaHQ
           </p>
         </div>
 
-        {/* Testimonials Carousel */}
-        <div className="relative max-w-4xl mx-auto">
-          <div className="relative h-80 sm:h-96">
-            {testimonials.map((testimonial, index) => (
-              <TestimonialCard
-                key={index}
-                testimonial={testimonial}
-                isActive={index === currentIndex}
-              />
-            ))}
-          </div>
-
-          {/* Navigation Dots */}
-          <div className="flex justify-center gap-2 mt-8">
-            {testimonials.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  index === currentIndex
-                    ? "w-8 bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                    : "w-2 bg-slate-600 hover:bg-slate-500"
-                }`}
-                aria-label={`Go to testimonial ${index + 1}`}
-              />
-            ))}
-          </div>
+        {/* Testimonials Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+          {testimonials.map((testimonial, index) => (
+            <TestimonialCard
+              key={index}
+              testimonial={testimonial}
+              index={index}
+            />
+          ))}
         </div>
       </div>
     </section>

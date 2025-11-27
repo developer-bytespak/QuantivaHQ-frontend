@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
@@ -9,9 +9,11 @@ export function HomepageHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isScrollingDown, setIsScrollingDown] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [accountType, setAccountType] = useState<"crypto" | "stocks" | "both" | null>(null);
+  const lastScrollY = useRef(0);
 
   useEffect(() => {
     // Check authentication status
@@ -22,11 +24,24 @@ export function HomepageHeader() {
       if (savedAccountType === "crypto" || savedAccountType === "stocks" || savedAccountType === "both") {
         setAccountType(savedAccountType);
       }
+      lastScrollY.current = window.scrollY;
     }
 
     // Handle scroll effect
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const currentScrollY = window.scrollY;
+      
+      // Determine scroll direction
+      if (currentScrollY > lastScrollY.current) {
+        // Scrolling down
+        setIsScrollingDown(true);
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling up
+        setIsScrollingDown(false);
+      }
+      
+      setIsScrolled(currentScrollY > 20);
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener("scroll", handleScroll);
@@ -52,7 +67,7 @@ export function HomepageHeader() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
+        isScrolled && isScrollingDown
           ? "bg-black/80 backdrop-blur-md border-b border-[--color-border] shadow-lg"
           : "bg-transparent"
       }`}

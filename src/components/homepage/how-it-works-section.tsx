@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface StepProps {
   number: number;
@@ -12,10 +12,39 @@ interface StepProps {
 
 function StepCard({ number, title, description, icon, delay }: StepProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div
-      className={`relative group ${delay}`}
+      ref={cardRef}
+      className={`relative group transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+      style={{ transitionDelay: isVisible ? `${number * 100}ms` : "0ms" }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -71,6 +100,51 @@ function StepCard({ number, title, description, icon, delay }: StepProps) {
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    return () => {
+      if (headerRef.current) {
+        observer.unobserve(headerRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      ref={headerRef}
+      className={`text-center mb-16 sm:mb-20 transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+    >
+      <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
+        {title}
+        <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
+      </h2>
+      <p className="mx-auto max-w-2xl text-xl text-slate-300">
+        {description}
+      </p>
     </div>
   );
 }
@@ -161,15 +235,11 @@ export function HowItWorksSection() {
     <section id="how-it-works" className="relative pt-0 pb-0">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16 sm:mb-20">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
-            How It
-            <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> Works</span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-xl text-slate-300">
-            Get started in minutes and start trading smarter today
-          </p>
-        </div>
+        <ScrollAnimatedHeader
+          title="How It"
+          titleHighlight="Works"
+          description="Get started in minutes and start trading smarter today"
+        />
 
         {/* Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 relative">

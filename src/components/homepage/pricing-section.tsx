@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface PricingTier {
@@ -13,9 +13,56 @@ interface PricingTier {
   gradient: string;
 }
 
-function PricingCard({ tier, delay }: { tier: PricingTier; delay: string }) {
+function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    return () => {
+      if (headerRef.current) {
+        observer.unobserve(headerRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      ref={headerRef}
+      className={`text-center mb-12 sm:mb-16 transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+    >
+      <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
+        {title}
+        <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
+      </h2>
+      <p className="mx-auto max-w-2xl text-xl text-slate-300">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string; index: number }) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -34,10 +81,39 @@ function PricingCard({ tier, delay }: { tier: PricingTier; delay: string }) {
     setMousePosition({ x: 0, y: 0 });
   };
 
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div
-      className={`relative group ${delay}`}
-      style={{ perspective: "1000px" }}
+      ref={cardRef}
+      className={`relative group ${delay} transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+      style={{ 
+        perspective: "1000px",
+        transitionDelay: isVisible ? `${index * 100}ms` : "0ms"
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
     >
@@ -183,15 +259,11 @@ export function PricingSection() {
     <section id="pricing" className="relative py-20 sm:py-24 lg:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            Choose Your
-            <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> Plan</span>
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg text-slate-400">
-            Flexible pricing options for traders of all levels
-          </p>
-        </div>
+        <ScrollAnimatedHeader
+          title="Choose Your"
+          titleHighlight="Plan"
+          description="Flexible pricing options for traders of all levels"
+        />
 
         {/* Pricing Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
@@ -200,6 +272,7 @@ export function PricingSection() {
               key={index}
               tier={tier}
               delay="animate-fade-in"
+              index={index}
             />
           ))}
         </div>

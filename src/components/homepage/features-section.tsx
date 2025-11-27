@@ -79,9 +79,8 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
             : "perspective(1200px) rotateX(20deg) rotateY(-10deg) translateZ(-100px) scale(0.9) opacity-0",
           transformStyle: "preserve-3d",
           transition: isVisible
-            ? "transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.6s ease-out, border-color 0.3s ease, box-shadow 0.3s ease"
-            : "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease-out",
-          transitionDelay: isVisible ? "0s" : `${delay * 0.1}s`,
+            ? `transform 0.3s cubic-bezier(0.23, 1, 0.32, 1) 0s, opacity 0.6s ease-out 0s, border-color 0.3s ease 0s, box-shadow 0.3s ease 0s`
+            : `transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay * 0.1}s, opacity 0.6s ease-out ${delay * 0.1}s`,
         }}
       >
         {/* Animated gradient border glow */}
@@ -163,6 +162,62 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
+  const [isVisible, setIsVisible] = useState(false);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    return () => {
+      if (headerRef.current) {
+        observer.unobserve(headerRef.current);
+      }
+    };
+  }, []);
+
+  return (
+    <div
+      ref={headerRef}
+      className={`text-center mb-16 sm:mb-20 transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+    >
+      <h2
+        className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6"
+        style={{
+          transform: "translateZ(50px)",
+        }}
+      >
+        {title}
+        <br />
+        <span className="bg-gradient-to-r from-[#fc4f02] via-[#fda300] to-[#fc4f02] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
+          {titleHighlight}
+        </span>
+      </h2>
+      <p
+        className="mx-auto max-w-2xl text-xl text-slate-300"
+        style={{ transform: "translateZ(30px)" }}
+      >
+        {description}
+      </p>
     </div>
   );
 }
@@ -488,26 +543,11 @@ export function FeaturesSection() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
         {/* Enhanced Section Header with 3D effect */}
-        <div className="text-center mb-16 sm:mb-20">
-          <h2
-            className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6"
-            style={{
-              transform: "translateZ(50px)",
-            }}
-          >
-            Powerful Features for
-            <br />
-            <span className="bg-gradient-to-r from-[#fc4f02] via-[#fda300] to-[#fc4f02] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-              Modern Traders
-            </span>
-          </h2>
-          <p
-            className="mx-auto max-w-2xl text-xl text-slate-300"
-            style={{ transform: "translateZ(30px)" }}
-          >
-            Everything you need to trade smarter, faster, and more profitably
-          </p>
-        </div>
+        <ScrollAnimatedHeader
+          title="Powerful Features for"
+          titleHighlight="Modern Traders"
+          description="Everything you need to trade smarter, faster, and more profitably"
+        />
 
         {/* Features Grid with enhanced spacing */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 pb-4" style={{ transformStyle: "preserve-3d" }}>
