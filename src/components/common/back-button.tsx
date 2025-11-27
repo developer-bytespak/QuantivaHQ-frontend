@@ -33,11 +33,18 @@ export function BackButton() {
     } else if (pathname === "/onboarding/crypto-exchange") {
       prevPage = "/onboarding/account-type";
     } else if (pathname === "/onboarding/api-key-tutorial") {
-      // Check account type to determine previous page
+      // Check account type and selected exchange to determine previous page
       const accountType = localStorage.getItem("quantivahq_account_type");
-      if (accountType === "stocks") {
+      const selectedExchange = localStorage.getItem("quantivahq_selected_exchange");
+      
+      if (accountType === "stocks" || selectedExchange === "ibkr") {
+        // If stocks account type or IBKR exchange, go back to stock exchange page
         prevPage = "/onboarding/stock-exchange";
+      } else if (accountType === "both") {
+        // If "both" account type and crypto exchange, go back to crypto exchange page
+        prevPage = "/onboarding/crypto-exchange";
       } else {
+        // Default: crypto exchange
         prevPage = "/onboarding/crypto-exchange";
       }
     } else {

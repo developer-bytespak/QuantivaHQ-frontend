@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const RISK_DISCLOSURE_TEXT = `
 RISK DISCLOSURE STATEMENT
@@ -110,14 +110,6 @@ export default function RiskDisclosurePage() {
   const [isAcknowledged, setIsAcknowledged] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
-
-  useEffect(() => {
-    // Check if user has already acknowledged
-    const acknowledged = localStorage.getItem("quantivahq_risk_acknowledged");
-    if (acknowledged === "true") {
-      setIsAcknowledged(true);
-    }
-  }, []);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
