@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { authService } from "@/lib/auth/auth.service";
 
 export default function ProfilePage() {
   const [userName, setUserName] = useState<string>("User");
@@ -19,37 +20,67 @@ export default function ProfilePage() {
   const [showCameraPreview, setShowCameraPreview] = useState<boolean>(false);
   const [showImageOverlay, setShowImageOverlay] = useState<boolean>(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [showChangePassword, setShowChangePassword] = useState<boolean>(false);
+  const [oldPassword, setOldPassword] = useState<string>("");
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState<string>("");
+  const [twoFactorCode, setTwoFactorCode] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
+  const [isChangingPassword, setIsChangingPassword] = useState<boolean>(false);
+  const [passwordSuccess, setPasswordSuccess] = useState<boolean>(false);
+  const [isRequestingCode, setIsRequestingCode] = useState<boolean>(false);
+  const [codeSent, setCodeSent] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const imageButtonRef = useRef<HTMLDivElement>(null);
   const imageMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const name = localStorage.getItem("quantivahq_user_name") || "User";
-      const email = localStorage.getItem("quantivahq_user_email") || "user@example.com";
-      const exchange = localStorage.getItem("quantivahq_selected_exchange") || "";
-      const personalInfoStr = localStorage.getItem("quantivahq_personal_info");
-      const savedImage = localStorage.getItem("quantivahq_profile_image");
-
-      setUserName(name);
-      setUserEmail(email);
-      setEditName(name);
-      setEditEmail(email);
-      setUserInitial(name.charAt(0).toUpperCase());
-      setSelectedExchange(exchange);
-      if (savedImage) {
-        setProfileImage(savedImage);
-      }
-
-      if (personalInfoStr) {
+    const loadUserData = async () => {
+      if (typeof window !== "undefined") {
+        // Try to get user from backend first
         try {
-          setPersonalInfo(JSON.parse(personalInfoStr));
-        } catch (e) {
-          console.error("Failed to parse personal info", e);
+          const user = await authService.getCurrentUser();
+          setUserName(user.username);
+          setUserEmail(user.email);
+          setEditName(user.username);
+          setEditEmail(user.email);
+          setUserInitial(user.username.charAt(0).toUpperCase());
+          // Update localStorage with fresh data
+          localStorage.setItem("quantivahq_user_name", user.username);
+          localStorage.setItem("quantivahq_user_email", user.email);
+          localStorage.setItem("quantivahq_user_id", user.user_id);
+        } catch (error) {
+          // Fallback to localStorage if API fails
+          const name = localStorage.getItem("quantivahq_user_name") || "User";
+          const email = localStorage.getItem("quantivahq_user_email") || "user@example.com";
+          setUserName(name);
+          setUserEmail(email);
+          setEditName(name);
+          setEditEmail(email);
+          setUserInitial(name.charAt(0).toUpperCase());
+        }
+
+        const exchange = localStorage.getItem("quantivahq_selected_exchange") || "";
+        const personalInfoStr = localStorage.getItem("quantivahq_personal_info");
+        const savedImage = localStorage.getItem("quantivahq_profile_image");
+
+        setSelectedExchange(exchange);
+        if (savedImage) {
+          setProfileImage(savedImage);
+        }
+
+        if (personalInfoStr) {
+          try {
+            setPersonalInfo(JSON.parse(personalInfoStr));
+          } catch (e) {
+            console.error("Failed to parse personal info", e);
+          }
         }
       }
-    }
+    };
+
+    loadUserData();
   }, []);
 
   // Setup video stream for camera preview
@@ -143,6 +174,58 @@ export default function ProfilePage() {
         setSaveSuccess(false);
       }, 3000);
     }, 500);
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError("");
+
+    // Validation
+    if (!oldPassword || !newPassword || !confirmNewPassword || !twoFactorCode) {
+      setPasswordError("Please fill in all fields");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    if (twoFactorCode.length !== 6) {
+      setPasswordError("2FA code must be 6 digits");
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      await authService.changePassword({
+        oldPassword,
+        newPassword,
+        twoFactorCode,
+      });
+
+      setPasswordSuccess(true);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setTwoFactorCode("");
+      setCodeSent(false);
+
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPasswordSuccess(false);
+      }, 2000);
+    } catch (error: any) {
+      setPasswordError(error.message || "Failed to change password. Please try again.");
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -505,7 +588,10 @@ export default function ProfilePage() {
                 <p className="font-medium text-white">Password</p>
                 <p className="text-xs text-slate-400">Last changed 30 days ago</p>
               </div>
-              <button className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white transition-all hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]">
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white transition-all hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+              >
                 Change
               </button>
             </div>
@@ -813,7 +899,177 @@ export default function ProfilePage() {
           document.body
         )
       }
-    </div >
+
+      {/* Change Password Modal */}
+      {showChangePassword && typeof window !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => {
+            setShowChangePassword(false);
+            setPasswordError("");
+            setOldPassword("");
+            setNewPassword("");
+            setConfirmNewPassword("");
+            setTwoFactorCode("");
+            setCodeSent(false);
+          }}
+        >
+          <div
+            className="relative mx-4 w-full max-w-md rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Change Password</h3>
+              <button
+                onClick={() => {
+                  setShowChangePassword(false);
+                  setPasswordError("");
+                  setOldPassword("");
+                  setNewPassword("");
+                  setConfirmNewPassword("");
+                  setTwoFactorCode("");
+                  setCodeSent(false);
+                }}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="oldPassword" className="mb-2 block text-sm font-medium text-white">
+                  Current Password
+                </label>
+                <input
+                  id="oldPassword"
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                  placeholder="Enter current password"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="newPassword" className="mb-2 block text-sm font-medium text-white">
+                  New Password
+                </label>
+                <input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                  placeholder="Enter new password (min 8 characters)"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirmNewPassword" className="mb-2 block text-sm font-medium text-white">
+                  Confirm New Password
+                </label>
+                <input
+                  id="confirmNewPassword"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                  placeholder="Confirm new password"
+                />
+              </div>
+
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label htmlFor="twoFactorCode" className="block text-sm font-medium text-white">
+                    2FA Verification Code
+                  </label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsRequestingCode(true);
+                      setPasswordError("");
+                      try {
+                        await authService.requestPasswordChangeCode();
+                        setCodeSent(true);
+                        setPasswordError("");
+                      } catch (error: any) {
+                        setPasswordError(error.message || "Failed to send 2FA code. Please try again.");
+                      } finally {
+                        setIsRequestingCode(false);
+                      }
+                    }}
+                    disabled={isRequestingCode}
+                    className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRequestingCode ? "Sending..." : codeSent ? "Code Sent!" : "Request Code"}
+                  </button>
+                </div>
+                <input
+                  id="twoFactorCode"
+                  type="text"
+                  value={twoFactorCode}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setTwoFactorCode(value);
+                  }}
+                  className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-center text-lg font-bold tracking-widest text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                  placeholder="000000"
+                  maxLength={6}
+                />
+                <p className="mt-1 text-xs text-slate-400">
+                  {codeSent 
+                    ? "A 6-digit code has been sent to your email. Please enter it above."
+                    : isRequestingCode
+                    ? "Sending 2FA code to your email..."
+                    : "Enter the 6-digit code sent to your email."}
+                </p>
+              </div>
+
+              {passwordError && (
+                <div className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3">
+                  <p className="text-sm text-red-400">{passwordError}</p>
+                </div>
+              )}
+
+              {passwordSuccess && (
+                <div className="rounded-xl border border-green-500/50 bg-green-500/10 px-4 py-3">
+                  <p className="text-sm text-green-400">Password changed successfully!</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowChangePassword(false);
+                    setPasswordError("");
+                    setOldPassword("");
+                    setNewPassword("");
+                    setConfirmNewPassword("");
+                    setTwoFactorCode("");
+                    setCodeSent(false);
+                  }}
+                  className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-[--color-surface-alt]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleChangePassword}
+                  disabled={isChangingPassword}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  {isChangingPassword ? "Changing..." : "Change Password"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+    </div>
   );
 }
 

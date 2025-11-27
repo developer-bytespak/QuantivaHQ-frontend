@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
 import { useState } from "react";
+import { apiRequest } from "@/lib/api/client";
 
 type AuthTab = "signup" | "login";
 
@@ -36,40 +37,77 @@ export default function SignUpPage() {
         setError("Password must be at least 8 characters");
         return;
       }
-    } else {
-      if (!email || !password) {
-        setError("Please fill in all fields");
-        return;
-      }
-    }
 
-    setIsLoading(true);
+      setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      if (activeTab === "signup") {
-        // Store auth data in localStorage
+      try {
+        // Call register API
+        const response = await apiRequest<{
+          email: string;
+          username: string;
+          password: string;
+        }>({
+          path: "/auth/register",
+          method: "POST",
+          body: {
+            email,
+            username: fullName.split(" ")[0] || email.split("@")[0],
+            password,
+          },
+        });
+
+        // Store user info
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_user_name", fullName || email.split("@")[0]);
         localStorage.setItem("quantivahq_auth_method", "email");
-        
+
         setIsLoading(false);
-        // Switch to login tab after account creation
+        // Switch to login tab after registration
         setActiveTab("login");
         setPassword("");
         setConfirmPassword("");
         setFullName("");
         setError("");
-      } else {
-        // Login flow
+      } catch (error: any) {
+        setError(error.message || "Registration failed. Please try again.");
+        setIsLoading(false);
+      }
+    } else {
+      // Login flow
+      if (!email || !password) {
+        setError("Please fill in all fields");
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        // Step 1: Login (sends 2FA code)
+        const response = await apiRequest<{
+          emailOrUsername: string;
+          password: string;
+        }>({
+          path: "/auth/login",
+          method: "POST",
+          body: {
+            emailOrUsername: email,
+            password,
+          },
+        });
+
+        // Store pending email and password for 2FA verification
+        localStorage.setItem("quantivahq_pending_email", email);
+        localStorage.setItem("quantivahq_pending_password", password);
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_auth_method", "email");
-        localStorage.setItem("quantivahq_is_authenticated", "true");
-        
+
+        // Navigate to 2FA verification page
+        router.push("/onboarding/verify-2fa");
+      } catch (error: any) {
+        setError(error.message || "Login failed. Please check your credentials.");
         setIsLoading(false);
-        router.push("/onboarding/personal-info");
       }
-    }, 1000);
+    }
   };
 
   const handleOAuth = (provider: "google" | "apple") => {
