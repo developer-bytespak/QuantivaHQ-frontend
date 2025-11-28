@@ -22,8 +22,9 @@ type OnboardingStep =
 type PersonalInfo = {
   fullName: string;
   dateOfBirth: string;
-  country: string;
-  regionConsent: boolean;
+  nationality: string;
+  gender?: "male" | "female" | "other" | "prefer-not-to-say";
+  phoneNumber?: string;
 };
 
 type OnboardingState = {
@@ -45,8 +46,9 @@ type OnboardingState = {
 const defaultPersonalInfo: PersonalInfo = {
   fullName: "",
   dateOfBirth: "",
-  country: "",
-  regionConsent: false,
+  nationality: "",
+  gender: undefined,
+  phoneNumber: undefined,
 };
 
 const defaultState = {

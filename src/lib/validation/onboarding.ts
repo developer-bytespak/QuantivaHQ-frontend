@@ -10,7 +10,10 @@ export const personalInfoSchema = z.object({
     .refine((value) => Boolean(Date.parse(value)), "Date of birth must be valid"),
   gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional(),
   nationality: z.string().min(2, "Nationality is required"),
-  countryOfResidence: z.string().min(2, "Country of residence is required"),
+  phoneNumber: z
+    .string()
+    .regex(/^\+?[1-9]\d{1,14}$/, "Phone number must be a valid international format")
+    .optional(),
 });
 
 export const experienceSchema = z.object({

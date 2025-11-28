@@ -140,16 +140,25 @@ export default function MarketPage() {
       {/* Market Table */}
       <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full border-collapse table-fixed">
+            <colgroup>
+              <col className="w-16" />
+              <col className="w-auto" />
+              <col className="w-32" />
+              <col className="w-32" />
+              <col className="w-32" />
+              <col className="w-32" />
+              <col className="w-40" />
+            </colgroup>
             <thead>
               <tr className="border-b border-[--color-border]">
-                <th className="pb-3 pl-6 text-left text-xs font-medium uppercase text-slate-400">#</th>
-                <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Asset</th>
-                <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">Price</th>
-                <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">24h Change</th>
-                <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">Market Cap</th>
-                <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">Volume (24h)</th>
-                <th className="pb-3 pr-6 text-right text-xs font-medium uppercase text-slate-400">Circulating Supply</th>
+                <th className="py-3 px-6 text-left text-xs font-medium uppercase text-slate-400">#</th>
+                <th className="py-3 px-4 text-left text-xs font-medium uppercase text-slate-400">Asset</th>
+                <th className="py-3 px-4 text-right text-xs font-medium uppercase text-slate-400">Price</th>
+                <th className="py-3 px-4 text-right text-xs font-medium uppercase text-slate-400">24h Change</th>
+                <th className="py-3 px-4 text-right text-xs font-medium uppercase text-slate-400">Market Cap</th>
+                <th className="py-3 px-4 text-right text-xs font-medium uppercase text-slate-400">Volume (24h)</th>
+                <th className="py-3 px-6 text-right text-xs font-medium uppercase text-slate-400">Circulating Supply</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[--color-border]">
@@ -167,8 +176,8 @@ export default function MarketPage() {
                     key={coin.id}
                     className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                   >
-                    <td className="py-4 pl-6 text-sm text-slate-400">{coin.market_cap_rank}</td>
-                    <td className="py-4">
+                    <td className="py-4 px-6 text-sm text-slate-400">{coin.market_cap_rank}</td>
+                    <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
                         <img src={coin.image} alt={coin.name} className="h-8 w-8 rounded-full" />
                         <div>
@@ -177,13 +186,13 @@ export default function MarketPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 text-right text-sm font-medium text-white">{formatCurrency(coin.current_price)}</td>
-                    <td className={`py-4 text-right text-sm font-medium ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <td className="py-4 px-4 text-right text-sm font-medium text-white">{formatCurrency(coin.current_price)}</td>
+                    <td className={`py-4 px-4 text-right text-sm font-medium ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatPercent(coin.price_change_percentage_24h)}
                     </td>
-                    <td className="py-4 text-right text-sm text-slate-300">{formatLargeNumber(coin.market_cap)}</td>
-                    <td className="py-4 text-right text-sm text-slate-300">{formatLargeNumber(coin.total_volume)}</td>
-                    <td className="py-4 pr-6 text-right text-sm text-slate-300">
+                    <td className="py-4 px-4 text-right text-sm text-slate-300">{formatLargeNumber(coin.market_cap)}</td>
+                    <td className="py-4 px-4 text-right text-sm text-slate-300">{formatLargeNumber(coin.total_volume)}</td>
+                    <td className="py-4 px-6 text-right text-sm text-slate-300">
                       {coin.circulating_supply.toLocaleString()} {coin.symbol.toUpperCase()}
                     </td>
                   </tr>

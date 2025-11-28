@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
 import { AUTH_STEPS } from "@/config/navigation";
+import { updatePersonalInfo } from "@/lib/api/user";
 
 interface Country {
   code: string;
@@ -52,17 +53,14 @@ export default function PersonalInfoPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "other" | "prefer-not-to-say" | "">("");
   const [nationality, setNationality] = useState("");
-  const [countryOfResidence, setCountryOfResidence] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   
   const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
-  const [isResidenceDropdownOpen, setIsResidenceDropdownOpen] = useState(false);
   const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
-  const [residenceDropdownPosition, setResidenceDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [mounted, setMounted] = useState(false);
   const nationalityDropdownRef = useRef<HTMLDivElement>(null);
-  const residenceDropdownRef = useRef<HTMLDivElement>(null);
 
   // Calculate progress based on filled fields
   const calculateProgress = () => {
@@ -70,13 +68,12 @@ export default function PersonalInfoPage() {
       fullLegalName,
       dateOfBirth,
       nationality,
-      countryOfResidence
     ];
     
     const filledFields = requiredFields.filter(field => field && field.trim() !== "").length;
     const totalFields = requiredFields.length;
     
-    // When all fields are filled, show 25%
+    // When all required fields are filled, show 25%
     if (filledFields === totalFields) {
       return 25;
     }
@@ -101,7 +98,7 @@ export default function PersonalInfoPage() {
         setDateOfBirth(data.dateOfBirth || "");
         setGender(data.gender || "");
         setNationality(data.nationality || "");
-        setCountryOfResidence(data.countryOfResidence || "");
+        setPhoneNumber(data.phoneNumber || "");
       } catch (e) {
         console.error("Failed to load saved personal info", e);
       }
@@ -120,23 +117,11 @@ export default function PersonalInfoPage() {
     }
   }, [isNationalityDropdownOpen]);
 
-  useEffect(() => {
-    if (isResidenceDropdownOpen && residenceDropdownRef.current) {
-      const rect = residenceDropdownRef.current.getBoundingClientRect();
-      setResidenceDropdownPosition({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width
-      });
-    }
-  }, [isResidenceDropdownOpen]);
-
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       const nationalityPortal = document.querySelector('[data-portal="nationality"]');
-      const residencePortal = document.querySelector('[data-portal="residence"]');
       
       if (isNationalityDropdownOpen) {
         if (nationalityDropdownRef.current && 
@@ -146,17 +131,9 @@ export default function PersonalInfoPage() {
           setIsNationalityDropdownOpen(false);
         }
       }
-      if (isResidenceDropdownOpen) {
-        if (residenceDropdownRef.current && 
-            !residenceDropdownRef.current.contains(target) &&
-            residencePortal &&
-            !residencePortal.contains(target)) {
-          setIsResidenceDropdownOpen(false);
-        }
-      }
     };
 
-    if (isNationalityDropdownOpen || isResidenceDropdownOpen) {
+    if (isNationalityDropdownOpen) {
       // Use setTimeout to avoid immediate closure when opening
       setTimeout(() => {
         document.addEventListener("mousedown", handleClickOutside);
@@ -165,16 +142,11 @@ export default function PersonalInfoPage() {
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }
-  }, [isNationalityDropdownOpen, isResidenceDropdownOpen]);
+  }, [isNationalityDropdownOpen]);
 
-  const handleCountrySelect = (countryCode: string, type: "nationality" | "residence") => {
-    if (type === "nationality") {
-      setNationality(countryCode);
-      setIsNationalityDropdownOpen(false);
-    } else {
-      setCountryOfResidence(countryCode);
-      setIsResidenceDropdownOpen(false);
-    }
+  const handleCountrySelect = (countryCode: string) => {
+    setNationality(countryCode);
+    setIsNationalityDropdownOpen(false);
     setErrors({});
   };
 
@@ -189,7 +161,7 @@ export default function PersonalInfoPage() {
       dateOfBirth,
       gender: gender || undefined,
       nationality,
-      countryOfResidence,
+      phoneNumber: phoneNumber || undefined,
     };
 
     // Validate using schema
@@ -206,19 +178,34 @@ export default function PersonalInfoPage() {
       return;
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      // Store in localStorage
+    try {
+      // Get user ID from localStorage or session
+      // Note: In a real app, you'd get this from the authenticated session/token
+      const userId = localStorage.getItem("quantivahq_user_id");
+      
+      if (!userId) {
+        throw new Error("User not authenticated. Please sign in again.");
+      }
+
+      // Call backend API
+      await updatePersonalInfo(userId, formData);
+      
+      // Store in localStorage for backup
       localStorage.setItem("quantivahq_personal_info", JSON.stringify(formData));
       
       setIsLoading(false);
       // Navigate to next step
       router.push("/onboarding/proof-upload");
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to update personal info:", error);
+      setErrors({
+        submit: error instanceof Error ? error.message : "Failed to save personal information. Please try again.",
+      });
+      setIsLoading(false);
+    }
   };
 
   const nationalityData = nationality ? COUNTRIES.find((c) => c.code === nationality) : null;
-  const residenceData = countryOfResidence ? COUNTRIES.find((c) => c.code === countryOfResidence) : null;
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
@@ -356,7 +343,6 @@ export default function PersonalInfoPage() {
                       type="button"
                       onClick={() => {
                         setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
-                        setIsResidenceDropdownOpen(false);
                       }}
                       className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-2.5 pr-12 text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 hover:border-[#fc4f02]/50 cursor-pointer ${
                         nationality ? "pl-12" : "pl-4"
@@ -401,7 +387,7 @@ export default function PersonalInfoPage() {
                             <button
                               key={country.code}
                               type="button"
-                              onClick={() => handleCountrySelect(country.code, "nationality")}
+                              onClick={() => handleCountrySelect(country.code)}
                               className={`w-full text-left px-4 py-3 text-sm transition-colors duration-150 ${
                                 nationality === country.code
                                   ? "bg-[#1e293b] text-white"
@@ -421,79 +407,28 @@ export default function PersonalInfoPage() {
                   )}
                 </div>
 
-                {/* Country of Residence */}
+                {/* Phone Number */}
                 <div>
-                  <label htmlFor="countryOfResidence" className="mb-1 block text-xs font-semibold text-white flex items-center gap-2">
-                    <span>Country of Residence</span>
-                    <span className="text-red-400">*</span>
+                  <label htmlFor="phoneNumber" className="mb-1 block text-xs font-semibold text-white">
+                    Phone Number <span className="text-slate-500 text-xs font-normal">(Optional)</span>
                   </label>
-                  <div className="relative z-[100]" ref={residenceDropdownRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsResidenceDropdownOpen(!isResidenceDropdownOpen);
-                        setIsNationalityDropdownOpen(false);
-                      }}
-                      className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-2.5 pr-12 text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 hover:border-[#fc4f02]/50 cursor-pointer ${
-                        countryOfResidence ? "pl-12" : "pl-4"
-                      } ${
-                        errors.countryOfResidence
-                          ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
-                          : countryOfResidence
-                          ? "border-[#fc4f02] shadow-lg shadow-[#fc4f02]/20"
-                          : "border-[--color-border]"
-                      }`}
-                    >
-                      {countryOfResidence && residenceData ? (
-                        <span className="text-white">{residenceData.name}</span>
-                      ) : (
-                        <span className="text-slate-400">Select your country of residence</span>
-                      )}
-                    </button>
-                    {countryOfResidence && (
-                      <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-                        <div className="h-2.5 w-2.5 rounded-full bg-[#10b981] shadow-lg shadow-[#10b981]/50" />
-                      </div>
-                    )}
-                    <div className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200 ${
-                      isResidenceDropdownOpen ? "rotate-180" : ""
-                    } ${countryOfResidence ? "text-[#fc4f02]" : "text-slate-400"}`}>
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                    {isResidenceDropdownOpen && mounted && createPortal(
-                      <div 
-                        data-portal="residence"
-                        className="fixed rounded-xl border-2 border-[--color-border] bg-[#0f172a] shadow-2xl shadow-black/50 overflow-hidden z-[99999]"
-                        style={{ 
-                          top: `${residenceDropdownPosition.top}px`,
-                          left: `${residenceDropdownPosition.left}px`,
-                          width: `${residenceDropdownPosition.width}px`
-                        }}
-                      >
-                        <div className="overflow-y-auto bg-[#0f172a]" style={{ maxHeight: "180px" }}>
-                          {COUNTRIES.map((country) => (
-                            <button
-                              key={country.code}
-                              type="button"
-                              onClick={() => handleCountrySelect(country.code, "residence")}
-                              className={`w-full text-left px-4 py-3 text-sm transition-colors duration-150 ${
-                                countryOfResidence === country.code
-                                  ? "bg-[#1e293b] text-white"
-                                  : "text-white hover:bg-[#1e293b] bg-[#0f172a]"
-                              }`}
-                            >
-                              {country.name}
-                            </button>
-                          ))}
-                        </div>
-                      </div>,
-                      document.body
-                    )}
-                  </div>
-                  {errors.countryOfResidence && (
-                    <p className="mt-1.5 text-xs text-red-400">{errors.countryOfResidence}</p>
+                  <input
+                    id="phoneNumber"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => {
+                      setPhoneNumber(e.target.value);
+                      setErrors({ ...errors, phoneNumber: "" });
+                    }}
+                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
+                      errors.phoneNumber
+                        ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
+                        : "border-[--color-border]"
+                    }`}
+                    placeholder="+1234567890"
+                  />
+                  {errors.phoneNumber && (
+                    <p className="mt-1.5 text-xs text-red-400">{errors.phoneNumber}</p>
                   )}
                 </div>
                 </div>
@@ -528,6 +463,9 @@ export default function PersonalInfoPage() {
                 {/* Shine effect */}
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
               </button>
+              {errors.submit && (
+                <p className="mt-2 text-xs text-red-400">{errors.submit}</p>
+              )}
               <p className="mt-3 text-xs text-slate-400">
                 All information is encrypted and securely stored
               </p>
