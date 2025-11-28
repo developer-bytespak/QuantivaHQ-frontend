@@ -46,6 +46,13 @@ export default function VerificationStatusPage() {
           pollingIntervalRef.current = null;
         }
         pollingAttemptsRef.current = 0;
+        
+        // Auto-redirect to exchange connectivity page when approved
+        if (response.status === "approved") {
+          setTimeout(() => {
+            router.push("/onboarding/account-type");
+          }, 1500); // Small delay to show success message
+        }
       }
     } catch (err) {
       console.error("Failed to fetch KYC status:", err);
@@ -372,7 +379,7 @@ export default function VerificationStatusPage() {
                   )}
                   {status === "approved" && (
                     <button
-                      onClick={() => router.push("/onboarding/experience")}
+                      onClick={() => router.push("/onboarding/account-type")}
                       className="group relative overflow-hidden flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
                     >
                       <span className="relative z-10 flex items-center justify-center gap-2">

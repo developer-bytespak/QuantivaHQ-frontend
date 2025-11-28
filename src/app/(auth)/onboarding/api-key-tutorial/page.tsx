@@ -170,16 +170,17 @@ export default function ApiKeyTutorialPage() {
               onClick={() => {
                 // Check if account type is "both" and crypto is already connected
                 const accountType = localStorage.getItem("quantivahq_account_type");
-                const cryptoConnected = localStorage.getItem("quantivahq_crypto_connected") === "true";
+                // Use sessionStorage for UI state flags (cleared on browser close, more secure)
+                const cryptoConnected = sessionStorage.getItem("quantivahq_crypto_connected") === "true";
                 
                 if (accountType === "both" && cryptoConnected) {
                   // Set stocks connection flag since we're connecting stocks account
-                  localStorage.setItem("quantivahq_stocks_connected", "true");
+                  sessionStorage.setItem("quantivahq_stocks_connected", "true");
                   // Navigate to crypto dashboard when coming from "both" flow
                   router.push("/dashboard");
                 } else {
                   // Set stocks connection flag for normal flow too
-                  localStorage.setItem("quantivahq_stocks_connected", "true");
+                  sessionStorage.setItem("quantivahq_stocks_connected", "true");
                   // Navigate to stocks dashboard for normal flow
                   router.push("/stocks-dashboard");
                 }

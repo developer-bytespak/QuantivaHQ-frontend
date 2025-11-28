@@ -57,8 +57,34 @@ export default function CryptoExchangePage() {
   const [showFAQModal, setShowFAQModal] = useState(false);
 
   const handleExchangeSelect = (exchange: "binance" | "bybit") => {
+    // Get existing selected exchanges
+    const existingExchanges = JSON.parse(
+      localStorage.getItem("quantivahq_selected_exchanges") || "[]"
+    );
+    
+    // Add exchange if not already selected
+    const exchangeData = {
+      name: exchange === "binance" ? "Binance" : "Bybit",
+      type: "crypto",
+      code: exchange,
+    };
+    
+    if (!existingExchanges.find((e: any) => e.code === exchange)) {
+      existingExchanges.push(exchangeData);
+      localStorage.setItem("quantivahq_selected_exchanges", JSON.stringify(existingExchanges));
+    }
+    
+    // Also save current selection for immediate use
     localStorage.setItem("quantivahq_selected_exchange", exchange);
-    router.push("/onboarding/api-key-tutorial");
+    
+    // Check if user selected "both" - if so, allow selecting stock exchange next
+    const accountType = localStorage.getItem("quantivahq_account_type");
+    if (accountType === "both") {
+      // After crypto, go to stocks
+      router.push("/onboarding/stock-exchange");
+    } else {
+      router.push("/onboarding/api-key-tutorial");
+    }
   };
 
   const exchanges = [

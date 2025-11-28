@@ -49,7 +49,8 @@ export function HomepageHeader() {
   }, []);
 
   const handleGoToDashboard = () => {
-    if (accountType === "stocks" || (accountType === "both" && localStorage.getItem("quantivahq_stocks_connected") === "true")) {
+    // Use sessionStorage for UI state flags (cleared on browser close, more secure)
+    if (accountType === "stocks" || (accountType === "both" && sessionStorage.getItem("quantivahq_stocks_connected") === "true")) {
       router.push("/stocks-dashboard");
     } else {
       router.push("/dashboard");

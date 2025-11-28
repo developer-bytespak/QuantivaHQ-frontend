@@ -50,10 +50,32 @@ export async function apiRequest<TRequest, TResponse = unknown>({
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({
-      message: response.statusText,
-    }));
-    throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
+    let errorMessage = `API error: ${response.status} ${response.statusText}`;
+    
+    try {
+      const errorData = await response.json();
+      // Handle NestJS error formats
+      if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      } else if (Array.isArray(errorData.message)) {
+        errorMessage = errorData.message.join(', ');
+      } else if (errorData.message) {
+        // Handle nested error objects
+        if (typeof errorData.message === 'object' && errorData.message.message) {
+          errorMessage = errorData.message.message;
+        } else {
+          errorMessage = errorData.message;
+        }
+      } else if (errorData.error?.message) {
+        errorMessage = errorData.error.message;
+      } else if (errorData.detail) {
+        errorMessage = errorData.detail;
+      }
+    } catch {
+      // If JSON parsing fails, use status text
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return (await response.json()) as TResponse;

@@ -55,7 +55,26 @@ export default function StockExchangePage() {
     const [showFAQModal, setShowFAQModal] = useState(false);
 
     const handleExchangeSelect = (exchange: "ibkr") => {
+        // Get existing selected exchanges
+        const existingExchanges = JSON.parse(
+            localStorage.getItem("quantivahq_selected_exchanges") || "[]"
+        );
+        
+        // Add exchange if not already selected
+        const exchangeData = {
+            name: "Interactive Brokers",
+            type: "stocks",
+            code: exchange,
+        };
+        
+        if (!existingExchanges.find((e: any) => e.code === exchange)) {
+            existingExchanges.push(exchangeData);
+            localStorage.setItem("quantivahq_selected_exchanges", JSON.stringify(existingExchanges));
+        }
+        
+        // Also save current selection for immediate use
         localStorage.setItem("quantivahq_selected_exchange", exchange);
+        
         router.push("/onboarding/api-key-tutorial");
     };
 

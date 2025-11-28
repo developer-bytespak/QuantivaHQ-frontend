@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 type ErrorType =
   | "invalid_api_key"
@@ -34,45 +35,67 @@ export default function ConnectingPage() {
       setAccountType(savedAccountType);
     }
 
-    // Simulate API connection verification
+    // Verify connection with backend
+    const verifyConnection = async () => {
+      const connectionId = sessionStorage.getItem("quantivahq_connection_id");
+      
+      if (!connectionId) {
+        setErrorType("network_error");
+        setConnectionStatus("error");
+        return;
+      }
+
+      try {
+        const response = await exchangesService.verifyConnection(connectionId);
+
+        if (response.success && response.data.valid) {
+          setConnectionStatus("success");
+
+          // Set connection flags in sessionStorage for UI state (cleared on browser close)
+          // These are just UI flags, not sensitive data - connection status is in backend
+          if (exchange === "binance" || exchange === "bybit") {
+            sessionStorage.setItem("quantivahq_crypto_connected", "true");
+          } else if (exchange === "ibkr") {
+            sessionStorage.setItem("quantivahq_stocks_connected", "true");
+          }
+
+          // If account type is "both" and stocks is connected, navigate to crypto dashboard
+          if (savedAccountType === "both" && exchange === "ibkr") {
+            // Small delay before navigation to show success message
+            setTimeout(() => {
+              router.push("/dashboard");
+            }, 1000);
+          }
+        } else {
+          // Invalid API keys
+          setErrorType("invalid_api_key");
+          setConnectionStatus("error");
+        }
+      } catch (error: any) {
+        console.error("Connection verification failed:", error);
+        
+        // Map error types
+        const errorMessage = error.message?.toLowerCase() || "";
+        if (errorMessage.includes("invalid") || errorMessage.includes("api key")) {
+          setErrorType("invalid_api_key");
+        } else if (errorMessage.includes("permission")) {
+          setErrorType("incorrect_permissions");
+        } else if (errorMessage.includes("whitelist") || errorMessage.includes("ip")) {
+          setErrorType("ip_whitelist_required");
+        } else if (errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+          setErrorType("exchange_outage");
+        } else {
+          setErrorType("network_error");
+        }
+        
+        setConnectionStatus("error");
+      }
+    };
+
+    // Start verification after a short delay for UX
     const timer = setTimeout(() => {
-      // In a real app, this would be an actual API call to verify the keys
-      // For demo purposes, you can simulate failure by uncommenting the error simulation below
-
-      // Simulate success (default)
-      setConnectionStatus("success");
-
-      // Set connection flags based on exchange type
-      if (exchange === "binance" || exchange === "bybit") {
-        localStorage.setItem("quantivahq_crypto_connected", "true");
-      } else if (exchange === "ibkr") {
-        localStorage.setItem("quantivahq_stocks_connected", "true");
-      }
-
-      // If account type is "both" and stocks is connected, navigate to crypto dashboard
-      if (savedAccountType === "both" && exchange === "ibkr") {
-        // Small delay before navigation to show success message
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 1000);
-      }
-
-      // Uncomment below to simulate different error types for testing:
-      // const shouldFail = Math.random() > 0.7; // 30% chance of failure
-      // if (shouldFail) {
-      //   const errorTypes: ErrorType[] = [
-      //     "invalid_api_key",
-      //     "incorrect_permissions",
-      //     "ip_whitelist_required",
-      //     "exchange_outage",
-      //     "network_error"
-      //   ];
-      //   setErrorType(errorTypes[Math.floor(Math.random() * errorTypes.length)]);
-      //   setConnectionStatus("error");
-      // } else {
-      //   setConnectionStatus("success");
-      // }
-    }, 2500);
+      verifyConnection();
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [router]);

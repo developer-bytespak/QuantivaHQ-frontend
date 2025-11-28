@@ -157,7 +157,10 @@ function UserProfileSection() {
         localStorage.removeItem("quantivahq_pending_email");
         localStorage.removeItem("quantivahq_pending_password");
         localStorage.removeItem("quantivahq_device_id");
-        router.push("/onboarding/splash");
+        // Clear sessionStorage as well
+        sessionStorage.clear();
+        // Redirect to login page
+        router.push("/onboarding/sign-up?tab=login");
       }
     }
   };
@@ -246,8 +249,9 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
 
   const checkBothAccounts = () => {
     if (typeof window !== "undefined") {
-      const cryptoConnected = localStorage.getItem("quantivahq_crypto_connected") === "true";
-      const stocksConnected = localStorage.getItem("quantivahq_stocks_connected") === "true";
+      // Use sessionStorage for UI state flags (cleared on browser close, more secure)
+      const cryptoConnected = sessionStorage.getItem("quantivahq_crypto_connected") === "true";
+      const stocksConnected = sessionStorage.getItem("quantivahq_stocks_connected") === "true";
       setHasBothAccounts(cryptoConnected && stocksConnected);
     }
   };
@@ -256,7 +260,7 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
     // Check if both accounts are connected
     checkBothAccounts();
 
-    // Listen for storage changes
+    // Listen for storage changes (works for sessionStorage too)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "quantivahq_crypto_connected" || e.key === "quantivahq_stocks_connected") {
         checkBothAccounts();
