@@ -3,14 +3,61 @@
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { getKycStatus, submitVerification } from "@/lib/api/kyc";
+import type { KycStatus } from "@/lib/api/types/kyc";
 
-type VerificationStatus = "pending" | "verified" | "rejected";
+type VerificationStatus = KycStatus;
 
 export default function VerificationStatusPage() {
   const router = useRouter();
   const [status, setStatus] = useState<VerificationStatus>("pending");
   const [isLoading, setIsLoading] = useState(false);
+  const [kycData, setKycData] = useState<{
+    kyc_id: string | null;
+    decision_reason?: string;
+    liveness_result?: string;
+    liveness_confidence?: number;
+    face_match_score?: number;
+    doc_authenticity_score?: number;
+  } | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const maxPollingAttempts = 60; // Poll for up to 5 minutes (60 * 5 seconds)
+  const pollingAttemptsRef = useRef(0);
+
+  const checkStatus = async () => {
+    try {
+      setIsLoading(true);
+      const response = await getKycStatus();
+      setStatus(response.status);
+      setKycData({
+        kyc_id: response.kyc_id,
+        decision_reason: response.decision_reason,
+        liveness_result: response.liveness_result,
+        liveness_confidence: response.liveness_confidence,
+        face_match_score: response.face_match_score,
+        doc_authenticity_score: response.doc_authenticity_score,
+      });
+
+      // Stop polling if status is not pending
+      if (response.status !== "pending") {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+        pollingAttemptsRef.current = 0;
+      }
+    } catch (err) {
+      console.error("Failed to fetch KYC status:", err);
+      // On error, check localStorage as fallback
+      const savedStatus = localStorage.getItem("quantivahq_verification_status") as VerificationStatus | null;
+      if (savedStatus && ["pending", "approved", "rejected", "review"].includes(savedStatus)) {
+        setStatus(savedStatus);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Check if verification data exists
@@ -23,37 +70,84 @@ export default function VerificationStatusPage() {
       return;
     }
 
-    // Simulate checking verification status
-    // In production, this would check with the backend
-    const checkStatus = async () => {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, set to pending initially
-      // In production, this would come from the backend
-      const savedStatus = localStorage.getItem("quantivahq_verification_status") as VerificationStatus | null;
-      if (savedStatus && ["pending", "verified", "rejected"].includes(savedStatus)) {
-        setStatus(savedStatus);
-      } else {
-        setStatus("pending");
-        localStorage.setItem("quantivahq_verification_status", "pending");
+    // Initial status check
+    checkStatus();
+
+    // Set up polling for pending status
+    const startPolling = () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
       }
+
+      pollingIntervalRef.current = setInterval(() => {
+        pollingAttemptsRef.current++;
+        
+        // Stop polling after max attempts
+        if (pollingAttemptsRef.current >= maxPollingAttempts) {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          return;
+        }
+
+        // Only poll if status is still pending
+        if (status === "pending") {
+          checkStatus();
+        } else {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+        }
+      }, 5000); // Poll every 5 seconds
     };
 
-    checkStatus();
-  }, [router]);
+    // Start polling if status is pending
+    if (status === "pending") {
+      startPolling();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [router, status]);
 
   const handleRetry = () => {
     // Clear verification data and redirect to proof upload
     localStorage.removeItem("quantivahq_verification_status");
     localStorage.removeItem("quantivahq_proof_upload");
     localStorage.removeItem("quantivahq_selfie");
+    
+    // Stop polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    
     router.push("/onboarding/proof-upload");
+  };
+
+  const handleSubmitVerification = async () => {
+    try {
+      setIsLoading(true);
+      await submitVerification();
+      // Refresh status after submission
+      await checkStatus();
+    } catch (err) {
+      console.error("Failed to submit verification:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const getStatusConfig = () => {
     switch (status) {
-      case "verified":
+      case "approved":
         return {
           badge: "Verified",
           badgeColor: "bg-gradient-to-r from-[#10b981] to-[#34d399]",
@@ -78,8 +172,22 @@ export default function VerificationStatusPage() {
             </svg>
           ),
           message: "Verification was not successful",
-          description: "Please review the requirements and try again with clearer documents.",
+          description: kycData?.decision_reason || "Please review the requirements and try again with clearer documents.",
           progress: 0,
+        };
+      case "review":
+        return {
+          badge: "Under Review",
+          badgeColor: "bg-gradient-to-r from-blue-500 to-blue-600",
+          badgeText: "text-white",
+          icon: (
+            <svg className="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          ),
+          message: "Your verification is under manual review",
+          description: kycData?.decision_reason || "Our team is reviewing your documents. This may take longer.",
+          progress: 75,
         };
       default: // pending
         return {
@@ -172,16 +280,17 @@ export default function VerificationStatusPage() {
                     <div className="absolute top-5 left-0 right-0 h-0.5 bg-[--color-border] -z-10">
                       <div 
                         className={`h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-500 ${
-                          status === "verified" ? "w-full" : status === "pending" ? "w-0" : "w-1/2"
+                          status === "approved" ? "w-full" : status === "pending" ? "w-0" : "w-1/2"
                         }`}
                       />
                     </div>
                     
                     {["Pending", "Reviewing", "Verified"].map((step, index) => {
-                      const isActive = status === "verified" ? true :
+                      const isActive = status === "approved" ? true :
                                        status === "rejected" ? index === 0 :
+                                       status === "review" ? index <= 1 :
                                        index === 0;
-                      const isCompleted = status === "verified" && index < 3;
+                      const isCompleted = status === "approved" && index < 3;
                       
                       return (
                         <div key={step} className="flex flex-col items-center flex-1 relative z-10">
@@ -207,6 +316,39 @@ export default function VerificationStatusPage() {
                   </div>
                 </div>
 
+                {/* Verification Details */}
+                {kycData && (status === "approved" || status === "rejected" || status === "review") && (
+                  <div className="mb-6 rounded-lg border border-[--color-border] bg-[--color-surface]/50 p-4">
+                    <h3 className="text-sm font-semibold text-white mb-3">Verification Details</h3>
+                    <div className="space-y-2 text-xs text-slate-300">
+                      {kycData.liveness_result && (
+                        <div className="flex justify-between">
+                          <span>Liveness:</span>
+                          <span className="font-medium text-white capitalize">{kycData.liveness_result}</span>
+                        </div>
+                      )}
+                      {kycData.liveness_confidence !== undefined && (
+                        <div className="flex justify-between">
+                          <span>Liveness Confidence:</span>
+                          <span className="font-medium text-white">{(kycData.liveness_confidence * 100).toFixed(1)}%</span>
+                        </div>
+                      )}
+                      {kycData.face_match_score !== undefined && (
+                        <div className="flex justify-between">
+                          <span>Face Match Score:</span>
+                          <span className="font-medium text-white">{(kycData.face_match_score * 100).toFixed(1)}%</span>
+                        </div>
+                      )}
+                      {kycData.doc_authenticity_score !== undefined && (
+                        <div className="flex justify-between">
+                          <span>Document Authenticity:</span>
+                          <span className="font-medium text-white">{(kycData.doc_authenticity_score * 100).toFixed(1)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3">
                   {status === "rejected" && (
@@ -217,7 +359,18 @@ export default function VerificationStatusPage() {
                       Retry Upload
                     </button>
                   )}
-                  {status === "verified" && (
+                  {status === "pending" && (
+                    <button
+                      onClick={handleSubmitVerification}
+                      disabled={isLoading}
+                      className="group relative overflow-hidden flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        {isLoading ? "Submitting..." : "Submit Verification"}
+                      </span>
+                    </button>
+                  )}
+                  {status === "approved" && (
                     <button
                       onClick={() => router.push("/onboarding/experience")}
                       className="group relative overflow-hidden flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"

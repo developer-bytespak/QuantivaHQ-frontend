@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { uploadSelfie } from "@/lib/api/kyc";
 
 export default function SelfieCapturePage() {
   const router = useRouter();
@@ -301,6 +302,19 @@ export default function SelfieCapturePage() {
     }
   };
 
+  // Convert data URL to File
+  const dataURLtoFile = (dataurl: string, filename: string): File => {
+    const arr = dataurl.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
   // Handle submit
   const handleSubmit = async () => {
     if (!capturedPhoto) {
@@ -309,31 +323,42 @@ export default function SelfieCapturePage() {
     }
 
     setIsLoading(true);
+    setError("");
 
-    // Get the ID document from previous step for verification
-    const idDocumentData = localStorage.getItem("quantivahq_proof_upload");
-    
-    // Store selfie in localStorage
-    const selfieData = {
-      photo: capturedPhoto,
-      captureDate: new Date().toISOString(),
-      idDocument: idDocumentData ? JSON.parse(idDocumentData) : null,
-    };
-    localStorage.setItem("quantivahq_selfie", JSON.stringify(selfieData));
+    try {
+      // Convert data URL to File
+      const selfieFile = dataURLtoFile(capturedPhoto, "selfie.jpg");
 
-    // Stop camera stream
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
+      // Upload selfie to backend (triggers liveness detection and face matching)
+      await uploadSelfie(selfieFile);
 
-    // Simulate face verification API call
-    // In production, this would send both images to a backend service for face matching
-    setTimeout(() => {
-      setIsLoading(false);
+      // Store selfie in localStorage as fallback
+      const idDocumentData = localStorage.getItem("quantivahq_proof_upload");
+      const selfieData = {
+        photo: capturedPhoto,
+        captureDate: new Date().toISOString(),
+        idDocument: idDocumentData ? JSON.parse(idDocumentData) : null,
+      };
+      localStorage.setItem("quantivahq_selfie", JSON.stringify(selfieData));
+
+      // Stop camera stream
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+
       // Navigate to verification status page
       router.push("/onboarding/verification-status");
-    }, 2000);
+    } catch (err) {
+      console.error("Selfie upload failed:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to upload selfie. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
