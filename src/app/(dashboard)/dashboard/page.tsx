@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
+import { getTopCoins, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 
 interface Activity {
   id: number;
@@ -13,107 +15,29 @@ interface Activity {
   iconBg: string;
 }
 
-const allActivities: Activity[] = [
-  {
-    id: 1,
-    type: "buy",
-    title: "BUY QI executed at 58.20",
-    description: "New Signal. BTC high confidence",
-    timestamp: "2m ago",
-    iconColor: "text-green-400",
-    iconBg: "bg-green-500/20",
-  },
-  {
-    id: 2,
-    type: "tp",
-    title: "ETH TP1 Hit (+2.1%)",
-    description: "5/0jm 12 min ago",
-    timestamp: "15m ago",
-    iconColor: "text-blue-400",
-    iconBg: "bg-blue-500/20",
-  },
-  {
-    id: 3,
-    type: "sentiment",
-    title: "XRP sentiment spike (-18%)",
-    description: "",
-    timestamp: "22m ago",
-    iconColor: "text-green-400",
-    iconBg: "bg-green-500/20",
-  },
-  {
-    id: 4,
-    type: "buy",
-    title: "BUY BTC executed at $34,500",
-    description: "Strong support level. High confidence signal",
-    timestamp: "1h ago",
-    iconColor: "text-green-400",
-    iconBg: "bg-green-500/20",
-  },
-  {
-    id: 5,
-    type: "tp",
-    title: "SOL TP2 Hit (+5.3%)",
-    description: "Take profit target reached",
-    timestamp: "2h ago",
-    iconColor: "text-blue-400",
-    iconBg: "bg-blue-500/20",
-  },
-  {
-    id: 6,
-    type: "sell",
-    title: "SELL ADA executed at $0.45",
-    description: "Stop loss triggered. Risk management",
-    timestamp: "3h ago",
-    iconColor: "text-red-400",
-    iconBg: "bg-red-500/20",
-  },
-  {
-    id: 7,
-    type: "sentiment",
-    title: "BTC sentiment improved (+12%)",
-    description: "Positive market sentiment shift detected",
-    timestamp: "4h ago",
-    iconColor: "text-green-400",
-    iconBg: "bg-green-500/20",
-  },
-  {
-    id: 8,
-    type: "buy",
-    title: "BUY ETH executed at $2,120",
-    description: "Bullish momentum on 1h and 4h charts",
-    timestamp: "5h ago",
-    iconColor: "text-green-400",
-    iconBg: "bg-green-500/20",
-  },
-  {
-    id: 9,
-    type: "tp",
-    title: "XRP TP1 Hit (+3.2%)",
-    description: "First take profit level reached",
-    timestamp: "6h ago",
-    iconColor: "text-blue-400",
-    iconBg: "bg-blue-500/20",
-  },
-  {
-    id: 10,
-    type: "sentiment",
-    title: "Market volatility spike detected",
-    description: "Increased volatility in crypto markets",
-    timestamp: "8h ago",
-    iconColor: "text-yellow-400",
-    iconBg: "bg-yellow-500/20",
-  },
-];
+// Activities will be loaded from backend API when available
 
 export default function DashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
-  const [showAllActivities, setShowAllActivities] = useState(false);
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedNews, setSelectedNews] = useState<number>(0);
   const [selectedTrade, setSelectedTrade] = useState<number>(0);
+  
+  // Binance data state
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  
+  // Store connection ID in component state (not localStorage)
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Market data state
+  const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
+  const [isLoadingMarket, setIsLoadingMarket] = useState(false);
 
   const newsItems = [
     {
@@ -175,90 +99,228 @@ export default function DashboardPage() {
     },
   ];
 
+  // Fetch active connection from backend (secure, no localStorage)
+  const fetchActiveConnection = useCallback(async () => {
+    try {
+      const response = await exchangesService.getActiveConnection();
+      setConnectionId(response.data.connection_id);
+      return response.data.connection_id;
+    } catch (err: any) {
+      console.error("Failed to fetch active connection:", err);
+      setError("No active connection found. Please connect your exchange account.");
+      setIsLoading(false);
+      return null;
+    }
+  }, []);
+
+  // Fetch dashboard data (only uses combined dashboard API)
+  const fetchDashboardData = useCallback(async (connId: string, isInitial = false) => {
+    try {
+      // Only show loading on initial load, not on polling updates
+      if (isInitial) {
+        setIsLoading(true);
+      }
+      setError(null);
+      
+      // Use combined dashboard endpoint - single API call for all data
+      const response = await exchangesService.getDashboard(connId);
+      
+      // Smooth state update without full re-render
+      setDashboardData((prev) => {
+        // Only update if data actually changed (prevents unnecessary re-renders)
+        if (prev && JSON.stringify(prev) === JSON.stringify(response.data)) {
+          return prev;
+        }
+        return response.data;
+      });
+      setLastUpdated(new Date());
+    } catch (err: any) {
+      console.error("Failed to fetch dashboard data:", err);
+      // Only show error on initial load, silent updates on polling
+      if (isInitial) {
+        setError(err.message || "Failed to load dashboard data. Please try again.");
+      }
+    } finally {
+      if (isInitial) {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+      }
+    }
+  }, []);
+
+  // Initial load: fetch connection, then fetch data
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      const connId = await fetchActiveConnection();
+      if (connId) {
+        await fetchDashboardData(connId, true);
+      }
+    };
+    
+    initializeDashboard();
+  }, [fetchActiveConnection, fetchDashboardData]);
+
+  // Polling: only update data, no loading state, no connection fetch
+  useEffect(() => {
+    if (!connectionId || isInitialLoad) return;
+
+    // Set up polling every 8 seconds (matches cache TTL)
+    // Silent updates - no loading state, smooth transitions
+    const pollInterval = setInterval(() => {
+      if (connectionId) {
+        fetchDashboardData(connectionId, false);
+      }
+    }, 8000);
+
+    return () => clearInterval(pollInterval);
+  }, [connectionId, isInitialLoad, fetchDashboardData]);
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  // Format percentage
+  const formatPercent = (value: number) => {
+    const sign = value >= 0 ? "+" : "";
+    return `${sign}${value.toFixed(2)}%`;
+  };
+
+  // Format large numbers (market cap, volume)
+  const formatLargeNumber = (value: number) => {
+    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
+  };
+
+  // Fetch market data when market tab is active
+  const fetchMarketData = useCallback(async () => {
+    setIsLoadingMarket(true);
+    try {
+      const coins = await getTopCoins(5);
+      setMarketData(coins);
+    } catch (error) {
+      console.error("Failed to fetch market data:", error);
+    } finally {
+      setIsLoadingMarket(false);
+    }
+  }, []);
+
+  // Fetch market data when market tab is selected
+  useEffect(() => {
+    if (activeTab === "market") {
+      fetchMarketData();
+    }
+  }, [activeTab, fetchMarketData]);
+
   return (
     <div className="space-y-6 pb-8">
+      {/* Error Display */}
+      {error && (
+        <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <svg className="h-5 w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm text-red-200">{error}</p>
+              <button
+                onClick={() => {
+                  if (connectionId) {
+                    fetchDashboardData(connectionId, true);
+                  } else {
+                    fetchActiveConnection().then((connId) => {
+                      if (connId) {
+                        fetchDashboardData(connId, true);
+                      }
+                    });
+                  }
+                }}
+                className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
           <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
-            <h2 className="mb-4 text-lg font-semibold text-white">Portfolio</h2>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {/* Total Profit Value Inner Box */}
-              <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-                <p className="mb-2 text-xs text-slate-400">Total Profit Value</p>
-                <p className="mb-2 text-2xl font-bold text-white">$12,340.52</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-green-400">+3742.10</span>
-                  <span className="text-sm text-green-400">(+3.1% today)</span>
-                </div>
-              </div>
-
-              {/* Active Strategies Inner Box */}
-              <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-                <p className="mb-2 text-xs text-slate-400">Active Strategies</p>
-                <p className="mb-2 text-2xl font-bold text-white">$7,480</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-green-400">+8%</span>
-                </div>
-                <p className="mt-1 text-xs text-slate-400">3 active strategies</p>
-              </div>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Portfolio</h2>
+              {lastUpdated && (
+                <p className="text-xs text-slate-400">
+                  Updated {lastUpdated.toLocaleTimeString()}
+                </p>
+              )}
             </div>
+
+            {isLoading && !dashboardData ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+              </div>
+            ) : dashboardData ? (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Total Profit Value Inner Box */}
+                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                  <p className="mb-2 text-xs text-slate-400">Total Portfolio Value</p>
+                  <p className="mb-2 text-2xl font-bold text-white">
+                    {formatCurrency(dashboardData.portfolio.totalValue)}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium ${dashboardData.portfolio.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {formatCurrency(dashboardData.portfolio.totalPnl)}
+                    </span>
+                    <span className={`text-sm ${dashboardData.portfolio.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      ({formatPercent(dashboardData.portfolio.pnlPercent)})
+                    </span>
+                  </div>
+                </div>
+
+                {/* Active Strategies Inner Box */}
+                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                  <p className="mb-2 text-xs text-slate-400">Active Positions</p>
+                  <p className="mb-2 text-2xl font-bold text-white">
+                    {dashboardData.positions.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-400">
+                      {dashboardData.orders.filter(o => o.status === 'NEW' || o.status === 'PARTIALLY_FILLED').length} open orders
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-400">
+                    {dashboardData.positions.length} {dashboardData.positions.length === 1 ? 'position' : 'positions'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-400">
+                No portfolio data available
+              </div>
+            )}
           </div>
 
           {/* Action Center - Recent Activities */}
           <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Action Center</h2>
-              <button
-                onClick={() => setShowAllActivities(true)}
-                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
-              >
-                View All Activity
-              </button>
             </div>
             <div className="space-y-4">
-              {/* Activity Item 1 */}
-              <div className="cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
-                  <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">BUY QI executed at 58.20</p>
-                  <p className="text-xs text-slate-400">New Signal. BTC high confidence</p>
-                  <p className="mt-1 text-xs text-slate-500">2m ago</p>
-                </div>
-              </div>
-
-              {/* Activity Item 2 */}
-              <div className="cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/20">
-                  <svg className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">ETH TP1 Hit (+2.1%)</p>
-                  <p className="text-xs text-slate-400">5/0jm 12 min ago</p>
-                  <p className="mt-1 text-xs text-slate-500">15m ago</p>
-                </div>
-              </div>
-
-              {/* Activity Item 3 */}
-              <div className="cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-green-500/20">
-                  <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-white">XRP sentiment spike (-18%)</p>
-                  <p className="mt-1 text-xs text-slate-500">22m ago</p>
-                </div>
+              <div className="py-8 text-center text-slate-400">
+                <p className="text-sm">No activities yet</p>
+                <p className="mt-1 text-xs text-slate-500">Activities will appear here when available</p>
               </div>
             </div>
           </div>
@@ -291,6 +353,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="overflow-x-auto p-6">
+              {activeTab === "holdings" ? (
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[--color-border]">
@@ -299,44 +362,111 @@ export default function DashboardPage() {
                     <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Value</th>
                     <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Entry price</th>
                     <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">P/L</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">About</th>
+                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">P/L Value</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
-                  <tr className="hover:bg-[--color-surface]/40 transition-colors">
-                    <td className="py-3 text-sm font-medium text-white">BTC</td>
-                    <td className="py-3 text-sm text-slate-300">2.20 ETH</td>
-                    <td className="py-3 text-sm text-slate-300">$5,114.50</td>
-                    <td className="py-3 text-sm text-slate-300">$2,890</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+0.94%</td>
-                    <td className="py-3 text-sm text-slate-400">244</td>
-                  </tr>
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <td className="py-3 text-sm font-medium text-white">ETH</td>
-                    <td className="py-3 text-sm text-slate-300">$2,1114</td>
-                    <td className="py-3 text-sm text-slate-300">$2,045</td>
-                    <td className="py-3 text-sm text-slate-300">12.045</td>
-                    <td className="py-3 text-sm font-medium text-red-400">-1.37%</td>
-                    <td className="py-3 text-sm text-slate-400">4,144</td>
-                  </tr>
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <td className="py-3 text-sm font-medium text-white">SOL</td>
-                    <td className="py-3 text-sm text-slate-300">$2,114</td>
-                    <td className="py-3 text-sm text-slate-300">$1,114</td>
-                    <td className="py-3 text-sm text-slate-300">$343</td>
-                    <td className="py-3 text-sm font-medium text-red-400">-1.13%</td>
-                    <td className="py-3 text-sm text-slate-400">-</td>
-                  </tr>
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <td className="py-3 text-sm font-medium text-white">XRP</td>
-                    <td className="py-3 text-sm text-slate-300">5.485</td>
-                    <td className="py-3 text-sm text-slate-300">$1,094</td>
-                    <td className="py-3 text-sm text-slate-300">$2,048</td>
-                    <td className="py-3 text-sm font-medium text-red-400">-1.3%</td>
-                    <td className="py-3 text-sm text-slate-400">-</td>
-                  </tr>
-                </tbody>
-              </table>
+                  {isLoading && !dashboardData ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : dashboardData && dashboardData.positions.length > 0 ? (
+                    dashboardData.positions.map((position, index) => {
+                      const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
+                      return (
+                        <tr
+                          key={index}
+                          className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                        >
+                          <td className="py-3 text-sm font-medium text-white">{symbol}</td>
+                          <td className="py-3 text-sm text-slate-300">{position.quantity.toFixed(4)}</td>
+                          <td className="py-3 text-sm text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
+                          <td className="py-3 text-sm text-slate-300">{formatCurrency(position.entryPrice)}</td>
+                          <td className={`py-3 text-sm font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {formatPercent(position.pnlPercent)}
+                          </td>
+                          <td className={`py-3 text-sm text-slate-400 ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {formatCurrency(position.unrealizedPnl)}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                        No positions found
+                      </td>
+                    </tr>
+                  )}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="space-y-4">
+                  {isLoadingMarket ? (
+                    <div className="py-8 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                      </div>
+                    </div>
+                  ) : marketData.length > 0 ? (
+                    <>
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-[--color-border]">
+                            <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">#</th>
+                            <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Asset</th>
+                            <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">Price</th>
+                            <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">24h Change</th>
+                            <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">Market Cap</th>
+                            <th className="pb-3 text-right text-xs font-medium uppercase text-slate-400">Volume (24h)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[--color-border]">
+                          {marketData.map((coin) => (
+                            <tr
+                              key={coin.id}
+                              className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                            >
+                              <td className="py-3 text-sm text-slate-400">{coin.market_cap_rank}</td>
+                              <td className="py-3">
+                                <div className="flex items-center gap-2">
+                                  <img src={coin.image} alt={coin.name} className="h-6 w-6 rounded-full" />
+                                  <div>
+                                    <p className="text-sm font-medium text-white">{coin.name}</p>
+                                    <p className="text-xs text-slate-400 uppercase">{coin.symbol}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 text-right text-sm font-medium text-white">{formatCurrency(coin.current_price)}</td>
+                              <td className={`py-3 text-right text-sm font-medium ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {formatPercent(coin.price_change_percentage_24h)}
+                              </td>
+                              <td className="py-3 text-right text-sm text-slate-300">{formatLargeNumber(coin.market_cap)}</td>
+                              <td className="py-3 text-right text-sm text-slate-300">{formatLargeNumber(coin.total_volume)}</td>
+                    </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      <div className="pt-4 text-center">
+                        <button
+                          onClick={() => router.push("/dashboard/market")}
+                          className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                        >
+                          View More
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="py-8 text-center text-slate-400">
+                      <p className="text-sm">Failed to load market data</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -478,55 +608,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* News Overlay */}
-      {showNewsOverlay && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowNewsOverlay(false)}
-        >
-          <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">{newsItems[selectedNews].title}</h2>
-              <button
-                onClick={() => setShowNewsOverlay(false)}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Timestamp */}
-            <div className="mb-4 flex items-center gap-2">
-              <span className="text-xs text-slate-400">{newsItems[selectedNews].timestamp}</span>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-4">
-              <div className="space-y-2 text-sm leading-relaxed text-slate-300">
-                <p>{newsItems[selectedNews].description}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Trade Details Overlay */}
       {showTradeOverlay && (
         <div
@@ -610,11 +691,11 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* All Activities Overlay */}
-      {showAllActivities && (
+      {/* News Overlay */}
+      {showNewsOverlay && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          onClick={() => setShowAllActivities(false)}
+          onClick={() => setShowNewsOverlay(false)}
         >
           <div
             className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
@@ -622,9 +703,9 @@ export default function DashboardPage() {
           >
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">All Activities</h2>
+              <h2 className="text-2xl font-bold text-white">{newsItems[selectedNews].title}</h2>
               <button
-                onClick={() => setShowAllActivities(false)}
+                onClick={() => setShowNewsOverlay(false)}
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
                 aria-label="Close"
               >
@@ -644,69 +725,16 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Activities List */}
-            <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-2">
-              {allActivities.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]"
-                >
-                  <div
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${activity.iconBg}`}
-                  >
-                    {activity.type === "buy" || activity.type === "sell" ? (
-                      <svg
-                        className={`h-4 w-4 ${activity.iconColor}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d={activity.type === "buy" ? "M5 13l4 4L19 7" : "M19 13l-4 4L5 7"}
-                        />
-                      </svg>
-                    ) : activity.type === "tp" ? (
-                      <svg
-                        className={`h-4 w-4 ${activity.iconColor}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className={`h-4 w-4 ${activity.iconColor}`}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                        />
-                      </svg>
-                    )}
+            {/* Timestamp */}
+            <div className="mb-4 flex items-center gap-2">
+              <span className="text-xs text-slate-400">{newsItems[selectedNews].timestamp}</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-white">{activity.title}</p>
-                    {activity.description && (
-                      <p className="mt-1 text-xs text-slate-400">{activity.description}</p>
-                    )}
-                    <p className="mt-1 text-xs text-slate-500">{activity.timestamp}</p>
-                  </div>
+
+            {/* Description */}
+            <div className="space-y-4">
+              <div className="space-y-2 text-sm leading-relaxed text-slate-300">
+                <p>{newsItems[selectedNews].description}</p>
                 </div>
-              ))}
             </div>
           </div>
         </div>

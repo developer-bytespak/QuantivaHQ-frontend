@@ -416,8 +416,8 @@ export default function SelfieCapturePage() {
       )}
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4 md:px-6 md:pt-6 md:pb-6 lg:px-8">
-        <div className="w-full max-w-4xl">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-y-auto px-3 pt-3 pb-3 sm:px-4 sm:pt-4 sm:pb-4 md:px-6 md:pt-6 md:pb-6 lg:px-8">
+        <div className="w-full max-w-4xl py-4">
           {/* Header Section */}
           <div className="mb-3 sm:mb-4 text-center">
             <div className="mb-1.5 sm:mb-2 flex justify-center animate-logo-enter">

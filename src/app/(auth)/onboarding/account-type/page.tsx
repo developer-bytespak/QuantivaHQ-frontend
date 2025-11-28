@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect } from "react";
 
 interface AccountTypeCardProps {
@@ -78,15 +77,19 @@ export default function AccountTypePage() {
   }, []);
 
   const handleSelect = (value: "crypto" | "stocks" | "both") => {
+    setSelectedType(value);
+    localStorage.setItem("quantivahq_account_type", value);
+    
+    // Initialize selected exchanges array if it doesn't exist
+    if (!localStorage.getItem("quantivahq_selected_exchanges")) {
+      localStorage.setItem("quantivahq_selected_exchanges", JSON.stringify([]));
+    }
+    
     if (value === "crypto" || value === "both") {
       // Navigate to crypto exchange selection
-      setSelectedType(value);
-      localStorage.setItem("quantivahq_account_type", value);
       router.push("/onboarding/crypto-exchange");
     } else if (value === "stocks") {
       // Navigate to stock exchange selection
-      setSelectedType(value);
-      localStorage.setItem("quantivahq_account_type", value);
       router.push("/onboarding/stock-exchange");
     }
   };
@@ -146,7 +149,6 @@ export default function AccountTypePage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <BackButton />
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}

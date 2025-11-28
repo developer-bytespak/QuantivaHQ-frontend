@@ -28,7 +28,9 @@ export function BackButton() {
     let prevPage = "";
 
     // Handle branched navigation
-    if (pathname === "/onboarding/stock-exchange") {
+    if (pathname === "/onboarding/sign-up" || pathname.startsWith("/onboarding/sign-up")) {
+      prevPage = "/";
+    } else if (pathname === "/onboarding/stock-exchange") {
       prevPage = "/onboarding/account-type";
     } else if (pathname === "/onboarding/crypto-exchange") {
       prevPage = "/onboarding/account-type";

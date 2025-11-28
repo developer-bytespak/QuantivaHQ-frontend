@@ -5,6 +5,7 @@ import Image from "next/image";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect } from "react";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 export default function ApiKeysPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function ApiKeysPage() {
   const [enableTrading, setEnableTrading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [exchangeId, setExchangeId] = useState<string | null>(null);
 
   useEffect(() => {
     // Get selected exchange from localStorage
@@ -28,6 +30,33 @@ export default function ApiKeysPage() {
       // Default to Binance if not set
       setSelectedExchange("binance");
     }
+
+    // Fetch or create exchange ID from backend
+    const fetchExchangeId = async () => {
+      try {
+        const exchangeName = exchange === "binance" ? "Binance" : 
+                           exchange === "bybit" ? "Bybit" : 
+                           "Interactive Brokers";
+        const exchangeType = exchange === "ibkr" ? "stocks" : "crypto";
+        
+        // Ensure exchange exists in database (creates if doesn't exist)
+        const exchangeData = await exchangesService.ensureExchange(exchangeName, exchangeType);
+        
+        if (exchangeData) {
+          setExchangeId(exchangeData.exchange_id);
+          localStorage.setItem(`quantivahq_${exchange}_exchange_id`, exchangeData.exchange_id);
+        }
+      } catch (error) {
+        console.error("Failed to fetch/create exchange:", error);
+        // Fallback: try to get from localStorage
+        const savedId = localStorage.getItem(`quantivahq_${exchange}_exchange_id`);
+        if (savedId) {
+          setExchangeId(savedId);
+        }
+      }
+    };
+
+    fetchExchangeId();
   }, []);
 
   const exchangeInfo = {
@@ -103,19 +132,38 @@ export default function ApiKeysPage() {
       return;
     }
 
-    setIsLoading(true);
-
-    // Store API keys in localStorage (in production, these would be encrypted and sent to backend)
-    localStorage.setItem("quantivahq_api_key", apiKey.trim());
-    localStorage.setItem("quantivahq_secret_key", secretKey.trim());
-    if (passphrase.trim()) {
-      localStorage.setItem("quantivahq_passphrase", passphrase.trim());
+    if (!exchangeId) {
+      setErrors({ general: "Exchange information not loaded. Please refresh the page." });
+      return;
     }
-    localStorage.setItem("quantivahq_enable_trading", enableTrading.toString());
-    localStorage.setItem("quantivahq_exchange_connected", selectedExchange || "binance");
 
-    // Navigate to connecting page
-    router.push("/onboarding/connecting");
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      // Create connection via backend
+      const response = await exchangesService.createConnection({
+        exchange_id: exchangeId,
+        api_key: apiKey.trim(),
+        api_secret: secretKey.trim(),
+        enable_trading: enableTrading,
+      });
+
+      // Store connection ID temporarily in sessionStorage for verification step
+      // sessionStorage is cleared when browser closes, more secure than localStorage
+      sessionStorage.setItem("quantivahq_connection_id", response.data.connection_id);
+      localStorage.setItem("quantivahq_enable_trading", enableTrading.toString());
+      localStorage.setItem("quantivahq_exchange_connected", selectedExchange || "binance");
+
+      // Navigate to connecting page
+      router.push("/onboarding/connecting");
+    } catch (error: any) {
+      console.error("Failed to create connection:", error);
+      setErrors({
+        general: error.message || "Failed to create connection. Please check your API keys and try again.",
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -147,6 +195,17 @@ export default function ApiKeysPage() {
 
           {/* Form Section */}
           <form onSubmit={handleSubmit} className="space-y-2.5">
+            {/* General Error Display */}
+            {errors.general && (
+              <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="h-5 w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p className="text-sm text-red-200">{errors.general}</p>
+                </div>
+              </div>
+            )}
             <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-sm p-3.5 shadow-xl">
               {/* API Key Input */}
               <div className="mb-3">

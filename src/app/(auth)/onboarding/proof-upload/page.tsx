@@ -58,6 +58,15 @@ export default function ProofUploadPage() {
     };
   }, [isPreviewModalOpen]);
 
+  // Check authentication on mount
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem("quantivahq_is_authenticated") === "true";
+    if (!isAuthenticated) {
+      // User needs to authenticate first
+      router.push("/onboarding/sign-up?tab=login");
+    }
+  }, [router]);
+
   // Load saved file from localStorage if available
   useEffect(() => {
     const savedFileData = localStorage.getItem("quantivahq_proof_upload");
@@ -159,6 +168,14 @@ export default function ProofUploadPage() {
       return;
     }
 
+    // Verify authentication (should already be checked on mount, but double-check)
+    const isAuthenticated = localStorage.getItem("quantivahq_is_authenticated") === "true";
+    if (!isAuthenticated) {
+      setError("Authentication required. Please log in first.");
+      router.push("/onboarding/sign-up?tab=login");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -214,8 +231,8 @@ export default function ProofUploadPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6 md:px-6 md:pt-6 md:pb-8 lg:px-8">
-        <div className="w-full max-w-6xl flex flex-col flex-1 min-h-0">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-y-auto px-3 pt-3 pb-4 sm:px-4 sm:pt-4 sm:pb-6 md:px-6 md:pt-6 md:pb-8 lg:px-8">
+        <div className="w-full max-w-6xl flex flex-col flex-1 min-h-0 py-4">
           {/* Header Section */}
           <div className="mb-2 sm:mb-3 flex-shrink-0 text-center">
             <div className="mb-1.5 sm:mb-2 flex justify-center animate-logo-enter">

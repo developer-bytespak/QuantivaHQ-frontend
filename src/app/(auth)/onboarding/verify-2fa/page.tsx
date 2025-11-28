@@ -5,6 +5,8 @@ import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api/client";
+import { getKycStatus } from "@/lib/api/kyc";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 export default function Verify2FAPage() {
   const router = useRouter();
@@ -68,7 +70,35 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
 
-      // Navigate to next step
+      // Check if KYC is approved and exchange is connected
+      try {
+        // Check KYC status
+        const kycStatus = await getKycStatus();
+        const isKycApproved = kycStatus.status === "approved";
+
+        // Check exchange connection
+        let hasActiveConnection = false;
+        try {
+          const connectionResponse = await exchangesService.getActiveConnection();
+          hasActiveConnection = connectionResponse.success && 
+                                connectionResponse.data !== null && 
+                                connectionResponse.data.status === "active";
+        } catch (connectionError) {
+          // No active connection found, which is fine
+          console.log("No active exchange connection found");
+        }
+
+        // If both KYC is approved and exchange is connected, go to dashboard
+        if (isKycApproved && hasActiveConnection) {
+          router.push("/dashboard");
+          return;
+        }
+      } catch (checkError) {
+        // If checks fail, continue with normal onboarding flow
+        console.log("Could not verify KYC/exchange status, continuing with onboarding:", checkError);
+      }
+
+      // Navigate to next step (personal-info for new users, or dashboard if already set up)
       router.push("/onboarding/personal-info");
     } catch (error: any) {
       setError(error.message || "Invalid verification code. Please try again.");

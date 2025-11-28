@@ -1,16 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api/client";
 
 type AuthTab = "signup" | "login";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<AuthTab>("signup");
+  
+  // Read tab query parameter and set active tab
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "login" || tab === "signup") {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
