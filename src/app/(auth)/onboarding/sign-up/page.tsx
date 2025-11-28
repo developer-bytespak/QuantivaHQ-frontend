@@ -263,7 +263,7 @@ export default function SignUpPage() {
                   {activeTab === "signup" && (
                     <div>
                         <label htmlFor="fullName" className="mb-1.5 block text-xs font-medium text-white">
-                          Full Name
+                          Username
                         </label>
                         <input
                           id="fullName"
@@ -271,7 +271,7 @@ export default function SignUpPage() {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
-                          placeholder="John Doe"
+                          placeholder="johndoe"
                           required={activeTab === "signup"}
                         />
                     </div>
