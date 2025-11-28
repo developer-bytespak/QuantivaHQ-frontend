@@ -280,7 +280,7 @@ export default function VerificationStatusPage() {
                     <div className="absolute top-5 left-0 right-0 h-0.5 bg-[--color-border] -z-10">
                       <div 
                         className={`h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-500 ${
-                          status === "verified" ? "w-full" : status === "pending" ? "w-0" : "w-1/2"
+                          status === "approved" ? "w-full" : status === "pending" ? "w-0" : "w-1/2"
                         }`}
                       />
                     </div>
