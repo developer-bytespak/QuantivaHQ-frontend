@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 interface FeatureCardProps {
   icon: React.ReactNode;
@@ -15,31 +16,7 @@ interface FeatureCardProps {
 function FeatureCard({ icon, title, description, gradient, delay, index }: FeatureCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isVisible, setIsVisible] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.2 }
-    );
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
-      }
-    };
-  }, []);
+  const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.2 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isHovered) return;
@@ -70,17 +47,19 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
       <div
         className={`relative overflow-hidden rounded-3xl border-2 border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 p-8 sm:p-10 backdrop-blur-xl transition-all duration-300 ${
           isHovered ? "border-[#fc4f02]/60 shadow-2xl shadow-[#fc4f02]/30" : "shadow-xl shadow-black/20"
+        } ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         }`}
         style={{
           transform: isVisible
             ? isHovered
               ? `perspective(1200px) rotateX(${mousePosition.y}deg) rotateY(${mousePosition.x}deg) translateZ(40px) scale(1.03)`
               : `perspective(1200px) rotateX(0) rotateY(0) translateZ(0) scale(1)`
-            : "perspective(1200px) rotateX(20deg) rotateY(-10deg) translateZ(-100px) scale(0.9) opacity-0",
+            : "perspective(1200px) rotateX(0) rotateY(0) translateZ(0) scale(1)",
           transformStyle: "preserve-3d",
           transition: isVisible
-            ? `transform 0.3s cubic-bezier(0.23, 1, 0.32, 1) 0s, opacity 0.6s ease-out 0s, border-color 0.3s ease 0s, box-shadow 0.3s ease 0s`
-            : `transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay * 0.1}s, opacity 0.6s ease-out ${delay * 0.1}s`,
+            ? `transform 0.3s cubic-bezier(0.23, 1, 0.32, 1) ${delay * 0.1}s, opacity 0.6s ease-out ${delay * 0.1}s, border-color 0.3s ease 0s, box-shadow 0.3s ease 0s`
+            : `transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0s, opacity 0.6s ease-out 0s`,
         }}
       >
         {/* Animated gradient border glow */}
@@ -117,10 +96,13 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
 
           {/* Title with 3D text effect */}
           <h3
-            className="mb-4 text-2xl font-bold text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#fc4f02] group-hover:to-[#fda300]"
+            className={`mb-4 text-2xl font-bold text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#fc4f02] group-hover:to-[#fda300] ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
             style={{
               textShadow: isHovered ? "0 5px 20px rgba(252, 79, 2, 0.4)" : "none",
               transform: "translateZ(25px)",
+              transitionDelay: isVisible ? `${delay * 0.1}s` : "0s",
             }}
           >
             {title}
@@ -167,41 +149,17 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
 }
 
 function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (headerRef.current) {
-      observer.observe(headerRef.current);
-    }
-
-    return () => {
-      if (headerRef.current) {
-        observer.unobserve(headerRef.current);
-      }
-    };
-  }, []);
+  const { ref: headerRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
     <div
       ref={headerRef}
-      className={`text-center mb-16 sm:mb-20 transition-all duration-700 ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className="text-center mb-16 sm:mb-20"
     >
       <h2
-        className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6"
+        className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
         style={{
           transform: "translateZ(50px)",
         }}
@@ -558,7 +516,7 @@ export function FeaturesSection() {
               title={feature.title}
               description={feature.description}
               gradient={feature.gradient}
-              delay={index}
+              delay={0}
               index={index}
             />
           ))}

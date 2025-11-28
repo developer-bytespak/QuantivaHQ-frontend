@@ -45,6 +45,13 @@
 
 html {
   scroll-behavior: smooth;
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 html,
@@ -60,6 +67,13 @@ body {
     "Segoe UI", sans-serif;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   text-rendering: optimizeLegibility;
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 h1,
@@ -205,6 +219,8 @@ button[type="reset"]:disabled {
 
 .animate-logo-rotate-splash {
   animation: logo-rotate-splash 3.5s ease-in-out forwards;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
 }
 
 .animate-text-enter {

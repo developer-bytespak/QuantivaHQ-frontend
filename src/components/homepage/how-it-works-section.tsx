@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 
 interface StepProps {
   number: number;
@@ -12,39 +13,12 @@ interface StepProps {
 
 function StepCard({ number, title, description, icon, delay }: StepProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
-      }
-    };
-  }, []);
+  const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
     <div
       ref={cardRef}
-      className={`relative group transition-all duration-700 ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
-      style={{ transitionDelay: isVisible ? `${number * 100}ms` : "0ms" }}
+      className="relative group"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -56,8 +30,13 @@ function StepCard({ number, title, description, icon, delay }: StepProps) {
       )}
 
       <div 
-        className="relative rounded-3xl border-2 border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 p-6 sm:p-8 backdrop-blur-xl transition-all duration-300 hover:border-[#fc4f02]/60 hover:shadow-2xl hover:shadow-[#fc4f02]/30"
-        style={{ willChange: "transform" }}
+        className={`relative rounded-3xl border-2 border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 p-6 sm:p-8 backdrop-blur-xl transition-all duration-700 hover:border-[#fc4f02]/60 hover:shadow-2xl hover:shadow-[#fc4f02]/30 ${
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
+        style={{ 
+          willChange: "transform",
+          transitionDelay: isVisible ? `${number * 100}ms` : "0ms"
+        }}
       >
         {/* Gradient overlay on hover */}
         <div
@@ -91,7 +70,10 @@ function StepCard({ number, title, description, icon, delay }: StepProps) {
         {/* Content */}
         <div>
           <h3 
-            className="mb-3 text-xl font-bold text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#fc4f02] group-hover:to-[#fda300]"
+            className={`mb-3 text-xl font-bold text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#fc4f02] group-hover:to-[#fda300] ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
+            style={{ transitionDelay: isVisible ? `${(number * 100) + 100}ms` : "0ms" }}
           >
             {title}
           </h3>
@@ -105,40 +87,16 @@ function StepCard({ number, title, description, icon, delay }: StepProps) {
 }
 
 function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
-  const [isVisible, setIsVisible] = useState(false);
-  const headerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (headerRef.current) {
-      observer.observe(headerRef.current);
-    }
-
-    return () => {
-      if (headerRef.current) {
-        observer.unobserve(headerRef.current);
-      }
-    };
-  }, []);
+  const { ref: headerRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   return (
     <div
       ref={headerRef}
-      className={`text-center mb-16 sm:mb-20 transition-all duration-700 ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className="text-center mb-16 sm:mb-20"
     >
-      <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6">
+      <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}>
         {title}
         <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
       </h2>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "./quantiva-logo";
 
@@ -11,8 +11,13 @@ interface SplashScreenProps {
 export function SplashScreen({ onComplete }: SplashScreenProps) {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(true);
+  const animationStarted = useRef(false);
 
   useEffect(() => {
+    // Prevent double animation on remount
+    if (animationStarted.current) return;
+    animationStarted.current = true;
+
     // Auto-redirect after rotation completes (3.5s rotation + 0.3s fade-out)
     // Total: 1s entrance delay + 3.5s rotation = 4.5s, then 0.3s fade-out
     const timer = setTimeout(() => {
@@ -48,7 +53,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         {/* Logo with animation */}
         <div className="relative">
           <div className="animate-logo-enter" style={{ animationDelay: "1s" }}>
-            <QuantivaLogo className="h-32 w-32 md:h-40 md:w-40 animate-logo-rotate-splash" />
+            <div className="h-32 w-32 md:h-40 md:w-40 relative animate-logo-rotate-splash">
+              <QuantivaLogo className="h-full w-full" disableFadeIn={true} />
+            </div>
           </div>
         </div>
 
