@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
 import { getTopCoins, CoinGeckoCoin } from "@/lib/api/coingecko.service";
@@ -34,6 +34,9 @@ export default function DashboardPage() {
   // Store connection ID in component state (not localStorage)
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Ref to track if initialization has happened (prevents duplicate calls)
+  const hasInitialized = useRef(false);
   
   // Market data state
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
@@ -148,9 +151,13 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Initial load: fetch connection, then fetch data
+  // Initial load: fetch connection, then fetch data (runs only once on mount)
   useEffect(() => {
+    // Prevent re-initialization (especially in React Strict Mode)
+    if (hasInitialized.current) return;
+    
     const initializeDashboard = async () => {
+      hasInitialized.current = true;
       const connId = await fetchActiveConnection();
       if (connId) {
         await fetchDashboardData(connId, true);
@@ -158,22 +165,24 @@ export default function DashboardPage() {
     };
     
     initializeDashboard();
-  }, [fetchActiveConnection, fetchDashboardData]);
+    // Empty deps - run only once on mount
+  }, []);
 
   // Polling: only update data, no loading state, no connection fetch
   useEffect(() => {
     if (!connectionId || isInitialLoad) return;
 
-    // Set up polling every 8 seconds (matches cache TTL)
+    // Set up polling every 30 seconds (reduced from 8s to save resources)
     // Silent updates - no loading state, smooth transitions
     const pollInterval = setInterval(() => {
       if (connectionId) {
         fetchDashboardData(connectionId, false);
       }
-    }, 8000);
+    }, 30000); // 30 seconds instead of 8 seconds
 
     return () => clearInterval(pollInterval);
-  }, [connectionId, isInitialLoad, fetchDashboardData]);
+    // Remove fetchDashboardData from deps - it's stable with useCallback
+  }, [connectionId, isInitialLoad]);
 
   // Format currency
   const formatCurrency = (value: number) => {
