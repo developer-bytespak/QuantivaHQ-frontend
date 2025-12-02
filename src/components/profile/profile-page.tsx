@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
-import { ProfileSettings } from "./profile-settings";
 
 interface Coin {
   id: string;
@@ -38,8 +38,8 @@ const formatCryptoAmount = (num: number): string => {
 };
 
 export function ProfilePage() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -200,10 +200,6 @@ export function ProfilePage() {
     );
   };
 
-  if (showSettings) {
-    return <ProfileSettings onBack={() => setShowSettings(false)} />;
-  }
-
   // Prevent hydration mismatch by not rendering formatted numbers until mounted
   if (!mounted) {
     return (
@@ -265,7 +261,7 @@ export function ProfilePage() {
             </div>
           </div>
           <button
-            onClick={() => setShowSettings(true)}
+            onClick={() => router.push("/dashboard/settings")}
             className="ml-4 p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-105"
             aria-label="Settings"
           >

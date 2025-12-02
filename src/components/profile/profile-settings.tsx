@@ -142,8 +142,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        setComingSoonFeature("Tokenomics");
-        setShowComingSoonModal(true);
+        router.push("/dashboard/settings/tokenomics");
       },
     },
     {
@@ -155,8 +154,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        // Navigate to bank details page
-        console.log("Bank Details clicked");
+        router.push("/dashboard/settings/bank-details");
       },
     },
     {
@@ -168,8 +166,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        // Navigate to notifications settings
-        console.log("Notifications clicked");
+        router.push("/dashboard/settings/notifications");
       },
     },
     {
@@ -181,8 +178,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        // Navigate to security settings
-        console.log("Security clicked");
+        router.push("/dashboard/settings/security");
       },
     },
     {
@@ -194,8 +190,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        // Navigate to help and support
-        console.log("Help and Support clicked");
+        router.push("/dashboard/settings/help-support");
       },
     },
     {
@@ -207,8 +202,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        // Navigate to terms and conditions
-        console.log("Terms and Conditions clicked");
+        router.push("/dashboard/settings/terms");
       },
     },
     {
