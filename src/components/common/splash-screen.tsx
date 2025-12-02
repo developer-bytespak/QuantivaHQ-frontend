@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "./quantiva-logo";
 
@@ -11,18 +11,18 @@ interface SplashScreenProps {
 export function SplashScreen({ onComplete }: SplashScreenProps) {
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(true);
-  const animationStarted = useRef(false);
 
   useEffect(() => {
-    // Prevent double animation on remount
-    if (animationStarted.current) return;
-    animationStarted.current = true;
+    // Reset visibility on mount
+    setIsVisible(true);
+
+    let completeTimer: NodeJS.Timeout | null = null;
 
     // Auto-redirect after rotation completes (3.5s rotation + 0.3s fade-out)
     // Total: 1s entrance delay + 3.5s rotation = 4.5s, then 0.3s fade-out
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(() => {
+      completeTimer = setTimeout(() => {
         if (onComplete) {
           onComplete();
         } else {
@@ -31,8 +31,13 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       }, 300); // Wait for fade-out animation
     }, 4800); // 1s entrance delay + 3.5s rotation + 0.3s fade-out
 
-    return () => clearTimeout(timer);
-  }, [router, onComplete]);
+    return () => {
+      clearTimeout(timer);
+      if (completeTimer) {
+        clearTimeout(completeTimer);
+      }
+    };
+  }, [router, onComplete]); // Include dependencies to ensure it works correctly
 
   return (
     <div
