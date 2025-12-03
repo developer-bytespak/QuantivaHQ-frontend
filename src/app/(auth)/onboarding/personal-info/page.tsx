@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
 import { AUTH_STEPS } from "@/config/navigation";
-import { updatePersonalInfo } from "@/lib/api/user";
+import { updatePersonalInfo, getCurrentUser, hasPersonalInfo } from "@/lib/api/user";
 
 interface Country {
   code: string;
@@ -56,6 +56,7 @@ export default function PersonalInfoPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingInfo, setIsCheckingInfo] = useState(true);
   
   const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
   const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -89,21 +90,59 @@ export default function PersonalInfoPage() {
   }, []);
 
   useEffect(() => {
-    // Load saved data from localStorage if available
-    const savedData = localStorage.getItem("quantivahq_personal_info");
-    if (savedData) {
+    // Check if personal info already exists in database
+    const checkPersonalInfo = async () => {
+      setIsCheckingInfo(true);
       try {
-        const data = JSON.parse(savedData);
-        setFullLegalName(data.fullLegalName || "");
-        setDateOfBirth(data.dateOfBirth || "");
-        setGender(data.gender || "");
-        setNationality(data.nationality || "");
-        setPhoneNumber(data.phoneNumber || "");
-      } catch (e) {
-        console.error("Failed to load saved personal info", e);
+        const hasInfo = await hasPersonalInfo();
+        if (hasInfo) {
+          // Personal info already exists, redirect to next step
+          router.push("/onboarding/proof-upload");
+          return;
+        }
+
+        // If not in DB, try to load from API
+        try {
+          const user = await getCurrentUser();
+          if (user.full_name && user.dob && user.nationality) {
+            // User has personal info, populate form but allow editing
+            setFullLegalName(user.full_name || "");
+            setDateOfBirth(user.dob ? new Date(user.dob).toISOString().split('T')[0] : "");
+            setGender((user.gender as typeof gender) || "");
+            setNationality(user.nationality || "");
+            setPhoneNumber(user.phone_number || "");
+            setIsCheckingInfo(false);
+            return;
+          }
+        } catch (error) {
+          // If API call fails, try localStorage as fallback
+          console.log("Could not fetch user info, trying localStorage");
+        }
+
+        // Load saved data from localStorage if available
+        const savedData = localStorage.getItem("quantivahq_personal_info");
+        if (savedData) {
+          try {
+            const data = JSON.parse(savedData);
+            setFullLegalName(data.fullLegalName || "");
+            setDateOfBirth(data.dateOfBirth || "");
+            setGender(data.gender || "");
+            setNationality(data.nationality || "");
+            setPhoneNumber(data.phoneNumber || "");
+          } catch (e) {
+            console.error("Failed to load saved personal info", e);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check personal info:", error);
+        // On error, still allow user to fill the form
+      } finally {
+        setIsCheckingInfo(false);
       }
-    }
-  }, []);
+    };
+
+    checkPersonalInfo();
+  }, [router]);
 
   // Calculate dropdown positions when they open
   useEffect(() => {
@@ -206,6 +245,18 @@ export default function PersonalInfoPage() {
   };
 
   const nationalityData = nationality ? COUNTRIES.find((c) => c.code === nationality) : null;
+
+  // Show loading state while checking if personal info exists
+  if (isCheckingInfo) {
+    return (
+      <div className="relative flex h-full w-full overflow-hidden items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+          <p className="text-sm text-slate-400">Checking your information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
