@@ -7,7 +7,7 @@ type RequestParams<T> = {
   credentials?: RequestCredentials;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 // Helper function to get or create device ID
 function getDeviceId(): string {
@@ -119,46 +119,65 @@ export async function uploadFile<TResponse = unknown>({
 
   // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    headers,
-    body: formData,
-    credentials: "include", // Include cookies (access_token, refresh_token)
-    cache: "no-store",
-  });
+  // Create AbortController for timeout (60 seconds for file uploads, especially KYC operations)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds for KYC operations
 
-  if (!response.ok) {
-    let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
-    
-    try {
-      const errorData = await response.json();
-      // NestJS error format: { message: string } or { detail: string } or string[]
-      if (typeof errorData === 'string') {
-        errorMessage = errorData;
-      } else if (Array.isArray(errorData.message)) {
-        // Validation errors: { message: string[] }
-        errorMessage = errorData.message.join(', ');
-      } else if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (errorData.detail) {
-        errorMessage = errorData.detail;
-      } else if (errorData.error) {
-        errorMessage = errorData.error;
-      }
-    } catch (parseError) {
-      // If JSON parsing fails, try to get text response
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers,
+      body: formData,
+      credentials: "include", // Include cookies (access_token, refresh_token)
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
+      
       try {
-        const text = await response.text();
-        if (text) {
-          errorMessage = text;
+        const errorData = await response.json();
+        // NestJS error format: { message: string } or { detail: string } or string[]
+        if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (Array.isArray(errorData.message)) {
+          // Validation errors: { message: string[] }
+          errorMessage = errorData.message.join(', ');
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
         }
-      } catch {
-        // Use default error message
+      } catch (parseError) {
+        // If JSON parsing fails, try to get text response
+        try {
+          const text = await response.text();
+          if (text) {
+            errorMessage = text;
+          }
+        } catch {
+          // Use default error message
+        }
       }
+      
+      throw new Error(errorMessage);
+    }
+
+    return (await response.json()) as TResponse;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    
+    // Handle timeout/abort errors
+    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+      throw new Error('Request timeout. The operation is taking longer than expected. Please try again or ensure your images are clear and contain visible faces.');
     }
     
-    throw new Error(errorMessage);
+    // Re-throw other errors
+    throw error;
   }
-
-  return (await response.json()) as TResponse;
 }
