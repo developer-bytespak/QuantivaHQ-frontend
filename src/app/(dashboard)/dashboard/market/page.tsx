@@ -139,22 +139,23 @@ export default function MarketPage() {
 
       {/* Market Table */}
       <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <colgroup>
-              <col className="w-auto" />
-              <col className="w-32" />
-              <col className="w-28" />
-              <col className="w-32" />
-              <col className="w-32" />
-            </colgroup>
-            <thead>
-              <tr className="border-b border-[--color-border]">
-                <th className="py-3 px-3 text-left text-xs font-medium uppercase text-slate-400">Asset</th>
-                <th className="py-3 pr-3 pl-0 text-right text-xs font-medium uppercase text-slate-400">Price</th>
-                <th className="py-3 px-3 text-right text-xs font-medium uppercase text-slate-400">24h Change</th>
-                <th className="py-3 px-3 text-right text-xs font-medium uppercase text-slate-400">Market Cap</th>
-                <th className="py-3 px-3 text-right text-xs font-medium uppercase text-slate-400">Volume (24h)</th>
+        <div className="overflow-x-auto -mx-6 px-6">
+                <div className="w-full">
+                        <table className="w-full min-w-[640px]">
+                          <colgroup>
+                            <col className="min-w-[150px]" />
+                            <col className="min-w-[120px]" />
+                            <col className="min-w-[120px]" />
+                            <col className="min-w-[140px]" />
+                            <col className="min-w-[140px]" />
+                          </colgroup>
+                          <thead className="divide-y divide-[--color-border]">
+                            <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
+                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">price</th>
+                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">24h change</th>
+                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">Market cap</th>
+                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white hidden md:table-cell">volume (24h)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[--color-border]">
@@ -172,22 +173,21 @@ export default function MarketPage() {
                     key={coin.id}
                     className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                   >
-                    <td className="py-3 px-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-slate-400 w-8 flex-shrink-0">{coin.market_cap_rank}</span>
-                        <img src={coin.image} alt={coin.name} className="h-8 w-8 rounded-full flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-white truncate">{coin.name}</p>
-                          <p className="text-xs text-slate-400 uppercase">{coin.symbol}</p>
+                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left">
+                      <div className="flex items-center justify-start gap-2 sm:gap-3">
+                        <img src={coin.image} alt={coin.name} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
+                        <div className="text-left min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-white truncate">{coin.name}</p>
+                          <p className="text-[10px] sm:text-xs text-slate-400 uppercase">{coin.symbol}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 pr-3 pl-0 text-right text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
-                    <td className={`py-3 px-3 text-right text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
+                    <td className={`py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatPercent(coin.price_change_percentage_24h)}
                     </td>
-                    <td className="py-3 px-3 text-right text-sm text-slate-300 whitespace-nowrap">{formatLargeNumber(coin.market_cap)}</td>
-                    <td className="py-3 px-3 text-right text-sm text-slate-300 whitespace-nowrap">{formatLargeNumber(coin.total_volume)}</td>
+                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell">{formatLargeNumber(coin.market_cap)}</td>
+                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell">{formatLargeNumber(coin.total_volume)}</td>
                   </tr>
                 ))
               ) : (
@@ -199,6 +199,7 @@ export default function MarketPage() {
               )}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
 

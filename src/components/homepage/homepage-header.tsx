@@ -135,9 +135,10 @@ export function HomepageHeader() {
               <>
                 <Link
                   href="/onboarding/sign-up?tab=login"
-                  className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 cursor-pointer"
                 >
-                  Login
+                  <span className="relative z-10">Login</span>
+                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                 </Link>
                 <Link
                   href="/onboarding/sign-up?tab=signup"
@@ -214,7 +215,7 @@ export function HomepageHeader() {
                   <Link
                     href="/onboarding/sign-up?tab=login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full text-center text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"
+                    className="block w-full rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
                   >
                     Login
                   </Link>
