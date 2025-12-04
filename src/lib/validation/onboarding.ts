@@ -46,6 +46,24 @@ export const apiConnectionSchema = z.object({
   ibkrToken: z.string().optional(),
 });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters long"),
+    confirmPassword: z.string().min(1, "Please confirm your new password"),
+    twoFactorCode: z
+      .string()
+      .length(6, "2FA code must be exactly 6 digits")
+      .regex(/^\d+$/, "2FA code must contain only digits"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export type PersonalInfoForm = z.infer<typeof personalInfoSchema>;
 export type ExperienceForm = z.infer<typeof experienceSchema>;
 export type ApiConnectionForm = z.infer<typeof apiConnectionSchema>;
+export type ChangePasswordForm = z.infer<typeof changePasswordSchema>;
