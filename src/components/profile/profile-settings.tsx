@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
+import { getUserProfile, updateUserProfile } from "@/lib/api/user";
+import { personalInfoSchema } from "@/lib/validation/onboarding";
 
 interface SettingsMenuItem {
   id: string;
@@ -13,20 +15,68 @@ interface SettingsMenuItem {
   color?: string;
 }
 
+interface Country {
+  code: string;
+  name: string;
+  supported: boolean;
+  region: string;
+}
+
+const COUNTRIES: Country[] = [
+  { code: "US", name: "United States", supported: true, region: "North America" },
+  { code: "CA", name: "Canada", supported: true, region: "North America" },
+  { code: "GB", name: "United Kingdom", supported: true, region: "Europe" },
+  { code: "DE", name: "Germany", supported: true, region: "Europe" },
+  { code: "FR", name: "France", supported: true, region: "Europe" },
+  { code: "IT", name: "Italy", supported: true, region: "Europe" },
+  { code: "ES", name: "Spain", supported: true, region: "Europe" },
+  { code: "NL", name: "Netherlands", supported: true, region: "Europe" },
+  { code: "BE", name: "Belgium", supported: true, region: "Europe" },
+  { code: "CH", name: "Switzerland", supported: true, region: "Europe" },
+  { code: "AT", name: "Austria", supported: true, region: "Europe" },
+  { code: "SE", name: "Sweden", supported: true, region: "Europe" },
+  { code: "NO", name: "Norway", supported: true, region: "Europe" },
+  { code: "DK", name: "Denmark", supported: true, region: "Europe" },
+  { code: "FI", name: "Finland", supported: true, region: "Europe" },
+  { code: "AU", name: "Australia", supported: true, region: "Oceania" },
+  { code: "NZ", name: "New Zealand", supported: true, region: "Oceania" },
+  { code: "SG", name: "Singapore", supported: true, region: "Asia" },
+  { code: "JP", name: "Japan", supported: true, region: "Asia" },
+  { code: "HK", name: "Hong Kong", supported: true, region: "Asia" },
+  { code: "AE", name: "United Arab Emirates", supported: true, region: "Middle East" },
+  { code: "SA", name: "Saudi Arabia", supported: false, region: "Middle East" },
+  { code: "BR", name: "Brazil", supported: false, region: "South America" },
+  { code: "MX", name: "Mexico", supported: false, region: "North America" },
+  { code: "IN", name: "India", supported: false, region: "Asia" },
+  { code: "CN", name: "China", supported: false, region: "Asia" },
+  { code: "RU", name: "Russia", supported: false, region: "Europe" },
+  { code: "KR", name: "South Korea", supported: false, region: "Asia" },
+];
+
 export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const router = useRouter();
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
-  const [userPhone, setUserPhone] = useState<string>("+1 (347) 555-9184");
+  const [userPhone, setUserPhone] = useState<string>("");
+  const [userGender, setUserGender] = useState<string>("");
+  const [userNationality, setUserNationality] = useState<string>("");
+  const [userDob, setUserDob] = useState<string>("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showImageMenu, setShowImageMenu] = useState<boolean>(false);
   const [showImageOverlay, setShowImageOverlay] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [editName, setEditName] = useState<string>("");
-  const [editEmail, setEditEmail] = useState<string>("");
   const [editPhone, setEditPhone] = useState<string>("");
+  const [editGender, setEditGender] = useState<"male" | "female" | "other" | "prefer-not-to-say" | "">("");
+  const [editNationality, setEditNationality] = useState<string>("");
+  const [editDob, setEditDob] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [showNotification, setShowNotification] = useState<boolean>(false);
+  const [notificationMessage, setNotificationMessage] = useState<string>("");
+  const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState<boolean>(false);
+  const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [showCameraModal, setShowCameraModal] = useState<boolean>(false);
   const [cameraPermission, setCameraPermission] = useState<"granted" | "denied" | "prompt" | null>(null);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
@@ -39,17 +89,47 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const nationalityDropdownRef = useRef<HTMLDivElement>(null);
+  const nationalityButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const loadUserData = async () => {
       if (typeof window !== "undefined") {
+        setIsLoading(true);
         try {
+          // Get basic user info
           const user = await authService.getCurrentUser();
-          setUserName(user.username);
           setUserEmail(user.email);
-          localStorage.setItem("quantivahq_user_name", user.username);
           localStorage.setItem("quantivahq_user_email", user.email);
+          
+          // Get full profile with personal info
+          try {
+            const profile = await getUserProfile();
+            setUserName(profile.full_name || profile.username || "User");
+            setUserPhone(profile.phone_number || "");
+            setUserGender(profile.gender || "");
+            setUserNationality(profile.nationality || "");
+            
+            // Format date of birth for display
+            if (profile.dob) {
+              const dobDate = typeof profile.dob === 'string' ? new Date(profile.dob) : profile.dob;
+              const formattedDob = dobDate.toISOString().split('T')[0];
+              setUserDob(formattedDob);
+            }
+            
+            // Update localStorage
+            localStorage.setItem("quantivahq_user_name", profile.full_name || profile.username || "User");
+            if (profile.phone_number) {
+              localStorage.setItem("quantivahq_user_phone", profile.phone_number);
+            }
+          } catch (profileError) {
+            // If profile fetch fails, use basic user info
+            console.error("Failed to load profile:", profileError);
+            setUserName(user.username);
+            localStorage.setItem("quantivahq_user_name", user.username);
+          }
         } catch (error) {
+          console.error("Failed to load user data:", error);
           const name = localStorage.getItem("quantivahq_user_name") || "User";
           const email = localStorage.getItem("quantivahq_user_email") || "user@example.com";
           setUserName(name);
@@ -62,9 +142,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         }
 
         const phone = localStorage.getItem("quantivahq_user_phone");
-        if (phone) {
+        if (phone && !userPhone) {
           setUserPhone(phone);
         }
+        
+        setIsLoading(false);
       }
     };
 
@@ -75,8 +157,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (isEditing) {
       setEditName(userName);
-      setEditEmail(userEmail);
       setEditPhone(userPhone);
+      setEditGender(userGender as "male" | "female" | "other" | "prefer-not-to-say" | "");
+      setEditNationality(userNationality);
+      setEditDob(userDob);
+      setErrors({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing]);
@@ -85,31 +170,102 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     setIsEditing(true);
   };
 
-  const handleSaveEdit = () => {
-    setUserName(editName);
-    setUserEmail(editEmail);
-    setUserPhone(editPhone);
-    
-    if (typeof window !== "undefined") {
-      localStorage.setItem("quantivahq_user_name", editName);
-      localStorage.setItem("quantivahq_user_email", editEmail);
-      localStorage.setItem("quantivahq_user_phone", editPhone);
+  const handleSaveEdit = async () => {
+    // Validate form data
+    const formData = {
+      fullLegalName: editName,
+      dateOfBirth: editDob,
+      nationality: editNationality,
+      gender: editGender || undefined,
+      phoneNumber: editPhone || undefined,
+    };
+
+    try {
+      const validationResult = personalInfoSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const validationErrors: Record<string, string> = {};
+        validationResult.error.errors.forEach((error) => {
+          const field = error.path[0] as string;
+          validationErrors[field] = error.message;
+        });
+        setErrors(validationErrors);
+        return;
+      }
+
+      setIsLoading(true);
+      setErrors({});
+
+      // Prepare data for API
+      const updateData = {
+        fullName: editName,
+        dob: editDob,
+        nationality: editNationality,
+        gender: editGender || undefined,
+        phoneNumber: editPhone || undefined,
+      };
+
+      // Call API to update profile
+      const updatedProfile = await updateUserProfile(updateData);
+
+      // Update local state
+      setUserName(updatedProfile.full_name || editName);
+      setUserPhone(updatedProfile.phone_number || "");
+      setUserGender(updatedProfile.gender || "");
+      setUserNationality(updatedProfile.nationality || "");
+      
+      if (updatedProfile.dob) {
+        const dobDate = typeof updatedProfile.dob === 'string' ? new Date(updatedProfile.dob) : updatedProfile.dob;
+        const formattedDob = dobDate.toISOString().split('T')[0];
+        setUserDob(formattedDob);
+      }
+
+      // Update localStorage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("quantivahq_user_name", updatedProfile.full_name || editName);
+        if (updatedProfile.phone_number) {
+          localStorage.setItem("quantivahq_user_phone", updatedProfile.phone_number);
+        }
+      }
+
+      setIsEditing(false);
+      setIsLoading(false);
+
+      // Show success notification
+      setNotificationMessage("Profile successfully updated");
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 3000);
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error("Failed to update profile:", error);
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message || "Failed to update profile. Please try again.";
+      
+      if (error.message?.includes("Unauthorized") || error.message?.includes("401") || error.message?.includes("Session expired")) {
+        errorMessage = "Your session has expired. Please log out and log in again.";
+      } else if (error.message?.includes("Failed to fetch") || error.message?.includes("NetworkError")) {
+        errorMessage = "Network error. Please check your connection and ensure the backend server is running.";
+      }
+      
+      setNotificationMessage(errorMessage);
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 5000);
     }
-    
-    setIsEditing(false);
-    
-    // Show success notification
-    setShowNotification(true);
-    setTimeout(() => {
-      setShowNotification(false);
-    }, 3000); // Hide after 3 seconds
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditName(userName);
-    setEditEmail(userEmail);
     setEditPhone(userPhone);
+    setEditGender(userGender as "male" | "female" | "other" | "prefer-not-to-say" | "");
+    setEditNationality(userNationality);
+    setEditDob(userDob);
+    setErrors({});
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -483,6 +639,29 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     };
   }, [showImageOverlay]);
 
+  // Close nationality dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        nationalityDropdownRef.current &&
+        !nationalityDropdownRef.current.contains(target) &&
+        nationalityButtonRef.current &&
+        !nationalityButtonRef.current.contains(target)
+      ) {
+        setIsNationalityDropdownOpen(false);
+      }
+    };
+
+    if (isNationalityDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isNationalityDropdownOpen]);
+
   return (
     <div className="space-y-6">
       {/* Back Button */}
@@ -655,53 +834,133 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
             <>
               <h2 className="text-3xl font-bold text-white mb-2">{userName}</h2>
               <p className="text-white/90 mb-1">{userEmail}</p>
-              <p className="text-white/80 text-sm">{userPhone}</p>
+              {userPhone && <p className="text-white/80 text-sm mb-1">Phone: {userPhone}</p>}
+              {userGender && <p className="text-white/80 text-sm mb-1">Gender: {userGender}</p>}
+              {userNationality && <p className="text-white/80 text-sm mb-1">Nationality: {userNationality}</p>}
+              {userDob && <p className="text-white/80 text-sm">Date of Birth: {new Date(userDob).toLocaleDateString()}</p>}
             </>
           ) : (
             <div className="w-full max-w-xs space-y-4">
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Name</label>
+                <label className="block text-white/80 text-sm font-medium mb-2">Name *</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.fullLegalName ? "border-red-400" : "border-white/30"
+                  } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
                   placeholder="Enter your name"
                 />
+                {errors.fullLegalName && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.fullLegalName}</p>
+                )}
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Email</label>
-                <input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-                  placeholder="Enter your email"
-                />
+                <label className="block text-white/80 text-sm font-medium mb-2">Gender</label>
+                <select
+                  value={editGender}
+                  onChange={(e) => setEditGender(e.target.value as "male" | "female" | "other" | "prefer-not-to-say" | "")}
+                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Phone</label>
+                <label className="block text-white/80 text-sm font-medium mb-2">Phone Number</label>
                 <input
                   type="tel"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-                  placeholder="Enter your phone"
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.phoneNumber ? "border-red-400" : "border-white/30"
+                  } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
+                  placeholder="+1234567890"
                 />
+                {errors.phoneNumber && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.phoneNumber}</p>
+                )}
+              </div>
+              <div className="relative">
+                <label className="block text-white/80 text-sm font-medium mb-2">Nationality/Country *</label>
+                <button
+                  ref={nationalityButtonRef}
+                  type="button"
+                  onClick={() => {
+                    setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
+                  }}
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.nationality ? "border-red-400" : "border-white/30"
+                  } text-white text-left focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent flex items-center justify-between`}
+                >
+                  <span>{editNationality || "Select country"}</span>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {errors.nationality && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.nationality}</p>
+                )}
+                {isNationalityDropdownOpen && (
+                  <div
+                    ref={nationalityDropdownRef}
+                    className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg bg-slate-800 border border-slate-700 shadow-xl"
+                  >
+                    {COUNTRIES.map((country) => (
+                      <button
+                        key={country.code}
+                        type="button"
+                        onClick={() => {
+                          setEditNationality(country.name);
+                          setIsNationalityDropdownOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 transition-colors"
+                      >
+                        {country.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-white/80 text-sm font-medium mb-2">Date of Birth *</label>
+                <input
+                  type="date"
+                  value={editDob}
+                  onChange={(e) => setEditDob(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  max={new Date().toISOString().split('T')[0]}
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.dateOfBirth ? "border-red-400" : "border-white/30"
+                  } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
+                />
+                {errors.dateOfBirth && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.dateOfBirth}</p>
+                )}
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleSaveEdit}
-                  className="flex-1 px-4 py-2 rounded-lg bg-white/30 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white font-medium transition-all duration-200"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 rounded-lg bg-white/30 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save
+                  {isLoading ? "Saving..." : "Save"}
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium transition-all duration-200"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -751,24 +1010,44 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         document.body
       )}
 
-      {/* Success Notification */}
+      {/* Success/Error Notification */}
       {showNotification && mounted && typeof window !== "undefined" && createPortal(
         <div className="fixed top-4 right-4 z-[99999] animate-in slide-in-from-top-2">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500/90 to-green-600/90 backdrop-blur-sm border border-green-400/30 shadow-lg shadow-green-500/20">
-            <svg
-              className="w-5 h-5 text-white flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <span className="text-white font-medium">Profile successfully updated</span>
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-lg backdrop-blur-sm border shadow-lg ${
+            notificationMessage.includes("successfully") || !notificationMessage.includes("Failed")
+              ? "bg-gradient-to-r from-green-500/90 to-green-600/90 border-green-400/30 shadow-green-500/20"
+              : "bg-gradient-to-r from-red-500/90 to-red-600/90 border-red-400/30 shadow-red-500/20"
+          }`}>
+            {notificationMessage.includes("successfully") || !notificationMessage.includes("Failed") ? (
+              <svg
+                className="w-5 h-5 text-white flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            ) : (
+              <svg
+                className="w-5 h-5 text-white flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            )}
+            <span className="text-white font-medium">{notificationMessage || "Profile successfully updated"}</span>
           </div>
         </div>,
         document.body

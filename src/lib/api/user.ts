@@ -47,6 +47,41 @@ export async function getCurrentUser(): Promise<UserInfo> {
 }
 
 /**
+ * Get current user's full profile including personal info
+ * @returns Current user profile with personal information
+ */
+export async function getUserProfile(): Promise<UserInfo> {
+  try {
+    return await apiRequest<never, UserInfo>({
+      path: "/users/me",
+      method: "GET",
+      credentials: "include",
+    });
+  } catch (error: any) {
+    // If we get a 401, try to refresh the token and retry once
+    if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+      try {
+        // Try to refresh the token
+        const { authService } = await import("../auth/auth.service");
+        await authService.refresh();
+        
+        // Retry the request after refresh
+        return await apiRequest<never, UserInfo>({
+          path: "/users/me",
+          method: "GET",
+          credentials: "include",
+        });
+      } catch (refreshError) {
+        // If refresh fails, throw a more helpful error
+        console.error("Token refresh failed:", refreshError);
+        throw new Error("Session expired. Please log in again.");
+      }
+    }
+    throw error;
+  }
+}
+
+/**
  * Check if user has already filled in personal information
  * @returns true if personal info is complete, false otherwise
  */
@@ -85,5 +120,45 @@ export async function updatePersonalInfo(
     method: "PATCH",
     body: requestData,
   });
+}
+
+/**
+ * Update current user's personal information (uses /users/me endpoint)
+ * @param data - Personal information data
+ * @returns Updated user information
+ */
+export async function updateUserProfile(
+  data: UpdatePersonalInfoRequest
+): Promise<UpdatePersonalInfoResponse> {
+  try {
+    return await apiRequest<UpdatePersonalInfoRequest, UpdatePersonalInfoResponse>({
+      path: "/users/me/personal-info",
+      method: "PATCH",
+      body: data,
+      credentials: "include",
+    });
+  } catch (error: any) {
+    // If we get a 401, try to refresh the token and retry once
+    if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+      try {
+        // Try to refresh the token
+        const { authService } = await import("../auth/auth.service");
+        await authService.refresh();
+        
+        // Retry the request after refresh
+        return await apiRequest<UpdatePersonalInfoRequest, UpdatePersonalInfoResponse>({
+          path: "/users/me/personal-info",
+          method: "PATCH",
+          body: data,
+          credentials: "include",
+        });
+      } catch (refreshError) {
+        // If refresh fails, throw a more helpful error
+        console.error("Token refresh failed:", refreshError);
+        throw new Error("Session expired. Please log in again.");
+      }
+    }
+    throw error;
+  }
 }
 
