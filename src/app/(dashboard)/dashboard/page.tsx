@@ -364,14 +364,14 @@ export default function DashboardPage() {
             <div className="overflow-x-auto p-6">
               {activeTab === "holdings" ? (
               <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[--color-border]">
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Asset</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Holdings</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Value</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Entry price</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">P/L</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">P/L Value</th>
+                <thead className="divide-y divide-[--color-border]">
+                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                    <th className="py-3 text-sm font-medium text-white text-left">Assets</th>
+                    <th className="py-3 text-sm font-medium text-white text-left">holding</th>
+                    <th className="py-3 text-sm font-medium text-white text-left">values</th>
+                    <th className="py-3 text-sm font-medium text-white text-left">entry</th>
+                    <th className="py-3 text-sm font-medium text-white text-left">P/L</th>
+                    <th className="py-3 text-sm font-medium text-white text-left">P/L value</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
@@ -423,49 +423,50 @@ export default function DashboardPage() {
                     </div>
                   ) : marketData.length > 0 ? (
                     <>
-                      <table className="w-full">
-                        <colgroup>
-                          <col className="w-auto" />
-                          <col className="w-32" />
-                          <col className="w-28" />
-                          <col className="w-32" />
-                          <col className="w-32" />
-                        </colgroup>
-                        <thead>
-                          <tr className="border-b border-[--color-border]">
-                            <th className="py-3 px-3 text-left text-xs font-medium uppercase text-slate-400">Asset</th>
-                            <th className="py-3 pr-3 pl-0 text-right text-xs font-medium uppercase text-slate-400">Price</th>
-                            <th className="py-3 px-3 text-right text-xs font-medium uppercase text-slate-400">24h Change</th>
-                            <th className="py-3 px-3 text-right text-xs font-medium uppercase text-slate-400">Market Cap</th>
-                            <th className="py-3 px-3 text-right text-xs font-medium uppercase text-slate-400">Volume (24h)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[--color-border]">
-                          {marketData.map((coin) => (
-                            <tr
-                              key={coin.id}
-                              className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
-                            >
-                              <td className="py-3 px-3">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-sm text-slate-400 w-8 flex-shrink-0">{coin.market_cap_rank}</span>
-                                  <img src={coin.image} alt={coin.name} className="h-8 w-8 rounded-full flex-shrink-0" />
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium text-white truncate">{coin.name}</p>
-                                    <p className="text-xs text-slate-400 uppercase">{coin.symbol}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="py-3 pr-3 pl-0 text-right text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
-                              <td className={`py-3 px-3 text-right text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                {formatPercent(coin.price_change_percentage_24h)}
-                              </td>
-                              <td className="py-3 px-3 text-right text-sm text-slate-300 whitespace-nowrap">{formatLargeNumber(coin.market_cap)}</td>
-                              <td className="py-3 px-3 text-right text-sm text-slate-300 whitespace-nowrap">{formatLargeNumber(coin.total_volume)}</td>
+                      <div className="w-full -ml-6">
+                        <table className="w-full table-auto">
+                          <colgroup>
+                            <col style={{ width: '25%' }} />
+                            <col style={{ width: '20%' }} />
+                            <col style={{ width: '20%' }} />
+                            <col style={{ width: '17.5%' }} />
+                            <col style={{ width: '17.5%' }} />
+                          </colgroup>
+                          <thead className="divide-y divide-[--color-border]">
+                            <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                              <th className="py-3 pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
+                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">price</th>
+                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">24h change</th>
+                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">Market cap</th>
+                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden md:table-cell">volume (24h)</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-[--color-border]">
+                            {marketData.map((coin) => (
+                              <tr
+                                key={coin.id}
+                                className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                              >
+                                <td className="py-3 pr-2 pl-0 text-left">
+                                  <div className="flex items-center justify-start gap-2 sm:gap-3">
+                                    <img src={coin.image} alt={coin.name} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
+                                    <div className="text-left min-w-0">
+                                      <p className="text-xs sm:text-sm font-medium text-white truncate">{coin.name}</p>
+                                      <p className="text-[10px] sm:text-xs text-slate-400 uppercase">{coin.symbol}</p>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
+                                <td className={`py-3 px-2 text-left text-xs sm:text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {formatPercent(coin.price_change_percentage_24h)}
+                                </td>
+                                <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell">{formatLargeNumber(coin.market_cap)}</td>
+                                <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell">{formatLargeNumber(coin.total_volume)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                       <div className="pt-4 text-center">
                         <button
                           onClick={() => router.push("/dashboard/market")}

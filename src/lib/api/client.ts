@@ -7,7 +7,7 @@ type RequestParams<T> = {
   credentials?: RequestCredentials;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 // Helper function to get or create device ID
 function getDeviceId(): string {
