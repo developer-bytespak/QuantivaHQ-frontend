@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile, updateUserProfile } from "@/lib/api/user";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
+import countries from "i18n-iso-countries";
 
 interface SettingsMenuItem {
   id: string;
@@ -18,43 +19,52 @@ interface SettingsMenuItem {
 interface Country {
   code: string;
   name: string;
-  supported: boolean;
-  region: string;
 }
-
-const COUNTRIES: Country[] = [
-  { code: "US", name: "United States", supported: true, region: "North America" },
-  { code: "CA", name: "Canada", supported: true, region: "North America" },
-  { code: "GB", name: "United Kingdom", supported: true, region: "Europe" },
-  { code: "DE", name: "Germany", supported: true, region: "Europe" },
-  { code: "FR", name: "France", supported: true, region: "Europe" },
-  { code: "IT", name: "Italy", supported: true, region: "Europe" },
-  { code: "ES", name: "Spain", supported: true, region: "Europe" },
-  { code: "NL", name: "Netherlands", supported: true, region: "Europe" },
-  { code: "BE", name: "Belgium", supported: true, region: "Europe" },
-  { code: "CH", name: "Switzerland", supported: true, region: "Europe" },
-  { code: "AT", name: "Austria", supported: true, region: "Europe" },
-  { code: "SE", name: "Sweden", supported: true, region: "Europe" },
-  { code: "NO", name: "Norway", supported: true, region: "Europe" },
-  { code: "DK", name: "Denmark", supported: true, region: "Europe" },
-  { code: "FI", name: "Finland", supported: true, region: "Europe" },
-  { code: "AU", name: "Australia", supported: true, region: "Oceania" },
-  { code: "NZ", name: "New Zealand", supported: true, region: "Oceania" },
-  { code: "SG", name: "Singapore", supported: true, region: "Asia" },
-  { code: "JP", name: "Japan", supported: true, region: "Asia" },
-  { code: "HK", name: "Hong Kong", supported: true, region: "Asia" },
-  { code: "AE", name: "United Arab Emirates", supported: true, region: "Middle East" },
-  { code: "SA", name: "Saudi Arabia", supported: false, region: "Middle East" },
-  { code: "BR", name: "Brazil", supported: false, region: "South America" },
-  { code: "MX", name: "Mexico", supported: false, region: "North America" },
-  { code: "IN", name: "India", supported: false, region: "Asia" },
-  { code: "CN", name: "China", supported: false, region: "Asia" },
-  { code: "RU", name: "Russia", supported: false, region: "Europe" },
-  { code: "KR", name: "South Korea", supported: false, region: "Asia" },
-];
 
 export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const router = useRouter();
+  const [countriesLoaded, setCountriesLoaded] = useState<boolean>(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState<string>("");
+  
+  // Calculate max date (18 years ago from today) for Date of Birth
+  const maxDateOfBirth = useMemo(() => {
+    const today = new Date();
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return maxDate.toISOString().split('T')[0];
+  }, []);
+  
+  // Get all countries from the library
+  const COUNTRIES_LIST = useMemo(() => {
+    if (!countriesLoaded) {
+      return [];
+    }
+    try {
+      // Get country names in English
+      const countryCodes = countries.getNames("en", { select: "official" });
+      return Object.entries(countryCodes)
+        .map(([code, name]) => ({
+          code,
+          name: name as string,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      console.error("Error loading countries:", error);
+      // Fallback to empty array if library fails
+      return [];
+    }
+  }, [countriesLoaded]);
+
+  // Filter countries based on search query
+  const filteredCountries = useMemo(() => {
+    if (!countrySearchQuery.trim()) {
+      return COUNTRIES_LIST;
+    }
+    const query = countrySearchQuery.toLowerCase().trim();
+    return COUNTRIES_LIST.filter((country) =>
+      country.name.toLowerCase().includes(query)
+    );
+  }, [COUNTRIES_LIST, countrySearchQuery]);
+
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
   const [userPhone, setUserPhone] = useState<string>("");
@@ -76,7 +86,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const [showNotification, setShowNotification] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string>("");
   const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState<boolean>(false);
-  const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0, maxHeight: 400 });
   const [showCameraModal, setShowCameraModal] = useState<boolean>(false);
   const [cameraPermission, setCameraPermission] = useState<"granted" | "denied" | "prompt" | null>(null);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
@@ -92,6 +102,25 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const nationalityDropdownRef = useRef<HTMLDivElement>(null);
   const nationalityButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Register English locale for countries library
+  useEffect(() => {
+    import("i18n-iso-countries/langs/en.json")
+      .then((enLocale) => {
+        countries.registerLocale(enLocale.default || enLocale);
+        setCountriesLoaded(true);
+      })
+      .catch((error) => {
+        console.warn("Failed to load country locale:", error);
+        // Try to use countries without explicit locale registration
+        try {
+          countries.getNames("en");
+          setCountriesLoaded(true);
+        } catch (e) {
+          console.error("Countries library not available:", e);
+        }
+      });
+  }, []);
+
   useEffect(() => {
     const loadUserData = async () => {
       if (typeof window !== "undefined") {
@@ -102,20 +131,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
           setUserEmail(user.email);
           localStorage.setItem("quantivahq_user_email", user.email);
           
-          // Get full profile with personal info
+          // Get full profile with personal info (only fullname, phone, email)
           try {
             const profile = await getUserProfile();
             setUserName(profile.full_name || profile.username || "User");
             setUserPhone(profile.phone_number || "");
-            setUserGender(profile.gender || "");
-            setUserNationality(profile.nationality || "");
-            
-            // Format date of birth for display
-            if (profile.dob) {
-              const dobDate = typeof profile.dob === 'string' ? new Date(profile.dob) : profile.dob;
-              const formattedDob = dobDate.toISOString().split('T')[0];
-              setUserDob(formattedDob);
-            }
             
             // Update localStorage
             localStorage.setItem("quantivahq_user_name", profile.full_name || profile.username || "User");
@@ -639,7 +659,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     };
   }, [showImageOverlay]);
 
-  // Close nationality dropdown when clicking outside
+  // Close nationality dropdown when clicking outside or pressing Escape
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -650,15 +670,25 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         !nationalityButtonRef.current.contains(target)
       ) {
         setIsNationalityDropdownOpen(false);
+        setCountrySearchQuery("");
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isNationalityDropdownOpen) {
+        setIsNationalityDropdownOpen(false);
+        setCountrySearchQuery("");
       }
     };
 
     if (isNationalityDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, [isNationalityDropdownOpen]);
 
@@ -834,10 +864,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
             <>
               <h2 className="text-3xl font-bold text-white mb-2">{userName}</h2>
               <p className="text-white/90 mb-1">{userEmail}</p>
-              {userPhone && <p className="text-white/80 text-sm mb-1">Phone: {userPhone}</p>}
-              {userGender && <p className="text-white/80 text-sm mb-1">Gender: {userGender}</p>}
-              {userNationality && <p className="text-white/80 text-sm mb-1">Nationality: {userNationality}</p>}
-              {userDob && <p className="text-white/80 text-sm">Date of Birth: {new Date(userDob).toLocaleDateString()}</p>}
+              {userPhone && <p className="text-white/80 text-sm">Phone: {userPhone}</p>}
             </>
           ) : (
             <div className="w-full max-w-xs space-y-4">
@@ -893,15 +920,61 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   ref={nationalityButtonRef}
                   type="button"
                   onClick={() => {
+                    if (!isNationalityDropdownOpen && nationalityButtonRef.current) {
+                      const rect = nationalityButtonRef.current.getBoundingClientRect();
+                      const viewportHeight = window.innerHeight;
+                      const viewportWidth = window.innerWidth;
+                      const dropdownMaxHeight = 400; // max height of dropdown
+                      const viewportPadding = 16; // padding from viewport edges
+                      
+                      const spaceBelow = viewportHeight - rect.bottom - viewportPadding;
+                      const spaceAbove = rect.top - viewportPadding;
+                      
+                      // Calculate available space and adjust dropdown height if needed
+                      const availableSpaceBelow = Math.max(spaceBelow, viewportPadding);
+                      const availableSpaceAbove = Math.max(spaceAbove, viewportPadding);
+                      
+                      // Position dropdown above button if not enough space below
+                      const shouldPositionAbove = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+                      
+                      // Calculate actual dropdown height based on available space
+                      const actualHeight = shouldPositionAbove 
+                        ? Math.min(dropdownMaxHeight, availableSpaceAbove)
+                        : Math.min(dropdownMaxHeight, availableSpaceBelow);
+                      
+                      // Calculate left position with padding
+                      let leftPosition = rect.left + window.scrollX;
+                      const dropdownWidth = Math.max(rect.width, 280);
+                      
+                      // Ensure dropdown doesn't go off the right edge
+                      if (leftPosition + dropdownWidth > viewportWidth - viewportPadding) {
+                        leftPosition = viewportWidth - dropdownWidth - viewportPadding;
+                      }
+                      
+                      // Ensure dropdown doesn't go off the left edge
+                      if (leftPosition < viewportPadding) {
+                        leftPosition = viewportPadding;
+                      }
+                      
+                      setNationalityDropdownPosition({
+                        top: shouldPositionAbove 
+                          ? rect.top + window.scrollY - actualHeight - 8
+                          : rect.bottom + window.scrollY + 8,
+                        left: leftPosition,
+                        width: dropdownWidth,
+                        maxHeight: actualHeight,
+                      });
+                    }
                     setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
+                    setCountrySearchQuery("");
                   }}
                   className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
                     errors.nationality ? "border-red-400" : "border-white/30"
                   } text-white text-left focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent flex items-center justify-between`}
                 >
-                  <span>{editNationality || "Select country"}</span>
+                  <span className="truncate">{editNationality || "Select country"}</span>
                   <svg
-                    className="w-5 h-5"
+                    className={`w-5 h-5 flex-shrink-0 transition-transform ${isNationalityDropdownOpen ? "rotate-180" : ""}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -913,24 +986,82 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   <p className="text-red-700 text-xs mt-1 font-semibold">{errors.nationality}</p>
                 )}
                 {isNationalityDropdownOpen && (
-                  <div
-                    ref={nationalityDropdownRef}
-                    className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded-lg bg-slate-800 border border-slate-700 shadow-xl"
-                  >
-                    {COUNTRIES.map((country) => (
-                      <button
-                        key={country.code}
-                        type="button"
-                        onClick={() => {
-                          setEditNationality(country.name);
-                          setIsNationalityDropdownOpen(false);
+                  <>
+                    {mounted && createPortal(
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsNationalityDropdownOpen(false)}
+                      />,
+                      document.body
+                    )}
+                    {mounted && createPortal(
+                      <div
+                        ref={nationalityDropdownRef}
+                        className="fixed z-50 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl"
+                        style={{
+                          top: `${nationalityDropdownPosition.top}px`,
+                          left: `${nationalityDropdownPosition.left}px`,
+                          width: `${nationalityDropdownPosition.width}px`,
+                          maxHeight: `${nationalityDropdownPosition.maxHeight}px`,
+                          minWidth: "280px",
                         }}
-                        className="w-full px-4 py-2 text-left text-white hover:bg-slate-700 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        {country.name}
-                      </button>
-                    ))}
-                  </div>
+                        {/* Search Input */}
+                        <div className="sticky top-0 p-3 bg-slate-800 border-b border-slate-700 rounded-t-xl">
+                          <div className="relative">
+                            <svg
+                              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                              type="text"
+                              value={countrySearchQuery}
+                              onChange={(e) => setCountrySearchQuery(e.target.value)}
+                              placeholder="Search countries..."
+                              className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-transparent text-sm"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        {/* Countries List */}
+                        <div 
+                          className="overflow-y-auto"
+                          style={{
+                            maxHeight: `${(nationalityDropdownPosition.maxHeight || 400) - 80}px`, // Subtract search input height
+                          }}
+                        >
+                          {filteredCountries.length > 0 ? (
+                            filteredCountries.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                onClick={() => {
+                                  setEditNationality(country.name);
+                                  setIsNationalityDropdownOpen(false);
+                                  setCountrySearchQuery("");
+                                }}
+                                className={`w-full px-4 py-2.5 text-left text-white hover:bg-slate-700 transition-colors border-b border-slate-700/50 last:border-b-0 ${
+                                  editNationality === country.name ? "bg-slate-700/50" : ""
+                                }`}
+                              >
+                                <span className="text-sm">{country.name}</span>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-8 text-center text-slate-400 text-sm">
+                              No countries found
+                            </div>
+                          )}
+                        </div>
+                      </div>,
+                      document.body
+                    )}
+                  </>
                 )}
               </div>
               <div>
@@ -940,7 +1071,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   value={editDob}
                   onChange={(e) => setEditDob(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={maxDateOfBirth}
                   className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
                     errors.dateOfBirth ? "border-red-400" : "border-white/30"
                   } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}

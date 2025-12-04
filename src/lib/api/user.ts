@@ -27,12 +27,13 @@ export interface UserInfo {
   email: string;
   username: string;
   full_name: string | null;
-  dob: Date | string | null;
-  nationality: string | null;
-  gender: string | null;
   phone_number: string | null;
-  created_at: Date | string;
-  updated_at: Date | string | null;
+  // Optional fields that may not be returned by getUserProfile
+  dob?: Date | string | null;
+  nationality?: string | null;
+  gender?: string | null;
+  created_at?: Date | string;
+  updated_at?: Date | string | null;
 }
 
 /**
