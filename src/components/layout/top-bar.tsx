@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/lib/auth/auth.service";
+import { getUserProfile } from "@/lib/api/user";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Crypto Dashboard",
@@ -70,16 +71,34 @@ function UserProfileSection() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const loadProfileData = () => {
+  const loadProfileData = async () => {
     if (typeof window !== "undefined") {
-      const name = localStorage.getItem("quantivahq_user_name") || "User";
-      const savedImage = localStorage.getItem("quantivahq_profile_image");
-      setUserName(name);
-      setUserInitial(name.charAt(0).toUpperCase());
-      if (savedImage) {
-        setProfileImage(savedImage);
-      } else {
-        setProfileImage(null);
+      try {
+        // Try to get profile from API first (includes profile_pic_url)
+        const profile = await getUserProfile();
+        setUserName(profile.full_name || profile.username || "User");
+        setUserInitial((profile.full_name || profile.username || "User").charAt(0).toUpperCase());
+        
+        // Use profile_pic_url from API if available
+        if (profile.profile_pic_url) {
+          setProfileImage(profile.profile_pic_url);
+        } else {
+          // Fallback to localStorage for backward compatibility
+          const savedImage = localStorage.getItem("quantivahq_profile_image");
+          setProfileImage(savedImage);
+        }
+      } catch (error) {
+        // Fallback to localStorage if API call fails
+        console.error("Failed to load profile from API:", error);
+        const name = localStorage.getItem("quantivahq_user_name") || "User";
+        const savedImage = localStorage.getItem("quantivahq_profile_image");
+        setUserName(name);
+        setUserInitial(name.charAt(0).toUpperCase());
+        if (savedImage) {
+          setProfileImage(savedImage);
+        } else {
+          setProfileImage(null);
+        }
       }
     }
   };

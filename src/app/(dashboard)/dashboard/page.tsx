@@ -426,14 +426,16 @@ export default function DashboardPage() {
                       <div className="w-full -ml-6">
                         <table className="w-full table-auto">
                           <colgroup>
-                            <col style={{ width: '25%' }} />
-                            <col style={{ width: '20%' }} />
-                            <col style={{ width: '20%' }} />
-                            <col style={{ width: '17.5%' }} />
-                            <col style={{ width: '17.5%' }} />
+                            <col style={{ width: '8%' }} />
+                            <col style={{ width: '22%' }} />
+                            <col style={{ width: '18%' }} />
+                            <col style={{ width: '18%' }} />
+                            <col style={{ width: '17%' }} />
+                            <col style={{ width: '17%' }} />
                           </colgroup>
                           <thead className="divide-y divide-[--color-border]">
                             <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                              <th className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-white">Rank</th>
                               <th className="py-3 pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
                               <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">price</th>
                               <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">24h change</th>
@@ -442,11 +444,14 @@ export default function DashboardPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[--color-border]">
-                            {marketData.map((coin) => (
+                            {marketData.map((coin, index) => (
                               <tr
                                 key={coin.id}
                                 className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                               >
+                                <td className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap">
+                                  {index + 1}
+                                </td>
                                 <td className="py-3 pr-2 pl-0 text-left">
                                   <div className="flex items-center justify-start gap-2 sm:gap-3">
                                     <img src={coin.image} alt={coin.name} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
