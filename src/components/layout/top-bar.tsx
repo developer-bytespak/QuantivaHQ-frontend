@@ -85,17 +85,27 @@ function UserProfileSection() {
           const savedImage = localStorage.getItem("quantivahq_profile_image");
           setProfileImage(savedImage);
         }
-      } catch (error) {
-        // Fallback to localStorage if API call fails
-        console.error("Failed to load profile from API:", error);
-        const name = localStorage.getItem("quantivahq_user_name") || "User";
-        const savedImage = localStorage.getItem("quantivahq_profile_image");
-        setUserName(name);
-        setUserInitial(name.charAt(0).toUpperCase());
-        if (savedImage) {
+      } catch (error: any) {
+        // Fallback: Try getCurrentUser if getUserProfile fails
+        try {
+          const { getCurrentUser } = await import("@/lib/api/user");
+          const user = await getCurrentUser();
+          setUserName(user.username || "User");
+          setUserInitial((user.username || "User").charAt(0).toUpperCase());
+          const savedImage = localStorage.getItem("quantivahq_profile_image");
           setProfileImage(savedImage);
-        } else {
-          setProfileImage(null);
+        } catch (fallbackError) {
+          // Final fallback to localStorage if all API calls fail
+          console.warn("Failed to load profile from API, using localStorage:", error);
+          const name = localStorage.getItem("quantivahq_user_name") || "User";
+          const savedImage = localStorage.getItem("quantivahq_profile_image");
+          setUserName(name);
+          setUserInitial(name.charAt(0).toUpperCase());
+          if (savedImage) {
+            setProfileImage(savedImage);
+          } else {
+            setProfileImage(null);
+          }
         }
       }
     }

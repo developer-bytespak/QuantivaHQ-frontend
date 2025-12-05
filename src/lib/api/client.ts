@@ -83,6 +83,24 @@ export async function apiRequest<TRequest, TResponse = unknown>({
       }
     }
     
+    // Handle 401 errors globally - redirect to login if not already on auth pages
+    if (response.status === 401 && typeof window !== "undefined") {
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath.includes("/onboarding") || currentPath === "/";
+      
+      // Only redirect if not already on auth pages
+      if (!isAuthPage) {
+        // Clear any stored auth data
+        localStorage.removeItem("quantivahq_pending_email");
+        sessionStorage.clear();
+        
+        // Redirect to login
+        window.location.href = "/onboarding/sign-up?tab=login";
+        // Return early to prevent throwing error (redirect is happening)
+        throw new Error("Session expired. Redirecting to login...");
+      }
+    }
+    
     const error = new Error(errorMessage) as any;
     error.status = response.status;
     error.statusCode = response.status;

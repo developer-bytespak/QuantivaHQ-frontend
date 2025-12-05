@@ -4,12 +4,11 @@
  * Single source of truth for post-authentication redirects
  */
 
-import { getCurrentUser, getUserProfile } from "../api/user";
+import { getCurrentUser } from "../api/user";
 import { getKycStatus } from "../api/kyc";
 import { exchangesService } from "../api/exchanges.service";
 
 export type FlowRoute =
-  | "/onboarding/personal-info"
   | "/onboarding/proof-upload"
   | "/onboarding/verification-status"
   | "/onboarding/account-type"
@@ -23,33 +22,17 @@ export interface FlowCheckResult {
 /**
  * Determines the next route after authentication based on user state
  * Flow logic:
- * 1. Check if personal info exists → If not: /onboarding/personal-info
- * 2. Check KYC status:
+ * 1. Check KYC status:
  *    - No KYC record → /onboarding/proof-upload (start KYC)
  *    - KYC pending/review → /onboarding/verification-status
- *    - KYC approved → Continue to step 3
- * 3. Check exchange connection:
+ *    - KYC approved → Continue to step 2
+ * 2. Check exchange connection:
  *    - No connection → /onboarding/account-type
  *    - Has connection → /dashboard
  */
 export async function determineNextRoute(): Promise<FlowCheckResult> {
   try {
-    // Step 1: Check personal info
-    const userProfile = await getUserProfile();
-    const hasPersonalInfo = !!(
-      userProfile.full_name &&
-      userProfile.dob &&
-      userProfile.nationality
-    );
-
-    if (!hasPersonalInfo) {
-      return {
-        route: "/onboarding/personal-info",
-        reason: "Personal information is missing",
-      };
-    }
-
-    // Step 2: Check KYC status
+    // Step 1: Check KYC status
     const currentUser = await getCurrentUser();
     let kycStatus: "pending" | "approved" | "rejected" | "review" | null =
       currentUser.kyc_status || null;
@@ -98,7 +81,7 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       }
     }
 
-    // Step 3: Check exchange connection (only if KYC is approved)
+    // Step 2: Check exchange connection (only if KYC is approved)
     let hasActiveConnection = false;
     try {
       const connectionResponse = await exchangesService.getActiveConnection();
@@ -124,11 +107,11 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       reason: "User is fully onboarded with KYC approved and exchange connected",
     };
   } catch (error) {
-    // If checks fail, assume new user and go to personal-info
-    console.log("Could not verify user status, redirecting to personal-info:", error);
+    // If checks fail, default to proof-upload (KYC start)
+    console.log("Could not verify user status, redirecting to proof-upload:", error);
     return {
-      route: "/onboarding/personal-info",
-      reason: "Error checking user status, defaulting to personal info",
+      route: "/onboarding/proof-upload",
+      reason: "Error checking user status, defaulting to proof upload",
     };
   }
 }

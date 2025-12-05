@@ -76,12 +76,20 @@ export async function getUserProfile(): Promise<UserInfo> {
           credentials: "include",
         });
       } catch (refreshError) {
-        // If refresh fails, throw a more helpful error
-        console.error("Token refresh failed:", refreshError);
-        throw new Error("Session expired. Please log in again.");
+        // If refresh fails, fallback to getCurrentUser
+        console.warn("Token refresh failed, falling back to getCurrentUser:", refreshError);
+        return getCurrentUser();
       }
     }
-    throw error;
+    
+    // For other errors (500, 404, etc.), fallback to getCurrentUser instead of throwing
+    console.warn("getUserProfile failed, falling back to getCurrentUser:", error);
+    try {
+      return await getCurrentUser();
+    } catch (fallbackError) {
+      // If getCurrentUser also fails, throw the original error
+      throw error;
+    }
   }
 }
 
@@ -91,12 +99,20 @@ export async function getUserProfile(): Promise<UserInfo> {
  */
 export async function hasPersonalInfo(): Promise<boolean> {
   try {
-    const user = await getCurrentUser();
+    // Use getUserProfile which calls /users/me and returns full user data including personal info
+    const user = await getUserProfile();
     // Check if required fields are filled
     return !!(user.full_name && user.dob && user.nationality);
   } catch (error) {
     console.error("Failed to check personal info:", error);
-    return false;
+    // If getUserProfile fails, fallback to getCurrentUser
+    try {
+      const user = await getCurrentUser();
+      return !!(user.full_name && user.dob && user.nationality);
+    } catch (fallbackError) {
+      console.error("Failed to check personal info (fallback):", fallbackError);
+      return false;
+    }
   }
 }
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
+import { authService } from "@/lib/auth/auth.service";
 
 export function HomepageHeader() {
   const router = useRouter();
@@ -48,12 +49,21 @@ export function HomepageHeader() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleGoToDashboard = () => {
-    // Use sessionStorage for UI state flags (cleared on browser close, more secure)
-    if (accountType === "stocks" || (accountType === "both" && sessionStorage.getItem("quantivahq_stocks_connected") === "true")) {
-      router.push("/stocks-dashboard");
-    } else {
-      router.push("/dashboard");
+  const handleGoToDashboard = async () => {
+    // Check if user has active session before redirecting
+    try {
+      await authService.getCurrentUser();
+      
+      // User has active session, proceed with redirect
+      // Use sessionStorage for UI state flags (cleared on browser close, more secure)
+      if (accountType === "stocks" || (accountType === "both" && sessionStorage.getItem("quantivahq_stocks_connected") === "true")) {
+        router.push("/stocks-dashboard");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (error: any) {
+      // No active session, redirect to login
+      router.push("/onboarding/sign-up?tab=login");
     }
   };
 
