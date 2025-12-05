@@ -8,9 +8,6 @@ type AccountType = "crypto" | "stocks" | "both" | null;
 
 type OnboardingStep =
   | "splash"
-  | "welcome"
-  | "region"
-  | "risk-disclosure"
   | "account-type"
   | "sign-up"
   | "personal-info"

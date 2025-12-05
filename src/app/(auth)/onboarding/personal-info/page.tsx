@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
@@ -96,8 +95,9 @@ export default function PersonalInfoPage() {
       try {
         const hasInfo = await hasPersonalInfo();
         if (hasInfo) {
-          // Personal info already exists, redirect to next step
-          router.push("/onboarding/proof-upload");
+          // Personal info already exists, use flow router to determine next step
+          const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
+          await navigateToNextRoute(router);
           return;
         }
 
@@ -233,8 +233,9 @@ export default function PersonalInfoPage() {
       localStorage.setItem("quantivahq_personal_info", JSON.stringify(formData));
       
       setIsLoading(false);
-      // Navigate to next step
-      router.push("/onboarding/proof-upload");
+      // Use flow router to determine next step
+      const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
+      await navigateToNextRoute(router);
     } catch (error) {
       console.error("Failed to update personal info:", error);
       setErrors({
@@ -260,7 +261,6 @@ export default function PersonalInfoPage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <BackButton />
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}

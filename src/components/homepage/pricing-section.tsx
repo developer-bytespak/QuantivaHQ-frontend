@@ -1,7 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { getCurrentUser } from "@/lib/api/user";
+import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
 
 interface PricingTier {
   name: string;
@@ -37,6 +40,34 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
 function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string; index: number }) {
   const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const router = useRouter();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+
+  const handleGetStarted = async () => {
+    if (tier.price === "Custom") {
+      // For custom pricing, could redirect to contact page or do something else
+      return;
+    }
+
+    setIsCheckingAuth(true);
+    try {
+      // Check if user is already authenticated
+      await getCurrentUser();
+      // User is authenticated, redirect to appropriate page using flow router
+      await navigateToNextRoute(router);
+    } catch (error: any) {
+      // User is not authenticated, redirect to sign-up page
+      if (error?.status === 401 || error?.statusCode === 401 || 
+          error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
+        router.push("/onboarding/sign-up?tab=signup");
+      } else {
+        // Other error - still redirect to sign-up
+        console.error("Error checking authentication:", error);
+        router.push("/onboarding/sign-up?tab=signup");
+      }
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
 
   return (
     <div
@@ -112,14 +143,19 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
 
           {/* CTA Button */}
           <button
-            onClick={() => router.push("/onboarding/sign-up?tab=signup")}
-            className={`w-full rounded-md px-4 py-2.5 text-xs font-semibold transition-all duration-200 ${
+            onClick={handleGetStarted}
+            disabled={isCheckingAuth}
+            className={`w-full rounded-md px-4 py-2.5 text-xs font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
               tier.popular
                 ? "bg-[#fc4f02] text-white hover:bg-[#e04502]"
                 : "border border-[--color-border] bg-[--color-surface] text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
             }`}
           >
-            {tier.price === "Custom" ? "Contact Sales" : "Get Started"}
+            {isCheckingAuth 
+              ? "Checking..." 
+              : tier.price === "Custom" 
+                ? "Contact Sales" 
+                : "Get Started"}
           </button>
         </div>
       </div>

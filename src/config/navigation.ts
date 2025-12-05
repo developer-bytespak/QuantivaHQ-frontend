@@ -38,9 +38,6 @@ export const STOCKS_DASHBOARD_NAV: NavSection[] = [
 
 export const AUTH_STEPS: NavItem[] = [
   { label: "Splash", href: `${onboardingBase}/splash` },
-  { label: "Welcome", href: `${onboardingBase}/welcome` },
-  { label: "Region", href: `${onboardingBase}/region` },
-  { label: "Risk Disclosure", href: `${onboardingBase}/risk-disclosure` },
   { label: "Account Type", href: `${onboardingBase}/account-type` },
   { label: "Sign Up", href: `${onboardingBase}/sign-up` },
   { label: "Personal Info", href: `${onboardingBase}/personal-info` },

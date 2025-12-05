@@ -32,6 +32,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} bg-[--color-background] text-[--color-foreground]`}
+        suppressHydrationWarning
       >
         <div className="min-h-screen bg-black">
           {children}

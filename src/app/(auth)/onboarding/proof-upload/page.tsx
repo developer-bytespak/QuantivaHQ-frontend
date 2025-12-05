@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { AUTH_STEPS } from "@/config/navigation";
 import { uploadDocument } from "@/lib/api/kyc";
@@ -51,25 +50,11 @@ export default function ProofUploadPage() {
           }
         }
         
-        // If KYC is approved, redirect based on exchange connection
+        // If KYC is approved, use flow router to determine next step
         if (kycStatus === "approved") {
-          try {
-            const connectionResponse = await exchangesService.getActiveConnection();
-            const hasActiveConnection = connectionResponse.success && 
-                                      connectionResponse.data !== null && 
-                                      connectionResponse.data.status === "active";
-            
-            if (hasActiveConnection) {
-              router.push("/dashboard");
-            } else {
-              router.push("/onboarding/account-type");
-            }
-            return;
-          } catch (connectionError) {
-            // No exchange connection, go to account-type
-            router.push("/onboarding/account-type");
-            return;
-          }
+          const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
+          await navigateToNextRoute(router);
+          return;
         }
       } catch (error) {
         // If check fails, continue with proof upload
@@ -272,7 +257,6 @@ export default function ProofUploadPage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <BackButton />
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}

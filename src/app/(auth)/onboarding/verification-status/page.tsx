@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect, useRef } from "react";
 import { getKycStatus, submitVerification } from "@/lib/api/kyc";
 import type { KycStatus } from "@/lib/api/types/kyc";
@@ -47,10 +46,11 @@ export default function VerificationStatusPage() {
         }
         pollingAttemptsRef.current = 0;
         
-        // Auto-redirect to exchange connectivity page when approved
+        // Auto-redirect when approved using flow router
         if (response.status === "approved") {
-          setTimeout(() => {
-            router.push("/onboarding/account-type");
+          setTimeout(async () => {
+            const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
+            await navigateToNextRoute(router);
           }, 1500); // Small delay to show success message
         }
       }
@@ -217,7 +217,6 @@ export default function VerificationStatusPage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <BackButton />
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
@@ -379,7 +378,10 @@ export default function VerificationStatusPage() {
                   )}
                   {status === "approved" && (
                     <button
-                      onClick={() => router.push("/onboarding/account-type")}
+                      onClick={async () => {
+                        const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
+                        await navigateToNextRoute(router);
+                      }}
                       className="group relative overflow-hidden flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
                     >
                       <span className="relative z-10 flex items-center justify-center gap-2">

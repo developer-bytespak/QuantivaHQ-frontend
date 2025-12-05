@@ -109,7 +109,10 @@ export default function DashboardPage() {
       setConnectionId(response.data.connection_id);
       return response.data.connection_id;
     } catch (err: any) {
-      console.error("Failed to fetch active connection:", err);
+      // Silently handle 401 errors (not logged in) - this is expected
+      if (err?.status !== 401 && err?.statusCode !== 401) {
+        console.error("Failed to fetch active connection:", err);
+      }
       setError("No active connection found. Please connect your exchange account.");
       setIsLoading(false);
       return null;

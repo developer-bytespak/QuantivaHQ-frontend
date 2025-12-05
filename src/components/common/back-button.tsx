@@ -3,9 +3,6 @@
 import { useRouter, usePathname } from "next/navigation";
 
 const ONBOARDING_PAGES = [
-  "/onboarding/welcome",
-  "/onboarding/region",
-  "/onboarding/risk-disclosure",
   "/onboarding/account-type",
   "/onboarding/crypto-exchange",
   "/onboarding/api-key-tutorial",
@@ -54,7 +51,7 @@ export function BackButton() {
       const currentIndex = ONBOARDING_PAGES.findIndex((page) => pathname === page || pathname.startsWith(page + "/"));
 
       if (currentIndex <= 0) {
-        prevPage = "/onboarding/welcome";
+        prevPage = "/onboarding/account-type";
       } else {
         prevPage = ONBOARDING_PAGES[currentIndex - 1];
       }
@@ -63,8 +60,8 @@ export function BackButton() {
     router.push(prevPage);
   };
 
-  // Don't show back button on welcome page
-  if (pathname === "/onboarding/welcome" || pathname === "/") {
+  // Don't show back button on home page
+  if (pathname === "/") {
     return null;
   }
 
