@@ -201,9 +201,9 @@ export default function SignUpPage() {
       // Use flow router to determine next step
       await navigateToNextRoute(router);
     } catch (error) {
-      // If checks fail, go to personal-info
+      // If checks fail, go to proof-upload (KYC start)
       console.log("Error checking user status:", error);
-      router.push("/onboarding/personal-info");
+      router.push("/onboarding/proof-upload");
     }
   };
 
@@ -233,6 +233,25 @@ export default function SignUpPage() {
 
       {/* Content */}
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-hidden px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
+        {/* Back Button */}
+        <div className="w-full max-w-6xl mb-4">
+          <button
+            onClick={() => router.push("/")}
+            className="group flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors duration-200"
+            aria-label="Back to homepage"
+          >
+            <svg 
+              className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-1" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back to Homepage</span>
+          </button>
+        </div>
+
         <div className="w-full max-w-6xl">
           {/* Header Section */}
           <div className="mb-12 text-center">
