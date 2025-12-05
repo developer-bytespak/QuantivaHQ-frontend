@@ -6,6 +6,9 @@ import { BackButton } from "@/components/common/back-button";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { AUTH_STEPS } from "@/config/navigation";
 import { uploadDocument } from "@/lib/api/kyc";
+import { getCurrentUser } from "@/lib/api/user";
+import { getKycStatus } from "@/lib/api/kyc";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 export default function ProofUploadPage() {
   const router = useRouter();
@@ -28,6 +31,54 @@ export default function ProofUploadPage() {
   };
   
   const targetProgress = calculateTargetProgress();
+
+  // Check KYC status on mount - redirect if already approved
+  useEffect(() => {
+    const checkKycAndRedirect = async () => {
+      try {
+        // Check KYC status from user profile first
+        const currentUser = await getCurrentUser();
+        let kycStatus: "pending" | "approved" | "rejected" | "review" | null | undefined = currentUser.kyc_status;
+        
+        // If not approved from profile, check detailed KYC endpoint
+        if (kycStatus !== "approved") {
+          try {
+            const kycResponse = await getKycStatus();
+            kycStatus = kycResponse.status;
+          } catch (kycError) {
+            // If KYC endpoint fails, use profile status or continue
+            console.log("Could not get detailed KYC status:", kycError);
+          }
+        }
+        
+        // If KYC is approved, redirect based on exchange connection
+        if (kycStatus === "approved") {
+          try {
+            const connectionResponse = await exchangesService.getActiveConnection();
+            const hasActiveConnection = connectionResponse.success && 
+                                      connectionResponse.data !== null && 
+                                      connectionResponse.data.status === "active";
+            
+            if (hasActiveConnection) {
+              router.push("/dashboard");
+            } else {
+              router.push("/onboarding/account-type");
+            }
+            return;
+          } catch (connectionError) {
+            // No exchange connection, go to account-type
+            router.push("/onboarding/account-type");
+            return;
+          }
+        }
+      } catch (error) {
+        // If check fails, continue with proof upload
+        console.log("Could not verify KYC status, continuing with proof upload:", error);
+      }
+    };
+    
+    checkKycAndRedirect();
+  }, [router]);
 
   // Animate progress bar when component mounts or when file is uploaded
   useEffect(() => {

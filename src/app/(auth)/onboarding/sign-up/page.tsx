@@ -119,16 +119,75 @@ export default function SignUpPage() {
     }
   };
 
-  const handleOAuth = (provider: "google" | "apple") => {
+  const handleOAuth = async (provider: "google" | "apple") => {
     // Store OAuth method
     localStorage.setItem("quantivahq_auth_method", provider);
     
     // In a real app, this would trigger OAuth flow
-    // For now, simulate success and navigate
-    setTimeout(() => {
+    // For now, simulate success and check user status
+    try {
       localStorage.setItem("quantivahq_is_authenticated", "true");
+      
+      // Import required functions
+      const userApi = await import("@/lib/api/user");
+      const { getCurrentUser, getUserProfile } = userApi;
+      const { getKycStatus } = await import("@/lib/api/kyc");
+      const { exchangesService } = await import("@/lib/api/exchanges.service");
+      
+      // Get user info from auth/me endpoint (includes kyc_status)
+      const currentUser = await getCurrentUser();
+      
+      // Get full user profile to check personal info
+      const userProfile = await getUserProfile();
+      const hasPersonalInfo = !!(userProfile.full_name && userProfile.dob && userProfile.nationality);
+      
+      // Check KYC status - first from currentUser (auth/me), then from KYC endpoint if needed
+      let kycStatus: "pending" | "approved" | "rejected" | "review" | null = currentUser.kyc_status || null;
+      let hasKycRecord = false;
+      
+      if (!kycStatus) {
+        try {
+          const kycResponse = await getKycStatus();
+          kycStatus = kycResponse.status;
+          hasKycRecord = true;
+        } catch (kycError: any) {
+          if (!kycError.message?.includes("404") && !kycError.message?.includes("not found")) {
+            console.log("Error checking KYC status:", kycError);
+          }
+        }
+      } else {
+        hasKycRecord = true;
+      }
+      
+      let hasActiveConnection = false;
+      try {
+        const connectionResponse = await exchangesService.getActiveConnection();
+        hasActiveConnection = connectionResponse.success && 
+                              connectionResponse.data !== null && 
+                              connectionResponse.data.status === "active";
+      } catch (connectionError) {
+        console.log("No active exchange connection found");
+      }
+
+      // Redirect based on status
+      if (!hasPersonalInfo) {
+        router.push("/onboarding/personal-info");
+      } else if (kycStatus !== "approved") {
+        if (hasKycRecord) {
+          router.push("/onboarding/verification-status");
+        } else {
+          router.push("/onboarding/selfie-capture");
+        }
+      } else if (!hasActiveConnection) {
+        router.push("/onboarding/account-type");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (error) {
+      // If checks fail, go to personal-info
+      console.log("Error checking user status:", error);
       router.push("/onboarding/personal-info");
-    }, 500);
+    }
   };
 
   return (

@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
+import { getUserProfile, updateUserProfile } from "@/lib/api/user";
+import { personalInfoSchema } from "@/lib/validation/onboarding";
+import countries from "i18n-iso-countries";
 
 interface SettingsMenuItem {
   id: string;
@@ -13,20 +16,77 @@ interface SettingsMenuItem {
   color?: string;
 }
 
+interface Country {
+  code: string;
+  name: string;
+}
+
 export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const router = useRouter();
+  const [countriesLoaded, setCountriesLoaded] = useState<boolean>(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState<string>("");
+  
+  // Calculate max date (18 years ago from today) for Date of Birth
+  const maxDateOfBirth = useMemo(() => {
+    const today = new Date();
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return maxDate.toISOString().split('T')[0];
+  }, []);
+  
+  // Get all countries from the library
+  const COUNTRIES_LIST = useMemo(() => {
+    if (!countriesLoaded) {
+      return [];
+    }
+    try {
+      // Get country names in English
+      const countryCodes = countries.getNames("en", { select: "official" });
+      return Object.entries(countryCodes)
+        .map(([code, name]) => ({
+          code,
+          name: name as string,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    } catch (error) {
+      console.error("Error loading countries:", error);
+      // Fallback to empty array if library fails
+      return [];
+    }
+  }, [countriesLoaded]);
+
+  // Filter countries based on search query
+  const filteredCountries = useMemo(() => {
+    if (!countrySearchQuery.trim()) {
+      return COUNTRIES_LIST;
+    }
+    const query = countrySearchQuery.toLowerCase().trim();
+    return COUNTRIES_LIST.filter((country) =>
+      country.name.toLowerCase().includes(query)
+    );
+  }, [COUNTRIES_LIST, countrySearchQuery]);
+
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
-  const [userPhone, setUserPhone] = useState<string>("+1 (347) 555-9184");
+  const [userPhone, setUserPhone] = useState<string>("");
+  const [userGender, setUserGender] = useState<string>("");
+  const [userNationality, setUserNationality] = useState<string>("");
+  const [userDob, setUserDob] = useState<string>("");
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showImageMenu, setShowImageMenu] = useState<boolean>(false);
   const [showImageOverlay, setShowImageOverlay] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [editName, setEditName] = useState<string>("");
-  const [editEmail, setEditEmail] = useState<string>("");
   const [editPhone, setEditPhone] = useState<string>("");
+  const [editGender, setEditGender] = useState<"male" | "female" | "other" | "prefer-not-to-say" | "">("");
+  const [editNationality, setEditNationality] = useState<string>("");
+  const [editDob, setEditDob] = useState<string>("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [showNotification, setShowNotification] = useState<boolean>(false);
+  const [notificationMessage, setNotificationMessage] = useState<string>("");
+  const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState<boolean>(false);
+  const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0, maxHeight: 400 });
   const [showCameraModal, setShowCameraModal] = useState<boolean>(false);
   const [cameraPermission, setCameraPermission] = useState<"granted" | "denied" | "prompt" | null>(null);
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
@@ -39,17 +99,57 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const nationalityDropdownRef = useRef<HTMLDivElement>(null);
+  const nationalityButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Register English locale for countries library
+  useEffect(() => {
+    import("i18n-iso-countries/langs/en.json")
+      .then((enLocale) => {
+        countries.registerLocale(enLocale.default || enLocale);
+        setCountriesLoaded(true);
+      })
+      .catch((error) => {
+        console.warn("Failed to load country locale:", error);
+        // Try to use countries without explicit locale registration
+        try {
+          countries.getNames("en");
+          setCountriesLoaded(true);
+        } catch (e) {
+          console.error("Countries library not available:", e);
+        }
+      });
+  }, []);
 
   useEffect(() => {
     const loadUserData = async () => {
       if (typeof window !== "undefined") {
+        setIsLoading(true);
         try {
+          // Get basic user info
           const user = await authService.getCurrentUser();
-          setUserName(user.username);
           setUserEmail(user.email);
-          localStorage.setItem("quantivahq_user_name", user.username);
           localStorage.setItem("quantivahq_user_email", user.email);
+          
+          // Get full profile with personal info (only fullname, phone, email)
+          try {
+            const profile = await getUserProfile();
+            setUserName(profile.full_name || profile.username || "User");
+            setUserPhone(profile.phone_number || "");
+            
+            // Update localStorage
+            localStorage.setItem("quantivahq_user_name", profile.full_name || profile.username || "User");
+            if (profile.phone_number) {
+              localStorage.setItem("quantivahq_user_phone", profile.phone_number);
+            }
+          } catch (profileError) {
+            // If profile fetch fails, use basic user info
+            console.error("Failed to load profile:", profileError);
+            setUserName(user.username);
+            localStorage.setItem("quantivahq_user_name", user.username);
+          }
         } catch (error) {
+          console.error("Failed to load user data:", error);
           const name = localStorage.getItem("quantivahq_user_name") || "User";
           const email = localStorage.getItem("quantivahq_user_email") || "user@example.com";
           setUserName(name);
@@ -62,9 +162,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         }
 
         const phone = localStorage.getItem("quantivahq_user_phone");
-        if (phone) {
+        if (phone && !userPhone) {
           setUserPhone(phone);
         }
+        
+        setIsLoading(false);
       }
     };
 
@@ -75,8 +177,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (isEditing) {
       setEditName(userName);
-      setEditEmail(userEmail);
       setEditPhone(userPhone);
+      setEditGender(userGender as "male" | "female" | "other" | "prefer-not-to-say" | "");
+      setEditNationality(userNationality);
+      setEditDob(userDob);
+      setErrors({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing]);
@@ -85,31 +190,102 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     setIsEditing(true);
   };
 
-  const handleSaveEdit = () => {
-    setUserName(editName);
-    setUserEmail(editEmail);
-    setUserPhone(editPhone);
-    
+  const handleSaveEdit = async () => {
+    // Validate form data
+    const formData = {
+      fullLegalName: editName,
+      dateOfBirth: editDob,
+      nationality: editNationality,
+      gender: editGender || undefined,
+      phoneNumber: editPhone || undefined,
+    };
+
+    try {
+      const validationResult = personalInfoSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const validationErrors: Record<string, string> = {};
+        validationResult.error.errors.forEach((error) => {
+          const field = error.path[0] as string;
+          validationErrors[field] = error.message;
+        });
+        setErrors(validationErrors);
+        return;
+      }
+
+      setIsLoading(true);
+      setErrors({});
+
+      // Prepare data for API
+      const updateData = {
+        fullName: editName,
+        dob: editDob,
+        nationality: editNationality,
+        gender: editGender || undefined,
+        phoneNumber: editPhone || undefined,
+      };
+
+      // Call API to update profile
+      const updatedProfile = await updateUserProfile(updateData);
+
+      // Update local state
+      setUserName(updatedProfile.full_name || editName);
+      setUserPhone(updatedProfile.phone_number || "");
+      setUserGender(updatedProfile.gender || "");
+      setUserNationality(updatedProfile.nationality || "");
+      
+      if (updatedProfile.dob) {
+        const dobDate = typeof updatedProfile.dob === 'string' ? new Date(updatedProfile.dob) : updatedProfile.dob;
+        const formattedDob = dobDate.toISOString().split('T')[0];
+        setUserDob(formattedDob);
+      }
+
+      // Update localStorage
     if (typeof window !== "undefined") {
-      localStorage.setItem("quantivahq_user_name", editName);
-      localStorage.setItem("quantivahq_user_email", editEmail);
-      localStorage.setItem("quantivahq_user_phone", editPhone);
+        localStorage.setItem("quantivahq_user_name", updatedProfile.full_name || editName);
+        if (updatedProfile.phone_number) {
+          localStorage.setItem("quantivahq_user_phone", updatedProfile.phone_number);
+        }
     }
     
     setIsEditing(false);
+      setIsLoading(false);
     
     // Show success notification
+      setNotificationMessage("Profile successfully updated");
     setShowNotification(true);
     setTimeout(() => {
       setShowNotification(false);
-    }, 3000); // Hide after 3 seconds
+      }, 3000);
+    } catch (error: any) {
+      setIsLoading(false);
+      console.error("Failed to update profile:", error);
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message || "Failed to update profile. Please try again.";
+      
+      if (error.message?.includes("Unauthorized") || error.message?.includes("401") || error.message?.includes("Session expired")) {
+        errorMessage = "Your session has expired. Please log out and log in again.";
+      } else if (error.message?.includes("Failed to fetch") || error.message?.includes("NetworkError")) {
+        errorMessage = "Network error. Please check your connection and ensure the backend server is running.";
+      }
+      
+      setNotificationMessage(errorMessage);
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 5000);
+    }
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditName(userName);
-    setEditEmail(userEmail);
     setEditPhone(userPhone);
+    setEditGender(userGender as "male" | "female" | "other" | "prefer-not-to-say" | "");
+    setEditNationality(userNationality);
+    setEditDob(userDob);
+    setErrors({});
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -483,6 +659,39 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     };
   }, [showImageOverlay]);
 
+  // Close nationality dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        nationalityDropdownRef.current &&
+        !nationalityDropdownRef.current.contains(target) &&
+        nationalityButtonRef.current &&
+        !nationalityButtonRef.current.contains(target)
+      ) {
+        setIsNationalityDropdownOpen(false);
+        setCountrySearchQuery("");
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && isNationalityDropdownOpen) {
+        setIsNationalityDropdownOpen(false);
+        setCountrySearchQuery("");
+      }
+    };
+
+    if (isNationalityDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isNationalityDropdownOpen]);
+
   return (
     <div className="space-y-6">
       {/* Back Button */}
@@ -655,53 +864,234 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
             <>
               <h2 className="text-3xl font-bold text-white mb-2">{userName}</h2>
               <p className="text-white/90 mb-1">{userEmail}</p>
-              <p className="text-white/80 text-sm">{userPhone}</p>
+              {userPhone && <p className="text-white/80 text-sm">Phone: {userPhone}</p>}
             </>
           ) : (
             <div className="w-full max-w-xs space-y-4">
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Name</label>
+                <label className="block text-white/80 text-sm font-medium mb-2">Name *</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.fullLegalName ? "border-red-400" : "border-white/30"
+                  } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
                   placeholder="Enter your name"
                 />
+                {errors.fullLegalName && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.fullLegalName}</p>
+                )}
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Email</label>
-                <input
-                  type="email"
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-                  placeholder="Enter your email"
-                />
+                <label className="block text-white/80 text-sm font-medium mb-2">Gender</label>
+                <select
+                  value={editGender}
+                  onChange={(e) => setEditGender(e.target.value as "male" | "female" | "other" | "prefer-not-to-say" | "")}
+                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                  <option value="prefer-not-to-say">Prefer not to say</option>
+                </select>
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Phone</label>
+                <label className="block text-white/80 text-sm font-medium mb-2">Phone Number</label>
                 <input
                   type="tel"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
-                  placeholder="Enter your phone"
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.phoneNumber ? "border-red-400" : "border-white/30"
+                  } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
+                  placeholder="+1234567890"
                 />
+                {errors.phoneNumber && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.phoneNumber}</p>
+                )}
+              </div>
+              <div className="relative">
+                <label className="block text-white/80 text-sm font-medium mb-2">Nationality/Country *</label>
+                <button
+                  ref={nationalityButtonRef}
+                  type="button"
+                  onClick={() => {
+                    if (!isNationalityDropdownOpen && nationalityButtonRef.current) {
+                      const rect = nationalityButtonRef.current.getBoundingClientRect();
+                      const viewportHeight = window.innerHeight;
+                      const viewportWidth = window.innerWidth;
+                      const dropdownMaxHeight = 400; // max height of dropdown
+                      const viewportPadding = 16; // padding from viewport edges
+                      
+                      const spaceBelow = viewportHeight - rect.bottom - viewportPadding;
+                      const spaceAbove = rect.top - viewportPadding;
+                      
+                      // Calculate available space and adjust dropdown height if needed
+                      const availableSpaceBelow = Math.max(spaceBelow, viewportPadding);
+                      const availableSpaceAbove = Math.max(spaceAbove, viewportPadding);
+                      
+                      // Position dropdown above button if not enough space below
+                      const shouldPositionAbove = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
+                      
+                      // Calculate actual dropdown height based on available space
+                      const actualHeight = shouldPositionAbove 
+                        ? Math.min(dropdownMaxHeight, availableSpaceAbove)
+                        : Math.min(dropdownMaxHeight, availableSpaceBelow);
+                      
+                      // Calculate left position with padding
+                      let leftPosition = rect.left + window.scrollX;
+                      const dropdownWidth = Math.max(rect.width, 280);
+                      
+                      // Ensure dropdown doesn't go off the right edge
+                      if (leftPosition + dropdownWidth > viewportWidth - viewportPadding) {
+                        leftPosition = viewportWidth - dropdownWidth - viewportPadding;
+                      }
+                      
+                      // Ensure dropdown doesn't go off the left edge
+                      if (leftPosition < viewportPadding) {
+                        leftPosition = viewportPadding;
+                      }
+                      
+                      setNationalityDropdownPosition({
+                        top: shouldPositionAbove 
+                          ? rect.top + window.scrollY - actualHeight - 8
+                          : rect.bottom + window.scrollY + 8,
+                        left: leftPosition,
+                        width: dropdownWidth,
+                        maxHeight: actualHeight,
+                      });
+                    }
+                    setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
+                    setCountrySearchQuery("");
+                  }}
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.nationality ? "border-red-400" : "border-white/30"
+                  } text-white text-left focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent flex items-center justify-between`}
+                >
+                  <span className="truncate">{editNationality || "Select country"}</span>
+                  <svg
+                    className={`w-5 h-5 flex-shrink-0 transition-transform ${isNationalityDropdownOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {errors.nationality && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.nationality}</p>
+                )}
+                {isNationalityDropdownOpen && (
+                  <>
+                    {mounted && createPortal(
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setIsNationalityDropdownOpen(false)}
+                      />,
+                      document.body
+                    )}
+                    {mounted && createPortal(
+                      <div
+                        ref={nationalityDropdownRef}
+                        className="fixed z-50 rounded-xl bg-slate-800 border border-slate-700 shadow-2xl"
+                        style={{
+                          top: `${nationalityDropdownPosition.top}px`,
+                          left: `${nationalityDropdownPosition.left}px`,
+                          width: `${nationalityDropdownPosition.width}px`,
+                          maxHeight: `${nationalityDropdownPosition.maxHeight}px`,
+                          minWidth: "280px",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Search Input */}
+                        <div className="sticky top-0 p-3 bg-slate-800 border-b border-slate-700 rounded-t-xl">
+                          <div className="relative">
+                            <svg
+                              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                              type="text"
+                              value={countrySearchQuery}
+                              onChange={(e) => setCountrySearchQuery(e.target.value)}
+                              placeholder="Search countries..."
+                              className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-transparent text-sm"
+                              autoFocus
+                            />
+                          </div>
+                        </div>
+                        {/* Countries List */}
+                        <div 
+                          className="overflow-y-auto"
+                          style={{
+                            maxHeight: `${(nationalityDropdownPosition.maxHeight || 400) - 80}px`, // Subtract search input height
+                          }}
+                        >
+                          {filteredCountries.length > 0 ? (
+                            filteredCountries.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                onClick={() => {
+                                  setEditNationality(country.name);
+                                  setIsNationalityDropdownOpen(false);
+                                  setCountrySearchQuery("");
+                                }}
+                                className={`w-full px-4 py-2.5 text-left text-white hover:bg-slate-700 transition-colors border-b border-slate-700/50 last:border-b-0 ${
+                                  editNationality === country.name ? "bg-slate-700/50" : ""
+                                }`}
+                              >
+                                <span className="text-sm">{country.name}</span>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-8 text-center text-slate-400 text-sm">
+                              No countries found
+                            </div>
+                          )}
+                        </div>
+                      </div>,
+                      document.body
+                    )}
+                  </>
+                )}
+              </div>
+              <div>
+                <label className="block text-white/80 text-sm font-medium mb-2">Date of Birth *</label>
+                <input
+                  type="date"
+                  value={editDob}
+                  onChange={(e) => setEditDob(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  max={maxDateOfBirth}
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                    errors.dateOfBirth ? "border-red-400" : "border-white/30"
+                  } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
+                />
+                {errors.dateOfBirth && (
+                  <p className="text-red-700 text-xs mt-1 font-semibold">{errors.dateOfBirth}</p>
+                )}
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   onClick={handleSaveEdit}
-                  className="flex-1 px-4 py-2 rounded-lg bg-white/30 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white font-medium transition-all duration-200"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 rounded-lg bg-white/30 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save
+                  {isLoading ? "Saving..." : "Save"}
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium transition-all duration-200"
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -751,10 +1141,15 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         document.body
       )}
 
-      {/* Success Notification */}
+      {/* Success/Error Notification */}
       {showNotification && mounted && typeof window !== "undefined" && createPortal(
         <div className="fixed top-4 right-4 z-[99999] animate-in slide-in-from-top-2">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-green-500/90 to-green-600/90 backdrop-blur-sm border border-green-400/30 shadow-lg shadow-green-500/20">
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-lg backdrop-blur-sm border shadow-lg ${
+            notificationMessage.includes("successfully") || !notificationMessage.includes("Failed")
+              ? "bg-gradient-to-r from-green-500/90 to-green-600/90 border-green-400/30 shadow-green-500/20"
+              : "bg-gradient-to-r from-red-500/90 to-red-600/90 border-red-400/30 shadow-red-500/20"
+          }`}>
+            {notificationMessage.includes("successfully") || !notificationMessage.includes("Failed") ? (
             <svg
               className="w-5 h-5 text-white flex-shrink-0"
               fill="none"
@@ -768,7 +1163,22 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            <span className="text-white font-medium">Profile successfully updated</span>
+            ) : (
+              <svg
+                className="w-5 h-5 text-white flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            )}
+            <span className="text-white font-medium">{notificationMessage || "Profile successfully updated"}</span>
           </div>
         </div>,
         document.body

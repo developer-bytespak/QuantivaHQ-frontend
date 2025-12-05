@@ -7,7 +7,19 @@ export const personalInfoSchema = z.object({
     .max(120, "Full legal name is too long"),
   dateOfBirth: z
     .string()
-    .refine((value) => Boolean(Date.parse(value)), "Date of birth must be valid"),
+    .refine((value) => Boolean(Date.parse(value)), "Date of birth must be valid")
+    .refine((value) => {
+      const birthDate = new Date(value);
+      const today = new Date();
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      const dayDiff = today.getDate() - birthDate.getDate();
+      
+      // Calculate actual age considering month and day
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+      
+      return actualAge >= 18;
+    }, "You must be at least 18 years old"),
   gender: z.enum(["male", "female", "other", "prefer-not-to-say"]).optional(),
   nationality: z.string().min(2, "Nationality is required"),
   phoneNumber: z
@@ -34,6 +46,24 @@ export const apiConnectionSchema = z.object({
   ibkrToken: z.string().optional(),
 });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters long"),
+    confirmPassword: z.string().min(1, "Please confirm your new password"),
+    twoFactorCode: z
+      .string()
+      .length(6, "2FA code must be exactly 6 digits")
+      .regex(/^\d+$/, "2FA code must contain only digits"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 export type PersonalInfoForm = z.infer<typeof personalInfoSchema>;
 export type ExperienceForm = z.infer<typeof experienceSchema>;
 export type ApiConnectionForm = z.infer<typeof apiConnectionSchema>;
+export type ChangePasswordForm = z.infer<typeof changePasswordSchema>;

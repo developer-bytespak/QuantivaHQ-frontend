@@ -71,11 +71,22 @@ export async function apiRequest<TRequest, TResponse = unknown>({
       } else if (errorData.detail) {
         errorMessage = errorData.detail;
       }
+      
+      // For 401 errors, include more context
+      if (response.status === 401) {
+        errorMessage = `Unauthorized: ${errorMessage}. Please ensure you are logged in and your session is valid.`;
+      }
     } catch {
       // If JSON parsing fails, use status text
+      if (response.status === 401) {
+        errorMessage = "Unauthorized: Authentication failed. Please log in again.";
+      }
     }
     
-    throw new Error(errorMessage);
+    const error = new Error(errorMessage) as any;
+    error.status = response.status;
+    error.statusCode = response.status;
+    throw error;
   }
 
   return (await response.json()) as TResponse;

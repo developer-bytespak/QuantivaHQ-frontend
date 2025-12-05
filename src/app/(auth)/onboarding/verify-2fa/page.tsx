@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api/client";
 import { getKycStatus } from "@/lib/api/kyc";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { getUserProfile } from "@/lib/api/user";
 
 export default function Verify2FAPage() {
   const router = useRouter();
@@ -70,12 +71,52 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
 
-      // Check if KYC is approved and exchange is connected
+      // Determine where to redirect based on user's onboarding status
       try {
-        // Check KYC status
-        const kycStatus = await getKycStatus();
-        const isKycApproved = kycStatus.status === "approved";
-
+        // Get user info from auth/me endpoint (includes kyc_status)
+        const { getCurrentUser } = await import("@/lib/api/user");
+        const currentUser = await getCurrentUser();
+        
+        // Get full user profile to check personal info
+        const userProfile = await getUserProfile();
+        
+        // Check if personal info is complete (required fields: full_name, dob, nationality)
+        const hasPersonalInfo = !!(userProfile.full_name && userProfile.dob && userProfile.nationality);
+        
+        // Check KYC status - first from currentUser (auth/me), then from KYC endpoint if needed
+        let kycStatus: "pending" | "approved" | "rejected" | "review" | null = currentUser.kyc_status || null;
+        let hasKycRecord = false;
+        
+        // If kyc_status is not available or is null, try to get it from KYC endpoint
+        if (!kycStatus || kycStatus === null) {
+          try {
+            const kycResponse = await getKycStatus();
+            kycStatus = kycResponse.status;
+            hasKycRecord = true;
+          } catch (kycError: any) {
+            // If KYC endpoint returns 404 or error, user hasn't started KYC
+            if (kycError.message?.includes("404") || kycError.message?.includes("not found")) {
+              hasKycRecord = false;
+              kycStatus = null;
+            } else {
+              console.log("Error checking KYC status:", kycError);
+              // On error, assume no KYC record
+              kycStatus = null;
+            }
+          }
+        } else {
+          // If we have kyc_status, assume KYC record exists
+          hasKycRecord = true;
+        }
+        
+        // Debug logging
+        console.log("KYC Status Check:", {
+          fromProfile: currentUser.kyc_status,
+          finalStatus: kycStatus,
+          hasKycRecord,
+          hasPersonalInfo,
+        });
+        
         // Check exchange connection
         let hasActiveConnection = false;
         try {
@@ -84,22 +125,50 @@ export default function Verify2FAPage() {
                                 connectionResponse.data !== null && 
                                 connectionResponse.data.status === "active";
         } catch (connectionError) {
-          // No active connection found, which is fine
+          // No active connection found
           console.log("No active exchange connection found");
         }
 
-        // If both KYC is approved and exchange is connected, go to dashboard
-        if (isKycApproved && hasActiveConnection) {
-          router.push("/dashboard");
+        // Redirect logic:
+        // 1. If personal info is missing → personal-info page
+        if (!hasPersonalInfo) {
+          console.log("Redirecting: Personal info missing");
+          router.push("/onboarding/personal-info");
           return;
         }
-      } catch (checkError) {
-        // If checks fail, continue with normal onboarding flow
-        console.log("Could not verify KYC/exchange status, continuing with onboarding:", checkError);
-      }
 
-      // Navigate to next step (personal-info for new users, or dashboard if already set up)
-      router.push("/onboarding/personal-info");
+        // 2. Check KYC status and redirect accordingly
+        const isKycApproved = kycStatus === "approved";
+        
+        if (isKycApproved) {
+          // KYC is approved, check exchange connection
+          if (hasActiveConnection) {
+            console.log("Redirecting: KYC approved + Exchange connected → Dashboard");
+            router.push("/dashboard");
+            return;
+          } else {
+            console.log("Redirecting: KYC approved but no exchange → Account type");
+            router.push("/onboarding/account-type");
+            return;
+          }
+        } else {
+          // KYC is not approved, check if KYC record exists
+          if (hasKycRecord) {
+            console.log("Redirecting: KYC record exists but not approved → Verification status");
+            router.push("/onboarding/verification-status");
+            return;
+          } else {
+            // No KYC record, start KYC flow (document upload comes before selfie)
+            console.log("Redirecting: No KYC record → Proof upload");
+            router.push("/onboarding/proof-upload");
+            return;
+          }
+        }
+      } catch (checkError) {
+        // If checks fail, assume new user and go to personal-info
+        console.log("Could not verify user status, redirecting to personal-info:", checkError);
+        router.push("/onboarding/personal-info");
+      }
     } catch (error: any) {
       setError(error.message || "Invalid verification code. Please try again.");
     } finally {
