@@ -176,7 +176,10 @@ export async function uploadFile<TResponse = unknown>({
         }
       }
       
-      throw new Error(errorMessage);
+      const uploadError = new Error(errorMessage) as any;
+      uploadError.status = response.status;
+      uploadError.statusCode = response.status;
+      throw uploadError;
     }
 
     return (await response.json()) as TResponse;
@@ -188,7 +191,14 @@ export async function uploadFile<TResponse = unknown>({
       throw new Error('Request timeout. The operation is taking longer than expected. Please try again or ensure your images are clear and contain visible faces.');
     }
     
-    // Re-throw other errors
+    // Re-throw other errors (preserve status if it exists)
+    if (error.status || error.statusCode) {
+      const preservedError = new Error(error.message || 'Upload failed') as any;
+      preservedError.status = error.status || error.statusCode;
+      preservedError.statusCode = error.status || error.statusCode;
+      throw preservedError;
+    }
+    
     throw error;
   }
 }

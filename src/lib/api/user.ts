@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiRequest, uploadFile } from "./client";
 import { PersonalInfoForm } from "../validation/onboarding";
 
 export interface UpdatePersonalInfoRequest {
@@ -28,6 +28,7 @@ export interface UserInfo {
   username: string;
   full_name: string | null;
   phone_number: string | null;
+  profile_pic_url?: string | null;
   // Optional fields that may not be returned by getUserProfile
   dob?: Date | string | null;
   nationality?: string | null;
@@ -165,3 +166,43 @@ export async function updateUserProfile(
   }
 }
 
+export interface UploadProfilePictureResponse {
+  imageUrl: string;
+  profile_pic_url: string;
+}
+
+/**
+ * Upload profile picture
+ * @param file - The image file to upload
+ * @returns Upload response with image URL
+ */
+export async function uploadProfilePicture(
+  file: File
+): Promise<UploadProfilePictureResponse> {
+  try {
+    return await uploadFile<UploadProfilePictureResponse>({
+      path: "/users/me/profile-picture",
+      file,
+    });
+  } catch (error: any) {
+    // If we get a 401, try to refresh the token and retry once
+    if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+      try {
+        // Try to refresh the token
+        const { authService } = await import("../auth/auth.service");
+        await authService.refresh();
+        
+        // Retry the request after refresh
+        return await uploadFile<UploadProfilePictureResponse>({
+          path: "/users/me/profile-picture",
+          file,
+        });
+      } catch (refreshError) {
+        // If refresh fails, throw a more helpful error
+        console.error("Token refresh failed:", refreshError);
+        throw new Error("Session expired. Please log in again.");
+      }
+    }
+    throw error;
+  }
+}

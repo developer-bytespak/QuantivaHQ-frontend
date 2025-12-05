@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
-import { getUserProfile, updateUserProfile } from "@/lib/api/user";
+import { getUserProfile, updateUserProfile, uploadProfilePicture } from "@/lib/api/user";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
 import countries from "i18n-iso-countries";
 
@@ -137,6 +137,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
             setUserName(profile.full_name || profile.username || "User");
             setUserPhone(profile.phone_number || "");
             
+            // Set profile picture from API
+            if (profile.profile_pic_url) {
+              setProfileImage(profile.profile_pic_url);
+            }
+            
             // Update localStorage
             localStorage.setItem("quantivahq_user_name", profile.full_name || profile.username || "User");
             if (profile.phone_number) {
@@ -154,11 +159,6 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
           const email = localStorage.getItem("quantivahq_user_email") || "user@example.com";
           setUserName(name);
           setUserEmail(email);
-        }
-
-        const savedImage = localStorage.getItem("quantivahq_profile_image");
-        if (savedImage) {
-          setProfileImage(savedImage);
         }
 
         const phone = localStorage.getItem("quantivahq_user_phone");
@@ -401,20 +401,35 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   }, []);
 
   // Handle file upload
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          setProfileImage(result);
+        setIsLoading(true);
+        try {
+          // Upload to Cloudinary via backend
+          const response = await uploadProfilePicture(file);
+          setProfileImage(response.imageUrl);
+          
           if (typeof window !== "undefined") {
-            localStorage.setItem("quantivahq_profile_image", result);
             window.dispatchEvent(new Event("profileImageUpdated"));
           }
-        };
-        reader.readAsDataURL(file);
+          
+          setNotificationMessage("Profile picture uploaded successfully");
+          setShowNotification(true);
+          setTimeout(() => {
+            setShowNotification(false);
+          }, 3000);
+        } catch (error: any) {
+          console.error("Failed to upload profile picture:", error);
+          setNotificationMessage(error.message || "Failed to upload profile picture. Please try again.");
+          setShowNotification(true);
+          setTimeout(() => {
+            setShowNotification(false);
+          }, 5000);
+        } finally {
+          setIsLoading(false);
+        }
       } else {
         alert("Please select an image file");
       }
@@ -472,7 +487,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   };
 
   // Capture photo from video stream
-  const capturePhoto = () => {
+  const capturePhoto = async () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -483,15 +498,43 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.drawImage(video, 0, 0);
-        const imageData = canvas.toDataURL("image/png");
-        setProfileImage(imageData);
         
-        if (typeof window !== "undefined") {
-          localStorage.setItem("quantivahq_profile_image", imageData);
-          window.dispatchEvent(new Event("profileImageUpdated"));
-        }
-        
-        setIsCapturing(true);
+        // Convert canvas to blob and upload to Cloudinary
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            setIsCapturing(true);
+            setIsLoading(true);
+            
+            try {
+              // Convert blob to File
+              const file = new File([blob], "profile-picture.jpg", { type: "image/jpeg" });
+              
+              // Upload to Cloudinary via backend
+              const response = await uploadProfilePicture(file);
+              setProfileImage(response.imageUrl);
+              
+              if (typeof window !== "undefined") {
+                window.dispatchEvent(new Event("profileImageUpdated"));
+              }
+              
+              setNotificationMessage("Profile picture captured and uploaded successfully");
+              setShowNotification(true);
+              setTimeout(() => {
+                setShowNotification(false);
+              }, 3000);
+            } catch (error: any) {
+              console.error("Failed to upload captured photo:", error);
+              setNotificationMessage(error.message || "Failed to upload photo. Please try again.");
+              setShowNotification(true);
+              setTimeout(() => {
+                setShowNotification(false);
+              }, 5000);
+              setIsCapturing(false);
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }, "image/jpeg", 0.95);
       }
     }
   };
@@ -595,10 +638,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   }, [cameraPermission, showCameraModal, isCapturing]);
 
   // Handle remove image
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
+    // Note: To fully remove, we'd need a DELETE endpoint
+    // For now, just clear from UI - the URL will remain in DB
     setProfileImage(null);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("quantivahq_profile_image");
       window.dispatchEvent(new Event("profileImageUpdated"));
     }
     setShowImageMenu(false);
