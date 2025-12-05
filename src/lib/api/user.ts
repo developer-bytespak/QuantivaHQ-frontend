@@ -32,6 +32,7 @@ export interface UserInfo {
   dob?: Date | string | null;
   nationality?: string | null;
   gender?: string | null;
+  kyc_status?: "pending" | "approved" | "rejected" | "review" | null;
   created_at?: Date | string;
   updated_at?: Date | string | null;
 }
@@ -44,6 +45,7 @@ export async function getCurrentUser(): Promise<UserInfo> {
   return apiRequest<never, UserInfo>({
     path: "/auth/me",
     method: "GET",
+    credentials: "include",
   });
 }
 

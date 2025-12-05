@@ -5,6 +5,9 @@ import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { uploadSelfie } from "@/lib/api/kyc";
+import { getCurrentUser } from "@/lib/api/user";
+import { getKycStatus } from "@/lib/api/kyc";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 export default function SelfieCapturePage() {
   const router = useRouter();
@@ -20,6 +23,54 @@ export default function SelfieCapturePage() {
   const [animatedProgress, setAnimatedProgress] = useState(50);
   const [showPermissionDialog, setShowPermissionDialog] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
+
+  // Check KYC status on mount - redirect if already approved
+  useEffect(() => {
+    const checkKycAndRedirect = async () => {
+      try {
+        // Check KYC status from user profile first
+        const currentUser = await getCurrentUser();
+        let kycStatus: "pending" | "approved" | "rejected" | "review" | null | undefined = currentUser.kyc_status;
+        
+        // If not approved from profile, check detailed KYC endpoint
+        if (kycStatus !== "approved") {
+          try {
+            const kycResponse = await getKycStatus();
+            kycStatus = kycResponse.status;
+          } catch (kycError) {
+            // If KYC endpoint fails, use profile status or continue
+            console.log("Could not get detailed KYC status:", kycError);
+          }
+        }
+        
+        // If KYC is approved, redirect based on exchange connection
+        if (kycStatus === "approved") {
+          try {
+            const connectionResponse = await exchangesService.getActiveConnection();
+            const hasActiveConnection = connectionResponse.success && 
+                                      connectionResponse.data !== null && 
+                                      connectionResponse.data.status === "active";
+            
+            if (hasActiveConnection) {
+              router.push("/dashboard");
+            } else {
+              router.push("/onboarding/account-type");
+            }
+            return;
+          } catch (connectionError) {
+            // No exchange connection, go to account-type
+            router.push("/onboarding/account-type");
+            return;
+          }
+        }
+      } catch (error) {
+        // If check fails, continue with selfie capture
+        console.log("Could not verify KYC status, continuing with selfie capture:", error);
+      }
+    };
+    
+    checkKycAndRedirect();
+  }, [router]);
 
   // Animate progress bar to 75% when component mounts
   useEffect(() => {

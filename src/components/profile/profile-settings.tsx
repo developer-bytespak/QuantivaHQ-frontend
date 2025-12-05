@@ -241,21 +241,21 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       }
 
       // Update localStorage
-      if (typeof window !== "undefined") {
+    if (typeof window !== "undefined") {
         localStorage.setItem("quantivahq_user_name", updatedProfile.full_name || editName);
         if (updatedProfile.phone_number) {
           localStorage.setItem("quantivahq_user_phone", updatedProfile.phone_number);
         }
-      }
-
-      setIsEditing(false);
+    }
+    
+    setIsEditing(false);
       setIsLoading(false);
-
-      // Show success notification
+    
+    // Show success notification
       setNotificationMessage("Profile successfully updated");
-      setShowNotification(true);
-      setTimeout(() => {
-        setShowNotification(false);
+    setShowNotification(true);
+    setTimeout(() => {
+      setShowNotification(false);
       }, 3000);
     } catch (error: any) {
       setIsLoading(false);
@@ -1150,19 +1150,19 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
               : "bg-gradient-to-r from-red-500/90 to-red-600/90 border-red-400/30 shadow-red-500/20"
           }`}>
             {notificationMessage.includes("successfully") || !notificationMessage.includes("Failed") ? (
-              <svg
-                className="w-5 h-5 text-white flex-shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+            <svg
+              className="w-5 h-5 text-white flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
             ) : (
               <svg
                 className="w-5 h-5 text-white flex-shrink-0"
