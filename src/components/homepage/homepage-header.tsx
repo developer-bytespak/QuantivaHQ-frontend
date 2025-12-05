@@ -135,10 +135,9 @@ export function HomepageHeader() {
               <>
                 <Link
                   href="/onboarding/sign-up?tab=login"
-                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 cursor-pointer"
+                  className="group rounded-xl border-2 border-gradient-to-r from-[#fc4f02] to-[#fda300] bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:border-none hover:scale-105 cursor-pointer"
                 >
-                  <span className="relative z-10">Login</span>
-                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                  <span>Login</span>
                 </Link>
                 <Link
                   href="/onboarding/sign-up?tab=signup"

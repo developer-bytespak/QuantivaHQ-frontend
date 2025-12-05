@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect } from "react";
 
 interface StepProps {
@@ -465,7 +464,6 @@ export default function ApiKeyTutorialPage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden" >
-      <BackButton />
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black" >
         {/* Subtle gradient orbs for depth */}

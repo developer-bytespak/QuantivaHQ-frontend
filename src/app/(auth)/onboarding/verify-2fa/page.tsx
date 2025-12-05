@@ -2,12 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api/client";
-import { getKycStatus } from "@/lib/api/kyc";
-import { exchangesService } from "@/lib/api/exchanges.service";
-import { getUserProfile } from "@/lib/api/user";
+import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
+import { getCurrentUser } from "@/lib/api/user";
 
 export default function Verify2FAPage() {
   const router = useRouter();
@@ -16,6 +14,55 @@ export default function Verify2FAPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check if user is already authenticated and redirect if so
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkAuth = async () => {
+      try {
+        // Try to get current user - if successful, user is already authenticated
+        await getCurrentUser();
+        
+        // User is already authenticated, redirect immediately
+        if (isMounted) {
+          await navigateToNextRoute(router);
+          return;
+        }
+      } catch (error: any) {
+        // User is not authenticated (expected for 2FA page)
+        // Check if it's a 401/unauthorized error (expected)
+        if (error?.status === 401 || error?.statusCode === 401 || 
+            error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
+          // User is not authenticated, allow access to 2FA page
+          if (isMounted) {
+            setIsCheckingAuth(false);
+          }
+        } else {
+          // Other error - still allow access but log it
+          console.error("Error checking authentication:", error);
+          if (isMounted) {
+            setIsCheckingAuth(false);
+          }
+        }
+      }
+    };
+    
+    // Add timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        setIsCheckingAuth(false);
+      }
+    }, 5000); // 5 second timeout
+    
+    checkAuth();
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [router]);
 
   useEffect(() => {
     // Get email/username from localStorage (set during login)
@@ -71,104 +118,8 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
 
-      // Determine where to redirect based on user's onboarding status
-      try {
-        // Get user info from auth/me endpoint (includes kyc_status)
-        const { getCurrentUser } = await import("@/lib/api/user");
-        const currentUser = await getCurrentUser();
-        
-        // Get full user profile to check personal info
-        const userProfile = await getUserProfile();
-        
-        // Check if personal info is complete (required fields: full_name, dob, nationality)
-        const hasPersonalInfo = !!(userProfile.full_name && userProfile.dob && userProfile.nationality);
-        
-        // Check KYC status - first from currentUser (auth/me), then from KYC endpoint if needed
-        let kycStatus: "pending" | "approved" | "rejected" | "review" | null = currentUser.kyc_status || null;
-        let hasKycRecord = false;
-        
-        // If kyc_status is not available or is null, try to get it from KYC endpoint
-        if (!kycStatus || kycStatus === null) {
-          try {
-            const kycResponse = await getKycStatus();
-            kycStatus = kycResponse.status;
-            hasKycRecord = true;
-          } catch (kycError: any) {
-            // If KYC endpoint returns 404 or error, user hasn't started KYC
-            if (kycError.message?.includes("404") || kycError.message?.includes("not found")) {
-              hasKycRecord = false;
-              kycStatus = null;
-            } else {
-              console.log("Error checking KYC status:", kycError);
-              // On error, assume no KYC record
-              kycStatus = null;
-            }
-          }
-        } else {
-          // If we have kyc_status, assume KYC record exists
-          hasKycRecord = true;
-        }
-        
-        // Debug logging
-        console.log("KYC Status Check:", {
-          fromProfile: currentUser.kyc_status,
-          finalStatus: kycStatus,
-          hasKycRecord,
-          hasPersonalInfo,
-        });
-        
-        // Check exchange connection
-        let hasActiveConnection = false;
-        try {
-          const connectionResponse = await exchangesService.getActiveConnection();
-          hasActiveConnection = connectionResponse.success && 
-                                connectionResponse.data !== null && 
-                                connectionResponse.data.status === "active";
-        } catch (connectionError) {
-          // No active connection found
-          console.log("No active exchange connection found");
-        }
-
-        // Redirect logic:
-        // 1. If personal info is missing → personal-info page
-        if (!hasPersonalInfo) {
-          console.log("Redirecting: Personal info missing");
-          router.push("/onboarding/personal-info");
-          return;
-        }
-
-        // 2. Check KYC status and redirect accordingly
-        const isKycApproved = kycStatus === "approved";
-        
-        if (isKycApproved) {
-          // KYC is approved, check exchange connection
-          if (hasActiveConnection) {
-            console.log("Redirecting: KYC approved + Exchange connected → Dashboard");
-            router.push("/dashboard");
-            return;
-          } else {
-            console.log("Redirecting: KYC approved but no exchange → Account type");
-            router.push("/onboarding/account-type");
-            return;
-          }
-        } else {
-          // KYC is not approved, check if KYC record exists
-          if (hasKycRecord) {
-            console.log("Redirecting: KYC record exists but not approved → Verification status");
-            router.push("/onboarding/verification-status");
-            return;
-          } else {
-            // No KYC record, start KYC flow (document upload comes before selfie)
-            console.log("Redirecting: No KYC record → Proof upload");
-            router.push("/onboarding/proof-upload");
-            return;
-          }
-        }
-      } catch (checkError) {
-        // If checks fail, assume new user and go to personal-info
-        console.log("Could not verify user status, redirecting to personal-info:", checkError);
-        router.push("/onboarding/personal-info");
-      }
+      // Use flow router to determine next step
+      await navigateToNextRoute(router);
     } catch (error: any) {
       setError(error.message || "Invalid verification code. Please try again.");
     } finally {
@@ -212,9 +163,22 @@ export default function Verify2FAPage() {
     }
   };
 
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="relative flex h-full w-full overflow-hidden">
+        <div className="absolute inset-0 bg-black flex items-center justify-center">
+          <div className="text-center">
+            <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14 mx-auto mb-4 animate-pulse" />
+            <p className="text-slate-400 text-sm">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <BackButton />
       {/* Background */}
       <div className="absolute inset-0 bg-black">
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
 import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile } from "@/lib/api/user";
 
@@ -69,7 +68,6 @@ function UserProfileSection() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const pathname = usePathname();
 
   const loadProfileData = async () => {
     if (typeof window !== "undefined") {
@@ -132,7 +130,7 @@ function UserProfileSection() {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + 8, // 8px = mt-2
+        top: rect.bottom + 12, // 12px gap to prevent border overlap
         right: window.innerWidth - rect.right,
       });
     } else {
@@ -166,8 +164,11 @@ function UserProfileSection() {
     try {
       // Call backend logout API to revoke session and clear cookies
       await authService.logout();
-    } catch (error) {
-      console.error("Logout API error:", error);
+    } catch (error: any) {
+      // Silently handle 401 errors (session already expired) - this is expected
+      if (error?.status !== 401 && error?.statusCode !== 401) {
+        console.error("Logout API error:", error);
+      }
       // Continue with logout even if API call fails
     } finally {
       // Clear all local storage
@@ -229,32 +230,21 @@ function UserProfileSection() {
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-64 rounded-xl border border-[--color-border] bg-white p-2 shadow-2xl shadow-black/50"
+          className="fixed z-[100] w-64 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] p-2 shadow-2xl shadow-black/50"
           style={{
             top: `${dropdownPosition.top}px`,
             right: `${dropdownPosition.right}px`,
           }}
         >
           <div className="space-y-1">
-            <Link
-              href={pathname?.startsWith("/stocks-dashboard") ? "/stocks-dashboard/profile" : "/dashboard/profile"}
-              onClick={() => setIsOpen(false)}
-              className="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-900 transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
-            >
-              <svg className="h-5 w-5 text-slate-600 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">View Profile</span>
-            </Link>
-            <div className="my-2 border-t border-slate-200" />
             <button
               onClick={handleLogout}
-              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-all duration-200 hover:bg-red-50 hover:border hover:border-red-200 hover:shadow-sm"
+              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 hover:shadow-sm"
             >
-              <svg className="h-5 w-5 transition-colors group-hover:text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 transition-colors text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span className="transition-colors group-hover:text-red-700 group-hover:font-semibold">Logout</span>
+              <span className="transition-colors text-white group-hover:font-semibold">Logout</span>
             </button>
           </div>
         </div>,

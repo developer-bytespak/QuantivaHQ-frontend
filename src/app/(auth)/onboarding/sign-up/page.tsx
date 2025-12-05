@@ -2,9 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api/client";
+import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
+import { getCurrentUser } from "@/lib/api/user";
 
 type AuthTab = "signup" | "login";
 
@@ -12,6 +13,56 @@ export default function SignUpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<AuthTab>("signup");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  
+  // Check if user is already authenticated and redirect if so
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkAuth = async () => {
+      try {
+        // Try to get current user - if successful, user is authenticated (validates session via cookies)
+        await getCurrentUser();
+        
+        // User is authenticated, redirect immediately - don't show sign-up/login page
+        if (isMounted) {
+          await navigateToNextRoute(router);
+          // Keep loading state to prevent showing page content
+          return;
+        }
+      } catch (error: any) {
+        // User is not authenticated or session is invalid
+        // Check if it's a 401/unauthorized error (expected for unauthenticated users)
+        if (error?.status === 401 || error?.statusCode === 401 || 
+            error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
+          // User is not authenticated, allow access to sign-up/login page
+          if (isMounted) {
+            setIsCheckingAuth(false);
+          }
+        } else {
+          // Other error - still allow access but log it
+          console.error("Error checking authentication:", error);
+          if (isMounted) {
+            setIsCheckingAuth(false);
+          }
+        }
+      }
+    };
+    
+    // Add timeout to prevent hanging
+    const timeoutId = setTimeout(() => {
+      if (isMounted) {
+        setIsCheckingAuth(false);
+      }
+    }, 5000); // 5 second timeout
+    
+    checkAuth();
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [router]);
   
   // Read tab query parameter and set active tab
   useEffect(() => {
@@ -70,13 +121,32 @@ export default function SignUpPage() {
         localStorage.setItem("quantivahq_user_name", fullName || email.split("@")[0]);
         localStorage.setItem("quantivahq_auth_method", "email");
 
-        setIsLoading(false);
-        // Switch to login tab after registration
-        setActiveTab("login");
-        setPassword("");
-        setConfirmPassword("");
-        setFullName("");
-        setError("");
+        // Automatically log in after successful registration
+        try {
+          // Call login API to trigger 2FA code
+          await apiRequest<{
+            emailOrUsername: string;
+            password: string;
+          }>({
+            path: "/auth/login",
+            method: "POST",
+            body: {
+              emailOrUsername: email,
+              password,
+            },
+          });
+
+          // Store pending email and password for 2FA verification
+          localStorage.setItem("quantivahq_pending_email", email);
+          localStorage.setItem("quantivahq_pending_password", password);
+
+          // Navigate to 2FA verification page
+          router.push("/onboarding/verify-2fa");
+        } catch (loginError: any) {
+          // If auto-login fails, show error but don't switch tabs
+          setError(loginError.message || "Registration successful, but automatic login failed. Please log in manually.");
+          setIsLoading(false);
+        }
       } catch (error: any) {
         setError(error.message || "Registration failed. Please try again.");
         setIsLoading(false);
@@ -128,61 +198,8 @@ export default function SignUpPage() {
     try {
       localStorage.setItem("quantivahq_is_authenticated", "true");
       
-      // Import required functions
-      const userApi = await import("@/lib/api/user");
-      const { getCurrentUser, getUserProfile } = userApi;
-      const { getKycStatus } = await import("@/lib/api/kyc");
-      const { exchangesService } = await import("@/lib/api/exchanges.service");
-      
-      // Get user info from auth/me endpoint (includes kyc_status)
-      const currentUser = await getCurrentUser();
-      
-      // Get full user profile to check personal info
-      const userProfile = await getUserProfile();
-      const hasPersonalInfo = !!(userProfile.full_name && userProfile.dob && userProfile.nationality);
-      
-      // Check KYC status - first from currentUser (auth/me), then from KYC endpoint if needed
-      let kycStatus: "pending" | "approved" | "rejected" | "review" | null = currentUser.kyc_status || null;
-      let hasKycRecord = false;
-      
-      if (!kycStatus) {
-        try {
-          const kycResponse = await getKycStatus();
-          kycStatus = kycResponse.status;
-          hasKycRecord = true;
-        } catch (kycError: any) {
-          if (!kycError.message?.includes("404") && !kycError.message?.includes("not found")) {
-            console.log("Error checking KYC status:", kycError);
-          }
-        }
-      } else {
-        hasKycRecord = true;
-      }
-      
-      let hasActiveConnection = false;
-      try {
-        const connectionResponse = await exchangesService.getActiveConnection();
-        hasActiveConnection = connectionResponse.success && 
-                              connectionResponse.data !== null && 
-                              connectionResponse.data.status === "active";
-      } catch (connectionError) {
-        console.log("No active exchange connection found");
-      }
-
-      // Redirect based on status
-      if (!hasPersonalInfo) {
-        router.push("/onboarding/personal-info");
-      } else if (kycStatus !== "approved") {
-        if (hasKycRecord) {
-          router.push("/onboarding/verification-status");
-        } else {
-          router.push("/onboarding/selfie-capture");
-        }
-      } else if (!hasActiveConnection) {
-        router.push("/onboarding/account-type");
-      } else {
-        router.push("/dashboard");
-      }
+      // Use flow router to determine next step
+      await navigateToNextRoute(router);
     } catch (error) {
       // If checks fail, go to personal-info
       console.log("Error checking user status:", error);
@@ -190,9 +207,22 @@ export default function SignUpPage() {
     }
   };
 
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="relative flex h-full w-full overflow-hidden">
+        <div className="absolute inset-0 bg-black flex items-center justify-center">
+          <div className="text-center">
+            <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14 mx-auto mb-4 animate-pulse" />
+            <p className="text-slate-400 text-sm">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <BackButton />
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}

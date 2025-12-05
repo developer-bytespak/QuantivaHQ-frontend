@@ -26,7 +26,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         if (onComplete) {
           onComplete();
         } else {
-          router.push("/onboarding/welcome");
+          router.push("/onboarding/sign-up");
         }
       }, 300); // Wait for fade-out animation
     }, 4800); // 1s entrance delay + 3.5s rotation + 0.3s fade-out

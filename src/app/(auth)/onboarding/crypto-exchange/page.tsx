@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { BackButton } from "@/components/common/back-button";
 import { useState } from "react";
 
 interface ExchangeCardProps {
@@ -122,7 +121,6 @@ export default function CryptoExchangePage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
-      <BackButton />
       {/* Background matching design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}

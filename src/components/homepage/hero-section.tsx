@@ -4,10 +4,21 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { TradingChartBackground } from "./trading-chart-background";
 import { PriceTicker } from "./price-ticker";
+import { getCurrentUser } from "@/lib/api/user";
+import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
 
 export function HeroSection() {
   const router = useRouter();
   const [scrollY, setScrollY] = useState(0);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const [candlestickData, setCandlestickData] = useState<Array<{
+    x: number;
+    isGreen: boolean;
+    open: number;
+    close: number;
+    high: number;
+    low: number;
+  }> | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,10 +29,53 @@ export function HeroSection() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Generate candlestick data on client side only to avoid hydration mismatch
+  useEffect(() => {
+    const generateCandlestickData = () => {
+      const data = [];
+      for (let i = 0; i < 10; i++) {
+        const x = 15 + i * 18;
+        const isGreen = Math.random() > 0.4;
+        const open = 40 + Math.random() * 20;
+        const close = open + (isGreen ? Math.random() * 8 : -Math.random() * 8);
+        const high = Math.max(open, close) + Math.random() * 5;
+        const low = Math.min(open, close) - Math.random() * 5;
+        
+        data.push({ x, isGreen, open, close, high, low });
+      }
+      return data;
+    };
+
+    setCandlestickData(generateCandlestickData());
+  }, []);
+
   const scrollToFeatures = () => {
     const element = document.getElementById("features");
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const handleGetStarted = async () => {
+    setIsCheckingAuth(true);
+    try {
+      // Check if user is already authenticated
+      await getCurrentUser();
+      // User is authenticated, redirect to appropriate page using flow router
+      await navigateToNextRoute(router);
+    } catch (error: any) {
+      // User is not authenticated, redirect to sign-up page
+      // Check if it's a 401/unauthorized error (expected for unauthenticated users)
+      if (error?.status === 401 || error?.statusCode === 401 || 
+          error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
+        router.push("/onboarding/sign-up?tab=signup");
+      } else {
+        // Other error - still redirect to sign-up
+        console.error("Error checking authentication:", error);
+        router.push("/onboarding/sign-up?tab=signup");
+      }
+    } finally {
+      setIsCheckingAuth(false);
     }
   };
 
@@ -102,34 +156,25 @@ export function HeroSection() {
           }}
         >
           <svg viewBox="0 0 200 100" className="w-full h-full">
-            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => {
-              const x = 15 + i * 18;
-              const isGreen = Math.random() > 0.4;
-              const open = 40 + Math.random() * 20;
-              const close = open + (isGreen ? Math.random() * 8 : -Math.random() * 8);
-              const high = Math.max(open, close) + Math.random() * 5;
-              const low = Math.min(open, close) - Math.random() * 5;
-              
-              return (
-                <g key={i}>
-                  <line
-                    x1={x}
-                    y1={100 - (high / 60) * 80}
-                    x2={x}
-                    y2={100 - (low / 60) * 80}
-                    stroke={isGreen ? "#10b981" : "#ef4444"}
-                    strokeWidth="1.5"
-                  />
-                  <rect
-                    x={x - 4}
-                    y={100 - (Math.max(open, close) / 60) * 80}
-                    width="8"
-                    height={Math.abs((close - open) / 60) * 80 || 2}
-                    fill={isGreen ? "#10b981" : "#ef4444"}
-                  />
-                </g>
-              );
-            })}
+            {candlestickData?.map((candle, i) => (
+              <g key={i}>
+                <line
+                  x1={candle.x}
+                  y1={100 - (candle.high / 60) * 80}
+                  x2={candle.x}
+                  y2={100 - (candle.low / 60) * 80}
+                  stroke={candle.isGreen ? "#10b981" : "#ef4444"}
+                  strokeWidth="1.5"
+                />
+                <rect
+                  x={candle.x - 4}
+                  y={100 - (Math.max(candle.open, candle.close) / 60) * 80}
+                  width="8"
+                  height={Math.abs((candle.close - candle.open) / 60) * 80 || 2}
+                  fill={candle.isGreen ? "#10b981" : "#ef4444"}
+                />
+              </g>
+            ))}
           </svg>
         </div>
       </div>
@@ -164,14 +209,17 @@ export function HeroSection() {
           {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
             <button
-              onClick={() => router.push("/onboarding/sign-up?tab=signup")}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-4 text-base sm:text-lg font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#fc4f02]/40 cursor-pointer"
+              onClick={handleGetStarted}
+              disabled={isCheckingAuth}
+              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-4 text-base sm:text-lg font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#fc4f02]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <span className="relative z-10 flex items-center gap-2">
-                Get Started
-                <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
+                {isCheckingAuth ? "Checking..." : "Get Started"}
+                {!isCheckingAuth && (
+                  <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                )}
               </span>
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
             </button>
