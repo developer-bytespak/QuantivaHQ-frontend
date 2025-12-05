@@ -69,7 +69,7 @@ export default function AIInsightsPage() {
 
       {/* Social Metrics Display */}
       {newsData?.social_metrics && (
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
           <h3 className="mb-4 text-lg font-semibold text-white">Social Metrics - {newsData.symbol}</h3>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
             <div>
@@ -119,7 +119,7 @@ export default function AIInsightsPage() {
             <div
               key={index}
               onClick={() => handleNewsClick(news)}
-              className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+              className="cursor-pointer rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:scale-[1.01]"
             >
               {/* Header */}
               <div className="mb-4 flex items-center justify-between">
@@ -170,7 +170,7 @@ export default function AIInsightsPage() {
           onClick={handleCloseOverlay}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

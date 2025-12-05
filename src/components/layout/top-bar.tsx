@@ -199,7 +199,7 @@ function UserProfileSection() {
         <button
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] cursor-pointer"
+          className="flex items-center gap-3 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-3 py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
         >
           <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
             {profileImage ? (
@@ -420,7 +420,7 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] cursor-pointer"
+        className="flex items-center gap-2 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-3 py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
       >
         <svg
           className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -436,7 +436,7 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-56 rounded-xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-2 shadow-2xl shadow-black/50 backdrop-blur"
+          className="fixed z-[100] w-56 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-2 shadow-2xl shadow-black/50 backdrop-blur"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -483,7 +483,7 @@ export function TopBar() {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
-    <header className="sticky top-0 z-50 flex h-24 items-center justify-between gap-8 border-b border-[--color-border] bg-[--color-surface-alt]/80 px-8 backdrop-blur">
+    <header className="sticky top-0 z-50 flex h-24 items-center justify-between gap-8 border-b border-[#fc4f02]/30 bg-[--color-surface-alt]/80 px-8 backdrop-blur">
       <div className="flex items-center gap-3 relative">
         <h1 ref={headingRef} className="text-2xl font-bold text-white">{pageTitle}</h1>
         <DashboardSwitcher headingRef={headingRef} />

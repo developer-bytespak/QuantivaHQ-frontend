@@ -155,12 +155,12 @@ export default function StocksDashboardPage() {
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
             <h2 className="mb-4 text-lg font-semibold text-white">Portfolio</h2>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {/* Total Portfolio Value Inner Box */}
-              <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <p className="mb-2 text-xs text-slate-400">Total Portfolio Value</p>
                 <p className="mb-2 text-2xl font-bold text-white">$248,340.52</p>
                 <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ export default function StocksDashboardPage() {
               </div>
 
               {/* Asset Mix Inner Box */}
-              <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <p className="mb-2 text-xs text-slate-400">Asset Mix</p>
                 <p className="mb-2 text-2xl font-bold text-white">42 positions</p>
                 <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export default function StocksDashboardPage() {
                   setSelectedHolding(dashboardHolding);
                   setShowHoldingOverlay(true);
                 }}
-                className="flex-1 rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                className="flex-1 rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
               >
                 <div className="flex flex-col h-full justify-between">
                   <div className="flex items-center justify-between pb-6">
@@ -226,7 +226,7 @@ export default function StocksDashboardPage() {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-6 pt-6 border-t border-[--color-border]">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-6 pt-6 border-t border-[#fc4f02]/30">
                     <div className="space-y-2">
                       <p className="text-sm text-slate-400">Quantity</p>
                       <p className="text-xl font-semibold text-white">150</p>
@@ -253,7 +253,7 @@ export default function StocksDashboardPage() {
               {/* Portfolio Stats Container */}
               <div className="flex-1 flex flex-col space-y-3">
                 {/* Strategy Allocation */}
-                <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+                <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
                   <h3 className="mb-2 text-sm font-semibold text-slate-400">Strategy Allocation</h3>
                   <p className="mb-1 text-2xl font-bold text-white">$89,420</p>
                   <p className="mb-4 text-xs text-slate-400">36% of portfolio • 5 active strategies</p>
@@ -263,7 +263,7 @@ export default function StocksDashboardPage() {
                 </div>
 
                 {/* Buying Power */}
-                <div className="flex-1 rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+                <div className="flex-1 rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
                   <h3 className="mb-2 text-sm font-semibold text-slate-400">Buying Power</h3>
                   <p className="mb-1 text-2xl font-bold text-white">$37,845.00</p>
                   <p className="mb-4 text-xs text-slate-400">Margin: $75,000 available</p>
@@ -276,7 +276,7 @@ export default function StocksDashboardPage() {
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Action Center</h2>
               <button
@@ -291,7 +291,7 @@ export default function StocksDashboardPage() {
               {allActivities.slice(0, 3).map((activity) => (
                 <div
                   key={activity.id}
-                  className="cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:bg-[--color-surface]/80 hover:scale-[1.01]"
+                  className="cursor-pointer flex items-start gap-3 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4 transition-all duration-300 hover:from-white/[0.1] hover:to-transparent hover:scale-[1.01]"
                 >
                   <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${activity.iconBg}`}>
                     {activity.type === "buy" ? (
@@ -325,8 +325,8 @@ export default function StocksDashboardPage() {
           </div>
 
           {/* Holdings & Market */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
-            <div className="border-b border-[--color-border] p-6 pb-4">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur shadow-xl shadow-blue-900/10">
+            <div className="border-b border-[#fc4f02]/30 p-6 pb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
                 <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
@@ -422,7 +422,7 @@ export default function StocksDashboardPage() {
               {dashboardTrades.slice(0, 2).map((trade, index) => (
                 <div
                   key={trade.id}
-                  className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                  className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
@@ -479,7 +479,7 @@ export default function StocksDashboardPage() {
                           setSelectedTradeIndex(index);
                           setShowTradeOverlay(true);
                         }}
-                        className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                        className="rounded-xl border border-[#fc4f02]/30 bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
                       >
                         View Trade
                       </button>
@@ -522,7 +522,7 @@ export default function StocksDashboardPage() {
                 <div
                   key={news.id}
                   onClick={() => router.push("/stocks-dashboard/ai-insights")}
-                  className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:scale-[1.02]"
+                  className="cursor-pointer rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -547,7 +547,7 @@ export default function StocksDashboardPage() {
           </div>
 
           {/* Market Data */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
             <h3 className="mb-4 text-sm font-semibold text-slate-400">Market Overview</h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -581,7 +581,7 @@ export default function StocksDashboardPage() {
                   </div>
                 </div>
               </div>
-              <div className="pt-2 border-t border-[--color-border]">
+              <div className="pt-2 border-t border-[#fc4f02]/30">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-400">Sentiment</span>
                   <div className="flex items-center gap-1">
@@ -602,7 +602,7 @@ export default function StocksDashboardPage() {
           onClick={() => setShowTradeOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -645,7 +645,7 @@ export default function StocksDashboardPage() {
                 </div>
 
                 {/* Trade Details */}
-                <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="space-y-4 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-400">Entry</span>
                     <span className="text-base font-medium text-white">{dashboardTrades[selectedTradeIndex].entry}</span>
@@ -687,7 +687,7 @@ export default function StocksDashboardPage() {
           onClick={() => setShowAllActivities(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -719,7 +719,7 @@ export default function StocksDashboardPage() {
               {allActivities.map((activity) => (
                 <div
                   key={activity.id}
-                  className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all duration-300 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/80 hover:scale-[1.01]"
+                  className="group/item cursor-pointer flex items-start gap-3 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4 transition-all duration-300 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent hover:scale-[1.01]"
                 >
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${activity.iconBg}`}
@@ -803,7 +803,7 @@ export default function StocksDashboardPage() {
           onClick={() => setShowHoldingOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e: React.MouseEvent<HTMLDivElement>) => e.stopPropagation()}
           >
             {/* Header */}
@@ -837,19 +837,19 @@ export default function StocksDashboardPage() {
             <div className="space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="text-xs text-slate-400">Quantity</p>
                   <p className="mt-1 text-xl font-bold text-white">{selectedHolding.quantity} shares</p>
                 </div>
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="text-xs text-slate-400">Current Price</p>
                   <p className="mt-1 text-xl font-bold text-white">${selectedHolding.currentPrice.toFixed(2)}</p>
                 </div>
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="text-xs text-slate-400">Average Cost</p>
                   <p className="mt-1 text-xl font-bold text-white">${selectedHolding.avgCost.toFixed(2)}</p>
                 </div>
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="text-xs text-slate-400">Market Value</p>
                   <p className="mt-1 text-xl font-bold text-white">${selectedHolding.marketValue.toLocaleString()}</p>
                 </div>
@@ -887,7 +887,7 @@ export default function StocksDashboardPage() {
                 <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
                   Buy More
                 </button>
-                <button className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]">
+                <button className="flex-1 rounded-xl border border-[#fc4f02]/30 bg-[--color-surface] px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]">
                   Sell
                 </button>
               </div>
