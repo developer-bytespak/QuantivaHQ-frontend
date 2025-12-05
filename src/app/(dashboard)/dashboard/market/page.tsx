@@ -84,14 +84,14 @@ export default function MarketPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Market Overview</h1>
-          <p className="mt-1 text-sm text-slate-400">Top 500 cryptocurrencies by market cap</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Market Overview</h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-400">Top 500 cryptocurrencies by market cap</p>
         </div>
         <button
           onClick={() => router.back()}
-          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
         >
           Back to Dashboard
         </button>
@@ -139,83 +139,88 @@ export default function MarketPage() {
 
       {/* Market Table */}
       <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
-        <div className="overflow-x-auto -mx-6 px-6">
-                <div className="w-full">
-                        <table className="w-full min-w-[640px]">
-                          <colgroup>
-                            <col className="min-w-[150px]" />
-                            <col className="min-w-[120px]" />
-                            <col className="min-w-[120px]" />
-                            <col className="min-w-[140px]" />
-                            <col className="min-w-[140px]" />
-                          </colgroup>
-                          <thead className="divide-y divide-[--color-border]">
-                            <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
-                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">price</th>
-                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">24h change</th>
-                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">Market cap</th>
-                              <th className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white hidden md:table-cell">volume (24h)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[--color-border]">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center">
-                    <div className="flex items-center justify-center">
-                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
-                    </div>
-                  </td>
+        <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
+          <div className="w-full inline-block min-w-full">
+            <table className="w-full min-w-[500px] sm:min-w-[640px]">
+              <colgroup>
+                <col className="w-[50px] sm:w-[60px]" />
+                <col className="w-[140px] sm:w-[160px]" />
+                <col className="w-[100px] sm:w-[120px]" />
+                <col className="w-[100px] sm:w-[120px]" />
+                <col className="w-[120px] sm:w-[140px]" />
+                <col className="w-[120px] sm:w-[140px]" />
+              </colgroup>
+              <thead className="divide-y divide-[--color-border]">
+                <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                  <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">Rank</th>
+                  <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">Assets</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">price</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">24h change</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white hidden sm:table-cell">Market cap</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white hidden md:table-cell">volume (24h)</th>
                 </tr>
-              ) : currentCoins.length > 0 ? (
-                currentCoins.map((coin) => (
-                  <tr
-                    key={coin.id}
-                    className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
-                  >
-                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left">
-                      <div className="flex items-center justify-start gap-2 sm:gap-3">
-                        <img src={coin.image} alt={coin.name} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
-                        <div className="text-left min-w-0">
-                          <p className="text-xs sm:text-sm font-medium text-white truncate">{coin.name}</p>
-                          <p className="text-[10px] sm:text-xs text-slate-400 uppercase">{coin.symbol}</p>
-                        </div>
+              </thead>
+              <tbody className="divide-y divide-[--color-border]">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center">
+                      <div className="flex items-center justify-center">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
                       </div>
                     </td>
-                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
-                    <td className={`py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercent(coin.price_change_percentage_24h)}
-                    </td>
-                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell">{formatLargeNumber(coin.market_cap)}</td>
-                    <td className="py-3 pr-1 sm:pr-2 pl-0 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell">{formatLargeNumber(coin.total_volume)}</td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-400">
-                    <p className="text-sm">No coins found matching your search</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : currentCoins.length > 0 ? (
+                  currentCoins.map((coin, index) => (
+                    <tr
+                      key={coin.id}
+                      className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                    >
+                      <td className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-slate-300 whitespace-nowrap">
+                        {startIndex + index + 1}
+                      </td>
+                      <td className="py-2 sm:py-3 pl-0 pr-1 text-left">
+                        <div className="flex items-center justify-start gap-1.5 sm:gap-2 md:gap-3">
+                          <img src={coin.image} alt={coin.name} className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 rounded-full flex-shrink-0" />
+                          <div className="text-left min-w-0 flex-1">
+                            <p className="text-[10px] sm:text-xs md:text-sm font-medium text-white truncate">{coin.name}</p>
+                            <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-400 uppercase truncate">{coin.symbol}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
+                      <td className={`py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {formatPercent(coin.price_change_percentage_24h)}
+                      </td>
+                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell">{formatLargeNumber(coin.market_cap)}</td>
+                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell">{formatLargeNumber(coin.total_volume)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                      <p className="text-sm">No coins found matching your search</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
       {/* Pagination Controls */}
       {!isLoading && filteredCoins.length > 0 && totalPages > 1 && (
-        <div className="flex items-center justify-between rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-          <div className="text-sm text-slate-400">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
+          <div className="text-xs sm:text-sm text-slate-400 text-center sm:text-left">
             Showing {startIndex + 1} - {Math.min(endIndex, filteredCoins.length)} of {filteredCoins.length} coins
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2">
             {/* Previous Button */}
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -238,7 +243,7 @@ export default function MarketPage() {
                   <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum)}
-                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                    className={`rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
                       currentPage === pageNum
                         ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                         : "border border-[--color-border] bg-[--color-surface] text-slate-300 hover:border-[#fc4f02]/50 hover:text-white"
@@ -254,7 +259,7 @@ export default function MarketPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
@@ -264,7 +269,7 @@ export default function MarketPage() {
 
       {/* Results Count */}
       {!isLoading && filteredCoins.length > 0 && (
-        <div className="text-center text-sm text-slate-400">
+        <div className="text-center text-xs sm:text-sm text-slate-400">
           {searchQuery ? (
             <p>Found {filteredCoins.length} of {coins.length} coins matching "{searchQuery}"</p>
           ) : (

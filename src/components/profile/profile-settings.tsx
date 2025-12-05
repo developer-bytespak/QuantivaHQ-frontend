@@ -137,6 +137,20 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
             setUserName(profile.full_name || profile.username || "User");
             setUserPhone(profile.phone_number || "");
             
+            // Set all profile fields for editing
+            if (profile.gender) {
+              setUserGender(profile.gender);
+            }
+            if (profile.nationality) {
+              setUserNationality(profile.nationality);
+            }
+            if (profile.dob) {
+              // Convert Date to string format (YYYY-MM-DD) for date input
+              const dobDate = typeof profile.dob === 'string' ? new Date(profile.dob) : profile.dob;
+              const formattedDob = dobDate.toISOString().split('T')[0];
+              setUserDob(formattedDob);
+            }
+            
             // Set profile picture from API
             if (profile.profile_pic_url) {
               setProfileImage(profile.profile_pic_url);
@@ -173,7 +187,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     loadUserData();
   }, []);
 
-  // Initialize edit values when entering edit mode
+  // Initialize edit values when entering edit mode or when user data changes
   useEffect(() => {
     if (isEditing) {
       setEditName(userName);
@@ -183,8 +197,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       setEditDob(userDob);
       setErrors({});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditing]);
+  }, [isEditing, userName, userPhone, userGender, userNationality, userDob]);
 
   const handleEditClick = () => {
     setIsEditing(true);
