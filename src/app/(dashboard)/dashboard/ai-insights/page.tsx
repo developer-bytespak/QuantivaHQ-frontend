@@ -1,88 +1,46 @@
 "use client";
 
-import { useState } from "react";
-
-interface NewsItem {
-  id: number;
-  title: string;
-  description: string;
-  timestamp: string;
-}
-
-const newsItems: NewsItem[] = [
-  {
-    id: 1,
-    title: "Bitcoin Momentum Building",
-    description: "Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500",
-    timestamp: "2 min ago",
-  },
-  {
-    id: 2,
-    title: "Ethereum Sentiment Improved 20%",
-    description: "Bullish momentum on 1h and 4h charts. Sentiment improved 20% in last 3 hours. High liquidity reduces execution risk. Potential breakout above $2,500 resistance.",
-    timestamp: "15 min ago",
-  },
-  {
-    id: 3,
-    title: "Solana Consolidation Phase",
-    description: "SOL trading in tight range between $95-$105. Waiting for breakout confirmation. Volume decreasing suggests accumulation phase. Monitor for directional move.",
-    timestamp: "1 hour ago",
-  },
-  {
-    id: 4,
-    title: "XRP Sentiment Spike Down",
-    description: "XRP sentiment spike down 18% in last 6 hours. Breaking below key support at $0.58. Risk of further decline if support fails. Consider short position or wait for reversal.",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: 5,
-    title: "BNB Breakout Above Key Resistance",
-    description: "BNB successfully broke above $315 resistance level with strong volume. Institutional buying detected. Positive funding rate shift indicates bullish sentiment. Target set at $325.",
-    timestamp: "3 hours ago",
-  },
-  {
-    id: 6,
-    title: "ADA Overbought Conditions",
-    description: "ADA showing overbought conditions on RSI indicator. Weak volume on recent rally suggests potential pullback. Approaching resistance zone at $0.49. Caution advised for new positions.",
-    timestamp: "4 hours ago",
-  },
-  {
-    id: 7,
-    title: "DOGE Meme Coin Momentum Building",
-    description: "Meme coin momentum building with high retail interest returning. Breakout from consolidation pattern detected. Social sentiment increasing significantly. Watch for volatility spikes.",
-    timestamp: "5 hours ago",
-  },
-  {
-    id: 8,
-    title: "MATIC Partnership Announcements Pending",
-    description: "Strong fundamentals support MATIC price action. Partnership announcements pending which could drive price higher. Technical breakout confirmed above $0.85. Strong buy signal.",
-    timestamp: "6 hours ago",
-  },
-  {
-    id: 9,
-    title: "LINK Oracle Network Growth Accelerating",
-    description: "Oracle network growth accelerating with institutional adoption increasing. Strong technical setup with bullish chart pattern. Price action showing positive momentum above $14.20 support.",
-    timestamp: "7 hours ago",
-  },
-  {
-    id: 10,
-    title: "AVAX Ecosystem Expansion Continues",
-    description: "Ecosystem expansion continues with TVL growth supporting price action. Bullish chart pattern forming on daily timeframe. Strong fundamentals align with technical indicators.",
-    timestamp: "8 hours ago",
-  },
-];
+import { useState, useEffect, useCallback } from "react";
+import { getCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
+import { SentimentBadge } from "@/components/news/sentiment-badge";
 
 export default function AIInsightsPage() {
-  const [selectedAsset, setSelectedAsset] = useState<string>("all");
-  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<string>("BTC");
+  const [selectedNews, setSelectedNews] = useState<CryptoNewsItem | null>(null);
+  const [newsData, setNewsData] = useState<CryptoNewsResponse | null>(null);
+  const [isLoadingNews, setIsLoadingNews] = useState(false);
+  const [newsError, setNewsError] = useState<string | null>(null);
 
-  const handleNewsClick = (news: NewsItem) => {
+  // Fetch crypto news based on selected asset
+  const fetchCryptoNews = useCallback(async (symbol: string) => {
+    setIsLoadingNews(true);
+    setNewsError(null);
+    try {
+      const data = await getCryptoNews(symbol, 10); // Fetch more news items for this page
+      setNewsData(data);
+    } catch (error: any) {
+      console.error("Failed to fetch crypto news:", error);
+      setNewsError(error.message || "Failed to load news");
+    } finally {
+      setIsLoadingNews(false);
+    }
+  }, []);
+
+  // Fetch news when asset changes
+  useEffect(() => {
+    fetchCryptoNews(selectedAsset);
+  }, [selectedAsset, fetchCryptoNews]);
+
+  const handleNewsClick = (news: CryptoNewsItem) => {
     setSelectedNews(news);
   };
 
   const handleCloseOverlay = () => {
     setSelectedNews(null);
   };
+
+  // Get filtered news items based on selected asset
+  const displayNewsItems = newsData?.news_items || [];
 
   return (
     <div className="space-y-6 pb-8">
@@ -94,16 +52,7 @@ export default function AIInsightsPage() {
 
         {/* Asset Filter */}
         <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
-          <button
-            onClick={() => setSelectedAsset("all")}
-            className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${selectedAsset === "all"
-                ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
-                : "text-slate-400 hover:text-white"
-              }`}
-          >
-            All Assets
-          </button>
-          {["BTC", "ETH", "SOL", "XRP"].map((asset) => (
+          {/* {["BTC", "ETH", "SOL", "XRP", "BNB", "ADA", "DOGE", "MATIC", "LINK", "AVAX"].map((asset) => (
             <button
               key={asset}
               onClick={() => setSelectedAsset(asset)}
@@ -114,37 +63,104 @@ export default function AIInsightsPage() {
             >
               {asset}
             </button>
-          ))}
+          ))} */}
         </div>
       </div>
 
-      {/* News Items */}
-      <div className="space-y-4">
-        {newsItems.map((news) => (
-          <div
-            key={news.id}
-            onClick={() => handleNewsClick(news)}
-            className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
-          >
-            {/* Header */}
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">{news.title}</h2>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">{news.timestamp}</span>
-                <button className="text-slate-400 hover:text-white transition-colors">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-              </div>
+      {/* Social Metrics Display */}
+      {newsData?.social_metrics && (
+        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <h3 className="mb-4 text-lg font-semibold text-white">Social Metrics - {newsData.symbol}</h3>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
+            <div>
+              <p className="text-xs text-slate-400">Galaxy Score</p>
+              <p className="text-lg font-semibold text-white">{newsData.social_metrics.galaxy_score.toFixed(1)}</p>
             </div>
-
-            {/* Description */}
-            <div className="space-y-2 text-sm text-slate-300">
-              <p>{news.description}</p>
+            <div>
+              <p className="text-xs text-slate-400">Alt Rank</p>
+              <p className="text-lg font-semibold text-white">{newsData.social_metrics.alt_rank}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Social Volume</p>
+              <p className="text-lg font-semibold text-white">{newsData.social_metrics.social_volume.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Price</p>
+              <p className="text-lg font-semibold text-white">${newsData.social_metrics.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Volume 24h</p>
+              <p className="text-lg font-semibold text-white">
+                ${(newsData.social_metrics.volume_24h / 1e9).toFixed(2)}B
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">Market Cap</p>
+              <p className="text-lg font-semibold text-white">
+                ${(newsData.social_metrics.market_cap / 1e12).toFixed(2)}T
+              </p>
             </div>
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* News Items */}
+      <div className="space-y-4">
+        {isLoadingNews ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+          </div>
+        ) : newsError ? (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
+            <p className="text-sm text-red-300">{newsError}</p>
+          </div>
+        ) : displayNewsItems.length > 0 ? (
+          displayNewsItems.map((news, index) => (
+            <div
+              key={index}
+              onClick={() => handleNewsClick(news)}
+              className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+            >
+              {/* Header */}
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">{news.title}</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">
+                    {news.published_at
+                      ? new Date(news.published_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Recent"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Sentiment Badge and Source */}
+              <div className="mb-4 flex items-center gap-3">
+                <SentimentBadge
+                  label={news.sentiment.label}
+                  score={news.sentiment.score}
+                  confidence={news.sentiment.confidence}
+                  size="sm"
+                />
+                <span className="text-xs text-slate-500">•</span>
+                <span className="text-xs text-slate-400">{news.source}</span>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-2 text-sm text-slate-300">
+                <p>{news.description}</p>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="py-12 text-center text-slate-400">
+            <p className="text-sm">No news available for {selectedAsset}</p>
+          </div>
+        )}
       </div>
 
       {/* News Overlay */}
@@ -181,9 +197,44 @@ export default function AIInsightsPage() {
               </button>
             </div>
 
-            {/* Timestamp */}
-            <div className="mb-4 flex items-center gap-2">
-              <span className="text-xs text-slate-400">{selectedNews.timestamp}</span>
+            {/* Timestamp and Source */}
+            <div className="mb-4 flex items-center gap-3">
+              <span className="text-xs text-slate-400">
+                {selectedNews.published_at
+                  ? new Date(selectedNews.published_at).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
+                  : "Recent"}
+              </span>
+              <span className="text-xs text-slate-500">•</span>
+              <span className="text-xs text-slate-400">{selectedNews.source}</span>
+              {selectedNews.url && (
+                <>
+                  <span className="text-xs text-slate-500">•</span>
+                  <a
+                    href={selectedNews.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-[#fc4f02] hover:underline"
+                  >
+                    Read full article
+                  </a>
+                </>
+              )}
+            </div>
+
+            {/* Sentiment Badge */}
+            <div className="mb-4">
+              <SentimentBadge
+                label={selectedNews.sentiment.label}
+                score={selectedNews.sentiment.score}
+                confidence={selectedNews.sentiment.confidence}
+                size="md"
+              />
             </div>
 
             {/* Description */}

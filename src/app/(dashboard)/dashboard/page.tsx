@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
 import { getTopCoins, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { getCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
+import { SentimentBadge } from "@/components/news/sentiment-badge";
 
 interface Activity {
   id: number;
@@ -42,20 +44,10 @@ export default function DashboardPage() {
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
   const [isLoadingMarket, setIsLoadingMarket] = useState(false);
 
-  const newsItems = [
-    {
-      id: 1,
-      title: "Bitcoin Momentum Building",
-      description: "Market momentum on 15 U CV in BTC and BTC liquidity returning 90% in last 48 hours. BTC may break out if BTC sustains above $34.500",
-      timestamp: "2 min ago",
-    },
-    {
-      id: 2,
-      title: "Ethereum Network Upgrade Success",
-      description: "ETH network successfully completed its latest upgrade, reducing gas fees by 40% and improving transaction speed. Validators report 99.9% uptime during transition.",
-      timestamp: "15 min ago",
-    },
-  ];
+  // News data state
+  const [newsData, setNewsData] = useState<CryptoNewsResponse | null>(null);
+  const [isLoadingNews, setIsLoadingNews] = useState(false);
+  const [newsError, setNewsError] = useState<string | null>(null);
 
   const trades = [
     {
@@ -228,6 +220,35 @@ export default function DashboardPage() {
       fetchMarketData();
     }
   }, [activeTab, fetchMarketData]);
+
+  // Fetch crypto news with sentiment
+  const fetchCryptoNews = useCallback(async (symbol: string = "BTC", limit: number = 2) => {
+    setIsLoadingNews(true);
+    setNewsError(null);
+    try {
+      const data = await getCryptoNews(symbol, limit);
+      setNewsData(data);
+    } catch (error: any) {
+      console.error("Failed to fetch crypto news:", error);
+      setNewsError(error.message || "Failed to load news");
+    } finally {
+      setIsLoadingNews(false);
+    }
+  }, []);
+
+  // Fetch news on mount
+  useEffect(() => {
+    fetchCryptoNews("BTC", 2);
+  }, [fetchCryptoNews]);
+
+  // Auto-refresh news every 5 minutes
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      fetchCryptoNews("BTC", 2);
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(refreshInterval);
+  }, [fetchCryptoNews]);
 
   return (
     <div className="space-y-6 pb-8">
@@ -586,39 +607,65 @@ export default function DashboardPage() {
 
             {/* AI Insights News Cards */}
             <div className="space-y-3">
-              {newsItems.map((news, index) => (
-                <div
-                  key={news.id}
-                  onClick={() => {
-                    setSelectedNews(index);
-                    setShowNewsOverlay(true);
-                  }}
-                  className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400">{news.timestamp}</span>
-                      <button className="text-slate-400 hover:text-white transition-colors">
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* News Heading */}
-                    <h3 className="text-base font-semibold text-white">{news.title}</h3>
-
-                    {/* Description */}
-                    <div className="space-y-2 text-sm text-slate-300">
-                      <p className="line-clamp-2">
-                        {news.description}
-                      </p>
-                    </div>
-                  </div>
+              {isLoadingNews ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
                 </div>
-              ))}
+              ) : newsError ? (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
+                  <p className="text-sm text-red-300">{newsError}</p>
+                </div>
+              ) : newsData && newsData.news_items.length > 0 ? (
+                newsData.news_items.map((news, index) => (
+                  <div
+                    key={index}
+                    onClick={() => {
+                      setSelectedNews(index);
+                      setShowNewsOverlay(true);
+                    }}
+                    className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">
+                          {news.published_at
+                            ? new Date(news.published_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "Recent"}
+                        </span>
+                        <span className="text-xs text-slate-500">•</span>
+                        <span className="text-xs text-slate-400">{news.source}</span>
+                      </div>
+                      <SentimentBadge
+                        label={news.sentiment.label}
+                        score={news.sentiment.score}
+                        confidence={news.sentiment.confidence}
+                        size="sm"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* News Heading */}
+                      <h3 className="text-base font-semibold text-white">{news.title}</h3>
+
+                      {/* Description */}
+                      <div className="space-y-2 text-sm text-slate-300">
+                        <p className="line-clamp-2">
+                          {news.description}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-8 text-center text-slate-400">
+                  <p className="text-sm">No news available</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -719,7 +766,9 @@ export default function DashboardPage() {
           >
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">{newsItems[selectedNews].title}</h2>
+              <h2 className="text-2xl font-bold text-white">
+                {newsData?.news_items[selectedNews]?.title || "News"}
+              </h2>
               <button
                 onClick={() => setShowNewsOverlay(false)}
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
@@ -741,16 +790,55 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Timestamp */}
-            <div className="mb-4 flex items-center gap-2">
-              <span className="text-xs text-slate-400">{newsItems[selectedNews].timestamp}</span>
-                  </div>
+            {/* Timestamp and Source */}
+            {newsData?.news_items[selectedNews] && (
+              <div className="mb-4 flex items-center gap-3">
+                <span className="text-xs text-slate-400">
+                  {newsData.news_items[selectedNews].published_at
+                    ? new Date(newsData.news_items[selectedNews].published_at).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "Recent"}
+                </span>
+                <span className="text-xs text-slate-500">•</span>
+                <span className="text-xs text-slate-400">{newsData.news_items[selectedNews].source}</span>
+                {newsData.news_items[selectedNews].url && (
+                  <>
+                    <span className="text-xs text-slate-500">•</span>
+                    <a
+                      href={newsData.news_items[selectedNews].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#fc4f02] hover:underline"
+                    >
+                      Read full article
+                    </a>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Sentiment Badge */}
+            {newsData?.news_items[selectedNews]?.sentiment && (
+              <div className="mb-4">
+                <SentimentBadge
+                  label={newsData.news_items[selectedNews].sentiment.label}
+                  score={newsData.news_items[selectedNews].sentiment.score}
+                  confidence={newsData.news_items[selectedNews].sentiment.confidence}
+                  size="md"
+                />
+              </div>
+            )}
 
             {/* Description */}
             <div className="space-y-4">
               <div className="space-y-2 text-sm leading-relaxed text-slate-300">
-                <p>{newsItems[selectedNews].description}</p>
-                </div>
+                <p>{newsData?.news_items[selectedNews]?.description || "No description available"}</p>
+              </div>
             </div>
           </div>
         </div>
