@@ -124,7 +124,7 @@ export default function StocksAIInsightsPage() {
           <div
             key={news.id}
             onClick={() => handleNewsClick(news)}
-            className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:scale-[1.01]"
+            className="cursor-pointer rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10 transition-all duration-300 hover:scale-[1.01]"
           >
             {/* Header */}
             <div className="mb-4 flex items-center justify-between">
@@ -149,7 +149,7 @@ export default function StocksAIInsightsPage() {
           onClick={handleCloseOverlay}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

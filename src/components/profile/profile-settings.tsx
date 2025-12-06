@@ -1428,14 +1428,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Settings Menu */}
-      <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-2xl p-6 shadow-lg">
+      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
         <h3 className="text-xl font-bold text-white mb-6">Settings</h3>
         <div className="space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={item.onClick}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-[--color-surface]/50 border border-[--color-border]/50 hover:border-[#fc4f02]/30 hover:bg-[--color-surface]/70 transition-all duration-200 group cursor-pointer"
+              className="w-full flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
             >
               <div className={`flex-shrink-0 ${item.color || "text-[#fc4f02]"}`}>
                 {item.icon}

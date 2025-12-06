@@ -277,7 +277,7 @@ export default function TopTradesPage() {
       {/* Performance Statistics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {performanceStats.map((stat, index) => (
-          <div key={index} className="rounded-xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div key={index} className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4 backdrop-blur shadow-xl shadow-blue-900/10">
             <p className="mb-1 text-xs text-slate-400">{stat.label}</p>
             <p className="mb-2 text-2xl font-bold text-white">{stat.value}</p>
             <div className="flex items-center gap-1">
@@ -301,7 +301,7 @@ export default function TopTradesPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "profit" | "volume" | "winrate")}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
+              className="rounded-lg border border-[#fc4f02]/30 bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
             >
               <option value="profit">Profit</option>
               <option value="volume">Volume</option>
@@ -315,7 +315,7 @@ export default function TopTradesPage() {
             {filteredAndSortedTrades.map((trade, index) => (
               <div
                 key={trade.id}
-                className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+                className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10"
               >
                 {/* Trade Card Content */}
                 <div className="space-y-4">
@@ -370,7 +370,7 @@ export default function TopTradesPage() {
                   </div>
 
                   {/* Performance Metrics */}
-                  <div className="flex items-center gap-4 text-xs border-t border-[--color-border] pt-3">
+                  <div className="flex items-center gap-4 text-xs border-t border-[#fc4f02]/30 pt-3">
                     <div>
                       <span className="text-slate-400">Profit: </span>
                       <span className="font-medium text-green-400">{trade.profit}</span>
@@ -395,7 +395,7 @@ export default function TopTradesPage() {
                         setSelectedTradeIndex(index);
                         setShowTradeOverlay(true);
                       }}
-                      className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                      className="rounded-xl border border-[#fc4f02]/30 bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
                     >
                       View Trade
                     </button>
@@ -405,7 +405,7 @@ export default function TopTradesPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-8 text-center backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-xl shadow-blue-900/10">
             <p className="text-sm text-slate-400">No trades found for the selected time period</p>
           </div>
         )}
@@ -418,7 +418,7 @@ export default function TopTradesPage() {
           onClick={() => setShowTradeOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -462,7 +462,7 @@ export default function TopTradesPage() {
               </div>
 
               {/* Trade Details */}
-              <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="space-y-4 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Entry</span>
                   <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].entryPrice}</span>
@@ -493,7 +493,7 @@ export default function TopTradesPage() {
               </div>
 
               {/* Performance Metrics */}
-              <div className="flex items-center gap-6 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="flex items-center gap-6 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <div>
                   <p className="text-xs text-slate-400">Profit</p>
                   <p className="text-lg font-semibold text-green-400">{filteredAndSortedTrades[selectedTradeIndex].profit}</p>

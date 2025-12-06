@@ -290,7 +290,7 @@ export default function DashboardPage() {
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Portfolio</h2>
               {lastUpdated && (
@@ -307,7 +307,7 @@ export default function DashboardPage() {
             ) : dashboardData ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Total Profit Value Inner Box */}
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="mb-2 text-xs text-slate-400">Total Portfolio Value</p>
                   <p className="mb-2 text-2xl font-bold text-white">
                     {formatCurrency(dashboardData.portfolio.totalValue)}
@@ -323,7 +323,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Active Strategies Inner Box */}
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="mb-2 text-xs text-slate-400">Active Positions</p>
                   <p className="mb-2 text-2xl font-bold text-white">
                     {dashboardData.positions.length}
@@ -346,7 +346,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Action Center</h2>
             </div>
@@ -359,8 +359,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Holdings & Market */}
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
-            <div className="border-b border-[--color-border] p-6 pb-4">
+          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur shadow-xl shadow-blue-900/10">
+            <div className="border-b border-[#fc4f02]/30 p-6 pb-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
                 <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
@@ -534,7 +534,7 @@ export default function DashboardPage() {
             {/* Trade Cards */}
             <div className="space-y-3">
               {trades.map((trade, index) => (
-                <div key={trade.id} className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+                 <div key={trade.id} className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
                   {/* Top Trade Opportunity */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
@@ -589,7 +589,7 @@ export default function DashboardPage() {
                           setSelectedTrade(index);
                           setShowTradeOverlay(true);
                         }}
-                        className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                         className="rounded-xl border border-[#fc4f02]/30 bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
                       >
                         View Trade
                       </button>
@@ -631,7 +631,7 @@ export default function DashboardPage() {
                       setSelectedNews(index);
                       setShowNewsOverlay(true);
                     }}
-                    className="cursor-pointer rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+                     className="cursor-pointer rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10"
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -686,7 +686,7 @@ export default function DashboardPage() {
           onClick={() => setShowTradeOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+             className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -728,7 +728,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Trade Details */}
-              <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+               <div className="space-y-4 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Entry</span>
                   <span className="text-base font-medium text-white">{trades[selectedTrade].entry}</span>
@@ -769,7 +769,7 @@ export default function DashboardPage() {
           onClick={() => setShowNewsOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+             className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

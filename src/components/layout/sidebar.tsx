@@ -85,7 +85,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
     <aside
       onMouseEnter={() => setCollapsed(false)}
       onMouseLeave={() => setCollapsed(true)}
-      className={`group/dashboard relative flex h-screen flex-col border-r border-[--color-border] bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
+      className={`group/dashboard relative flex h-screen flex-col border-r border-[#fc4f02]/30 bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
     >
       {/* Header */}
       <div className="flex h-24 items-center justify-center bg-[--color-surface-alt]/50 px-8">
