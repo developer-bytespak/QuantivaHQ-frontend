@@ -299,5 +299,191 @@ export const exchangesService = {
       credentials: "include",
     });
   },
+
+  /**
+   * Get candlestick/OHLCV data
+   */
+  async getCandlestickData(
+    connectionId: string,
+    symbol: string,
+    interval: string = "1h",
+    limit: number = 100,
+    startTime?: number,
+    endTime?: number
+  ): Promise<ApiResponse<Array<{
+    openTime: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    closeTime: number;
+  }>>> {
+    const params = new URLSearchParams();
+    params.append("interval", interval);
+    params.append("limit", limit.toString());
+    if (startTime) params.append("startTime", startTime.toString());
+    if (endTime) params.append("endTime", endTime.toString());
+
+    return apiRequest<never, ApiResponse<Array<{
+      openTime: number;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+      closeTime: number;
+    }>>>({
+      path: `/exchanges/connections/${connectionId}/candles/${symbol}?${params.toString()}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Get coin detail data
+   */
+  async getCoinDetail(
+    connectionId: string,
+    symbol: string
+  ): Promise<ApiResponse<{
+    symbol: string;
+    tradingPair: string;
+    currentPrice: number;
+    change24h: number;
+    changePercent24h: number;
+    high24h: number;
+    low24h: number;
+    volume24h: number;
+    availableBalance: number;
+    quoteCurrency: string;
+    candles: Array<{
+      openTime: number;
+      open: number;
+      high: number;
+      low: number;
+      close: number;
+      volume: number;
+      closeTime: number;
+    }>;
+  }>> {
+    return apiRequest<never, ApiResponse<{
+      symbol: string;
+      tradingPair: string;
+      currentPrice: number;
+      change24h: number;
+      changePercent24h: number;
+      high24h: number;
+      low24h: number;
+      volume24h: number;
+      availableBalance: number;
+      quoteCurrency: string;
+      candles: Array<{
+        openTime: number;
+        open: number;
+        high: number;
+        low: number;
+        close: number;
+        volume: number;
+        closeTime: number;
+      }>;
+    }>>({
+      path: `/exchanges/connections/${connectionId}/coin/${symbol}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Check trading permissions
+   */
+  async checkTradingPermissions(connectionId: string): Promise<ApiResponse<{
+    canTrade: boolean;
+    reason?: string;
+  }>> {
+    return apiRequest<never, ApiResponse<{
+      canTrade: boolean;
+      reason?: string;
+    }>>({
+      path: `/exchanges/connections/${connectionId}/trading-permissions`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Place an order
+   */
+  async placeOrder(
+    connectionId: string,
+    orderData: {
+      symbol: string;
+      side: "BUY" | "SELL";
+      type: "MARKET" | "LIMIT";
+      quantity: number;
+      price?: number;
+    }
+  ): Promise<ApiResponse<Order>> {
+    return apiRequest<{
+      symbol: string;
+      side: "BUY" | "SELL";
+      type: "MARKET" | "LIMIT";
+      quantity: number;
+      price?: number;
+    }, ApiResponse<Order>>({
+      path: `/exchanges/connections/${connectionId}/orders/place`,
+      method: "POST",
+      body: orderData,
+      credentials: "include",
+    });
+  },
+
+  async getOrderBook(
+    connectionId: string,
+    symbol: string,
+    limit: number = 20,
+  ): Promise<ApiResponse<OrderBook>> {
+    return apiRequest<never, ApiResponse<OrderBook>>({
+      path: `/exchanges/connections/${connectionId}/orderbook/${symbol}?limit=${limit}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  async getRecentTrades(
+    connectionId: string,
+    symbol: string,
+    limit: number = 50,
+  ): Promise<ApiResponse<RecentTrade[]>> {
+    return apiRequest<never, ApiResponse<RecentTrade[]>>({
+      path: `/exchanges/connections/${connectionId}/trades/${symbol}?limit=${limit}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
 };
+
+export interface OrderBook {
+  bids: Array<{
+    price: number;
+    quantity: number;
+    total?: number;
+  }>;
+  asks: Array<{
+    price: number;
+    quantity: number;
+    total?: number;
+  }>;
+  lastUpdateId: number;
+  spread: number;
+  spreadPercent: number;
+}
+
+export interface RecentTrade {
+  id: string;
+  price: number;
+  quantity: number;
+  time: number;
+  isBuyerMaker: boolean;
+}
 

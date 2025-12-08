@@ -1,126 +1,156 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
-const COINGECKO_API_KEY = process.env.NEXT_PUBLIC_COINGECKO_API_KEY || process.env.COINGECKO_API_KEY || "";
-
+/**
+ * CoinGecko API Proxy
+ * This endpoint proxies requests to CoinGecko API to avoid CORS issues
+ * and keep the API key secure on the server side.
+ */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const endpoint = searchParams.get("endpoint");
-    const limit = searchParams.get("limit") || "5";
-    
-    if (!endpoint) {
-      return NextResponse.json(
-        { error: "Endpoint parameter is required" },
-        { status: 400 }
-      );
+    let endpoint = searchParams.get("endpoint") || "coins/markets";
+    const params = new URLSearchParams();
+
+    // Handle special case where endpoint contains path parameters (e.g., coins/bitcoin)
+    if (endpoint.includes("/") && !endpoint.startsWith("coins/markets")) {
+      // Endpoint like "coins/bitcoin" - extract the coin ID
+      const endpointParts = endpoint.split("/");
+      if (endpointParts[0] === "coins" && endpointParts.length > 1) {
+        // This is a coin detail request
+        endpoint = `coins/${endpointParts[1]}`;
+      }
     }
+
+    // Copy all query parameters except 'endpoint'
+    searchParams.forEach((value, key) => {
+      if (key !== "endpoint") {
+        params.append(key, value);
+      }
+    });
+
+    // Get API key from server-side environment variable
+    const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || process.env.NEXT_PUBLIC_COINGECKO_API_KEY || "";
+
+    // Determine if this is a Pro API key (starts with CG-)
+    const isProApiKey = COINGECKO_API_KEY && COINGECKO_API_KEY.startsWith("CG-");
+    
+    // Use pro-api.coingecko.com for Pro API keys, api.coingecko.com for free/demo keys
+    const baseUrl = isProApiKey 
+      ? "https://pro-api.coingecko.com/api/v3"
+      : "https://api.coingecko.com/api/v3";
+
+    // Debug logging in development
+    if (process.env.NODE_ENV === "development") {
+      console.log("CoinGecko Proxy Request:", {
+        endpoint,
+        hasApiKey: !!COINGECKO_API_KEY,
+        keyLength: COINGECKO_API_KEY?.length || 0,
+        keyPrefix: COINGECKO_API_KEY?.substring(0, 3) || "none",
+        isProApiKey,
+        baseUrl,
+      });
+    }
+
+    const url = `${baseUrl}/${endpoint}?${params.toString()}`;
 
     const headers: HeadersInit = {
       "Content-Type": "application/json",
+      "Accept": "application/json",
     };
 
-    const hasApiKey = COINGECKO_API_KEY && 
-                      COINGECKO_API_KEY !== "x-cg-demo-api-key" && 
-                      COINGECKO_API_KEY !== "x-cg-pro-api-key" &&
-                      COINGECKO_API_KEY.length > 10;
-
-    if (hasApiKey) {
+    // Add API key if available - try Pro API key header first
+    if (COINGECKO_API_KEY && COINGECKO_API_KEY.length > 10) {
+      // CoinGecko Pro API uses x-cg-pro-api-key header
       headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
+    } else {
+      console.warn("CoinGecko API key not found or invalid. Make sure COINGECKO_API_KEY is set in .env.local");
     }
 
-    let url = "";
-    
-    if (endpoint === "markets") {
-      const ids = searchParams.get("ids");
-      const perPage = searchParams.get("per_page") || limit;
-      url = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=1&sparkline=false&price_change_percentage=24h${ids ? `&ids=${ids}` : ""}`;
-    } else if (endpoint === "coin") {
-      const coinId = searchParams.get("coinId");
-      if (!coinId) {
-        return NextResponse.json(
-          { error: "coinId parameter is required for coin endpoint" },
-          { status: 400 }
-        );
+    const response = await fetch(url, {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: errorText };
       }
-      url = `${COINGECKO_API_URL}/coins/${coinId}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false`;
-    } else {
+
+      // Log detailed error in development
+      if (process.env.NODE_ENV === "development") {
+        console.error("CoinGecko API Error:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorText: errorText.substring(0, 500), // First 500 chars of error
+          error: errorData.error || errorData.message || errorData.status?.error_message,
+          errorData: errorData,
+          hasApiKey: !!COINGECKO_API_KEY,
+          url: url.substring(0, 200), // First 200 chars of URL
+        });
+      }
+
+      // Extract the actual error message from CoinGecko
+      const errorMessage = errorData.status?.error_message || 
+                          errorData.error || 
+                          errorData.message || 
+                          errorText ||
+                          `CoinGecko API error: ${response.status} ${response.statusText}`;
+
+      // If 400 Bad Request and we have an API key, try with demo API key header format
+      // Some CoinGecko accounts might use x-cg-demo-api-key instead
+      if (response.status === 400 && COINGECKO_API_KEY && COINGECKO_API_KEY.length > 10) {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Trying with x-cg-demo-api-key header format...");
+        }
+        
+        const demoHeaders: HeadersInit = {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "x-cg-demo-api-key": COINGECKO_API_KEY,
+        };
+
+        try {
+          const retryResponse = await fetch(url, {
+            method: "GET",
+            headers: demoHeaders,
+            cache: "no-store",
+          });
+
+          if (retryResponse.ok) {
+            const data = await retryResponse.json();
+            if (process.env.NODE_ENV === "development") {
+              console.log("Success with x-cg-demo-api-key header format");
+            }
+            return NextResponse.json(data);
+          }
+        } catch (retryError) {
+          console.error("Retry with demo header failed:", retryError);
+        }
+      }
+
       return NextResponse.json(
-        { error: "Invalid endpoint" },
-        { status: 400 }
+        {
+          error: errorMessage,
+          status: response.status,
+          details: errorData,
+        },
+        { status: response.status }
       );
     }
 
-    // Try multiple authentication approaches
-    const fetchAttempts = [
-      async () => {
-        const response = await fetch(url, {
-          method: "GET",
-          headers,
-          cache: "no-store",
-        });
-        if (response.ok) {
-          return await response.json();
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      },
-      ...(hasApiKey ? [async () => {
-        const demoHeaders: HeadersInit = {
-          "Content-Type": "application/json",
-          "x-cg-demo-api-key": COINGECKO_API_KEY,
-        };
-        const response = await fetch(url, {
-          method: "GET",
-          headers: demoHeaders,
-          cache: "no-store",
-        });
-        if (response.ok) {
-          return await response.json();
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }] : []),
-      async () => {
-        const freeHeaders: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-        const response = await fetch(url, {
-          method: "GET",
-          headers: freeHeaders,
-          cache: "no-store",
-        });
-        if (response.ok) {
-          return await response.json();
-        }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      },
-    ];
-
-    // Try each fetch attempt
-    for (let i = 0; i < fetchAttempts.length; i++) {
-      try {
-        const data = await fetchAttempts[i]();
-        return NextResponse.json(data);
-      } catch (error: any) {
-        const isLastAttempt = i === fetchAttempts.length - 1;
-        
-        if (isLastAttempt) {
-          console.error(`CoinGecko API proxy attempt ${i + 1} failed:`, error);
-          return NextResponse.json(
-            { error: error.message || "Failed to fetch data from CoinGecko API" },
-            { status: 500 }
-          );
-        }
-      }
-    }
-
-    return NextResponse.json(
-      { error: "All fetch attempts failed" },
-      { status: 500 }
-    );
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error: any) {
-    console.error("CoinGecko API proxy error:", error);
+    console.error("CoinGecko proxy error:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      {
+        error: error.message || "Failed to fetch data from CoinGecko API",
+      },
       { status: 500 }
     );
   }

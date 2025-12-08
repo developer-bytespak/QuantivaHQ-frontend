@@ -488,7 +488,8 @@ export default function DashboardPage() {
                             {marketData.map((coin, index) => (
                               <tr
                                 key={coin.id}
-                                className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                                onClick={() => router.push(`/dashboard/market/${coin.symbol.toUpperCase()}`)}
+                                className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                               >
                                 <td className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap">
                                   {index + 1}
