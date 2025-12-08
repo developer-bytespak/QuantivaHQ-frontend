@@ -13,21 +13,21 @@ export default function MarketPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const coinsPerPage = 50;
 
-  useEffect(() => {
-    const fetchCoins = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const data = await getTop500Coins();
-        setCoins(data);
-      } catch (err: any) {
-        console.error("Failed to fetch market data:", err);
-        setError(err.message || "Failed to load market data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchCoins = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getTop500Coins();
+      setCoins(data);
+    } catch (err: any) {
+      console.error("Failed to fetch market data:", err);
+      setError(err.message || "Failed to load market data. Please check your internet connection and try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCoins();
   }, []);
 
@@ -131,7 +131,16 @@ export default function MarketPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm text-red-200">{error}</p>
+              <p className="text-sm text-red-200 mb-3">{error}</p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  fetchCoins();
+                }}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+              >
+                Retry
+              </button>
             </div>
           </div>
         </div>

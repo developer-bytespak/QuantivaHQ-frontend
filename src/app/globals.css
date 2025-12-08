@@ -320,6 +320,72 @@ select option:hover {
   animation: float-3d 6s ease-in-out infinite;
 }
 
+/* Floating gentle animation for coin symbols */
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 0.08;
+  }
+  25% {
+    transform: translate(20px, -20px) rotate(5deg) scale(1.05);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translate(-15px, 15px) rotate(-5deg) scale(1);
+    opacity: 0.08;
+  }
+  75% {
+    transform: translate(10px, 10px) rotate(3deg) scale(1.03);
+    opacity: 0.12;
+  }
+}
+
+/* Particle float animation */
+@keyframes particle-float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-30px) scale(1.5);
+    opacity: 0.4;
+  }
+}
+
+/* Slide in from right animation */
+@keyframes slide-in-right {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Fade in with scale animation for centered modal */
+@keyframes fade-in-scale {
+  0% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Simple fade-in at center position */
+@keyframes fade-in-center {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 /* 3D Perspective and Depth */
 .preserve-3d {
   transform-style: preserve-3d;

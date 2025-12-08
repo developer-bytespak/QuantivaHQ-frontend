@@ -220,10 +220,10 @@ export function ProfilePage() {
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
             <h2 className="text-xl font-bold text-white mb-6">Your Coins</h2>
           </div>
-          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
             <h2 className="text-xl font-bold text-white mb-6">Your Stocks</h2>
           </div>
         </div>
@@ -276,13 +276,13 @@ export function ProfilePage() {
       {/* Coins and Stocks Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Your Coins Section */}
-        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h2 className="text-xl font-bold text-white mb-6">Your Coins</h2>
           <div className="space-y-4">
             {coins.map((coin) => (
               <div
                 key={coin.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
@@ -308,13 +308,13 @@ export function ProfilePage() {
         </div>
 
         {/* Your Stocks Section */}
-        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h2 className="text-xl font-bold text-white mb-6">Your Stocks</h2>
           <div className="space-y-4">
             {stocks.map((stock) => (
               <div
                 key={stock.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1d4ed8]/20 to-[#3b82f6]/10 border border-[#1d4ed8]/20 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">

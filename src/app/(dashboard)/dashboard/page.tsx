@@ -43,6 +43,7 @@ export default function DashboardPage() {
   // Market data state
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
   const [isLoadingMarket, setIsLoadingMarket] = useState(false);
+  const [marketError, setMarketError] = useState<string | null>(null);
 
   // News data state
   const [newsData, setNewsData] = useState<CryptoNewsResponse | null>(null);
@@ -207,11 +208,14 @@ export default function DashboardPage() {
   // Fetch market data when market tab is active
   const fetchMarketData = useCallback(async () => {
     setIsLoadingMarket(true);
+    setMarketError(null);
     try {
       const coins = await getTopCoins(5);
       setMarketData(coins);
-    } catch (error) {
+      setMarketError(null);
+    } catch (error: any) {
       console.error("Failed to fetch market data:", error);
+      setMarketError(error.message || "Failed to load market data. Please try again later.");
     } finally {
       setIsLoadingMarket(false);
     }
@@ -290,7 +294,7 @@ export default function DashboardPage() {
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
-          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Portfolio</h2>
               {lastUpdated && (
@@ -307,7 +311,7 @@ export default function DashboardPage() {
             ) : dashboardData ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {/* Total Profit Value Inner Box */}
-                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
+                <div className="rounded-xl  bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="mb-2 text-xs text-slate-400">Total Portfolio Value</p>
                   <p className="mb-2 text-2xl font-bold text-white">
                     {formatCurrency(dashboardData.portfolio.totalValue)}
@@ -323,7 +327,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Active Strategies Inner Box */}
-                <div className="rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
+                <div className="rounded-xl  bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                   <p className="mb-2 text-xs text-slate-400">Active Positions</p>
                   <p className="mb-2 text-2xl font-bold text-white">
                     {dashboardData.positions.length}
@@ -346,7 +350,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Action Center</h2>
             </div>
@@ -359,8 +363,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Holdings & Market */}
-          <div className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur shadow-xl shadow-blue-900/10">
-            <div className="border-b border-[#fc4f02]/30 p-6 pb-4">
+          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur">
+            <div className="relative p-6 pb-4">
+              <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
                 <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
@@ -445,6 +450,18 @@ export default function DashboardPage() {
                         <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
                       </div>
                     </div>
+                  ) : marketError ? (
+                    <div className="py-8 text-center space-y-3">
+                      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+                        <p className="text-sm text-red-300 mb-2">{marketError}</p>
+                        <button
+                          onClick={() => fetchMarketData()}
+                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    </div>
                   ) : marketData.length > 0 ? (
                     <>
                       <div className="w-full -ml-6">
@@ -506,8 +523,18 @@ export default function DashboardPage() {
                       </div>
                     </>
                   ) : (
-                    <div className="py-8 text-center text-slate-400">
-                      <p className="text-sm">Failed to load market data</p>
+                    <div className="py-8 text-center space-y-3">
+                      <p className="text-sm text-slate-400">
+                        {marketError || "No market data available"}
+                      </p>
+                      {marketError && (
+                        <button
+                          onClick={() => fetchMarketData()}
+                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                        >
+                          Retry
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -534,7 +561,7 @@ export default function DashboardPage() {
             {/* Trade Cards */}
             <div className="space-y-3">
               {trades.map((trade, index) => (
-                 <div key={trade.id} className="rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+                 <div key={trade.id} className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
                   {/* Top Trade Opportunity */}
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
@@ -589,7 +616,7 @@ export default function DashboardPage() {
                           setSelectedTrade(index);
                           setShowTradeOverlay(true);
                         }}
-                         className="rounded-xl border border-[#fc4f02]/30 bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                         className="rounded-xl  bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300  hover:text-white"
                       >
                         View Trade
                       </button>
@@ -631,7 +658,7 @@ export default function DashboardPage() {
                       setSelectedNews(index);
                       setShowNewsOverlay(true);
                     }}
-                     className="cursor-pointer rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-xl shadow-blue-900/10"
+                     className="cursor-pointer rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur"
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -686,7 +713,7 @@ export default function DashboardPage() {
           onClick={() => setShowTradeOverlay(false)}
         >
           <div
-             className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
+             className="relative mx-4 w-full max-w-2xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -728,7 +755,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Trade Details */}
-               <div className="space-y-4 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-4">
+               <div className="space-y-4 rounded-xl  bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Entry</span>
                   <span className="text-base font-medium text-white">{trades[selectedTrade].entry}</span>
@@ -769,7 +796,7 @@ export default function DashboardPage() {
           onClick={() => setShowNewsOverlay(false)}
         >
           <div
-             className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
+             className="relative mx-4 w-full max-w-2xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
