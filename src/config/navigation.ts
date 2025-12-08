@@ -15,6 +15,7 @@ export const DASHBOARD_NAV: NavSection[] = [
     title: "Main",
     items: [
       { label: "Dashboard", href: "/dashboard" },
+      { label: "Market", href: "/dashboard/market" },
       { label: "Top trades", href: "/dashboard/top-trades" },
       { label: "AI insights", href: "/dashboard/ai-insights" },
       { label: "VC pool", href: "/dashboard/vc-pool" },

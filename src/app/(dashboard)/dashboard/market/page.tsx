@@ -22,7 +22,17 @@ export default function MarketPage() {
         setCoins(data);
       } catch (err: any) {
         console.error("Failed to fetch market data:", err);
-        setError(err.message || "Failed to load market data");
+        // Provide user-friendly error message
+        const errorMessage = err.message || "Failed to load market data";
+        setError(errorMessage);
+        
+        // If it's a network error, suggest retrying
+        if (errorMessage.includes("Network error") || errorMessage.includes("Unable to connect")) {
+          // Auto-retry after 5 seconds
+          setTimeout(() => {
+            fetchCoins();
+          }, 5000);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -131,7 +141,25 @@ export default function MarketPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm text-red-200">{error}</p>
+              <p className="text-sm text-red-200 font-medium mb-2">{error}</p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  setIsLoading(true);
+                  getTop500Coins()
+                    .then((data) => {
+                      setCoins(data);
+                      setIsLoading(false);
+                    })
+                    .catch((err: any) => {
+                      setError(err.message || "Failed to load market data");
+                      setIsLoading(false);
+                    });
+                }}
+                className="text-xs text-red-300 hover:text-red-100 underline"
+              >
+                Click to retry
+              </button>
             </div>
           </div>
         </div>
@@ -173,7 +201,8 @@ export default function MarketPage() {
                   currentCoins.map((coin, index) => (
                     <tr
                       key={coin.id}
-                      className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                      onClick={() => router.push(`/dashboard/market/${coin.symbol.toUpperCase()}`)}
+                      className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                     >
                       <td className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-slate-300 whitespace-nowrap">
                         {startIndex + index + 1}
