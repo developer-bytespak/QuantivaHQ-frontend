@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
-import { getCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
+import { getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
 
 // Extended news item with AI insights
 interface AIEnhancedNewsItem extends CryptoNewsItem {
@@ -103,7 +103,7 @@ function enhanceNewsWithAI(news: CryptoNewsItem, symbol: string): AIEnhancedNews
   };
 }
 
-// Coin Logo Component with CoinGecko API
+// Coin Logo Component with CoinGecko CDN
 function CoinLogo({ 
   symbol, 
   size = "md",
@@ -123,11 +123,12 @@ function CoinLogo({
     lg: "w-12 h-12",
   };
 
-  // If no logo URL or image error, show fallback
+  // If no logo URL or image error, show fallback with coin symbol
   if (!logoUrl || imageError) {
     return (
       <div
         className={`${sizeClasses[size]} ${colors.bg} rounded-full flex items-center justify-center font-bold ${colors.text} border-2 ${colors.text}/30 shadow-lg ${colors.glow}`}
+        title={symbol}
       >
         {symbol.slice(0, 2)}
       </div>
@@ -137,6 +138,7 @@ function CoinLogo({
   return (
     <div
       className={`${sizeClasses[size]} ${colors.bg} rounded-full flex items-center justify-center border-2 ${colors.text}/30 shadow-lg ${colors.glow} overflow-hidden relative`}
+      title={symbol}
     >
       {!imageLoaded && (
         <div className="absolute inset-0 flex items-center justify-center">
@@ -388,47 +390,89 @@ export default function AIInsightsPage() {
   const [activeFilter, setActiveFilter] = useState<string>("trending");
   const [sortBy, setSortBy] = useState<string>("most-recent");
   const [coinLogos, setCoinLogos] = useState<Record<string, string>>({});
+  const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
+  const [isInitializingML, setIsInitializingML] = useState(false);
 
-  // Fetch crypto news from all coins in parallel
+  // Fetch general crypto news (not specific to any coin)
   const fetchAllCryptoNews = useCallback(async () => {
     setIsLoadingNews(true);
     setNewsError(null);
+    const startTime = Date.now();
+    setLoadingStartTime(startTime);
+    setIsInitializingML(false);
+    
+    // Show ML initialization message after 30 seconds
+    const mlInitTimeout = setTimeout(() => {
+      setIsInitializingML(true);
+    }, 30000);
+    
     try {
-      const newsPromises = POPULAR_COINS.map(async (symbol) => {
-        try {
-          const data = await getCryptoNews(symbol, 10);
-          return data.news_items.map((item) => enhanceNewsWithAI(item, data.symbol));
-        } catch (error) {
-          console.error(`Failed to fetch news for ${symbol}:`, error);
-          return [];
-        }
-      });
-
-      const allResults = await Promise.all(newsPromises);
-      const combinedNews = allResults.flat();
+      console.log("Fetching general crypto news...");
+      // Fetch general crypto news - single request, no multiple coin requests
+      // Timeout is now 10 minutes to allow for FinBERT initialization
+      const data = await getGeneralCryptoNews(30); // Get more news items for general feed
       
-      const sortedNews = combinedNews.sort((a, b) => {
+      clearTimeout(mlInitTimeout);
+      setIsInitializingML(false);
+      
+      // Enhance news with AI insights
+      // Extract coin symbol from news title/description if possible, otherwise use "CRYPTO"
+      const enhancedNews = data.news_items.map((item) => {
+        // Try to detect coin symbol from title/description
+        let detectedSymbol = "CRYPTO";
+        const text = `${item.title} ${item.description}`.toUpperCase();
+        for (const coin of POPULAR_COINS) {
+          if (text.includes(coin) || text.includes(coin.toLowerCase())) {
+            detectedSymbol = coin;
+            break;
+          }
+        }
+        return enhanceNewsWithAI(item, detectedSymbol);
+      });
+      
+      // Sort by date (most recent first)
+      const sortedNews = enhancedNews.sort((a, b) => {
         const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
         const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
         return dateB - dateA;
       });
 
       setAllNewsItems(sortedNews);
+      
+      if (sortedNews.length === 0) {
+        setNewsError("No news available. The backend may still be initializing ML models. Please refresh in a moment.");
+      } else {
+        console.log(`✅ Loaded ${sortedNews.length} general crypto news items`);
+      }
     } catch (error: any) {
-      console.error("Failed to fetch crypto news:", error);
-      setNewsError(error.message || "Failed to load news");
+      clearTimeout(mlInitTimeout);
+      setIsInitializingML(false);
+      console.error("Failed to fetch general crypto news:", error);
+      
+      // Provide helpful error message
+      const elapsed = Math.round((Date.now() - startTime) / 1000 / 60);
+      if (error.message?.includes('timeout') || error.message?.includes('FinBERT')) {
+        setNewsError(
+          `FinBERT model is still initializing (${elapsed} minute${elapsed !== 1 ? 's' : ''} elapsed). ` +
+          `This is a one-time process that downloads ~438MB from Hugging Face. ` +
+          `Please wait a few more minutes and refresh the page. The model will be cached after the first download.`
+        );
+      } else {
+        setNewsError(error.message || "Failed to load news. The backend may be initializing ML models.");
+      }
     } finally {
       setIsLoadingNews(false);
+      setLoadingStartTime(null);
     }
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
-  // Fetch coin logos from CoinGecko API with fallback to direct CDN URLs
+  // Fetch coin logos from CoinGecko CDN (no API calls needed)
   const fetchCoinLogos = useCallback(async () => {
-    // CoinGecko image CDN URLs (direct access, no API needed)
+    // CoinGecko image CDN URLs (direct access, no API needed, no rate limits)
     // Format: https://assets.coingecko.com/coins/images/{id}/large/{coin_id}.png
     const COINGECKO_IMAGE_CDN = "https://assets.coingecko.com/coins/images";
     
-    // Known CoinGecko image IDs for popular coins (these are stable)
+    // Known CoinGecko image IDs for popular coins (these are stable and don't change)
     const COIN_IMAGE_IDS: Record<string, number> = {
       BTC: 1,      // bitcoin
       ETH: 279,    // ethereum
@@ -444,7 +488,7 @@ export default function AIInsightsPage() {
 
     const logoMap: Record<string, string> = {};
     
-    // First, try to use direct CDN URLs (most reliable, no API calls)
+    // Use direct CDN URLs (no API calls, no rate limits, faster)
     POPULAR_COINS.forEach((symbol) => {
       const imageId = COIN_IMAGE_IDS[symbol];
       const coinId = SYMBOL_TO_COINGECKO_ID[symbol];
@@ -453,74 +497,20 @@ export default function AIInsightsPage() {
       }
     });
     
-    // Then try to fetch from API to get the most up-to-date image URLs
-    try {
-      const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
-      const COINGECKO_API_KEY = process.env.NEXT_PUBLIC_COINGECKO_API_KEY || "";
-      
-      const headers: HeadersInit = {
-        "Content-Type": "application/json",
-      };
-      
-      const hasApiKey = COINGECKO_API_KEY && 
-                        COINGECKO_API_KEY !== "x-cg-demo-api-key" && 
-                        COINGECKO_API_KEY !== "x-cg-pro-api-key" &&
-                        COINGECKO_API_KEY.length > 10;
-      
-      if (hasApiKey) {
-        headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
-      }
-
-      // Fetch all coins at once using markets endpoint
-      const coinIds = POPULAR_COINS.map(symbol => SYMBOL_TO_COINGECKO_ID[symbol]).filter(Boolean).join(",");
-      const marketsUrl = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&ids=${coinIds}&order=market_cap_desc&per_page=100&page=1&sparkline=false`;
-      
-      try {
-        const marketsResponse = await fetch(marketsUrl, {
-          method: "GET",
-          headers,
-          cache: "default",
-        });
-        
-        if (marketsResponse.ok) {
-          const marketsData = await marketsResponse.json();
-          
-          // Create reverse mapping from coin ID to symbol
-          const coinIdToSymbol: Record<string, string> = {};
-          Object.entries(SYMBOL_TO_COINGECKO_ID).forEach(([symbol, coinId]) => {
-            coinIdToSymbol[coinId.toLowerCase()] = symbol;
-          });
-          
-          // Extract image URLs from markets data and update logoMap
-          marketsData.forEach((coin: any) => {
-            const symbol = coinIdToSymbol[coin.id?.toLowerCase()];
-            if (symbol && coin.image) {
-              logoMap[symbol] = coin.image; // Override CDN URL with API URL if available
-            }
-          });
-        }
-      } catch (apiError) {
-        // API failed, but we already have CDN URLs as fallback
-        console.warn("CoinGecko API unavailable, using CDN URLs:", apiError);
-      }
-    } catch (error) {
-      // Even if everything fails, we have CDN URLs
-      console.warn("Error fetching logos, using CDN fallback:", error);
-    }
-    
-    // Set the logos (will have CDN URLs at minimum)
+    // Set the logos immediately (no async API call needed)
     if (Object.keys(logoMap).length > 0) {
       setCoinLogos(logoMap);
-      console.log("✅ Coin logos loaded:", Object.keys(logoMap));
-    } else {
-      console.warn("⚠️ No coin logos available");
+      if (process.env.NODE_ENV === "development") {
+        console.log("✅ Coin logos loaded from CDN:", Object.keys(logoMap));
+      }
     }
   }, []);
 
   useEffect(() => {
     fetchAllCryptoNews();
     fetchCoinLogos();
-  }, [fetchAllCryptoNews, fetchCoinLogos]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   // Filter and sort news
   const filteredAndSortedNews = useMemo(() => {
@@ -650,8 +640,26 @@ export default function AIInsightsPage() {
       {/* News Items */}
       <div className="space-y-4">
         {isLoadingNews ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+            {isInitializingML && (
+              <div className="text-center max-w-md">
+                <p className="text-sm text-slate-300 mb-2">
+                  Initializing FinBERT ML Model
+                </p>
+                <p className="text-xs text-slate-400">
+                  Downloading ~438MB model from Hugging Face. This is a one-time process that takes 5-10 minutes depending on your internet speed. The model will be cached after download.
+                </p>
+                {loadingStartTime && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    Elapsed: {Math.round((Date.now() - loadingStartTime) / 1000 / 60)} minute{Math.round((Date.now() - loadingStartTime) / 1000 / 60) !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+            )}
+            {!isInitializingML && (
+              <p className="text-sm text-slate-400">Loading news...</p>
+            )}
           </div>
         ) : newsError ? (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">

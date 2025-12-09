@@ -5,6 +5,7 @@ type RequestParams<T> = {
   method?: HttpMethod;
   body?: T;
   credentials?: RequestCredentials;
+  timeout?: number; // Timeout in milliseconds (default: 30000 for regular requests, 180000 for ML operations)
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -27,6 +28,7 @@ export async function apiRequest<TRequest, TResponse = unknown>({
   method = "GET",
   body,
   credentials = "include", // Include cookies in requests
+  timeout, // Optional timeout override
 }: RequestParams<TRequest>): Promise<TResponse> {
   if (process.env.NODE_ENV === "development") {
     console.info(`[API] ${method} ${path}`);
@@ -41,73 +43,125 @@ export async function apiRequest<TRequest, TResponse = unknown>({
     headers["x-device-id"] = getDeviceId();
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-    credentials, // Include cookies (access_token, refresh_token)
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    let errorMessage = `API error: ${response.status} ${response.statusText}`;
-    
-    try {
-      const errorData = await response.json();
-      // Handle NestJS error formats
-      if (typeof errorData === 'string') {
-        errorMessage = errorData;
-      } else if (Array.isArray(errorData.message)) {
-        errorMessage = errorData.message.join(', ');
-      } else if (errorData.message) {
-        // Handle nested error objects
-        if (typeof errorData.message === 'object' && errorData.message.message) {
-          errorMessage = errorData.message.message;
-        } else {
-          errorMessage = errorData.message;
-        }
-      } else if (errorData.error?.message) {
-        errorMessage = errorData.error.message;
-      } else if (errorData.detail) {
-        errorMessage = errorData.detail;
-      }
-      
-      // For 401 errors, include more context
-      if (response.status === 401) {
-        errorMessage = `Unauthorized: ${errorMessage}. Please ensure you are logged in and your session is valid.`;
-      }
-    } catch {
-      // If JSON parsing fails, use status text
-      if (response.status === 401) {
-        errorMessage = "Unauthorized: Authentication failed. Please log in again.";
-      }
+  // Determine timeout: use provided timeout, or detect ML operations (news/sentiment), or default to 30s
+  let requestTimeout = timeout;
+  if (!requestTimeout) {
+    // Increase timeout for ML-heavy operations (news, sentiment analysis)
+    // FinBERT initialization on first use requires:
+    // - Downloading 438MB model from Hugging Face (2-5 minutes depending on internet speed)
+    // - Loading model into memory (30-60 seconds)
+    // Total can take 5-10 minutes on first use
+    if (path.includes('/news/') || path.includes('/sentiment')) {
+      requestTimeout = 600000; // 10 minutes for ML operations (allows time for model download + init)
+    } else {
+      requestTimeout = 30000; // 30 seconds for regular API requests
     }
-    
-    // Handle 401 errors globally - redirect to login if not already on auth pages
-    if (response.status === 401 && typeof window !== "undefined") {
-      const currentPath = window.location.pathname;
-      const isAuthPage = currentPath.includes("/onboarding") || currentPath === "/";
-      
-      // Only redirect if not already on auth pages
-      if (!isAuthPage) {
-        // Clear any stored auth data
-        localStorage.removeItem("quantivahq_pending_email");
-        sessionStorage.clear();
-        
-        // Redirect to login
-        window.location.href = "/onboarding/sign-up?tab=login";
-        // Return early to prevent throwing error (redirect is happening)
-        throw new Error("Session expired. Redirecting to login...");
-      }
-    }
-    
-    const error = new Error(errorMessage) as any;
-    error.status = response.status;
-    error.statusCode = response.status;
-    throw error;
   }
 
-  return (await response.json()) as TResponse;
+  // Create AbortController for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials, // Include cookies (access_token, refresh_token)
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      let errorMessage = `API error: ${response.status} ${response.statusText}`;
+      
+      try {
+        const errorData = await response.json();
+        // Handle NestJS error formats
+        if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (Array.isArray(errorData.message)) {
+          errorMessage = errorData.message.join(', ');
+        } else if (errorData.message) {
+          // Handle nested error objects
+          if (typeof errorData.message === 'object' && errorData.message.message) {
+            errorMessage = errorData.message.message;
+          } else {
+            errorMessage = errorData.message;
+          }
+        } else if (errorData.error?.message) {
+          errorMessage = errorData.error.message;
+        } else if (errorData.detail) {
+          errorMessage = errorData.detail;
+        }
+        
+        // For 401 errors, include more context
+        if (response.status === 401) {
+          errorMessage = `Unauthorized: ${errorMessage}. Please ensure you are logged in and your session is valid.`;
+        }
+      } catch {
+        // If JSON parsing fails, use status text
+        if (response.status === 401) {
+          errorMessage = "Unauthorized: Authentication failed. Please log in again.";
+        }
+      }
+      
+      // Handle 401 errors globally - redirect to login if not already on auth pages
+      if (response.status === 401 && typeof window !== "undefined") {
+        const currentPath = window.location.pathname;
+        const isAuthPage = currentPath.includes("/onboarding") || currentPath === "/";
+        
+        // Only redirect if not already on auth pages
+        if (!isAuthPage) {
+          // Clear any stored auth data
+          localStorage.removeItem("quantivahq_pending_email");
+          sessionStorage.clear();
+          
+          // Redirect to login
+          window.location.href = "/onboarding/sign-up?tab=login";
+          // Return early to prevent throwing error (redirect is happening)
+          throw new Error("Session expired. Redirecting to login...");
+        }
+      }
+      
+      const error = new Error(errorMessage) as any;
+      error.status = response.status;
+      error.statusCode = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as TResponse;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    
+    // Handle timeout/abort errors
+    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+      const timeoutSeconds = Math.round(requestTimeout / 1000);
+      const timeoutMinutes = Math.round(timeoutSeconds / 60);
+      const isMLOperation = path.includes('/news/') || path.includes('/sentiment');
+      let errorMessage = `Request timeout after ${timeoutMinutes} minute${timeoutMinutes > 1 ? 's' : ''}. `;
+      
+      if (isMLOperation) {
+        errorMessage += 'The FinBERT ML model is still initializing. This is a one-time process that downloads ~438MB and can take 5-10 minutes depending on your internet speed. Please wait a moment and refresh the page. The model will be cached after the first download.';
+      } else {
+        errorMessage += 'The operation is taking longer than expected. Please try again.';
+      }
+      
+      throw new Error(errorMessage);
+    }
+    
+    // Re-throw other errors (preserve status if it exists)
+    if (error.status || error.statusCode) {
+      const preservedError = new Error(error.message || 'API request failed') as any;
+      preservedError.status = error.status || error.statusCode;
+      preservedError.statusCode = error.status || error.statusCode;
+      throw preservedError;
+    }
+    
+    throw error;
+  }
 }
 
 type UploadParams = {

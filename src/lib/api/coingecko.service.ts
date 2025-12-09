@@ -55,19 +55,33 @@ export async function getTopCoins(limit: number = 5): Promise<CoinGeckoCoin[]> {
   // Use API proxy to avoid CORS issues
   if (USE_PROXY) {
     try {
-      const proxyUrl = `/api/coingecko?endpoint=markets&limit=${limit}`;
-      const response = await fetch(proxyUrl, {
-        method: "GET",
-        cache: "no-store",
-      });
+      const proxyUrl = `/api/coingecko?endpoint=coins/markets&vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=false&price_change_percentage=24h`;
+      // Create AbortController for timeout (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      try {
+        const response = await fetch(proxyUrl, {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data as CoinGeckoCoin[];
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+          throw new Error('CoinGecko API request timed out. Please try again.');
+        }
+        throw fetchError;
       }
-      
-      const data = await response.json();
-      return data as CoinGeckoCoin[];
     } catch (error: any) {
       console.error("CoinGecko API proxy failed, trying direct fetch:", error);
       // Fall through to direct fetch
@@ -198,19 +212,33 @@ export async function getTop500Coins(): Promise<CoinGeckoCoin[]> {
   // Use API proxy to avoid CORS issues
   if (USE_PROXY) {
     try {
-      const proxyUrl = `/api/coingecko?endpoint=markets&limit=500`;
-      const response = await fetch(proxyUrl, {
-        method: "GET",
-        cache: "no-store",
-      });
+      const proxyUrl = `/api/coingecko?endpoint=coins/markets&vs_currency=usd&order=market_cap_desc&per_page=500&page=1&sparkline=false&price_change_percentage=24h`;
+      // Create AbortController for timeout (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      try {
+        const response = await fetch(proxyUrl, {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        return data as CoinGeckoCoin[];
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError' || fetchError.message?.includes('timeout')) {
+          throw new Error('CoinGecko API request timed out. Please try again.');
+        }
+        throw fetchError;
       }
-      
-      const data = await response.json();
-      return data as CoinGeckoCoin[];
     } catch (error: any) {
       console.error("CoinGecko API proxy failed, trying direct fetch:", error);
       // Fall through to direct fetch
