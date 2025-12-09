@@ -493,7 +493,7 @@ export function TopBar() {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
-    <header className="sticky top-0 z-50 flex h-24 items-center justify-between gap-8 border-b border-[#fc4f02]/30 bg-[--color-surface-alt]/80 px-8 backdrop-blur">
+    <header className="sticky top-0 z-50 flex h-24 items-center justify-between gap-8 border-b border-[#fc4f02]/30 bg-[--color-surface-alt] px-8">
       <div className="flex items-center gap-3 relative">
         <h1 ref={headingRef} className="text-2xl font-bold text-white">{pageTitle}</h1>
         <DashboardSwitcher headingRef={headingRef} />
