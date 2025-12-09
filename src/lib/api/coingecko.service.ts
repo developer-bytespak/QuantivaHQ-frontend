@@ -52,274 +52,309 @@ export interface CoinGeckoCoin {
  * Fetch top N cryptocurrencies by market cap
  */
 export async function getTopCoins(limit: number = 5): Promise<CoinGeckoCoin[]> {
-  try {
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-
-    // Add API key header if available and valid (not the header name itself)
-    const hasApiKey = COINGECKO_API_KEY && 
-                      COINGECKO_API_KEY !== "x-cg-demo-api-key" && 
-                      COINGECKO_API_KEY !== "x-cg-pro-api-key" &&
-                      COINGECKO_API_KEY.length > 10;
-    
-    if (hasApiKey) {
-      // Use Pro API key header for paid accounts
-      headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
+  // Use API proxy to avoid CORS issues
+  if (USE_PROXY) {
+    try {
+      const proxyUrl = `/api/coingecko?endpoint=markets&limit=${limit}`;
+      const response = await fetch(proxyUrl, {
+        method: "GET",
+        cache: "no-store",
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data as CoinGeckoCoin[];
+    } catch (error: any) {
+      console.error("CoinGecko API proxy failed, trying direct fetch:", error);
+      // Fall through to direct fetch
     }
+  }
 
-    let url: string;
-    let requestHeaders = headers;
+  // Direct fetch attempts (if proxy failed or not using proxy)
+  const hasApiKey = !!COINGECKO_API_KEY;
+  let url: string;
+  let requestHeaders: HeadersInit = {
+    "Content-Type": "application/json",
+  };
 
-    if (USE_PROXY) {
-      // Use backend proxy - API key is handled server-side
-      url = `${COINGECKO_API_URL}?endpoint=coins/markets&vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=false&price_change_percentage=24h`;
-      // Remove API key from headers when using proxy (it's handled server-side)
+  if (USE_PROXY) {
+    // Use backend proxy - API key is handled server-side
+    url = `${COINGECKO_API_URL}?endpoint=coins/markets&vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=false&price_change_percentage=24h`;
+  } else {
+    // Direct API call
+    url = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=false&price_change_percentage=24h`;
+    if (hasApiKey) {
       requestHeaders = {
+        ...requestHeaders,
+        "x-cg-pro-api-key": COINGECKO_API_KEY,
+      };
+    }
+  }
+
+  // Try multiple fetch strategies
+  const fetchStrategies = [
+    // First attempt: with current headers
+    async () => {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: requestHeaders,
+        cache: "no-store",
+      }).catch((fetchError) => {
+        // Handle network errors (CORS, connection issues, etc.)
+        console.error("Network error fetching from CoinGecko:", fetchError);
+        const errorMsg = fetchError.message || "Failed to connect to CoinGecko API";
+        
+        if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError")) {
+          throw new Error(`Network error: Unable to connect to CoinGecko API. ${USE_PROXY ? "Backend proxy may be unavailable." : "This could be due to CORS restrictions or network issues."}`);
+        }
+        
+        throw new Error(`Network error: ${errorMsg}`);
+      });
+
+      if (!response.ok) {
+        // Get error details from response body
+        let errorMessage = `CoinGecko API error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message) {
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          }
+        } catch {
+          // If we can't parse error, use default message
+        }
+        
+        // If using proxy and got an error, provide helpful message
+        if (USE_PROXY && response.status === 500) {
+          errorMessage = "Backend proxy error. Please ensure COINGECKO_API_KEY is set in your server environment variables (.env.local file).";
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      return await response.json();
+    },
+    
+    // Second attempt: with demo API key header (if we have an API key and not using proxy)
+    ...(hasApiKey && !USE_PROXY ? [async () => {
+      const demoHeaders: HeadersInit = {
+        "Content-Type": "application/json",
+        "x-cg-demo-api-key": COINGECKO_API_KEY,
+      };
+      const response = await fetch(url, {
+        method: "GET",
+        headers: demoHeaders,
+        cache: "no-store",
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }] : []),
+    
+    // Third attempt: without API key (free tier, only if not using proxy)
+    ...(!USE_PROXY ? [async () => {
+      const freeHeaders: HeadersInit = {
         "Content-Type": "application/json",
       };
-    } else {
-      // Direct API call
-      url = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=false&price_change_percentage=24h`;
+      const response = await fetch(url, {
+        method: "GET",
+        headers: freeHeaders,
+        cache: "no-store",
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }] : []),
+  ];
+
+  // Try each strategy in sequence
+  for (const strategy of fetchStrategies) {
+    try {
+      const data = await strategy();
+      return data as CoinGeckoCoin[];
+    } catch (error: any) {
+      // If this is the last strategy, throw the error
+      if (fetchStrategies.indexOf(strategy) === fetchStrategies.length - 1) {
+        throw error;
+      }
+      // Otherwise, continue to next strategy
+      console.warn("Fetch strategy failed, trying next:", error.message);
     }
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: requestHeaders,
-      cache: "no-store",
-    }).catch((fetchError) => {
-      // Handle network errors (CORS, connection issues, etc.)
-      console.error("Network error fetching from CoinGecko:", fetchError);
-      const errorMsg = fetchError.message || "Failed to connect to CoinGecko API";
-      
-      if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError")) {
-        throw new Error(`Network error: Unable to connect to CoinGecko API. ${USE_PROXY ? "Backend proxy may be unavailable." : "This could be due to CORS restrictions or network issues."}`);
-      }
-      
-      throw new Error(`Network error: ${errorMsg}`);
-    });
-
-    if (!response.ok) {
-      // Get error details from response body
-      let errorMessage = `CoinGecko API error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.error || errorData.message) {
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        }
-      } catch {
-        // If we can't parse error, use default message
-      }
-
-      // If using proxy and got an error, provide helpful message
-      if (USE_PROXY && response.status === 500) {
-        errorMessage = "Backend proxy error. Please ensure COINGECKO_API_KEY is set in your server environment variables (.env.local file).";
-      }
-
-      // If 400 or 401 and we have an API key (and not using proxy), try fallback approaches
-      if (!USE_PROXY && (response.status === 400 || response.status === 401) && hasApiKey) {
-        // Try with demo API key header (in case it's actually a demo key)
-        console.warn("CoinGecko Pro API key failed, trying demo API key format...");
-        const demoHeaders: HeadersInit = {
-          "Content-Type": "application/json",
-          "x-cg-demo-api-key": COINGECKO_API_KEY,
-        };
-        
-        const demoResponse = await fetch(url, {
-          method: "GET",
-          headers: demoHeaders,
-          cache: "no-store",
-        });
-        
-        if (demoResponse.ok) {
-          const data = await demoResponse.json();
-          return data as CoinGeckoCoin[];
-        }
-        
-        // If demo key also fails, try without API key (fallback to free tier)
-        console.warn("CoinGecko API key authentication failed, trying without API key (free tier)...");
-        const retryResponse = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          cache: "no-store",
-        });
-        
-        if (!retryResponse.ok) {
-          let retryError = `CoinGecko API error: ${retryResponse.status} ${retryResponse.statusText}`;
-          try {
-            const retryErrorData = await retryResponse.json();
-            if (retryErrorData.error || retryErrorData.message) {
-              retryError += ` - ${retryErrorData.error || retryErrorData.message}`;
-            }
-          } catch {
-            // If we can't parse error, use default message
-          }
-          throw new Error(retryError);
-        }
-        
-        const data = await retryResponse.json();
-        return data as CoinGeckoCoin[];
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-    return data as CoinGeckoCoin[];
-  } catch (error) {
-    console.error("Failed to fetch top coins from CoinGecko:", error);
-    throw error;
   }
+
+  // This should never be reached, but TypeScript needs it
+  throw new Error("All fetch strategies failed");
 }
 
 /**
  * Fetch top 500 cryptocurrencies by market cap
  */
 export async function getTop500Coins(): Promise<CoinGeckoCoin[]> {
-  try {
-    const headers: HeadersInit = {
-      "Content-Type": "application/json",
-    };
-
-    // Add API key header if available and valid (not the header name itself)
-    const hasApiKey = COINGECKO_API_KEY && 
-                      COINGECKO_API_KEY !== "x-cg-demo-api-key" && 
-                      COINGECKO_API_KEY !== "x-cg-pro-api-key" &&
-                      COINGECKO_API_KEY.length > 10;
-    
-    if (hasApiKey) {
-      // Use Pro API key header for paid accounts
-      headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
-    }
-
-    let url: string;
-    let requestHeaders = headers;
-
-    if (USE_PROXY) {
-      // Use backend proxy - API key is handled server-side
-      url = `${COINGECKO_API_URL}?endpoint=coins/markets&vs_currency=usd&order=market_cap_desc&per_page=500&page=1&sparkline=false&price_change_percentage=24h`;
-      // Remove API key from headers when using proxy (it's handled server-side)
-      requestHeaders = {
-        "Content-Type": "application/json",
-      };
-    } else {
-      // Direct API call
-      url = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=500&page=1&sparkline=false&price_change_percentage=24h`;
-    }
-
-    // Log request details in development
-    if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
-      console.log("CoinGecko API Request:", {
-        url,
-        useProxy: USE_PROXY,
-        hasApiKey: hasApiKey && !USE_PROXY,
-        headers: Object.keys(requestHeaders),
+  // Use API proxy to avoid CORS issues
+  if (USE_PROXY) {
+    try {
+      const proxyUrl = `/api/coingecko?endpoint=markets&limit=500`;
+      const response = await fetch(proxyUrl, {
+        method: "GET",
+        cache: "no-store",
       });
-    }
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: requestHeaders,
-      cache: "no-store",
-    }).catch((fetchError) => {
-      // Handle network errors (CORS, connection issues, etc.)
-      console.error("Network error fetching from CoinGecko:", fetchError);
-      const errorMsg = fetchError.message || "Failed to connect to CoinGecko API";
       
-      // Provide more specific error messages
-      if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError")) {
-        throw new Error(`Network error: Unable to connect to CoinGecko API. This could be due to:
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      return data as CoinGeckoCoin[];
+    } catch (error: any) {
+      console.error("CoinGecko API proxy failed, trying direct fetch:", error);
+      // Fall through to direct fetch
+    }
+  }
+
+  // Direct fetch attempts (if proxy failed or not using proxy)
+  const hasApiKey = !!COINGECKO_API_KEY;
+  let url: string;
+  let requestHeaders: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (USE_PROXY) {
+    // Use backend proxy - API key is handled server-side
+    url = `${COINGECKO_API_URL}?endpoint=coins/markets&vs_currency=usd&order=market_cap_desc&per_page=500&page=1&sparkline=false&price_change_percentage=24h`;
+  } else {
+    // Direct API call
+    url = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=500&page=1&sparkline=false&price_change_percentage=24h`;
+    if (hasApiKey) {
+      requestHeaders = {
+        ...requestHeaders,
+        "x-cg-pro-api-key": COINGECKO_API_KEY,
+      };
+    }
+  }
+
+  // Log request details in development
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+    console.log("CoinGecko API Request:", {
+      url,
+      useProxy: USE_PROXY,
+      hasApiKey: hasApiKey && !USE_PROXY,
+      headers: Object.keys(requestHeaders),
+    });
+  }
+
+  // Try multiple fetch strategies
+  const fetchStrategies = [
+    // First attempt: with current headers
+    async () => {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: requestHeaders,
+        cache: "no-store",
+      }).catch((fetchError) => {
+        // Handle network errors (CORS, connection issues, etc.)
+        console.error("Network error fetching from CoinGecko:", fetchError);
+        const errorMsg = fetchError.message || "Failed to connect to CoinGecko API";
+        
+        // Provide more specific error messages
+        if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError")) {
+          throw new Error(`Network error: Unable to connect to CoinGecko API. This could be due to:
 1. CORS restrictions (try using a backend proxy)
 2. Network connectivity issues
 3. Browser extension blocking the request
 4. API key not configured (check NEXT_PUBLIC_COINGECKO_API_KEY in .env.local)`);
-      }
-      
-      throw new Error(`Network error: ${errorMsg}`);
-    });
-
-    if (!response.ok) {
-      // Get error details from response body
-      let errorMessage = `CoinGecko API error: ${response.status} ${response.statusText}`;
-      try {
-        const errorData = await response.json();
-        if (errorData.error || errorData.message) {
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        }
-      } catch {
-        // If we can't parse error, use default message
-      }
-
-      // If using proxy and got an error, provide helpful message
-      if (USE_PROXY && response.status === 500) {
-        errorMessage = "Backend proxy error. Please ensure COINGECKO_API_KEY is set in your server environment variables (.env.local file).";
-      }
-
-      // If 400 or 401 and we have an API key (and not using proxy), try fallback approaches
-      if (!USE_PROXY && (response.status === 400 || response.status === 401) && hasApiKey) {
-        // Try with demo API key header (in case it's actually a demo key)
-        console.warn("CoinGecko Pro API key failed, trying demo API key format...");
-        const demoHeaders: HeadersInit = {
-          "Content-Type": "application/json",
-          "x-cg-demo-api-key": COINGECKO_API_KEY,
-        };
-        
-        const demoResponse = await fetch(url, {
-          method: "GET",
-          headers: demoHeaders,
-          cache: "no-store",
-        });
-        
-        if (demoResponse.ok) {
-          const data = await demoResponse.json();
-          return data as CoinGeckoCoin[];
         }
         
-        // If demo key also fails, try without API key (fallback to free tier)
-        console.warn("CoinGecko API key authentication failed, trying without API key (free tier)...");
-        const retryResponse = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          cache: "no-store",
-        });
-        
-        if (!retryResponse.ok) {
-          let retryError = `CoinGecko API error: ${retryResponse.status} ${retryResponse.statusText}`;
-          try {
-            const retryErrorData = await retryResponse.json();
-            if (retryErrorData.error || retryErrorData.message) {
-              retryError += ` - ${retryErrorData.error || retryErrorData.message}`;
-            }
-          } catch {
-            // If we can't parse error, use default message
+        throw new Error(`Network error: ${errorMsg}`);
+      });
+
+      if (!response.ok) {
+        // Get error details from response body
+        let errorMessage = `CoinGecko API error: ${response.status} ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error || errorData.message) {
+            errorMessage = errorData.error || errorData.message || errorMessage;
           }
-          throw new Error(retryError);
+        } catch {
+          // If we can't parse error, use default message
         }
         
-        const data = await retryResponse.json();
-        return data as CoinGeckoCoin[];
+        // If using proxy and got an error, provide helpful message
+        if (USE_PROXY && response.status === 500) {
+          errorMessage = "Backend proxy error. Please ensure COINGECKO_API_KEY is set in your server environment variables (.env.local file).";
+        }
+        
+        throw new Error(errorMessage);
       }
       
-      throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-    return data as CoinGeckoCoin[];
-  } catch (error: any) {
-    console.error("Failed to fetch top 500 coins from CoinGecko:", error);
-    // Provide more helpful error messages
-    if (error.message?.includes("Network error") || error.message?.includes("Failed to fetch")) {
-      if (USE_PROXY) {
-        throw new Error("Unable to connect to CoinGecko API via backend proxy. Please ensure COINGECKO_API_KEY is set in your .env.local file and restart the development server.");
+      return await response.json();
+    },
+    
+    // Second attempt: with demo API key header (if we have an API key and not using proxy)
+    ...(hasApiKey && !USE_PROXY ? [async () => {
+      const demoHeaders: HeadersInit = {
+        "Content-Type": "application/json",
+        "x-cg-demo-api-key": COINGECKO_API_KEY,
+      };
+      const response = await fetch(url, {
+        method: "GET",
+        headers: demoHeaders,
+        cache: "no-store",
+      });
+      if (response.ok) {
+        return await response.json();
       }
-      throw new Error("Unable to connect to CoinGecko API. This may be due to network issues, CORS restrictions, or API rate limits. Please try again later.");
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }] : []),
+    
+    // Third attempt: without API key (free tier, only if not using proxy)
+    ...(!USE_PROXY ? [async () => {
+      const freeHeaders: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+      const response = await fetch(url, {
+        method: "GET",
+        headers: freeHeaders,
+        cache: "no-store",
+      });
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }] : []),
+  ];
+
+  // Try each strategy in sequence
+  for (const strategy of fetchStrategies) {
+    try {
+      const data = await strategy();
+      return data as CoinGeckoCoin[];
+    } catch (error: any) {
+      // If this is the last strategy, throw the error
+      if (fetchStrategies.indexOf(strategy) === fetchStrategies.length - 1) {
+        console.error("Failed to fetch top 500 coins from CoinGecko:", error);
+        // Provide more helpful error messages
+        if (error.message?.includes("Network error") || error.message?.includes("Failed to fetch")) {
+          if (USE_PROXY) {
+            throw new Error("Unable to connect to CoinGecko API via backend proxy. Please ensure COINGECKO_API_KEY is set in your .env.local file and restart the development server.");
+          }
+          throw new Error("Unable to connect to CoinGecko API. This may be due to network issues, CORS restrictions, or API rate limits. Please try again later.");
+        }
+        throw error;
+      }
+      // Otherwise, continue to next strategy
+      console.warn("Fetch strategy failed, trying next:", error.message);
     }
-    throw error;
   }
+
+  // This should never be reached, but TypeScript needs it
+  throw new Error("All fetch strategies failed");
 }
 
 /**
@@ -474,4 +509,6 @@ export async function getCoinDetails(coinIdOrSymbol: string): Promise<any> {
     console.error("Failed to fetch coin details from CoinGecko:", error);
     throw error;
   }
+
+  throw new Error("All CoinGecko API fetch attempts failed");
 }

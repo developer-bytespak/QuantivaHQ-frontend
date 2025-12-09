@@ -331,7 +331,7 @@ export default function HoldingsPage() {
 
         <div className="flex gap-3">
           {/* Grouping Toggle */}
-          <div className="flex gap-1 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-1">
+          <div className="flex gap-1 rounded-lg  bg-[--color-surface]/60 p-1">
             <button
               onClick={() => setGrouping("None")}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
@@ -355,7 +355,7 @@ export default function HoldingsPage() {
           </div>
 
           {/* Filter */}
-          <div className="flex gap-1 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-1">
+          <div className="flex gap-1 rounded-lg  bg-[--color-surface]/60 p-1">
             <button
               onClick={() => setFilter("All")}
               className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
@@ -410,7 +410,7 @@ export default function HoldingsPage() {
                       setSelectedHolding(holding);
                       setShowOverlay(true);
                     }}
-                    className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:border-[#fc4f02]/30 hover:shadow-2xl hover:shadow-[#fc4f02]/10"
+                    className="group relative rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] cursor-pointer transition-all duration-300 hover:scale-[1.02] "
                   >
                     <div className="flex flex-col h-full justify-between">
                       {/* Header Section */}
@@ -439,7 +439,8 @@ export default function HoldingsPage() {
                       </div>
                       
                       {/* Metrics Grid */}
-                      <div className="grid grid-cols-2 gap-4 pt-6 border-t border-[--color-border]/50">
+                      <div className="relative grid grid-cols-2 gap-4 pt-6">
+                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
                         <div className="space-y-1.5">
                           <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Quantity</p>
                           <p className="text-xl font-bold text-white">{holding.quantity}</p>
@@ -463,7 +464,8 @@ export default function HoldingsPage() {
                       </div>
 
                       {/* Progress Indicator */}
-                      <div className="mt-6 pt-4 border-t border-[--color-border]/50">
+                      <div className="relative mt-6 pt-4">
+                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium text-slate-400">Performance</span>
                           <span className="text-xs font-bold text-green-400">+{holding.plPercent.toFixed(2)}%</span>
@@ -477,8 +479,6 @@ export default function HoldingsPage() {
                       </div>
                     </div>
 
-                    {/* Hover Effect Border */}
-                    <div className="absolute inset-0 rounded-2xl border-2 border-[#fc4f02]/0 group-hover:border-[#fc4f02]/20 transition-all duration-300 pointer-events-none" />
                   </div>
                 ))}
               </div>
@@ -495,7 +495,7 @@ export default function HoldingsPage() {
               setSelectedHolding(holding);
               setShowOverlay(true);
             }}
-            className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:border-[#fc4f02]/30 hover:shadow-2xl hover:shadow-[#fc4f02]/10"
+            className="group relative rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] cursor-pointer transition-all duration-300 hover:scale-[1.02] "
           >
             <div className="flex flex-col h-full justify-between">
               {/* Header Section */}
@@ -524,7 +524,8 @@ export default function HoldingsPage() {
               </div>
               
               {/* Metrics Grid */}
-              <div className="grid grid-cols-2 gap-4 pt-6 border-t border-[--color-border]/50">
+              <div className="relative grid grid-cols-2 gap-4 pt-6">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
                 <div className="space-y-1.5">
                   <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Quantity</p>
                   <p className="text-xl font-bold text-white">{holding.quantity}</p>
@@ -548,7 +549,8 @@ export default function HoldingsPage() {
               </div>
 
               {/* Progress Indicator */}
-              <div className="mt-6 pt-4 border-t border-[--color-border]/50">
+              <div className="relative mt-6 pt-4">
+                <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-slate-400">Performance</span>
                   <span className="text-xs font-bold text-green-400">+{holding.plPercent.toFixed(2)}%</span>
@@ -562,8 +564,6 @@ export default function HoldingsPage() {
               </div>
             </div>
 
-            {/* Hover Effect Border */}
-            <div className="absolute inset-0 rounded-2xl border-2 border-[#fc4f02]/0 group-hover:border-[#fc4f02]/20 transition-all duration-300 pointer-events-none" />
           </div>
         ))}
       </div>
@@ -572,7 +572,7 @@ export default function HoldingsPage() {
       {/* Dashboard Widgets */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Sector Allocation Pie Chart */}
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h3 className="mb-6 text-sm font-semibold text-white">Sector Allocation</h3>
           <div className="flex flex-col items-center">
             {/* Pie Chart */}
@@ -639,7 +639,7 @@ export default function HoldingsPage() {
         </div>
 
         {/* Top Holdings */}
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 pt-10 pb-10 pr-10 pl-6 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 pt-10 pb-10 pr-10 pl-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h3 className="mb-8 text-sm font-semibold text-white">Top Holdings</h3>
           <div className="space-y-3">
             {topHoldings.map((holding, index) => (
@@ -649,7 +649,7 @@ export default function HoldingsPage() {
               >
                 <div className="flex items-center gap-3 flex-1">
                   {/* Rank Badge */}
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 text-sm font-bold text-[#fc4f02] border border-[#fc4f02]/30 flex-shrink-0">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 text-sm font-bold text-[#fc4f02]  flex-shrink-0">
                     {index + 1}
                   </div>
                   {/* Symbol */}
@@ -678,7 +678,8 @@ export default function HoldingsPage() {
               </div>
             ))}
           </div>
-          <div className="mt-8 border-t border-[--color-border] pt-8">
+          <div className="relative mt-8 pt-8">
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-slate-300">Moderate Concentration</p>
               <div className="h-2 w-32 rounded-full bg-slate-800 overflow-hidden">
@@ -690,11 +691,11 @@ export default function HoldingsPage() {
         </div>
 
         {/* Performance Metrics */}
-        <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-8 backdrop-blur shadow-xl shadow-blue-900/10">
+        <div className="rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-8 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h3 className="mb-6 text-sm font-semibold text-white">Performance Metrics</h3>
           <div className="space-y-5">
             {/* Total Return */}
-            <div className="group rounded-lg border border-[--color-border]/50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-green-500/30 hover:bg-[--color-surface]/50">
+            <div className="group rounded-lg /50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-green-500/30 hover:bg-[--color-surface]/50">
               <div className="mb-2 flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/20">
                   <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -708,7 +709,7 @@ export default function HoldingsPage() {
             </div>
 
             {/* vs S&P 500 */}
-            <div className="group rounded-lg border border-[--color-border]/50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-green-500/30 hover:bg-[--color-surface]/50">
+            <div className="group rounded-lg /50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-green-500/30 hover:bg-[--color-surface]/50">
               <div className="mb-2 flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/20">
                   <svg className="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -722,7 +723,7 @@ export default function HoldingsPage() {
             </div>
 
             {/* Sharpe Ratio */}
-            <div className="group rounded-lg border border-[--color-border]/50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-blue-500/30 hover:bg-[--color-surface]/50">
+            <div className="group rounded-lg /50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-blue-500/30 hover:bg-[--color-surface]/50">
               <div className="mb-2 flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20">
                   <svg className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -735,7 +736,7 @@ export default function HoldingsPage() {
             </div>
 
             {/* Max Drawdown */}
-            <div className="group rounded-lg border border-[--color-border]/50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-red-500/30 hover:bg-[--color-surface]/50">
+            <div className="group rounded-lg /50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-red-500/30 hover:bg-[--color-surface]/50">
               <div className="mb-2 flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/20">
                   <svg className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -748,7 +749,7 @@ export default function HoldingsPage() {
             </div>
 
             {/* Win Rate */}
-            <div className="group rounded-lg border border-[--color-border]/50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-purple-500/30 hover:bg-[--color-surface]/50">
+            <div className="group rounded-lg /50 bg-[--color-surface]/30 p-4 transition-all duration-300 hover:border-purple-500/30 hover:bg-[--color-surface]/50">
               <div className="mb-2 flex items-center gap-2">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/20">
                   <svg className="h-4 w-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -776,7 +777,7 @@ export default function HoldingsPage() {
           onClick={() => setShowOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -810,26 +811,26 @@ export default function HoldingsPage() {
             <div className="space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl  bg-[--color-surface]/60 p-4">
                   <p className="text-xs text-slate-400">Quantity</p>
                   <p className="mt-1 text-xl font-bold text-white">{selectedHolding.quantity} shares</p>
                 </div>
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl  bg-[--color-surface]/60 p-4">
                   <p className="text-xs text-slate-400">Current Price</p>
                   <p className="mt-1 text-xl font-bold text-white">${selectedHolding.currentPrice.toFixed(2)}</p>
                 </div>
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl  bg-[--color-surface]/60 p-4">
                   <p className="text-xs text-slate-400">Average Cost</p>
                   <p className="mt-1 text-xl font-bold text-white">${selectedHolding.avgCost.toFixed(2)}</p>
                 </div>
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+                <div className="rounded-xl  bg-[--color-surface]/60 p-4">
                   <p className="text-xs text-slate-400">Market Value</p>
                   <p className="mt-1 text-xl font-bold text-white">${selectedHolding.marketValue.toLocaleString()}</p>
                 </div>
               </div>
 
               {/* Performance Metrics */}
-              <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="space-y-4 rounded-xl  bg-[--color-surface]/60 p-4">
                 <h3 className="text-sm font-semibold text-white">Performance</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -860,7 +861,7 @@ export default function HoldingsPage() {
                 <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
                   Buy More
                 </button>
-                <button className="flex-1 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]">
+                <button className="flex-1 rounded-xl  bg-[--color-surface] px-4 py-3 text-sm font-semibold text-white transition-all duration-300  hover:bg-[--color-surface-alt]">
                   Sell
                 </button>
               </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { authService } from "@/lib/auth/auth.service";
 
 interface Coin {
@@ -13,6 +14,7 @@ interface Coin {
   change: number;
   trend: "up" | "down";
   icon: string;
+  logoUrl?: string | null;
 }
 
 interface Stock {
@@ -47,6 +49,7 @@ export function ProfilePage() {
   const [investedValue, setInvestedValue] = useState<number>(1618.75);
   const [availableUSD, setAvailableUSD] = useState<number>(1589);
   const [portfolioChange, setPortfolioChange] = useState<number>(9.77);
+  const [coinLogos, setCoinLogos] = useState<Record<string, string>>({});
 
   // Mock data - replace with actual API calls
   const [coins, setCoins] = useState<Coin[]>([
@@ -165,38 +168,130 @@ export function ProfilePage() {
     loadUserData();
   }, [mounted]);
 
-  // Generate mini trend graph SVG
-  const TrendGraph = ({ trend, id }: { trend: "up" | "down"; id: string }) => {
-    const points = trend === "up"
-      ? "0,20 5,15 10,18 15,12 20,10 25,8 30,5"
-      : "0,5 5,8 10,10 15,12 20,15 25,18 30,20";
-    const color = trend === "up" ? "#10b981" : "#ef4444";
-    const fillPoints = trend === "up"
-      ? "0,20 5,15 10,18 15,12 20,10 25,8 30,5 30,20 0,20"
-      : "0,5 5,8 10,10 15,12 20,15 25,18 30,20 30,20 0,20";
-    const gradientId = `gradient-${trend}-${id}`;
+  // Fetch coin logos from CoinGecko API
+  useEffect(() => {
+    if (!mounted || coins.length === 0) return;
+
+    const fetchCoinLogos = async () => {
+      try {
+        const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
+        const COINGECKO_API_KEY = process.env.NEXT_PUBLIC_COINGECKO_API_KEY || "";
+        const COINGECKO_IMAGE_CDN = "https://assets.coingecko.com/coins/images";
+        
+        const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
+          BTC: "bitcoin",
+          ETH: "ethereum",
+          SOL: "solana",
+          XRP: "ripple",
+          BNB: "binancecoin",
+          ADA: "cardano",
+          DOGE: "dogecoin",
+          MATIC: "matic-network",
+          LINK: "chainlink",
+          AVAX: "avalanche-2",
+          TRX: "tron",
+          TRON: "tron",
+        };
+
+        const COIN_IMAGE_IDS: Record<string, number> = {
+          BTC: 1,
+          ETH: 279,
+          SOL: 4128,
+          XRP: 52,
+          BNB: 1839,
+          ADA: 2010,
+          DOGE: 5,
+          MATIC: 4713,
+          LINK: 1975,
+          AVAX: 12559,
+          TRX: 1958,
+          TRON: 1958,
+        };
+
+        const headers: HeadersInit = {
+          "Content-Type": "application/json",
+        };
+
+        const hasApiKey = COINGECKO_API_KEY && 
+                          COINGECKO_API_KEY !== "x-cg-demo-api-key" && 
+                          COINGECKO_API_KEY !== "x-cg-pro-api-key" &&
+                          COINGECKO_API_KEY.length > 10;
+
+        if (hasApiKey) {
+          headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
+        }
+
+        const logoMap: Record<string, string> = {};
+        
+        // Get unique coin symbols from coins array
+        const coinSymbols = [...new Set(coins.map(coin => coin.symbol.toUpperCase()))];
+        
+        // First, use CDN URLs as fallback
+        coinSymbols.forEach((symbol) => {
+          const imageId = COIN_IMAGE_IDS[symbol];
+          const coinId = SYMBOL_TO_COINGECKO_ID[symbol];
+          if (imageId && coinId) {
+            logoMap[symbol] = `${COINGECKO_IMAGE_CDN}/${imageId}/large/${coinId}.png`;
+          }
+        });
+
+        // Try to fetch from API
+        const coinIds = coinSymbols.map(symbol => SYMBOL_TO_COINGECKO_ID[symbol]).filter(Boolean).join(",");
+        if (coinIds) {
+          const marketsUrl = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&ids=${coinIds}&order=market_cap_desc&per_page=100&page=1&sparkline=false`;
+          
+          try {
+            const marketsResponse = await fetch(marketsUrl, {
+              method: "GET",
+              headers,
+              cache: "default",
+            });
+            
+            if (marketsResponse.ok) {
+              const marketsData = await marketsResponse.json();
+              const coinIdToSymbol: Record<string, string> = {};
+              Object.entries(SYMBOL_TO_COINGECKO_ID).forEach(([symbol, coinId]) => {
+                coinIdToSymbol[coinId.toLowerCase()] = symbol;
+              });
+              
+              marketsData.forEach((coin: any) => {
+                const symbol = coinIdToSymbol[coin.id?.toLowerCase()];
+                if (symbol && coin.image) {
+                  logoMap[symbol] = coin.image;
+                }
+              });
+            }
+          } catch (apiError) {
+            console.warn("CoinGecko API unavailable, using CDN URLs:", apiError);
+          }
+        }
+        
+        setCoinLogos(logoMap);
+      } catch (error) {
+        console.error("Failed to fetch coin logos:", error);
+      }
+    };
+
+    fetchCoinLogos();
+  }, [mounted, coins]);
+
+  // Trend Graph Component using PNG images
+  const TrendGraph = ({ trend }: { trend: "up" | "down" }) => {
+    const getImageSrc = () => {
+      return trend === "up" ? "/upper_trend.png" : "/downtrend.png";
+    };
 
     return (
-      <svg width="40" height="24" viewBox="0 0 30 20" className="flex-shrink-0">
-        <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <polygon
-          points={fillPoints}
-          fill={`url(#${gradientId})`}
+      <div className="relative w-48 h-16 flex-shrink-0">
+        <Image
+          src={getImageSrc()}
+          alt={`${trend} trend`}
+          width={192}
+          height={64}
+          className="object-contain w-full h-full"
+          unoptimized
         />
-        <polyline
-          points={points}
-          fill="none"
-          stroke={color}
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      </div>
     );
   };
 
@@ -220,10 +315,10 @@ export function ProfilePage() {
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
             <h2 className="text-xl font-bold text-white mb-6">Your Coins</h2>
           </div>
-          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+          <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
             <h2 className="text-xl font-bold text-white mb-6">Your Stocks</h2>
           </div>
         </div>
@@ -276,25 +371,38 @@ export function ProfilePage() {
       {/* Coins and Stocks Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Your Coins Section */}
-        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h2 className="text-xl font-bold text-white mb-6">Your Coins</h2>
           <div className="space-y-4">
             {coins.map((coin) => (
               <div
                 key={coin.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
-                    {coin.icon}
-                  </div>
+                  {coinLogos[coin.symbol.toUpperCase()] ? (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                      <Image
+                        src={coinLogos[coin.symbol.toUpperCase()]}
+                        alt={coin.name}
+                        width={48}
+                        height={48}
+                        className="object-cover w-full h-full"
+                        unoptimized
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
+                      {coin.icon}
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-base font-semibold text-white truncate">{coin.name}</p>
                     <p className="text-sm text-slate-400">{formatCryptoAmount(coin.amount)} {coin.symbol}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 ml-4">
-                  <TrendGraph trend={coin.trend} id={coin.id} />
+                  <TrendGraph trend={coin.trend} />
                   <div className="text-right">
                     <p className="text-base font-semibold text-white">${formatNumber(coin.value)}</p>
                     <p className={`text-sm font-medium ${coin.change >= 0 ? "text-green-400" : "text-red-400"}`}>
@@ -308,13 +416,13 @@ export function ProfilePage() {
         </div>
 
         {/* Your Stocks Section */}
-        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl border border-[#fc4f02]/30 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h2 className="text-xl font-bold text-white mb-6">Your Stocks</h2>
           <div className="space-y-4">
             {stocks.map((stock) => (
               <div
                 key={stock.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
               >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#1d4ed8]/20 to-[#3b82f6]/10 border border-[#1d4ed8]/20 flex items-center justify-center text-2xl flex-shrink-0 shadow-sm">
@@ -326,7 +434,7 @@ export function ProfilePage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-4 ml-4">
-                  <TrendGraph trend={stock.trend} id={stock.id} />
+                  <TrendGraph trend={stock.trend} />
                   <div className="text-right">
                     <p className="text-base font-semibold text-white">${formatNumber(stock.value)}</p>
                     <p className={`text-sm font-medium ${stock.change >= 0 ? "text-green-400" : "text-red-400"}`}>

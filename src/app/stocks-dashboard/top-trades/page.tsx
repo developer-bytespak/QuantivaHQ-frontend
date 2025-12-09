@@ -235,7 +235,7 @@ export default function StocksTopTradesPage() {
       {/* Performance Statistics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {performanceStats.map((stat, index) => (
-          <div key={index} className="rounded-xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-xl shadow-blue-900/10">
+          <div key={index} className="rounded-xl bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
             <p className="mb-1 text-xs text-slate-400">{stat.label}</p>
             <p className="mb-2 text-2xl font-bold text-white">{stat.value}</p>
             <div className="flex items-center gap-1">
@@ -259,7 +259,7 @@ export default function StocksTopTradesPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "profit" | "volume" | "winrate")}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
+              className="rounded-lg  bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
             >
               <option value="profit">Profit</option>
               <option value="volume">Volume</option>
@@ -273,7 +273,7 @@ export default function StocksTopTradesPage() {
             {filteredAndSortedTrades.map((trade, index) => (
               <div
                 key={trade.id}
-                className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-xl shadow-blue-900/10 cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                className="rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] cursor-pointer transition-all duration-300 hover:scale-[1.02]"
               >
                 <div className="space-y-4">
                   {/* Header */}
@@ -312,7 +312,8 @@ export default function StocksTopTradesPage() {
                   </div>
 
                   {/* Performance Metrics */}
-                  <div className="flex items-center gap-4 text-xs border-t border-[--color-border] pt-3">
+                  <div className="relative flex items-center gap-4 text-xs pt-3">
+                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
                     <div>
                       <span className="text-slate-400">Profit: </span>
                       <span className="font-medium text-green-400">{trade.profit}</span>
@@ -337,7 +338,7 @@ export default function StocksTopTradesPage() {
                         setSelectedTradeIndex(index);
                         setShowTradeOverlay(true);
                       }}
-                      className="rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
+                      className="rounded-xl  bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:border-[#fc4f02]/50 hover:text-white"
                     >
                       View Trade
                     </button>
@@ -347,7 +348,7 @@ export default function StocksTopTradesPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-8 text-center backdrop-blur shadow-xl shadow-blue-900/10">
+          <div className="rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
             <p className="text-sm text-slate-400">No trades found for the selected time period</p>
           </div>
         )}
@@ -360,7 +361,7 @@ export default function StocksTopTradesPage() {
           onClick={() => setShowTradeOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-2xl rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between">
@@ -390,7 +391,7 @@ export default function StocksTopTradesPage() {
                 <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
               </div>
 
-              <div className="space-y-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="space-y-4 rounded-xl  bg-[--color-surface]/60 p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-400">Entry</span>
                   <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].entryPrice}</span>
@@ -419,7 +420,7 @@ export default function StocksTopTradesPage() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-6 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="flex items-center gap-6 rounded-xl  bg-[--color-surface]/60 p-4">
                 <div>
                   <p className="text-xs text-slate-400">Profit</p>
                   <p className="text-lg font-semibold text-green-400">{filteredAndSortedTrades[selectedTradeIndex].profit}</p>
