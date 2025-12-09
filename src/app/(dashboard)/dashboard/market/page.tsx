@@ -38,7 +38,6 @@ export default function MarketPage() {
       }
     };
 
-  useEffect(() => {
     fetchCoins();
   }, []);
 
