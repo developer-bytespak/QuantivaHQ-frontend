@@ -83,23 +83,23 @@ export default function TradingDataTab({ connectionId, symbol }: TradingDataTabP
   return (
     <div className="space-y-6">
       {/* View Toggle */}
-      <div className="flex gap-2 border-b border-[--color-border]">
+      <div className="flex gap-2 rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent backdrop-blur p-1">
         <button
           onClick={() => setActiveView("orderbook")}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
             activeView === "orderbook"
-              ? "text-[#fc4f02] border-b-2 border-[#fc4f02]"
-              : "text-slate-400 hover:text-white"
+              ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
           Order Book
         </button>
         <button
           onClick={() => setActiveView("trades")}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
+          className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
             activeView === "trades"
-              ? "text-[#fc4f02] border-b-2 border-[#fc4f02]"
-              : "text-slate-400 hover:text-white"
+              ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+              : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
           Recent Trades
@@ -112,17 +112,17 @@ export default function TradingDataTab({ connectionId, symbol }: TradingDataTabP
           {orderBook ? (
             <>
               {/* Spread Info */}
-              <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+              <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-400">Spread</p>
-                    <p className="text-lg font-semibold text-white">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Spread</p>
+                    <p className="text-xl font-bold text-white">
                       ${(orderBook.spread || 0).toFixed(4)}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-slate-400">Spread %</p>
-                    <p className="text-lg font-semibold text-white">
+                  <div className="text-right space-y-1">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Spread %</p>
+                    <p className="text-xl font-bold text-white">
                       {((orderBook.spreadPercent || 0)).toFixed(4)}%
                     </p>
                   </div>
@@ -130,70 +130,88 @@ export default function TradingDataTab({ connectionId, symbol }: TradingDataTabP
               </div>
 
               {/* Order Book Table */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Asks (Sell Orders) */}
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-                  <h3 className="text-sm font-semibold text-red-400 mb-3">Asks (Sell)</h3>
+                <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10">
+                      <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </div>
+                    <h3 className="text-base font-bold text-red-400">Asks (Sell)</h3>
+                  </div>
                   <div className="space-y-1">
-                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-400 mb-2 pb-2 border-b border-[--color-border]">
+                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 pb-3 border-b border-white/10">
                       <div>Price</div>
                       <div className="text-right">Quantity</div>
                       <div className="text-right">Total</div>
                     </div>
-                    {orderBook.asks && orderBook.asks.length > 0 ? (
-                      orderBook.asks.slice(0, 10).map((ask, index) => (
-                        <div
-                          key={index}
-                          className="grid grid-cols-3 gap-2 text-xs hover:bg-[--color-surface] p-1 rounded"
-                        >
-                          <div className="text-red-400">{ask.price.toFixed(4)}</div>
-                          <div className="text-right text-slate-300">
-                            {ask.quantity.toFixed(4)}
+                    <div className="max-h-[400px] overflow-y-auto scrollbar-hide">
+                      {orderBook.asks && orderBook.asks.length > 0 ? (
+                        orderBook.asks.slice(0, 10).map((ask, index) => (
+                          <div
+                            key={index}
+                            className="grid grid-cols-3 gap-2 text-sm py-2 hover:bg-white/5 rounded-lg px-2 transition-colors"
+                          >
+                            <div className="font-semibold text-red-400">{ask.price.toFixed(4)}</div>
+                            <div className="text-right text-slate-300 font-medium">
+                              {ask.quantity.toFixed(4)}
+                            </div>
+                            <div className="text-right text-slate-300 font-medium">
+                              {ask.total?.toFixed(4) || "0.0000"}
+                            </div>
                           </div>
-                          <div className="text-right text-slate-300">
-                            {ask.total?.toFixed(4) || "0.0000"}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-xs text-slate-500 py-4 text-center">No sell orders</div>
-                    )}
+                        ))
+                      ) : (
+                        <div className="text-sm text-slate-500 py-8 text-center">No sell orders</div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
                 {/* Bids (Buy Orders) */}
-                <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-                  <h3 className="text-sm font-semibold text-green-400 mb-3">Bids (Buy)</h3>
+                <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
+                      <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    </div>
+                    <h3 className="text-base font-bold text-green-400">Bids (Buy)</h3>
+                  </div>
                   <div className="space-y-1">
-                    <div className="grid grid-cols-3 gap-2 text-xs text-slate-400 mb-2 pb-2 border-b border-[--color-border]">
+                    <div className="grid grid-cols-3 gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 pb-3 border-b border-white/10">
                       <div>Price</div>
                       <div className="text-right">Quantity</div>
                       <div className="text-right">Total</div>
                     </div>
-                    {orderBook.bids && orderBook.bids.length > 0 ? (
-                      orderBook.bids.slice(0, 10).map((bid, index) => (
-                        <div
-                          key={index}
-                          className="grid grid-cols-3 gap-2 text-xs hover:bg-[--color-surface] p-1 rounded"
-                        >
-                          <div className="text-green-400">{bid.price.toFixed(4)}</div>
-                          <div className="text-right text-slate-300">
-                            {bid.quantity.toFixed(4)}
+                    <div className="max-h-[400px] overflow-y-auto scrollbar-hide">
+                      {orderBook.bids && orderBook.bids.length > 0 ? (
+                        orderBook.bids.slice(0, 10).map((bid, index) => (
+                          <div
+                            key={index}
+                            className="grid grid-cols-3 gap-2 text-sm py-2 hover:bg-white/5 rounded-lg px-2 transition-colors"
+                          >
+                            <div className="font-semibold text-green-400">{bid.price.toFixed(4)}</div>
+                            <div className="text-right text-slate-300 font-medium">
+                              {bid.quantity.toFixed(4)}
+                            </div>
+                            <div className="text-right text-slate-300 font-medium">
+                              {bid.total?.toFixed(4) || "0.0000"}
+                            </div>
                           </div>
-                          <div className="text-right text-slate-300">
-                            {bid.total?.toFixed(4) || "0.0000"}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-xs text-slate-500 py-4 text-center">No buy orders</div>
-                    )}
+                        ))
+                      ) : (
+                        <div className="text-sm text-slate-500 py-8 text-center">No buy orders</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </>
           ) : (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+            <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
               <p className="text-sm text-slate-400 text-center">No order book data available</p>
             </div>
           )}
@@ -202,46 +220,55 @@ export default function TradingDataTab({ connectionId, symbol }: TradingDataTabP
 
       {/* Recent Trades View */}
       {activeView === "trades" && (
-        <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
-          <h3 className="text-sm font-semibold text-white mb-3">Recent Trades</h3>
-          <div className="space-y-1 max-h-96 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-2 text-xs text-slate-400 mb-2 pb-2 border-b border-[--color-border] sticky top-0 bg-[--color-surface]/60">
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10">
+              <svg className="w-4 h-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-bold text-white">Recent Trades</h3>
+          </div>
+          <div className="space-y-1">
+            <div className="grid grid-cols-4 gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 pb-3 border-b border-white/10">
               <div>Price</div>
               <div className="text-right">Quantity</div>
               <div className="text-right">Time</div>
               <div className="text-right">Side</div>
             </div>
-            {trades.slice(0, 50).map((trade, index) => (
-              <div
-                key={`${trade.id}-${index}`}
-                className="grid grid-cols-4 gap-2 text-xs hover:bg-[--color-surface] p-1 rounded"
-              >
+            <div className="max-h-[500px] overflow-y-auto scrollbar-hide">
+              {trades.slice(0, 50).map((trade, index) => (
                 <div
-                  className={
-                    trade.isBuyerMaker ? "text-green-400" : "text-red-400"
-                  }
+                  key={`${trade.id}-${index}`}
+                  className="grid grid-cols-4 gap-2 text-sm py-2.5 hover:bg-white/5 rounded-lg px-2 transition-colors"
                 >
-                  ${trade.price.toFixed(4)}
-                </div>
-                <div className="text-right text-slate-300">
-                  {trade.quantity.toFixed(4)}
-                </div>
-                <div className="text-right text-slate-400">
-                  {formatTime(trade.time)}
-                </div>
-                <div className="text-right">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] ${
-                      trade.isBuyerMaker
-                        ? "bg-green-500/20 text-green-400"
-                        : "bg-red-500/20 text-red-400"
+                  <div
+                    className={`font-semibold ${
+                      trade.isBuyerMaker ? "text-green-400" : "text-red-400"
                     }`}
                   >
-                    {trade.isBuyerMaker ? "BUY" : "SELL"}
-                  </span>
+                    ${trade.price.toFixed(4)}
+                  </div>
+                  <div className="text-right text-slate-300 font-medium">
+                    {trade.quantity.toFixed(4)}
+                  </div>
+                  <div className="text-right text-slate-400 text-xs">
+                    {formatTime(trade.time)}
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                        trade.isBuyerMaker
+                          ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                          : "bg-red-500/20 text-red-400 border border-red-500/30"
+                      }`}
+                    >
+                      {trade.isBuyerMaker ? "BUY" : "SELL"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}

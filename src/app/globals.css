@@ -422,3 +422,74 @@ select option:hover {
 .animate-gradient {
   animation: gradient 3s ease infinite;
 }
+
+/* Shimmer animation for buttons */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* Custom scrollbar for overlay */
+.overlay-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overlay-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.overlay-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgba(252, 79, 2, 0.6), rgba(253, 163, 0, 0.6));
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.overlay-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, rgba(252, 79, 2, 0.8), rgba(253, 163, 0, 0.8));
+}
+
+/* Firefox scrollbar */
+.overlay-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(252, 79, 2, 0.6) rgba(255, 255, 255, 0.05);
+}

@@ -100,7 +100,7 @@ export default function CoinDetailHeader({
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-4 overflow-x-auto border-b border-[--color-border] pb-2">
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {tabs.map((tab) => (
           <button
             key={tab}
