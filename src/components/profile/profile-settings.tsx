@@ -310,14 +310,23 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const handleLogout = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("quantivahq_is_authenticated");
-      localStorage.removeItem("quantivahq_user_name");
-      localStorage.removeItem("quantivahq_user_email");
-      localStorage.removeItem("quantivahq_user_id");
-      localStorage.removeItem("quantivahq_profile_image");
-      router.push("/onboarding/sign-up?tab=login");
+  const handleLogout = async () => {
+    try {
+      // Use centralized authService to perform logout (calls backend and clears cookies)
+      await authService.logout();
+      // authService.logout will perform client cleanup and redirect via window.location
+    } catch (err) {
+      // Fallback: clear client state and navigate to login
+      console.warn("profile-settings logout failed, falling back to client-only logout", err);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_is_authenticated");
+        localStorage.removeItem("quantivahq_user_name");
+        localStorage.removeItem("quantivahq_user_email");
+        localStorage.removeItem("quantivahq_user_id");
+        localStorage.removeItem("quantivahq_profile_image");
+        sessionStorage.clear();
+        router.push("/onboarding/sign-up?tab=login");
+      }
     }
   };
 

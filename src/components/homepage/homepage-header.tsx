@@ -16,17 +16,40 @@ export function HomepageHeader() {
   const [accountType, setAccountType] = useState<"crypto" | "stocks" | "both" | null>(null);
   const lastScrollY = useRef(0);
 
-  useEffect(() => {
-    // Check authentication status
+  // Check auth status on mount and when returning to homepage
+  const checkAuthStatus = async () => {
     if (typeof window !== "undefined") {
-      const authStatus = localStorage.getItem("quantivahq_is_authenticated");
-      const savedAccountType = localStorage.getItem("quantivahq_account_type");
-      setIsAuthenticated(authStatus === "true");
-      if (savedAccountType === "crypto" || savedAccountType === "stocks" || savedAccountType === "both") {
-        setAccountType(savedAccountType);
+      try {
+        // First check localStorage for quick status
+        const authStatus = localStorage.getItem("quantivahq_is_authenticated");
+        if (authStatus === "true") {
+          // Verify with server
+          try {
+            await authService.getCurrentUser();
+            setIsAuthenticated(true);
+          } catch (err) {
+            // Server says not authenticated, clear localStorage
+            localStorage.removeItem("quantivahq_is_authenticated");
+            setIsAuthenticated(false);
+          }
+        } else {
+          setIsAuthenticated(false);
+        }
+        
+        const savedAccountType = localStorage.getItem("quantivahq_account_type");
+        if (savedAccountType === "crypto" || savedAccountType === "stocks" || savedAccountType === "both") {
+          setAccountType(savedAccountType);
+        }
+      } catch (err) {
+        console.warn("Error checking auth status:", err);
+        setIsAuthenticated(false);
       }
-      lastScrollY.current = window.scrollY;
     }
+  };
+
+  useEffect(() => {
+    checkAuthStatus();
+    lastScrollY.current = window.scrollY;
 
     // Handle scroll effect
     const handleScroll = () => {
@@ -45,8 +68,14 @@ export function HomepageHeader() {
       lastScrollY.current = currentScrollY;
     };
 
+    // Also refresh auth status periodically to catch logout from other tabs
+    const authCheckInterval = setInterval(checkAuthStatus, 5000);
+
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearInterval(authCheckInterval);
+    };
   }, []);
 
   const handleGoToDashboard = async () => {

@@ -74,11 +74,47 @@ export const authService = {
   },
 
   async logout() {
-    return apiRequest<never, { message: string }>({
-      path: "/auth/logout",
-      method: "POST",
-      credentials: "include",
-    });
+    // Client-side cleanup FIRST: clear tokens from localStorage so they won't be sent in the logout API request
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("quantivahq_access_token");
+        localStorage.removeItem("quantivahq_refresh_token");
+        localStorage.removeItem("quantivahq_user_email");
+        localStorage.removeItem("quantivahq_user_name");
+        localStorage.removeItem("quantivahq_user_id");
+        localStorage.removeItem("quantivahq_auth_method");
+        localStorage.removeItem("quantivahq_is_authenticated");
+        localStorage.removeItem("quantivahq_selected_exchange");
+        localStorage.removeItem("quantivahq_personal_info");
+        localStorage.removeItem("quantivahq_profile_image");
+        localStorage.removeItem("quantivahq_pending_email");
+        localStorage.removeItem("quantivahq_pending_password");
+        localStorage.removeItem("quantivahq_device_id");
+        sessionStorage.clear();
+      } catch (cleanupErr) {
+        console.warn("authService.logout: client cleanup failed", cleanupErr);
+      }
+    }
+
+    // Call backend logout API (now @Public so no JWT guard required)
+    // This allows the server to clean up sessions if it can identify the user (via cookies)
+    try {
+      await apiRequest<never, { message: string }>({
+        path: "/auth/logout",
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (err) {
+      // Logout API errors are OK since we've already cleared client state
+      console.warn("authService.logout: server logout failed (ok, client cleared)", err);
+    }
+
+    // Force a full page navigation to the sign-up/login page to reset state and ensure cookies are re-evaluated by the server
+    if (typeof window !== "undefined") {
+      window.location.href = "/onboarding/sign-up?tab=login";
+    }
+
+    return { message: "Logged out" } as { message: string };
   },
 
   async requestPasswordChangeCode() {
