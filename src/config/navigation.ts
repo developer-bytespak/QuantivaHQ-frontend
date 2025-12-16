@@ -19,6 +19,7 @@ export const DASHBOARD_NAV: NavSection[] = [
       { label: "Top trades", href: "/dashboard/top-trades" },
       { label: "AI insights", href: "/dashboard/ai-insights" },
       { label: "VC pool", href: "/dashboard/vc-pool" },
+      { label: "Paper Trading", href: "/dashboard/paper-trading" },
       { label: "Profile", href: "/dashboard/profile" },
     ],
   },
