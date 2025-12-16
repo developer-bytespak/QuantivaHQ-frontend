@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { apiRequest } from "@/lib/api/client";
+import type { Strategy } from "@/lib/api/strategies";
 
 interface Trade {
   id: number;
@@ -171,6 +173,8 @@ const topTradesData: Trade[] = [
 ];
 
 export default function TopTradesPage() {
+  // trending trades state (initial fallback uses the static sample data)
+  const [trendingTrades, setTrendingTrades] = useState<Trade[]>(topTradesData);
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
   const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
@@ -179,7 +183,7 @@ export default function TopTradesPage() {
   // Filter and sort trades based on selected criteria
   const filteredAndSortedTrades = useMemo(() => {
     // First, filter by time
-    let filtered = [...topTradesData];
+    let filtered = [...trendingTrades];
 
     if (timeFilter !== "all") {
       const hoursLimit = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 168 : 720; // 30d = 720 hours
@@ -201,53 +205,124 @@ export default function TopTradesPage() {
     });
   }, [timeFilter, sortBy]);
 
-  // Calculate performance stats based on filtered trades
-  const performanceStats = useMemo(() => {
-    if (filteredAndSortedTrades.length === 0) {
-      return [
-        { label: "Total Profit", value: "$0", change: "0%", positive: true },
-        { label: "Win Rate", value: "0%", change: "0%", positive: true },
-        { label: "Total Trades", value: "0", change: "0", positive: true },
-        { label: "Avg. Return", value: "0%", change: "0%", positive: true },
-      ];
+  // Fetch trending assets using the backend endpoint and map into `Trade[]`.
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // request a large limit so backend returns all available trending assets
+        const data = await apiRequest<never, any[]>({ path: "/strategies/trending-assets?limit=9999", method: "GET" });
+        if (!mounted) return;
+        if (!data || !Array.isArray(data) || data.length === 0) return;
+
+        const mapped: Trade[] = data.map((item: any, idx: number) => {
+          // expected fields from backend: asset_id, symbol, price, final_score, etc.
+          const symbol = item.symbol ?? item.asset_symbol ?? item.asset_id ?? `ASSET-${idx}`;
+          const pair = item.pair ?? `${symbol} / USDT`;
+          const score = Number(item.final_score ?? item.score ?? 0);
+          const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
+          const price = item.price ?? item.last_price ?? item.quote ?? null;
+
+          return {
+            id: idx + 1,
+            pair,
+            type: (item.action && item.action.toUpperCase() === 'SELL') ? 'SELL' : 'BUY',
+            confidence,
+            ext: price ? String(price) : "",
+            entry: price ? String(price) : (item.entry || ""),
+            stopLoss: item.stop_loss || item.stopLoss || "—",
+            progressMin: 0,
+            progressMax: 100,
+            progressValue: Math.min(100, Math.max(0, Math.floor((score || 0) * 100))),
+            entryPrice: item.entryPrice ? String(item.entryPrice) : price ? String(price) : "—",
+            stopLossPrice: item.stopLossPrice ? String(item.stopLossPrice) : item.stop_loss ? String(item.stop_loss) : "—",
+            takeProfit1: item.take_profit || item.takeProfit || "—",
+            target: item.target || "",
+            insights: item.insights || item.reasons || [],
+            profit: item.changePercent ? `${item.changePercent}%` : (item.profit ? String(item.profit) : "0%"),
+            profitValue: Number(String(item.changePercent ?? item.profit ?? 0)).valueOf() || 0,
+            volume: item.volume ? String(item.volume) : (item.volumeValue ? String(item.volumeValue) : "—"),
+            volumeValue: Number(item.volume) || Number(item.volumeValue) || 0,
+            winRate: item.winRate ? `${item.winRate}%` : (item.win_rate ? `${item.win_rate}%` : "—"),
+            winRateValue: Number(item.winRate ?? item.win_rate ?? 0) || 0,
+            hoursAgo: Number(item.hoursAgo ?? item.age_hours ?? 0) || 0,
+          } as Trade;
+        });
+
+        setTrendingTrades(mapped);
+      } catch (err) {
+        // keep fallback sample data on error
+        console.error('Failed to load trending assets from /strategies/trending-assets', err);
+      }
+    })();
+
+    return () => { mounted = false; };
+  }, []);
+
+  // Pagination for Top Trades list
+  const ITEMS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedTrades.length / ITEMS_PER_PAGE));
+  const paginatedTrades = filteredAndSortedTrades.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+  // Reset page when filters or data change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [timeFilter, sortBy, trendingTrades.length]);
+
+  // Apply strategy: generate signals then use pre-built strategy
+  const applyStrategy = async (strategyId: string) => {
+    if (applyingIds.includes(strategyId)) return;
+    setApplyingIds((p) => [...p, strategyId]);
+    setApplyErrors((prev) => { const c = { ...prev }; delete c[strategyId]; return c; });
+    try {
+      const signals = await apiRequest<unknown, any[]>({ path: `/strategies/${strategyId}/generate-signals`, method: 'POST', body: {} });
+      setGeneratedSignals((prev) => ({ ...prev, [strategyId]: signals || [] }));
+
+      const assetIds = (signals || []).map((s: any) => s.asset?.asset_id ?? s.asset_id ?? s.asset?.id ?? s.asset);
+      await apiRequest<unknown, any>({ path: `/strategies/pre-built/${strategyId}/use`, method: 'POST', body: { targetAssets: assetIds || [], config: {} } });
+    } catch (err: any) {
+      setApplyErrors((prev) => ({ ...prev, [strategyId]: err?.message || String(err) }));
+    } finally {
+      setApplyingIds((p) => p.filter((x) => x !== strategyId));
     }
+  };
 
-    const totalProfit = filteredAndSortedTrades.reduce((sum, trade) => {
-      const amount = parseFloat(trade.profit.replace(/[+%,]/g, ""));
-      return sum + amount;
-    }, 0);
+  // Fetch pre-built strategies and show their full info (only admin type)
+  const [preBuiltStrategies, setPreBuiltStrategies] = useState<Strategy[]>([]);
+  const [loadingPreBuilt, setLoadingPreBuilt] = useState(false);
+  const [preBuiltError, setPreBuiltError] = useState<string | null>(null);
 
-    const avgWinRate = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.winRateValue, 0) / filteredAndSortedTrades.length;
-    const totalTrades = filteredAndSortedTrades.length;
-    const avgReturn = filteredAndSortedTrades.reduce((sum, trade) => sum + trade.profitValue, 0) / filteredAndSortedTrades.length;
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingPreBuilt(true);
+        setPreBuiltError(null);
+        const data = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
+        if (!mounted) return;
+        // only show admin templates
+        const adminOnly = (data || []).filter((s) => s?.type === "admin");
+        setPreBuiltStrategies(adminOnly);
+      } catch (err: any) {
+        if (!mounted) return;
+        const msg = err?.message || String(err);
+        console.error("Failed to load pre-built strategies:", msg);
+        setPreBuiltError(msg);
+      } finally {
+        if (mounted) setLoadingPreBuilt(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
-    return [
-      {
-        label: "Total Profit",
-        value: `+${totalProfit.toFixed(1)}%`,
-        change: "+12.5%",
-        positive: true
-      },
-      {
-        label: "Win Rate",
-        value: `${avgWinRate.toFixed(1)}%`,
-        change: "+3.2%",
-        positive: true
-      },
-      {
-        label: "Total Trades",
-        value: totalTrades.toString(),
-        change: "+15",
-        positive: true
-      },
-      {
-        label: "Avg. Return",
-        value: `+${avgReturn.toFixed(1)}%`,
-        change: "+0.8%",
-        positive: true
-      },
-    ];
-  }, [filteredAndSortedTrades]);
+  // which pre-built strategies are expanded to show details (allow multiple)
+  const [expandedStrategyIds, setExpandedStrategyIds] = useState<string[]>([]);
+  // selected strategies (multiple selection allowed)
+  const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([]);
+  const [applyingIds, setApplyingIds] = useState<string[]>([]);
+  const [generatedSignals, setGeneratedSignals] = useState<Record<string, any[]>>({});
+  const [applyErrors, setApplyErrors] = useState<Record<string, string>>({});
 
   return (
     <div className="space-y-6 pb-8">
@@ -274,20 +349,141 @@ export default function TopTradesPage() {
         </div>
       </div>
 
-      {/* Performance Statistics */}
+      {/* Pre-built Strategies (replaces stats) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {performanceStats.map((stat, index) => (
-          <div key={index} className="rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
-            <p className="mb-1 text-xs text-slate-400">{stat.label}</p>
-            <p className="mb-2 text-2xl font-bold text-white">{stat.value}</p>
-            <div className="flex items-center gap-1">
-              <span className={`text-xs font-medium ${stat.positive ? "text-green-400" : "text-red-400"}`}>
-                {stat.change}
-              </span>
-              <span className="text-xs text-slate-500">vs previous period</span>
-            </div>
+        {loadingPreBuilt ? (
+          <div className="col-span-full rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
+            <p className="text-sm text-slate-400">Loading templates...</p>
           </div>
-        ))}
+        ) : preBuiltError ? (
+          <div className="col-span-full rounded-xl bg-red-600/10 p-6 text-center">
+            <p className="text-sm text-red-300">Failed to load templates: {preBuiltError}</p>
+          </div>
+        ) : preBuiltStrategies.length > 0 ? (
+          preBuiltStrategies.map((s, idx) => {
+            const id = s.strategy_id || String(idx);
+            const isSelected = selectedStrategyIds.includes(id);
+            const isExpanded = expandedStrategyIds.includes(id);
+
+            return (
+              <div key={id} className={`rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] ${isSelected ? 'ring-2 ring-[#fc4f02]/40' : ''}`}>
+                <div className="mb-2 flex items-center justify-between">
+                  <div>
+                    <p className="mb-1 text-xs text-slate-400">Template</p>
+                    <p className="text-2xl font-bold text-white">{s.name}</p>
+                    <p className="text-xs text-slate-400">Risk: <span className="text-white">{s.risk_level}</span></p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedStrategyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+                      }}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium ${isSelected ? 'bg-[#fc4f02] text-white' : 'bg-[--color-surface] text-slate-300 hover:text-white'}`}>
+                      {isSelected ? 'Selected' : 'Select'}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setExpandedStrategyIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+                      }}
+                      className="rounded-lg bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-slate-300 hover:text-white"
+                    >
+                      {isExpanded ? 'Hide' : 'Info'}
+                    </button>
+
+                    <button
+                      onClick={() => applyStrategy(id)}
+                      disabled={applyingIds.includes(id)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-medium ${applyingIds.includes(id) ? 'bg-[#999] text-white' : 'bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white'}`}
+                    >
+                      {applyingIds.includes(id) ? 'Applying...' : 'Apply'}
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="mt-3 space-y-2 rounded-md bg-[--color-surface] p-3 text-xs text-slate-300">
+                    <div>
+                      <p className="text-sm text-white font-semibold">{s.name}</p>
+                      <p className="text-xs text-slate-400">{s.description || "No description"}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Risk Level</p>
+                      <p className="text-sm text-white">{s.risk_level}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Entry Rules</p>
+                      {s.entry_rules && s.entry_rules.length > 0 ? (
+                        <ul className="ml-3 list-disc">
+                          {s.entry_rules.map((r, i) => (
+                            <li key={i} className="text-xs text-slate-300">{r.indicator} {r.operator} {String(r.value)}{r.timeframe ? ` (${r.timeframe})` : ''}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-slate-400">None</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-slate-400">Exit Rules</p>
+                      {s.exit_rules && s.exit_rules.length > 0 ? (
+                        <ul className="ml-3 list-disc">
+                          {s.exit_rules.map((r, i) => (
+                            <li key={i} className="text-xs text-slate-300">{r.indicator} {r.operator} {String(r.value)}{r.timeframe ? ` (${r.timeframe})` : ''}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-slate-400">None</p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-4">
+                      <div>
+                        <p className="text-xs text-slate-400">Stop Loss</p>
+                        <p className="text-sm text-white">{s.stop_loss_type || '—'} {s.stop_loss_value ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Take Profit</p>
+                        <p className="text-sm text-white">{s.take_profit_type || '—'} {s.take_profit_value ?? '—'}</p>
+                      </div>
+                    </div>
+
+                    {generatedSignals[id] && (
+                      <div className="mt-3 space-y-2 rounded-md bg-[--color-surface]/80 p-3 text-xs text-slate-200">
+                        <p className="text-sm font-semibold text-white">Generated Signals</p>
+                        {(generatedSignals[id] || []).length === 0 ? (
+                          <p className="text-xs text-slate-400">No signals returned</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {generatedSignals[id].map((sig: any, i: number) => (
+                              <div key={i} className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-xs text-slate-400">{sig.asset?.symbol ?? sig.asset_id ?? sig.asset?.asset_id ?? 'ASSET'}</p>
+                                  <p className="text-sm font-medium text-white">{(sig.action || sig.final_action || sig.recommendation || 'HOLD').toString()}</p>
+                                  <p className="text-xs text-slate-400">Score: {sig.final_score ?? sig.score ?? sig.confidence ?? '—'}</p>
+                                </div>
+                                <div className="max-w-[60%] text-xs text-slate-300">
+                                  {sig.explanations && sig.explanations.length > 0 ? sig.explanations[0].text : sig.explanation || sig.summary || 'No explanation'}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {applyErrors[id] && <p className="text-xs text-red-300">Error: {applyErrors[id]}</p>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <div className="col-span-full rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
+            <p className="text-sm text-slate-400">No pre-built admin templates available</p>
+          </div>
+        )}
       </div>
 
       {/* Top Trades List */}
@@ -311,8 +507,9 @@ export default function TopTradesPage() {
         </div>
 
         {filteredAndSortedTrades.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {filteredAndSortedTrades.map((trade, index) => (
+          <div>
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {paginatedTrades.map((trade, index) => (
               <div
                 key={trade.id}
                 className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]"
@@ -404,6 +601,31 @@ export default function TopTradesPage() {
                 </div>
               </div>
             ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                >
+                  Prev
+                </button>
+
+                <div className="text-xs text-slate-400">
+                  Page {currentPage} of {totalPages}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
