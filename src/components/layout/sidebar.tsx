@@ -63,6 +63,12 @@ const MarketIcon = ({ isActive }: { isActive: boolean }) => (
   </svg>
 );
 
+const PaperTradingIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-5 w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
 const getIcon = (label: string, isActive: boolean) => {
   const iconProps = { isActive };
   switch (label.toLowerCase()) {
@@ -76,6 +82,8 @@ const getIcon = (label: string, isActive: boolean) => {
       return <AIInsightsIcon {...iconProps} />;
     case "vc pool":
       return <VCPoolIcon {...iconProps} />;
+    case "paper trading":
+      return <PaperTradingIcon {...iconProps} />;
     case "holdings":
       return <HoldingsIcon {...iconProps} />;
     case "profile":

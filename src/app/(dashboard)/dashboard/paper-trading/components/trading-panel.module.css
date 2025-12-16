@@ -1,0 +1,151 @@
+.container {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 1.5rem 0;
+}
+
+.empty {
+  text-align: center;
+  padding: 2rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.section input,
+.section select {
+  padding: 0.75rem 1rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.section input::placeholder,
+.section select {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.section input:focus,
+.section select:focus {
+  outline: none;
+  border-color: #fc4f02;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.section input:disabled,
+.section select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.error {
+  padding: 0.75rem 1rem;
+  background-color: rgba(255, 67, 67, 0.1);
+  border: 1px solid #ff4343;
+  border-radius: 6px;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+}
+
+.success {
+  padding: 0.75rem 1rem;
+  background-color: rgba(76, 175, 80, 0.1);
+  border: 1px solid #4caf50;
+  border-radius: 6px;
+  color: #4caf50;
+  font-size: 0.9rem;
+}
+
+.submitBtn {
+  padding: 1rem;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.submitBtn.buy {
+  background-color: #4caf50;
+}
+
+.submitBtn.buy:hover:not(:disabled) {
+  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.submitBtn.sell {
+  background-color: #ff4343;
+}
+
+.submitBtn.sell:hover:not(:disabled) {
+  background-color: #ff2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 67, 67, 0.3);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.info {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.balance {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.balance strong {
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.warning {
+  color: rgba(255, 193, 7, 0.8);
+  font-size: 0.9rem;
+  margin: 0;
+}
