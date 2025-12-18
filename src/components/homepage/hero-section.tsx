@@ -361,6 +361,46 @@ export function HeroSection() {
         </svg>
       </div>
 
+      {/* Desktop Ticker - Below Scroll Indicator */}
+      <div className="hidden md:block absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm py-2 w-full">
+        <div className="flex gap-4 text-xs font-mono text-slate-400 overflow-hidden px-6">
+          <div className="flex gap-8 animate-scroll-left whitespace-nowrap">
+            {[
+              { symbol: "BTC/USD", price: "43,250.50", change: "+2.98%" },
+              { symbol: "ETH/USD", price: "2,650.75", change: "-1.68%" },
+              { symbol: "AAPL", price: "178.45", change: "+1.22%" },
+              { symbol: "TSLA", price: "245.80", change: "-2.11%" },
+              { symbol: "NVDA", price: "485.20", change: "+2.64%" },
+              { symbol: "MSFT", price: "378.90", change: "+0.87%" },
+            ].map((item, index) => (
+              <div key={`desktop-ticker-${index}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span>{item.symbol}</span>
+                <span className="text-white font-medium">${item.price}</span>
+                <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
+                  {item.change}
+                </span>
+              </div>
+            ))}
+            {[
+              { symbol: "BTC/USD", price: "43,250.50", change: "+2.98%" },
+              { symbol: "ETH/USD", price: "2,650.75", change: "-1.68%" },
+              { symbol: "AAPL", price: "178.45", change: "+1.22%" },
+              { symbol: "TSLA", price: "245.80", change: "-2.11%" },
+              { symbol: "NVDA", price: "485.20", change: "+2.64%" },
+              { symbol: "MSFT", price: "378.90", change: "+0.87%" },
+            ].map((item, index) => (
+              <div key={`desktop-ticker-dup-${index}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span>{item.symbol}</span>
+                <span className="text-white font-medium">${item.price}</span>
+                <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
+                  {item.change}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Mobile Ticker - Below Scroll Indicator */}
       <div className="md:hidden absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm py-2 w-full">
         <div className="flex gap-4 text-xs font-mono text-slate-400 overflow-hidden px-3 sm:px-6">

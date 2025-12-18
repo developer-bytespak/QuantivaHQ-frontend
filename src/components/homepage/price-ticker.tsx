@@ -78,33 +78,6 @@ export function PriceTicker({ className = "" }: { className?: string }) {
         </div>
       </div>
 
-      {/* Bottom Price Ticker (reversed) */}
-      <div className="absolute bottom-20 left-0 right-0 flex gap-8 text-xs font-mono text-slate-500 opacity-60 overflow-hidden">
-        <div className="flex gap-8 animate-scroll-right whitespace-nowrap">
-          {prices.slice().reverse().map((price, index) => (
-            <div key={`bottom-${index}`} className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-slate-400">{price.symbol}</span>
-              <span className="text-white">${price.price.toFixed(2)}</span>
-              <span className={price.change >= 0 ? "text-[#10b981]" : "text-[#ef4444]"}>
-                {price.change >= 0 ? "+" : ""}
-                {price.changePercent.toFixed(2)}%
-              </span>
-            </div>
-          ))}
-          {/* Duplicate for seamless loop */}
-          {prices.slice().reverse().map((price, index) => (
-            <div key={`bottom-dup-${index}`} className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-slate-400">{price.symbol}</span>
-              <span className="text-white">${price.price.toFixed(2)}</span>
-              <span className={price.change >= 0 ? "text-[#10b981]" : "text-[#ef4444]"}>
-                {price.change >= 0 ? "+" : ""}
-                {price.changePercent.toFixed(2)}%
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Side Price Displays */}
       <div className="absolute top-1/3 right-8 space-y-4 text-xs font-mono opacity-50">
         {prices.slice(0, 4).map((price, index) => (
