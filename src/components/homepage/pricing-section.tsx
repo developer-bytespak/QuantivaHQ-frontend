@@ -181,49 +181,38 @@ export function PricingSection() {
     },
     {
       name: "Pro",
-      price: "$99",
-      period: "month",
-      description: "For serious traders",
+      price: "$49",
+      period: "month or $470/year (20% discount)",
+      description: "Perfect for individual traders and beginners",
       popular: true,
       features: [
-        "Advanced AI strategies",
-        "Real-time sentiment analysis",
-        "Multi-exchange connectivity",
-        "Portfolio optimization",
-        "Priority support",
-        "Advanced analytics",
+        "AI-powered trading",
+        "Automated trade execution",
+        "Live news sentiment analysis",
+        "Real-time market data",
+        "5 custom strategies",
+        "Basic portfolio analytics",
+        "Mobile & web access",
+        "Community access",
+        "Multi-exchange support (Binance, Bybit, IBKR)",
       ],
       gradient: "from-[#fc4f02] to-[#fda300]",
     },
     {
       name: "Elite",
-      price: "$299",
-      period: "month",
-      description: "For professional traders",
+      price: "$149",
+      period: "month or $1430/year (20% discount)",
+      description: "For professional traders and serious investors",
       features: [
-        "All Pro features",
-        "Custom AI strategies",
-        "Dedicated account manager",
-        "API access",
-        "White-label options",
-        "24/7 premium support",
+        "Everything in PRO, PLUS:",
+        "Unlimited custom strategies",
+        "Advanced backtesting (10 years historical data)",
+        "VC Pool access (pooled investment opportunity)",
+        "Priority trade execution",
+        "Advanced portfolio optimization",
+        "Early access to new features",
       ],
       gradient: "from-[#1d4ed8] to-[#3b82f6]",
-    },
-    {
-      name: "Institutional",
-      price: "Custom",
-      period: "contact",
-      description: "Enterprise solutions",
-      features: [
-        "All Elite features",
-        "Custom integrations",
-        "Dedicated infrastructure",
-        "SLA guarantees",
-        "On-premise deployment",
-        "Custom training & support",
-      ],
-      gradient: "from-[#10b981] to-[#34d399]",
     },
   ];
 
@@ -238,7 +227,7 @@ export function PricingSection() {
         />
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
           {tiers.map((tier, index) => (
             <PricingCard
               key={index}
