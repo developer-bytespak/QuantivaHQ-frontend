@@ -508,7 +508,7 @@ export function FeaturesSection() {
         />
 
         {/* Features Grid with enhanced spacing and mobile-responsive */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 pb-4" style={{ transformStyle: "preserve-3d" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 pb-0 md:pb-4" style={{ transformStyle: "preserve-3d" }}>
           {features.map((feature, index) => (
             <FeatureCard
               key={index}
@@ -520,42 +520,6 @@ export function FeaturesSection() {
               index={index}
             />
           ))}
-        </div>
-
-        {/* Mobile Ticker - After Features */}
-        <div className="md:hidden mt-8 bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 rounded-2xl border border-slate-700/50 py-3 overflow-hidden">
-          <div className="flex gap-4 text-xs font-mono text-slate-400">
-            <div className="flex gap-8 animate-scroll-right whitespace-nowrap">
-              {[
-                { symbol: "NVDA", price: "485.20", change: "+2.64%" },
-                { symbol: "MSFT", price: "378.90", change: "+0.87%" },
-                { symbol: "SPY", price: "452.30", change: "+0.40%" },
-                { symbol: "QQQ", price: "385.60", change: "-0.54%" },
-              ].map((item, index) => (
-                <div key={`bottom-mobile-${index}`} className="flex items-center gap-2 whitespace-nowrap">
-                  <span>{item.symbol}</span>
-                  <span className="text-white font-medium">${item.price}</span>
-                  <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
-                    {item.change}
-                  </span>
-                </div>
-              ))}
-              {[
-                { symbol: "NVDA", price: "485.20", change: "+2.64%" },
-                { symbol: "MSFT", price: "378.90", change: "+0.87%" },
-                { symbol: "SPY", price: "452.30", change: "+0.40%" },
-                { symbol: "QQQ", price: "385.60", change: "-0.54%" },
-              ].map((item, index) => (
-                <div key={`bottom-mobile-dup-${index}`} className="flex items-center gap-2 whitespace-nowrap">
-                  <span>{item.symbol}</span>
-                  <span className="text-white font-medium">${item.price}</span>
-                  <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
-                    {item.change}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </section>

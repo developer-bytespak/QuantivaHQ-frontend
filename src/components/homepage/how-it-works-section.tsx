@@ -190,7 +190,7 @@ export function HowItWorksSection() {
   ];
 
   return (
-    <section id="how-it-works" className="relative pt-12 sm:pt-16 md:pt-24 pb-16 sm:pb-20 md:pb-32">
+    <section id="how-it-works" className="relative pt-0 sm:pt-16 md:pt-24 pb-16 sm:pb-20 md:pb-32">
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         {/* Section Header */}
         <ScrollAnimatedHeader

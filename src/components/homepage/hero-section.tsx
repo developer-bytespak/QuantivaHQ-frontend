@@ -220,7 +220,7 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 text-center pt-28 sm:pt-24 md:pt-32 pb-4 sm:pb-6 md:pb-0" style={{ perspective: "1000px" }}>
-        <div className="space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8">
+        <div className="space-y-5 sm:space-y-4 md:space-y-6 lg:space-y-8">
           {/* Headline with 3D effect */}
           <h1 
             className="text-2xl leading-snug sm:text-3xl sm:leading-tight md:text-4xl md:leading-tight lg:text-6xl lg:leading-tight font-bold tracking-tight text-white animate-fade-in"
@@ -243,7 +243,7 @@ export function HeroSection() {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 md:gap-4 pt-1 sm:pt-2 md:pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 md:gap-4 pt-4 sm:pt-2 md:pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
             <button
               onClick={handleGetStarted}
               disabled={isCheckingAuth}
