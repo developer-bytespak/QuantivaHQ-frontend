@@ -17,14 +17,14 @@ export function HomepageFooter() {
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Brand Column */}
-          <div className="space-y-3 sm:space-y-4">
+          <div className="space-y-3 sm:space-y-4 text-center sm:text-left">
             <div>
               <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">QuantivaHQ</h3>
               <p className="text-xs sm:text-sm text-white font-semibold">
                 Trade with Intelligence. Automate with Confidence.
               </p>
             </div>
-            <div className="flex gap-2 sm:gap-4">
+            <div className="flex gap-2 sm:gap-4 justify-center sm:justify-start">
               <a
                 href="https://twitter.com"
                 target="_blank"
@@ -62,7 +62,7 @@ export function HomepageFooter() {
           </div>
 
           {/* Quick Links */}
-          <div>
+          <div className="text-center sm:text-left">
             <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Quick Links</h4>
             <ul className="space-y-1.5 sm:space-y-2">
               <li>
@@ -104,7 +104,7 @@ export function HomepageFooter() {
           </div>
 
           {/* Legal */}
-          <div>
+          <div className="text-center sm:text-left">
             <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Legal</h4>
             <ul className="space-y-1.5 sm:space-y-2">
               <li>
@@ -155,7 +155,7 @@ export function HomepageFooter() {
           </div>
 
           {/* Support */}
-          <div>
+          <div className="text-center sm:text-left">
             <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Support</h4>
             <ul className="space-y-1.5 sm:space-y-2">
               <li>
