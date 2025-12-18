@@ -183,7 +183,7 @@ export function HeroSection() {
       <PriceTicker />
 
       {/* Mobile Ticker - Just Below Top Bar */}
-      <div className="md:hidden fixed top-20 left-0 right-0 z-20 bg-black/80 backdrop-blur-sm border-b border-slate-700/50 py-2 w-full">
+      <div className="md:hidden fixed top-20 left-0 right-0 z-20 bg-black/80 backdrop-blur-sm py-2 w-full">
         <div className="flex gap-4 text-xs font-mono text-slate-400 overflow-hidden px-3 sm:px-6">
           <div className="flex gap-8 animate-scroll-left whitespace-nowrap">
             {[
@@ -362,7 +362,7 @@ export function HeroSection() {
       </div>
 
       {/* Mobile Ticker - Below Scroll Indicator */}
-      <div className="md:hidden absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm border-t border-slate-700/50 py-2 w-full">
+      <div className="md:hidden absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm py-2 w-full">
         <div className="flex gap-4 text-xs font-mono text-slate-400 overflow-hidden px-3 sm:px-6">
           <div className="flex gap-8 animate-scroll-left whitespace-nowrap">
             {[
