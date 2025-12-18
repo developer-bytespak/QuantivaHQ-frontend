@@ -12,17 +12,88 @@ export function ContactSection() {
     subject: "",
     message: "",
   });
+  const [errors, setErrors] = useState<Partial<typeof formData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const { ref: sectionRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
+  const validateForm = () => {
+    const newErrors: Partial<typeof formData> = {};
+
+    // Name validation
+    if (!formData.name.trim()) {
+      newErrors.name = "Full name is required";
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Name must be at least 2 characters";
+    } else if (formData.name.trim().length > 100) {
+      newErrors.name = "Name must not exceed 100 characters";
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "Email address is required";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        newErrors.email = "Please enter a valid email address";
+      }
+    }
+
+    // Company validation (optional but if provided, validate)
+    if (formData.company.trim() && formData.company.trim().length > 100) {
+      newErrors.company = "Company name must not exceed 100 characters";
+    }
+
+    // Phone validation (optional but if provided, validate)
+    if (formData.phone.trim()) {
+      const phoneRegex = /^[\d\s\-\+\(\)]{7,}$/;
+      if (!phoneRegex.test(formData.phone.trim())) {
+        newErrors.phone = "Please enter a valid phone number";
+      } else if (formData.phone.trim().length > 20) {
+        newErrors.phone = "Phone number must not exceed 20 characters";
+      }
+    }
+
+    // Subject validation
+    if (!formData.subject.trim()) {
+      newErrors.subject = "Please select a subject";
+    }
+
+    // Message validation
+    if (!formData.message.trim()) {
+      newErrors.message = "Message is required";
+    } else if (formData.message.trim().length < 10) {
+      newErrors.message = "Message must be at least 10 characters";
+    } else if (formData.message.trim().length > 5000) {
+      newErrors.message = "Message must not exceed 5000 characters";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof typeof formData]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name as keyof typeof formData];
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!validateForm()) {
+      setSubmitStatus("error");
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitStatus("idle");
 
@@ -38,6 +109,7 @@ export function ContactSection() {
         subject: "",
         message: "",
       });
+      setErrors({});
     } catch (error) {
       setSubmitStatus("error");
     } finally {
@@ -98,12 +170,21 @@ export function ContactSection() {
                 <span>Thank you for your message! We'll get back to you within 24 hours.</span>
               </div>
             )}
-            {submitStatus === "error" && (
-              <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-3">
-                <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Something went wrong. Please try again later or contact us directly.</span>
+            {submitStatus === "error" && Object.keys(errors).length > 0 && (
+              <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                <div className="flex items-start gap-3 mb-2">
+                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div>
+                    <p className="font-semibold mb-2">Please fix the following errors:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs sm:text-sm">
+                      {Object.entries(errors).map(([field, error]) => (
+                        <li key={field}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -123,9 +204,14 @@ export function ContactSection() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border border-[--color-border]/60 text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60 transition-all duration-200 hover:border-[--color-border]"
+                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
+                      errors.name
+                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
+                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                    }`}
                     placeholder="Enter your full name"
                   />
+                  {errors.name && <p className="text-red-400 text-xs mt-1.5">{errors.name}</p>}
                 </div>
 
                 {/* Email Field */}
@@ -140,9 +226,14 @@ export function ContactSection() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border border-[--color-border]/60 text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60 transition-all duration-200 hover:border-[--color-border]"
+                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
+                      errors.email
+                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
+                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                    }`}
                     placeholder="your.email@company.com"
                   />
+                  {errors.email && <p className="text-red-400 text-xs mt-1.5">{errors.email}</p>}
                 </div>
 
                 {/* Company Field */}
@@ -156,9 +247,14 @@ export function ContactSection() {
                     name="company"
                     value={formData.company}
                     onChange={handleChange}
-                    className="w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border border-[--color-border]/60 text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60 transition-all duration-200 hover:border-[--color-border]"
+                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
+                      errors.company
+                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
+                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                    }`}
                     placeholder="Your company name"
                   />
+                  {errors.company && <p className="text-red-400 text-xs mt-1.5">{errors.company}</p>}
                 </div>
 
                 {/* Phone Field */}
@@ -172,9 +268,14 @@ export function ContactSection() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border border-[--color-border]/60 text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60 transition-all duration-200 hover:border-[--color-border]"
+                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
+                      errors.phone
+                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
+                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                    }`}
                     placeholder="+1 (555) 123-4567"
                   />
+                  {errors.phone && <p className="text-red-400 text-xs mt-1.5">{errors.phone}</p>}
                 </div>
               </div>
             </div>
@@ -194,7 +295,11 @@ export function ContactSection() {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border border-[--color-border]/60 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60 transition-all duration-200 hover:border-[--color-border] appearance-none cursor-pointer"
+                  className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] appearance-none cursor-pointer ${
+                    errors.subject
+                      ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
+                      : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                  }`}
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23fc4f02'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
@@ -210,6 +315,7 @@ export function ContactSection() {
                   <option value="partnership" className="bg-[--color-surface] text-white">Partnership Opportunities</option>
                   <option value="other" className="bg-[--color-surface] text-white">Other</option>
                 </select>
+                {errors.subject && <p className="text-red-400 text-xs mt-1.5">{errors.subject}</p>}
               </div>
 
               {/* Message Field */}
@@ -224,9 +330,17 @@ export function ContactSection() {
                   onChange={handleChange}
                   required
                   rows={6}
-                  className="w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border border-[--color-border]/60 text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60 transition-all duration-200 resize-none hover:border-[--color-border]"
+                  className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 resize-none hover:border-[--color-border] ${
+                    errors.message
+                      ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
+                      : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                  }`}
                   placeholder="Please provide a detailed description of your inquiry. Include any relevant information that will help us assist you better."
                 />
+                <div className="flex justify-between items-start mt-2">
+                  {errors.message && <p className="text-red-400 text-xs">{errors.message}</p>}
+                  <p className="text-slate-400 text-xs ml-auto">{formData.message.length}/5000</p>
+                </div>
               </div>
             </div>
 
