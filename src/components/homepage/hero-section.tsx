@@ -182,8 +182,44 @@ export function HeroSection() {
       {/* Price Ticker */}
       <PriceTicker />
 
+      {/* Mobile Ticker - Just Below Top Bar */}
+      <div className="md:hidden fixed top-20 left-0 right-0 z-20 bg-black/80 backdrop-blur-sm border-b border-slate-700/50 py-2 w-full">
+        <div className="flex gap-4 text-xs font-mono text-slate-400 overflow-hidden px-3 sm:px-6">
+          <div className="flex gap-8 animate-scroll-left whitespace-nowrap">
+            {[
+              { symbol: "BTC/USD", price: "43,250.50", change: "+2.98%" },
+              { symbol: "ETH/USD", price: "2,650.75", change: "-1.68%" },
+              { symbol: "AAPL", price: "178.45", change: "+1.22%" },
+              { symbol: "TSLA", price: "245.80", change: "-2.11%" },
+            ].map((item, index) => (
+              <div key={`top-mobile-${index}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span>{item.symbol}</span>
+                <span className="text-white font-medium">${item.price}</span>
+                <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
+                  {item.change}
+                </span>
+              </div>
+            ))}
+            {[
+              { symbol: "BTC/USD", price: "43,250.50", change: "+2.98%" },
+              { symbol: "ETH/USD", price: "2,650.75", change: "-1.68%" },
+              { symbol: "AAPL", price: "178.45", change: "+1.22%" },
+              { symbol: "TSLA", price: "245.80", change: "-2.11%" },
+            ].map((item, index) => (
+              <div key={`top-mobile-dup-${index}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span>{item.symbol}</span>
+                <span className="text-white font-medium">${item.price}</span>
+                <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
+                  {item.change}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 text-center pt-20 sm:pt-24 md:pt-32 pb-4 sm:pb-6" style={{ perspective: "1000px" }}>
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 text-center pt-28 sm:pt-24 md:pt-32 pb-4 sm:pb-6 md:pb-0" style={{ perspective: "1000px" }}>
         <div className="space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8">
           {/* Headline with 3D effect */}
           <h1 
