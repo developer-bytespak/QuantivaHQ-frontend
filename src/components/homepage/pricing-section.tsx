@@ -22,15 +22,15 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
   return (
     <div
       ref={headerRef}
-      className="text-center mb-12 sm:mb-16"
+      className="text-center mb-10 sm:mb-12 md:mb-16"
     >
-      <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+      <h2 className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 transition-all duration-700 ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}>
         {title}
         <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
       </h2>
-      <p className="mx-auto max-w-2xl text-xl text-slate-300">
+      <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 px-4">
         {description}
       </p>
     </div>
@@ -217,8 +217,8 @@ export function PricingSection() {
   ];
 
   return (
-    <section id="pricing" className="relative pb-20 sm:pb-24 lg:pb-32">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section id="pricing" className="relative pb-16 sm:pb-20 md:pb-24 lg:pb-32">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         {/* Section Header */}
         <ScrollAnimatedHeader
           title="Choose Your"
@@ -226,8 +226,8 @@ export function PricingSection() {
           description="Flexible pricing options for traders of all levels"
         />
 
-        {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        {/* Pricing Grid - Mobile responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
           {tiers.map((tier, index) => (
             <PricingCard
               key={index}
@@ -239,14 +239,14 @@ export function PricingSection() {
         </div>
 
         {/* Additional CTA */}
-        <div className="text-center mt-16">
-          <p className="text-slate-400 mb-4 text-sm">Need help choosing a plan?</p>
+        <div className="text-center mt-12 sm:mt-16">
+          <p className="text-slate-400 mb-3 sm:mb-4 text-xs sm:text-sm">Need help choosing a plan?</p>
           <button
             onClick={() => {
               const element = document.getElementById("contact");
               if (element) element.scrollIntoView({ behavior: "smooth" });
             }}
-            className="text-[#fc4f02] hover:text-[#e04502] font-semibold transition-colors cursor-pointer text-sm"
+            className="text-[#fc4f02] hover:text-[#e04502] font-semibold transition-colors cursor-pointer text-xs sm:text-sm"
           >
             Contact Sales →
           </button>

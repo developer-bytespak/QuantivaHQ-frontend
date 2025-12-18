@@ -154,10 +154,10 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
   return (
     <div
       ref={headerRef}
-      className="text-center mb-16 sm:mb-20"
+      className="text-center mb-10 sm:mb-16 md:mb-20"
     >
       <h2
-        className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+        className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 transition-all duration-700 ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         }`}
         style={{
@@ -171,7 +171,7 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
         </span>
       </h2>
       <p
-        className="mx-auto max-w-2xl text-xl text-slate-300"
+        className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 px-4"
         style={{ transform: "translateZ(30px)" }}
       >
         {description}
@@ -499,7 +499,7 @@ export function FeaturesSection() {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 pb-8">
         {/* Enhanced Section Header with 3D effect */}
         <ScrollAnimatedHeader
           title="Powerful Features for"
@@ -507,8 +507,8 @@ export function FeaturesSection() {
           description="Everything you need to trade smarter, faster, and more profitably"
         />
 
-        {/* Features Grid with enhanced spacing */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10 pb-4" style={{ transformStyle: "preserve-3d" }}>
+        {/* Features Grid with enhanced spacing and mobile-responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 pb-4" style={{ transformStyle: "preserve-3d" }}>
           {features.map((feature, index) => (
             <FeatureCard
               key={index}

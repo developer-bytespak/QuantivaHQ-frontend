@@ -80,15 +80,15 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section className="relative flex items-center justify-center overflow-hidden pt-12 pb-8 sm:pt-20 sm:pb-12 md:min-h-screen">
       {/* Trading Chart Backgrounds */}
       <TradingChartBackground opacity={0.12} />
       
       {/* Additional Chart Elements with Parallax */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large background chart (left side) with parallax */}
+        {/* Large background chart (left side) with parallax - hidden on mobile */}
         <div 
-          className="absolute top-1/4 left-0 w-1/3 h-1/2 opacity-5"
+          className="hidden lg:block absolute top-1/4 left-0 w-1/3 h-1/2 opacity-5"
           style={{
             transform: `translateY(${scrollY * 0.3}px) translateZ(-100px)`,
             transition: "transform 0.1s ease-out",
@@ -129,9 +129,9 @@ export function HeroSection() {
           </svg>
         </div>
 
-        {/* Medium chart (right side) with parallax */}
+        {/* Medium chart (right side) with parallax - hidden on mobile */}
         <div 
-          className="absolute bottom-1/4 right-0 w-1/4 h-1/3 opacity-5"
+          className="hidden lg:block absolute bottom-1/4 right-0 w-1/4 h-1/3 opacity-5"
           style={{
             transform: `translateY(${scrollY * 0.2}px) translateZ(-80px)`,
             transition: "transform 0.1s ease-out",
@@ -147,9 +147,9 @@ export function HeroSection() {
           </svg>
         </div>
 
-        {/* Candlestick pattern (center-right) with parallax */}
+        {/* Candlestick pattern (center-right) with parallax - hidden on mobile */}
         <div 
-          className="absolute top-1/3 right-1/4 w-48 h-32 opacity-8"
+          className="hidden md:block absolute top-1/3 right-1/4 w-48 h-32 opacity-8"
           style={{
             transform: `translateY(${scrollY * 0.15}px) translateZ(-60px)`,
             transition: "transform 0.1s ease-out",
@@ -183,11 +183,11 @@ export function HeroSection() {
       <PriceTicker />
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-16 sm:pt-20" style={{ perspective: "1000px" }}>
-        <div className="space-y-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 text-center pt-20 sm:pt-24 md:pt-32 pb-4 sm:pb-6" style={{ perspective: "1000px" }}>
+        <div className="space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8">
           {/* Headline with 3D effect */}
           <h1 
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-white animate-fade-in"
+            className="text-2xl leading-snug sm:text-3xl sm:leading-tight md:text-4xl md:leading-tight lg:text-6xl lg:leading-tight font-bold tracking-tight text-white animate-fade-in"
             style={{
               textShadow: "0 10px 40px rgba(252, 79, 2, 0.3), 0 5px 20px rgba(252, 79, 2, 0.2)",
               transform: "translateZ(50px)",
@@ -201,22 +201,22 @@ export function HeroSection() {
           </h1>
 
           {/* Subheading */}
-          <p className="mx-auto max-w-3xl text-lg sm:text-xl md:text-2xl text-slate-300 leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
+          <p className="mx-auto max-w-3xl text-xs sm:text-xs md:text-sm lg:text-base text-slate-300 leading-relaxed animate-fade-in" style={{ animationDelay: "0.2s" }}>
             Automate your crypto and stock trading with powerful AI strategies. 
             Real-time sentiment analysis, portfolio optimization, and seamless multi-exchange connectivity.
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 md:gap-4 pt-1 sm:pt-2 md:pt-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
             <button
               onClick={handleGetStarted}
               disabled={isCheckingAuth}
-              className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-4 text-base sm:text-lg font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#fc4f02]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#fc4f02]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
             >
-              <span className="relative z-10 flex items-center gap-2">
+              <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-2">
                 {isCheckingAuth ? "Checking..." : "Get Started"}
                 {!isCheckingAuth && (
-                  <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
                 )}
@@ -226,11 +226,11 @@ export function HeroSection() {
 
             <button
               onClick={scrollToFeatures}
-              className="group rounded-xl border-2 border-slate-600 bg-slate-900/40 backdrop-blur px-8 py-4 text-base sm:text-lg font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-slate-800/60 cursor-pointer"
+              className="group rounded-lg sm:rounded-xl border-2 border-slate-600 bg-slate-900/40 backdrop-blur px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-slate-800/60 cursor-pointer w-full sm:w-auto"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-1 sm:gap-2">
                 Learn More
-                <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 transition-transform duration-300 group-hover:translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
               </span>
@@ -239,7 +239,7 @@ export function HeroSection() {
 
           {/* Stats or Trust Indicators with 3D effect */}
           <div 
-            className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto animate-fade-in" 
+            className="pt-2 sm:pt-3 md:pt-6 lg:pt-12 grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3 lg:gap-6 max-w-4xl mx-auto animate-fade-in" 
             style={{ animationDelay: "0.6s", transform: "translateZ(30px)" }}
           >
             <div 
@@ -248,7 +248,7 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
                     textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
                     transform: "translateZ(20px)",
@@ -257,7 +257,7 @@ export function HeroSection() {
                   10K+
                 </div>
               </div>
-              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>Active Traders</div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5 sm:mt-1" style={{ transform: "translateZ(10px)" }}>Active Traders</div>
             </div>
             <div 
               className="text-center group relative"
@@ -265,7 +265,7 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
                     textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
                     transform: "translateZ(20px)",
@@ -274,7 +274,7 @@ export function HeroSection() {
                   $500M+
                 </div>
               </div>
-              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>Trading Volume</div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5 sm:mt-1" style={{ transform: "translateZ(10px)" }}>Trading Volume</div>
             </div>
             <div 
               className="text-center group relative"
@@ -282,7 +282,7 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
                     textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
                     transform: "translateZ(20px)",
@@ -291,11 +291,11 @@ export function HeroSection() {
                   99.9%
                 </div>
                 <div 
-                  className="absolute -top-1 -right-1 h-2 w-2 bg-[#10b981] rounded-full animate-pulse"
+                  className="absolute -top-1 -right-1 h-1.5 w-1.5 sm:h-2 sm:w-2 bg-[#10b981] rounded-full animate-pulse"
                   style={{ transform: "translateZ(25px)", boxShadow: "0 0 10px rgba(16, 185, 129, 0.8)" }}
                 ></div>
               </div>
-              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>Uptime</div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5 sm:mt-1" style={{ transform: "translateZ(10px)" }}>Uptime</div>
             </div>
             <div 
               className="text-center group relative"
@@ -303,7 +303,7 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-3xl sm:text-4xl font-bold text-[#fc4f02] mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
                     textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
                     transform: "translateZ(20px)",
@@ -312,7 +312,7 @@ export function HeroSection() {
                   24/7
                 </div>
               </div>
-              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1" style={{ transform: "translateZ(10px)" }}>AI Monitoring</div>
+              <div className="text-xs sm:text-sm text-slate-300 font-medium mt-0.5 sm:mt-1" style={{ transform: "translateZ(10px)" }}>AI Monitoring</div>
             </div>
           </div>
         </div>

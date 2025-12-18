@@ -49,13 +49,13 @@ export function ContactSection() {
     <section
       id="contact"
       ref={sectionRef}
-      className="relative pb-20 sm:pb-24 lg:pb-32 overflow-hidden"
+      className="relative pb-16 sm:pb-20 md:pb-24 lg:pb-32 overflow-hidden"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-16">
+        <div className="text-center mb-10 sm:mb-12 md:mb-16">
           <h2
-            className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+            className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 transition-all duration-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
@@ -65,7 +65,7 @@ export function ContactSection() {
             </span>
           </h2>
           <p
-            className={`mx-auto max-w-2xl text-xl text-slate-300 transition-all duration-700 ${
+            className={`mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 transition-all duration-700 px-4 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
             style={{ transitionDelay: "100ms" }}
@@ -78,21 +78,21 @@ export function ContactSection() {
         <div className="max-w-4xl mx-auto">
           <form
             onSubmit={handleSubmit}
-            className={`bg-gradient-to-br from-[--color-surface-alt]/95 via-[--color-surface-alt]/85 to-[--color-surface-alt]/95 backdrop-blur-xl border border-[--color-border]/50 rounded-3xl shadow-2xl shadow-black/20 p-10 sm:p-12 transition-all duration-700 ${
+            className={`bg-gradient-to-br from-[--color-surface-alt]/95 via-[--color-surface-alt]/85 to-[--color-surface-alt]/95 backdrop-blur-xl border border-[--color-border]/50 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/20 p-6 sm:p-8 md:p-10 lg:p-12 transition-all duration-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
             style={{ transitionDelay: "200ms" }}
           >
             {/* Form Header */}
-            <div className="mb-8 pb-6 border-b border-[--color-border]/30">
-              <h3 className="text-2xl font-bold text-white mb-2">Contact Information</h3>
-              <p className="text-sm text-slate-400">Please fill out the form below and we'll get back to you promptly.</p>
+            <div className="mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-[--color-border]/30">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Contact Information</h3>
+              <p className="text-xs sm:text-sm text-slate-400">Please fill out the form below and we'll get back to you promptly.</p>
             </div>
 
             {/* Success/Error Messages */}
             {submitStatus === "success" && (
-              <div className="mb-8 p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-sm flex items-center gap-3">
-                <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mb-6 sm:mb-8 p-3 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs sm:text-sm flex items-center gap-3">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>Thank you for your message! We'll get back to you within 24 hours.</span>

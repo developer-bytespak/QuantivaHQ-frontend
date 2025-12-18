@@ -50,7 +50,7 @@ export function PriceTicker({ className = "" }: { className?: string }) {
   }, []);
 
   return (
-    <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
+    <div className={`hidden md:block absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
       {/* Top Price Ticker */}
       <div className="absolute top-20 left-0 right-0 flex gap-8 text-xs font-mono text-slate-500 opacity-60 overflow-hidden">
         <div className="flex gap-8 animate-scroll-left whitespace-nowrap">

@@ -13,26 +13,26 @@ export function HomepageFooter() {
   };
 
   return (
-    <footer className="relative border-t border-[--color-border] bg-gradient-to-b from-[--color-surface-alt] to-[--color-surface-alt] py-12 sm:py-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+    <footer className="relative border-t border-[--color-border] bg-gradient-to-b from-[--color-surface-alt] to-[--color-surface-alt] py-10 sm:py-12 md:py-16">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Brand Column */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-white mb-2">QuantivaHQ</h3>
-              <p className="text-sm text-white font-semibold">
+              <h3 className="text-base sm:text-lg font-bold text-white mb-1 sm:mb-2">QuantivaHQ</h3>
+              <p className="text-xs sm:text-sm text-white font-semibold">
                 Trade with Intelligence. Automate with Confidence.
               </p>
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-2 sm:gap-4">
               <a
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-10 w-10 flex items-center justify-center rounded-lg border border-[--color-border] bg-[--color-surface] text-white hover:text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all cursor-pointer"
+                className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg border border-[--color-border] bg-[--color-surface] text-white hover:text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all cursor-pointer"
                 aria-label="Twitter"
               >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
                 </svg>
               </a>
@@ -40,10 +40,10 @@ export function HomepageFooter() {
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-10 w-10 flex items-center justify-center rounded-lg border border-[--color-border] bg-[--color-surface] text-white hover:text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all cursor-pointer"
+                className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg border border-[--color-border] bg-[--color-surface] text-white hover:text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all cursor-pointer"
                 aria-label="LinkedIn"
               >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
                 </svg>
               </a>
@@ -51,10 +51,10 @@ export function HomepageFooter() {
                 href="https://youtube.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="h-10 w-10 flex items-center justify-center rounded-lg border border-[--color-border] bg-[--color-surface] text-white hover:text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all cursor-pointer"
+                className="h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center rounded-lg border border-[--color-border] bg-[--color-surface] text-white hover:text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all cursor-pointer"
                 aria-label="YouTube"
               >
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                 </svg>
               </a>
@@ -63,12 +63,12 @@ export function HomepageFooter() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-sm font-bold text-white mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Quick Links</h4>
+            <ul className="space-y-1.5 sm:space-y-2">
               <li>
                 <button
                   onClick={() => scrollToSection("features")}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Features
                 </button>
@@ -76,7 +76,7 @@ export function HomepageFooter() {
               <li>
                 <button
                   onClick={() => scrollToSection("how-it-works")}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   How It Works
                 </button>
@@ -84,7 +84,7 @@ export function HomepageFooter() {
               <li>
                 <button
                   onClick={() => scrollToSection("pricing")}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Pricing
                 </button>
@@ -95,7 +95,7 @@ export function HomepageFooter() {
                     e.preventDefault();
                     // Add navigation logic here when About Us page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   About Us
                 </button>
@@ -105,15 +105,15 @@ export function HomepageFooter() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-sm font-bold text-white mb-4">Legal</h4>
-            <ul className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Legal</h4>
+            <ul className="space-y-1.5 sm:space-y-2">
               <li>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     // Add navigation logic here when Terms of Service page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Terms of Service
                 </button>
@@ -124,7 +124,7 @@ export function HomepageFooter() {
                     e.preventDefault();
                     // Add navigation logic here when Privacy Policy page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Privacy Policy
                 </button>
@@ -135,7 +135,7 @@ export function HomepageFooter() {
                     e.preventDefault();
                     // Add navigation logic here when Cookie Policy page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Cookie Policy
                 </button>
@@ -146,7 +146,7 @@ export function HomepageFooter() {
                     e.preventDefault();
                     // Add navigation logic here when Risk Disclosure page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Risk Disclosure
                 </button>
@@ -156,15 +156,15 @@ export function HomepageFooter() {
 
           {/* Support */}
           <div>
-            <h4 className="text-sm font-bold text-white mb-4">Support</h4>
-            <ul className="space-y-2">
+            <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Support</h4>
+            <ul className="space-y-1.5 sm:space-y-2">
               <li>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     // Add navigation logic here when FAQ page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   FAQ
                 </button>
@@ -175,7 +175,7 @@ export function HomepageFooter() {
                     e.preventDefault();
                     scrollToSection("contact");
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Contact Us
                 </button>
@@ -186,7 +186,7 @@ export function HomepageFooter() {
                     e.preventDefault();
                     // Add navigation logic here when Documentation page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   Documentation
                 </button>
@@ -197,7 +197,7 @@ export function HomepageFooter() {
                     e.preventDefault();
                     // Add navigation logic here when API Docs page is ready
                   }}
-                  className="text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[#fc4f02] transition-colors cursor-pointer"
                 >
                   API Docs
                 </button>
@@ -207,16 +207,16 @@ export function HomepageFooter() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-[--color-border] pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-white font-semibold text-center sm:text-left">
+        <div className="border-t border-[--color-border] pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <p className="text-xs sm:text-sm text-white font-semibold text-center sm:text-left">
             © {new Date().getFullYear()} QuantivaHQ. All rights reserved.
           </p>
           <button
             onClick={scrollToTop}
-            className="text-sm text-white font-semibold hover:text-[#fc4f02] transition-colors flex items-center gap-2 cursor-pointer"
+            className="text-xs sm:text-sm text-white font-semibold hover:text-[#fc4f02] transition-colors flex items-center gap-2 cursor-pointer"
           >
             Back to top
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-3 w-3 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
             </svg>
           </button>

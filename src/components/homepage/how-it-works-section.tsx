@@ -92,15 +92,15 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
   return (
     <div
       ref={headerRef}
-      className="text-center mb-16 sm:mb-20"
+      className="text-center mb-10 sm:mb-16 md:mb-20"
     >
-      <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+      <h2 className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 transition-all duration-700 ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}>
         {title}
         <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
       </h2>
-      <p className="mx-auto max-w-2xl text-xl text-slate-300">
+      <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 px-4">
         {description}
       </p>
     </div>
@@ -190,8 +190,8 @@ export function HowItWorksSection() {
   ];
 
   return (
-    <section id="how-it-works" className="relative pt-0 pb-0">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section id="how-it-works" className="relative pt-12 sm:pt-16 md:pt-24 pb-16 sm:pb-20 md:pb-32">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         {/* Section Header */}
         <ScrollAnimatedHeader
           title="How It"
@@ -199,8 +199,8 @@ export function HowItWorksSection() {
           description="Get started in minutes and start trading smarter today"
         />
 
-        {/* Steps Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 relative">
+        {/* Steps Grid - Mobile responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 relative">
           {steps.map((step, index) => (
             <StepCard
               key={index}
