@@ -138,10 +138,10 @@ export async function validateStrategy(data: {
 }
 
 /**
- * Get signals for a strategy
+ * Get signals for a strategy (latest only, one per asset)
  */
 export async function getStrategySignals(strategyId: string): Promise<StrategySignal[]> {
-  return apiRequest<unknown, StrategySignal[]>({ path: `/signals?strategyId=${strategyId}` });
+  return apiRequest<unknown, StrategySignal[]>({ path: `/signals?strategyId=${strategyId}&latest_only=true` });
 }
 
 /**
