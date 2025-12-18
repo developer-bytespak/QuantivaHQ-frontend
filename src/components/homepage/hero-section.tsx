@@ -355,10 +355,46 @@ export function HeroSection() {
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 animate-bounce">
         <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
+      </div>
+
+      {/* Mobile Ticker - Below Scroll Indicator */}
+      <div className="md:hidden absolute bottom-0 left-0 right-0 bg-black/80 backdrop-blur-sm border-t border-slate-700/50 py-2 w-full">
+        <div className="flex gap-4 text-xs font-mono text-slate-400 overflow-hidden px-3 sm:px-6">
+          <div className="flex gap-8 animate-scroll-left whitespace-nowrap">
+            {[
+              { symbol: "BTC/USD", price: "43,250.50", change: "+2.98%" },
+              { symbol: "ETH/USD", price: "2,650.75", change: "-1.68%" },
+              { symbol: "AAPL", price: "178.45", change: "+1.22%" },
+              { symbol: "TSLA", price: "245.80", change: "-2.11%" },
+            ].map((item, index) => (
+              <div key={`bottom-scroll-mobile-${index}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span>{item.symbol}</span>
+                <span className="text-white font-medium">${item.price}</span>
+                <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
+                  {item.change}
+                </span>
+              </div>
+            ))}
+            {[
+              { symbol: "BTC/USD", price: "43,250.50", change: "+2.98%" },
+              { symbol: "ETH/USD", price: "2,650.75", change: "-1.68%" },
+              { symbol: "AAPL", price: "178.45", change: "+1.22%" },
+              { symbol: "TSLA", price: "245.80", change: "-2.11%" },
+            ].map((item, index) => (
+              <div key={`bottom-scroll-mobile-dup-${index}`} className="flex items-center gap-2 whitespace-nowrap">
+                <span>{item.symbol}</span>
+                <span className="text-white font-medium">${item.price}</span>
+                <span className={item.change.startsWith("+") ? "text-[#10b981]" : "text-[#ef4444]"}>
+                  {item.change}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
