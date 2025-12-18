@@ -30,6 +30,30 @@ const formatPercent = (v: any) => {
   return `${n}%`;
 };
 
+// Helper to get trend direction color and icon
+const getTrendDirectionBadge = (direction?: string) => {
+  switch (direction) {
+    case 'TRENDING_UP':
+      return { color: 'bg-green-500/20 text-green-400', icon: '📈', label: 'UP' };
+    case 'TRENDING_DOWN':
+      return { color: 'bg-red-500/20 text-red-400', icon: '📉', label: 'DOWN' };
+    default:
+      return { color: 'bg-slate-500/20 text-slate-300', icon: '→', label: 'STABLE' };
+  }
+};
+
+// Helper to get volume status color
+const getVolumeStatusBadge = (status?: string) => {
+  switch (status) {
+    case 'MASSIVE_SURGE':
+      return { color: 'bg-purple-500/20 text-purple-300', icon: '🚀', label: 'SURGE' };
+    case 'VOLUME_SURGE':
+      return { color: 'bg-blue-500/20 text-blue-300', icon: '📊', label: 'SURGE' };
+    default:
+      return { color: 'bg-slate-600/20 text-slate-400', icon: '◆', label: 'NORMAL' };
+  }
+};
+
 type StrategyState = "DISCOVERY" | "PREVIEW" | "EXECUTED";
 
 interface Trade {
@@ -56,6 +80,12 @@ interface Trade {
   winRate: string;
   winRateValue: number;
   hoursAgo: number;
+  // NEW: Tier-1 Trend Ranking fields
+  trend_score?: number;
+  trend_direction?: "TRENDING_UP" | "TRENDING_DOWN" | "STABLE";
+  score_change?: number;
+  volume_ratio?: number;
+  volume_status?: "NORMAL" | "VOLUME_SURGE" | "MASSIVE_SURGE";
 }
 
 export default function TopTradesPage() {
@@ -145,6 +175,12 @@ export default function TopTradesPage() {
         winRate: item.winRate ? `${item.winRate}%` : (item.win_rate ? `${item.win_rate}%` : "—"),
         winRateValue: Number(item.winRate ?? item.win_rate ?? 0) || 0,
         hoursAgo: Number(item.hoursAgo ?? item.age_hours ?? 0) || 0,
+        // NEW: Tier-1 Trend Ranking fields
+        trend_score: Number(item.trend_score ?? 0) || 0,
+        trend_direction: item.trend_direction ?? "STABLE",
+        score_change: Number(item.score_change ?? 0) || 0,
+        volume_ratio: Number(item.volume_ratio ?? 1) || 1,
+        volume_status: item.volume_status ?? "NORMAL",
       } as Trade;
     });
   };
@@ -577,6 +613,26 @@ export default function TopTradesPage() {
                       <span className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : trade.confidence === "MEDIUM" ? "bg-slate-600" : "bg-slate-500"}`}>
                         {trade.confidence}
                       </span>
+                      
+                      {/* NEW: Trend Direction Badge */}
+                      {(() => {
+                        const trendBadge = getTrendDirectionBadge(trade.trend_direction);
+                        return (
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${trendBadge.color}`}>
+                            {trendBadge.icon} {trendBadge.label}
+                          </span>
+                        );
+                      })()}
+                      
+                      {/* NEW: Volume Status Badge */}
+                      {(() => {
+                        const volBadge = getVolumeStatusBadge(trade.volume_status);
+                        return (
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${volBadge.color}`}>
+                            {volBadge.icon} {volBadge.label}
+                          </span>
+                        );
+                      })()}
                     </div>
 
                     <div className="space-y-2">
@@ -611,6 +667,26 @@ export default function TopTradesPage() {
                         <div><span className="text-slate-400">Profit: </span><span className="font-medium text-green-400">{trade.profitValue ? formatPercent(trade.profitValue) : trade.profit ?? '—'}</span></div>
                         <div><span className="text-slate-400">Volume: </span><span className="font-medium text-white">{formatNumberCompact(trade.volumeValue ?? trade.volume)}</span></div>
                         <div><span className="text-slate-400">Win Rate: </span><span className="font-medium text-green-400">{formatPercent(trade.winRateValue ?? trade.winRate)}</span></div>
+                      </div>
+                      
+                      {/* NEW: Trend Score and Score Change */}
+                      <div className="relative flex items-center gap-4 text-xs pt-2">
+                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-slate-700/50"></div>
+                        <div><span className="text-slate-400">Trend Score: </span><span className="font-medium text-cyan-400">{trade.trend_score?.toFixed(2) ?? '0.00'}</span></div>
+                        {trade.score_change !== undefined && trade.score_change !== 0 && (
+                          <div>
+                            <span className="text-slate-400">Change: </span>
+                            <span className={`font-medium ${trade.score_change > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {trade.score_change > 0 ? '+' : ''}{trade.score_change?.toFixed(2) ?? '0.00'} pts
+                            </span>
+                          </div>
+                        )}
+                        {trade.volume_ratio !== undefined && trade.volume_ratio !== 1 && (
+                          <div>
+                            <span className="text-slate-400">Vol. Ratio: </span>
+                            <span className="font-medium text-slate-300">{trade.volume_ratio?.toFixed(2)}x</span>
+                          </div>
+                        )}
                       </div>
 
                     <div className="flex gap-2 pt-2">
