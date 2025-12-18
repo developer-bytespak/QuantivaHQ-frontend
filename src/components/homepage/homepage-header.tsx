@@ -174,9 +174,9 @@ export function HomepageHeader() {
               <>
                 <Link
                   href="/onboarding/sign-up?tab=login"
-                  className="group rounded-xl border-2 border-gradient-to-r from-[#fc4f02] to-[#fda300] bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:border-none hover:scale-105 cursor-pointer"
+                  className="group rounded-xl border-2 border-white bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:border-none hover:scale-105 cursor-pointer"
                 >
-                  <span>Login</span>
+                  <span className="text-white group-hover:text-black">Login</span>
                 </Link>
                 <Link
                   href="/onboarding/sign-up?tab=signup"
