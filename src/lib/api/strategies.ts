@@ -146,11 +146,11 @@ export async function getStrategySignals(strategyId: string): Promise<StrategySi
 
 /**
  * Get signals for a pre-built strategy (latest only, one per asset)
- * Fetches system-generated signals from database
+ * Fetches system-generated signals from database with realtime OHLCV data
  */
 export async function getPreBuiltStrategySignals(strategyId: string): Promise<StrategySignal[]> {
   return apiRequest<unknown, StrategySignal[]>({ 
-    path: `/strategies/pre-built/${strategyId}/signals?latest_only=true`,
+    path: `/strategies/pre-built/${strategyId}/signals?latest_only=true&realtime=true`,
     method: 'GET',
   });
 }

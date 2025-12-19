@@ -116,6 +116,35 @@ class BinanceTestnetService {
   }
 
   /**
+   * Get all orders (including filled)
+   */
+  async getAllOrders(symbol?: string, limit?: number): Promise<TestnetOrder[]> {
+    const params = new URLSearchParams();
+    if (symbol) params.append("symbol", symbol);
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await fetch(
+      `${this.baseUrl}/orders/all${params.toString() ? "?" + params : ""}`,
+      {
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      let errorMessage = "Failed to fetch all orders";
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        errorMessage = `Failed to fetch all orders: ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
+  /**
    * Place an order on testnet
    */
   async placeOrder(payload: PlaceOrderPayload): Promise<TestnetOrder> {
