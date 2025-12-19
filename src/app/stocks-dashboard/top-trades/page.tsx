@@ -443,12 +443,6 @@ export default function StocksTopTradesPage() {
                   </div>
                 ))}
               </div>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400">Win Rate</p>
-                  <p className="text-lg font-semibold text-green-400">{filteredAndSortedTrades[selectedTradeIndex].winRate}</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
