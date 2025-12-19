@@ -68,15 +68,15 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
   return (
     <div
       ref={headerRef}
-      className="text-center mb-12 sm:mb-16"
+      className="text-center mb-10 sm:mb-12 md:mb-16"
     >
-      <h2 className={`text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 transition-all duration-700 ${
+      <h2 className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 transition-all duration-700 ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}>
         {title}
         <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
       </h2>
-      <p className="mx-auto max-w-2xl text-xl text-slate-300">
+      <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 px-4">
         {description}
       </p>
     </div>
@@ -116,8 +116,8 @@ export function TestimonialsSection() {
   ];
 
   return (
-    <section id="testimonials" className="relative pt-20 sm:pt-24 lg:pt-32 pb-20 sm:pb-24 lg:pb-32">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section id="testimonials" className="relative pt-16 sm:pt-20 md:pt-24 lg:pt-32 pb-16 sm:pb-20 md:pb-24 lg:pb-32">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         {/* Section Header */}
         <ScrollAnimatedHeader
           title="Trusted by"
@@ -125,8 +125,8 @@ export function TestimonialsSection() {
           description="See what our users are saying about QuantivaHQ"
         />
 
-        {/* Testimonials Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+        {/* Testimonials Grid - Mobile responsive */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {testimonials.map((testimonial, index) => (
             <TestimonialCard
               key={index}
