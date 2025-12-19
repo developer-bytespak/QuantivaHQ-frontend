@@ -99,6 +99,11 @@ export default function TopTradesPage() {
   const [loadingPreBuilt, setLoadingPreBuilt] = useState(false);
   const [preBuiltError, setPreBuiltError] = useState<string | null>(null);
 
+  // Preview/cache state for strategies
+  const [previewCache, setPreviewCache] = useState<Record<string, any>>({});
+  const [strategyState, setStrategyState] = useState<Record<string, StrategyState>>({});
+  const [currentAppliedStrategyId, setCurrentAppliedStrategyId] = useState<string | null>(null);
+
   // Tab state: active tab index (0-3 for 4 strategies)
   const [activeTab, setActiveTab] = useState(0);
   
@@ -328,6 +333,67 @@ export default function TopTradesPage() {
   const currentStrategy = preBuiltStrategies[activeTab] || null;
   const currentSignals = currentStrategy ? (strategySignals[currentStrategy.strategy_id] || []) : [];
   const currentTrades = mapSignalsToTrades(currentSignals);
+
+  // --- Preview: Apply strategy to trendingTrades but do NOT generate signals ---
+  const previewStrategy = async (strategyId: string) => {
+    if (strategyState[strategyId] === "PREVIEW") {
+      // already previewed, make it the current applied
+      setCurrentAppliedStrategyId(strategyId);
+      return;
+    }
+
+    // if cached, reuse
+    if (previewCache[strategyId]) {
+      setStrategyState((s) => ({ ...s, [strategyId]: "PREVIEW" }));
+      setCurrentAppliedStrategyId(strategyId);
+      // apply preview to trendingTrades using cached content
+      try {
+        const preview = previewCache[strategyId];
+        const mapped = mapBackendToTrades(preview.assets || preview);
+        setTrendingTrades(mapped);
+      } catch (err) {
+        // ignore mapping errors
+      }
+      return;
+    }
+
+    // Fetch strategy (try to decide whether user strategy or pre-built)
+    let strategy: any = null;
+    try {
+      strategy = await apiRequest<never, Strategy>({ path: `/strategies/${strategyId}`, method: "GET" }).catch(() => null as any);
+    } catch {
+      strategy = null as any;
+    }
+
+    // Choose preview endpoint based on strategy type if available. User strategies use the generic preview path.
+    const isUserStrategy = (strategy as any)?.type === "user" || false;
+    const previewPath = isUserStrategy ? `/strategies/${strategyId}/preview?limit=20` : `/strategies/pre-built/${strategyId}/preview?limit=20`;
+
+    try {
+      const preview = await apiRequest<never, any>({ path: previewPath, method: "GET" });
+      const strategyAny = strategy as any;
+      const previewWithParams = {
+        assets: Array.isArray(preview) ? preview : (preview?.assets ?? preview?.results ?? []),
+        stop_loss_value: strategyAny?.stop_loss_value ?? strategyAny?.stopLossValue ?? null,
+        take_profit_value: strategyAny?.take_profit_value ?? strategyAny?.takeProfitValue ?? null,
+      } as any;
+
+      // cache preview
+      setPreviewCache((c) => ({ ...c, [strategyId]: previewWithParams }));
+      setStrategyState((s) => ({ ...s, [strategyId]: "PREVIEW" }));
+      setCurrentAppliedStrategyId(strategyId);
+
+      // apply preview to trendingTrades (map preview assets into trades)
+      try {
+        const mapped = mapBackendToTrades(previewWithParams.assets || []);
+        setTrendingTrades(mapped);
+      } catch (err) {
+        // best-effort
+      }
+    } catch (err) {
+      console.error('Failed to fetch preview for strategy', strategyId, err);
+    }
+  };
 
   // --- Pagination / sorting helpers ---
   const filteredAndSortedTrades = useMemo(() => {
