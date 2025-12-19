@@ -94,6 +94,16 @@ export default function PaperTradingPage() {
   const [tradeRecords, setTradeRecords] = useState<TradeRecord[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
+  // Create custom strategy state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createStopLoss, setCreateStopLoss] = useState("5");
+  const [createTakeProfit, setCreateTakeProfit] = useState("10");
+  const [createRiskLevel, setCreateRiskLevel] = useState<"low"|"medium"|"high">("medium");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
   // --- Load testnet status on mount ---
   useEffect(() => {
     const loadStatus = async () => {
@@ -170,7 +180,26 @@ export default function PaperTradingPage() {
     });
 
     try {
-      const signals = await getPreBuiltStrategySignals(strategyId);
+      // First, fetch the strategy to determine if it's user or pre-built
+      let strategy: any = null;
+      try {
+        strategy = await apiRequest<never, Strategy>({ path: `/strategies/${strategyId}`, method: "GET" }).catch(() => null as any);
+      } catch {
+        strategy = null as any;
+      }
+
+      const isUserStrategy = (strategy as any)?.type === "user" || false;
+      
+      // Use appropriate endpoint based on strategy type
+      let signals: any[] = [];
+      if (isUserStrategy) {
+        // For user strategies, fetch from /strategies/{id}/signals
+        signals = await apiRequest<never, any[]>({ path: `/strategies/${strategyId}/signals`, method: "GET" });
+      } else {
+        // For pre-built strategies, use the existing function
+        signals = await getPreBuiltStrategySignals(strategyId);
+      }
+      
       setStrategySignals((p) => ({ ...p, [strategyId]: signals || [] }));
     } catch (err: any) {
       console.error(`Failed to load signals for strategy ${strategyId}:`, err);
@@ -377,8 +406,14 @@ export default function PaperTradingPage() {
           </p>
         </div>
 
-        {/* Leaderboard toggle button */}
-        <div>
+        {/* Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className={`rounded-md px-4 py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white`}
+          >
+            Create Custom Strategy
+          </button>
           <button
             onClick={() => setShowLeaderboard(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50"
@@ -567,6 +602,117 @@ export default function PaperTradingPage() {
           onClose={() => setShowLeaderboard(false)}
           onClear={() => setTradeRecords([])}
         />
+      )}
+
+      {/* Create Custom Strategy Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-xl bg-[--color-surface] p-6 text-slate-100 ring-1 ring-white/5 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Create Custom Strategy</h3>
+              <button className="text-slate-400" onClick={() => { setShowCreateModal(false); setCreateError(null); }} aria-label="Close">✕</button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-sm text-slate-300">Name</label>
+                <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="My Custom Strategy" />
+              </div>
+              <div>
+                <label className="text-sm text-slate-300">Description</label>
+                <textarea className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} placeholder="Optional description" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-slate-300">Stop Loss %</label>
+                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createStopLoss} onChange={(e) => setCreateStopLoss(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-300">Take Profit %</label>
+                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createTakeProfit} onChange={(e) => setCreateTakeProfit(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-slate-300">Risk Level</label>
+                <select className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createRiskLevel} onChange={(e) => setCreateRiskLevel(e.target.value as any)}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              {createError && <div className="text-sm text-red-400">{createError}</div>}
+              <div className="mt-4 flex justify-end gap-2">
+                <button className="rounded-md px-4 py-2 text-sm" onClick={() => { setShowCreateModal(false); setCreateError(null); }}>Cancel</button>
+                <button
+                  className="rounded-md px-4 py-2 text-sm bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white"
+                  onClick={async () => {
+                    // basic validation
+                    if (!createName || createName.trim().length < 2) {
+                      setCreateError("Please provide a name for the strategy");
+                      return;
+                    }
+                    setCreateError(null);
+                    setCreating(true);
+                    try {
+                      const stopLossNum = Number(createStopLoss);
+                      const takeProfitNum = Number(createTakeProfit);
+                      if (isNaN(stopLossNum) || stopLossNum < 0 || stopLossNum > 100) {
+                        setCreateError("Stop Loss must be a number between 0 and 100");
+                        setCreating(false);
+                        return;
+                      }
+                      if (isNaN(takeProfitNum) || takeProfitNum < 0 || takeProfitNum > 100) {
+                        setCreateError("Take Profit must be a number between 0 and 100");
+                        setCreating(false);
+                        return;
+                      }
+
+                      const dto = {
+                        name: createName,
+                        // backend expects 'admin' or 'user' — use 'user' for custom strategies
+                        type: "user",
+                        description: createDescription || "Created from Paper Trading UI",
+                        risk_level: createRiskLevel,
+                        // backend validation expects 'indicator' (string) not 'field' / 'property'
+                        entry_rules: [{ indicator: "final_score", operator: ">", value: 0.25 }],
+                        exit_rules: [{ indicator: "final_score", operator: "<", value: -0.15 }],
+                        indicators: [],
+                        stop_loss_value: stopLossNum,
+                        take_profit_value: takeProfitNum,
+                        schedule_cron: null,
+                        target_assets: [],
+                        auto_trade_threshold: null,
+                        is_active: true,
+                      };
+
+                      const created = await apiRequest<typeof dto, any>({ path: "/strategies/custom", method: "POST", body: dto });
+                      setPreBuiltStrategies((prev) => [created, ...prev]);
+                      setShowCreateModal(false);
+                      setCreateName("");
+                      setCreateDescription("");
+                      setCreateStopLoss("5");
+                      setCreateTakeProfit("10");
+                      setCreateRiskLevel("medium");
+                      // auto-fetch signals for the new strategy
+                      if (created?.strategy_id) {
+                        setActiveTab(0); // Switch to the new strategy
+                        await fetchStrategySignals(created.strategy_id);
+                      }
+                    } catch (e) {
+                      const er: any = e;
+                      console.error("Create custom strategy error:", er);
+                      setCreateError(er?.message ?? String(er) ?? "Failed to create strategy");
+                    } finally {
+                      setCreating(false);
+                    }
+                  }}
+                  disabled={creating}
+                >
+                  {creating ? "Creating..." : "Create Strategy"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
