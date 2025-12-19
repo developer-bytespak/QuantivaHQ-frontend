@@ -9,6 +9,7 @@ import { BalanceOverview } from "./components/balance-overview";
 import { StrategyCard } from "./components/strategy-card";
 import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
+import TradeLeaderboard from "./components/trade-leaderboard";
 
 interface Trade {
   id: number;
@@ -42,6 +43,16 @@ interface Trade {
   volume_status?: "NORMAL" | "VOLUME_SURGE" | "MASSIVE_SURGE";
 }
 
+type TradeRecord = {
+  id: string;
+  timestamp: number;
+  symbol: string;
+  type: "BUY" | "SELL";
+  entryPrice: string;
+  profitValue: number;
+  strategyName?: string;
+};
+
 export default function PaperTradingPage() {
   // Account data
   const [balance, setBalance] = useState(0);
@@ -74,6 +85,10 @@ export default function PaperTradingPage() {
   // Success toast
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Leaderboard (frontend-only, ephemeral)
+  const [tradeRecords, setTradeRecords] = useState<TradeRecord[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // --- Load testnet status on mount ---
   useEffect(() => {
@@ -297,8 +312,28 @@ export default function PaperTradingPage() {
     setShowTradeOverlay(true);
   };
 
-  const handleTradeSuccess = () => {
-    setSuccessMessage("✅ Trade executed successfully!");
+  const addTradeRecordFromSignal = (signal: any) => {
+    if (!signal) return;
+    const ts = Date.now();
+    const rec: TradeRecord = {
+      id: `${ts}-${Math.floor(Math.random() * 10000)}`,
+      timestamp: ts,
+      symbol: signal.symbol ?? signal.assetId ?? signal.pair ?? "Unknown",
+      type: (signal.type ?? "BUY") as "BUY" | "SELL",
+      entryPrice: signal.entryPrice ?? signal.entry ?? signal.ext ?? "—",
+      profitValue: Number(signal.profitValue ?? signal.profit ?? 0) || 0,
+      strategyName: currentStrategy?.name,
+    };
+    setTradeRecords((p) => [rec, ...p]);
+  };
+
+  const handleTradeSuccess = (payload?: any) => {
+    // payload may be unused by existing modals — use selectedSignal as fallback
+    const signalToRecord = payload?.signal ?? selectedSignal ?? payload;
+    if (signalToRecord) {
+      addTradeRecordFromSignal(signalToRecord);
+    }
+    setSuccessMessage("Trade executed successfully!");
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
     loadAccountData();
@@ -330,12 +365,26 @@ export default function PaperTradingPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Header */}
-      <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">Paper Trading Strategies</h1>
           <p className="text-sm text-slate-400">
             Execute trades on Binance testnet using AI-powered strategy signals
           </p>
+        </div>
+
+        {/* Leaderboard toggle button */}
+        <div>
+          <button
+            onClick={() => setShowLeaderboard(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50"
+            title="Open session leaderboard"
+          >
+            <span>Leaderboard</span>
+            <span className="text-xs bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white px-2 py-0.5 rounded-full font-bold">
+              {tradeRecords.length}
+            </span>
+          </button>
         </div>
       </div>
 
@@ -505,6 +554,15 @@ export default function PaperTradingPage() {
         <div className="fixed bottom-8 right-8 z-[10000] animate-fade-in rounded-lg bg-green-600 px-6 py-3 text-white shadow-lg">
           {successMessage}
         </div>
+      )}
+
+      {/* Leaderboard panel */}
+      {showLeaderboard && (
+        <TradeLeaderboard
+          trades={tradeRecords}
+          onClose={() => setShowLeaderboard(false)}
+          onClear={() => setTradeRecords([])}
+        />
       )}
     </div>
   );
