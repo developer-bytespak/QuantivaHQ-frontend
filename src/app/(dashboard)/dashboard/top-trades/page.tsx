@@ -150,7 +150,15 @@ export default function TopTradesPage() {
       const pair = item.pair ?? `${symbol} / USDT`;
       const score = Number(item.final_score ?? item.score ?? 0);
       const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
-      const price = item.price ?? item.last_price ?? item.quote ?? null;
+      
+      // Use realtime_data if available, otherwise fallback to old fields
+      const realtimePrice = item.realtime_data?.price ?? null;
+      const realtimeVolume = item.realtime_data?.volume24h ?? null;
+      const realtimePriceChange = item.realtime_data?.priceChangePercent ?? null;
+      const price = realtimePrice ?? item.price ?? item.last_price ?? item.quote ?? null;
+      const volume = realtimeVolume ?? item.volume ?? item.volumeValue ?? null;
+      const priceChange = realtimePriceChange ?? item.changePercent ?? item.profit ?? null;
+      
       return {
         id: idx + 1,
         assetId: item.asset_id ?? item.asset?.asset_id ?? item.assetId ?? null,
@@ -168,10 +176,10 @@ export default function TopTradesPage() {
         takeProfit1: item.take_profit || item.takeProfit || "—",
         target: item.target || "",
         insights: item.insights || item.reasons || [],
-        profit: item.changePercent ? `${item.changePercent}%` : (item.profit ? String(item.profit) : "0%"),
-        profitValue: Number(String(item.changePercent ?? item.profit ?? 0)) || 0,
-        volume: item.volume ? String(item.volume) : (item.volumeValue ? String(item.volumeValue) : "—"),
-        volumeValue: Number(item.volume) || Number(item.volumeValue) || 0,
+        profit: priceChange ? `${Number(priceChange).toFixed(2)}%` : "0%",
+        profitValue: Number(priceChange ?? 0) || 0,
+        volume: volume ? String(Number(volume).toLocaleString()) : "—",
+        volumeValue: Number(volume ?? 0) || 0,
         winRate: item.winRate ? `${item.winRate}%` : (item.win_rate ? `${item.win_rate}%` : "—"),
         winRateValue: Number(item.winRate ?? item.win_rate ?? 0) || 0,
         hoursAgo: Number(item.hoursAgo ?? item.age_hours ?? 0) || 0,
@@ -191,7 +199,7 @@ export default function TopTradesPage() {
     (async () => {
       try {
         setLoadingTrending(true);
-        const data = await apiRequest<never, any[]>({ path: "/strategies/trending-assets?limit=20", method: "GET" });
+        const data = await apiRequest<never, any[]>({ path: "/strategies/trending-assets?limit=20&realtime=true", method: "GET" });
         if (!mounted) return;
         if (!data || !Array.isArray(data) || data.length === 0) {
           setTrendingTrades([]);
@@ -284,8 +292,13 @@ export default function TopTradesPage() {
       const score = Number(signal.final_score ?? 0);
       const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
       
-      // Get entry price from signal details or asset
-      const entryPrice = signal.details?.[0]?.entry_price || signal.entry_price || signal.entry || null;
+      // Use realtime_data if available
+      const realtimePrice = signal.realtime_data?.price ?? null;
+      const realtimeVolume = signal.realtime_data?.volume24h ?? null;
+      const realtimePriceChange = signal.realtime_data?.priceChangePercent ?? null;
+      
+      // Get entry price from signal details or asset or realtime data
+      const entryPrice = signal.details?.[0]?.entry_price || signal.entry_price || signal.entry || realtimePrice || null;
       const stopLossPrice = signal.details?.[0]?.stop_loss || signal.stop_loss_price || null;
       const takeProfitPrice = signal.details?.[0]?.take_profit_1 || signal.take_profit_price || null;
       
@@ -313,10 +326,10 @@ export default function TopTradesPage() {
         takeProfit1: takeProfitPct ? String(takeProfitPct) : "—",
         target: "",
         insights: explanationText ? [explanationText] : [],
-        profit: "0%",
-        profitValue: 0,
-        volume: "—",
-        volumeValue: 0,
+        profit: realtimePriceChange ? `${Number(realtimePriceChange).toFixed(2)}%` : "0%",
+        profitValue: Number(realtimePriceChange ?? 0) || 0,
+        volume: realtimeVolume ? String(Number(realtimeVolume).toLocaleString()) : "—",
+        volumeValue: Number(realtimeVolume ?? 0) || 0,
         winRate: "—",
         winRateValue: 0,
         hoursAgo: signal.timestamp ? Math.floor((Date.now() - new Date(signal.timestamp).getTime()) / (1000 * 60 * 60)) : 0,
