@@ -11,6 +11,10 @@ import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
 import TradeLeaderboard from "./components/trade-leaderboard";
 
+// ⏱️ API Refresh Intervals (in milliseconds)
+const ACCOUNT_DATA_REFRESH_INTERVAL = 300000;  // 5 minutes - Account balance & orders
+const SIGNALS_REFRESH_INTERVAL = 300000;      // 5 minutes - Strategy signals
+
 interface Trade {
   id: number;
   assetId?: string;
