@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
+import { getPreBuiltStrategySignals } from "@/lib/api/strategies";
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -95,22 +96,21 @@ export default function TopTradesPage() {
 
   // pre-built strategies
   const [preBuiltStrategies, setPreBuiltStrategies] = useState<Strategy[]>([]);
-  // user-created strategies
-  const [userStrategies, setUserStrategies] = useState<Strategy[]>([]);
   const [loadingPreBuilt, setLoadingPreBuilt] = useState(false);
   const [preBuiltError, setPreBuiltError] = useState<string | null>(null);
 
-  // state machine per strategy (DISCOVERY | PREVIEW | EXECUTED)
-  const [strategyState, setStrategyState] = useState<Record<string, StrategyState>>({});
-  // cache preview responses per strategy while page is open
+  // Preview/cache state for strategies
   const [previewCache, setPreviewCache] = useState<Record<string, any>>({});
-  // last applied strategy (used when user clicks "View Trade")
+  const [strategyState, setStrategyState] = useState<Record<string, StrategyState>>({});
   const [currentAppliedStrategyId, setCurrentAppliedStrategyId] = useState<string | null>(null);
 
-  // generated/executed signals cache keyed by `${strategyId}:${assetId}`
-  const [generatedSignals, setGeneratedSignals] = useState<Record<string, any[]>>({});
-  const [executionLoading, setExecutionLoading] = useState<Record<string, boolean>>({});
-  const [executionError, setExecutionError] = useState<Record<string, string>>({});
+  // Tab state: active tab index (0-3 for 4 strategies)
+  const [activeTab, setActiveTab] = useState(0);
+  
+  // Signals for each strategy tab, keyed by strategy_id
+  const [strategySignals, setStrategySignals] = useState<Record<string, any[]>>({});
+  const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
+  const [signalsError, setSignalsError] = useState<Record<string, string>>({});
 
   // UI filters / pagination / overlay
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
@@ -210,19 +210,16 @@ export default function TopTradesPage() {
     return () => { mounted = false; };
   }, []);
 
-  // --- Fetch pre-built strategies (DISCOVERY) ---
+  // --- Fetch pre-built strategies ---
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setLoadingPreBuilt(true);
         const data = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
-        // also fetch user-created strategies so users can use their custom strategies like templates
-        const users = await apiRequest<never, Strategy[]>({ path: "/strategies?type=user", method: "GET" }).catch(() => []);
         if (!mounted) return;
         const adminOnly = (data || []).filter((s) => s?.type === "admin");
         setPreBuiltStrategies(adminOnly.slice(0, 4));
-        setUserStrategies((users || []).slice(0, 6));
       } catch (err: any) {
         console.error("Failed to load pre-built strategies:", err);
         setPreBuiltError(err?.message || String(err));
@@ -233,22 +230,109 @@ export default function TopTradesPage() {
     return () => { mounted = false; };
   }, []);
 
-  // auto-apply from query param (when redirected from My Strategies)
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  useEffect(() => {
-    const applyId = searchParams?.get?.('applyStrategy');
-    if (applyId) {
-      // preview and then remove param
-      previewStrategy(applyId).catch(() => {});
-      // replace the URL without the query param to avoid re-applying
-      try {
-        router.replace('/dashboard/top-trades');
-      } catch (e) {
-        // best-effort
-      }
+  // --- Fetch signals for a strategy ---
+  const fetchStrategySignals = async (strategyId: string) => {
+    if (loadingSignals[strategyId]) return;
+    
+    setLoadingSignals((p) => ({ ...p, [strategyId]: true }));
+    setSignalsError((p) => { const c = { ...p }; delete c[strategyId]; return c; });
+
+    try {
+      const signals = await getPreBuiltStrategySignals(strategyId);
+      setStrategySignals((p) => ({ ...p, [strategyId]: signals || [] }));
+    } catch (err: any) {
+      console.error(`Failed to load signals for strategy ${strategyId}:`, err);
+      setSignalsError((p) => ({ ...p, [strategyId]: err?.message || String(err) }));
+      setStrategySignals((p) => ({ ...p, [strategyId]: [] }));
+    } finally {
+      setLoadingSignals((p) => ({ ...p, [strategyId]: false }));
     }
-  }, [searchParams]);
+  };
+
+  // --- Fetch signals for all strategies when they're loaded ---
+  useEffect(() => {
+    if (preBuiltStrategies.length > 0) {
+      preBuiltStrategies.forEach((strategy) => {
+        if (!strategySignals[strategy.strategy_id] && !loadingSignals[strategy.strategy_id]) {
+          fetchStrategySignals(strategy.strategy_id);
+        }
+      });
+    }
+  }, [preBuiltStrategies]);
+
+  // --- Auto-refresh signals every 60 seconds ---
+  useEffect(() => {
+    if (preBuiltStrategies.length === 0) return;
+    
+    const interval = setInterval(() => {
+      preBuiltStrategies.forEach((strategy) => {
+        fetchStrategySignals(strategy.strategy_id);
+      });
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(interval);
+  }, [preBuiltStrategies]);
+
+  // --- Map signals to trades for display ---
+  const mapSignalsToTrades = (signals: any[]): Trade[] => {
+    if (!signals || signals.length === 0) return [];
+    
+    return signals.map((signal, idx) => {
+      const asset = signal.asset || {};
+      const symbol = asset.symbol || asset.asset_id || 'Unknown';
+      const pair = `${symbol} / USDT`;
+      const score = Number(signal.final_score ?? 0);
+      const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
+      
+      // Get entry price from signal details or asset
+      const entryPrice = signal.details?.[0]?.entry_price || signal.entry_price || signal.entry || null;
+      const stopLossPrice = signal.details?.[0]?.stop_loss || signal.stop_loss_price || null;
+      const takeProfitPrice = signal.details?.[0]?.take_profit_1 || signal.take_profit_price || null;
+      
+      // Get stop loss and take profit percentages from strategy
+      const stopLossPct = signal.stop_loss || null;
+      const takeProfitPct = signal.take_profit || null;
+      
+      // Get explanation text
+      const explanationText = signal.explanations?.[0]?.text || signal.explanation?.text || 'No explanation available';
+      
+      return {
+        id: idx + 1,
+        assetId: asset.asset_id || signal.asset_id || null,
+        pair,
+        type: (signal.action && signal.action.toUpperCase() === 'SELL') ? 'SELL' : 'BUY',
+        confidence,
+        ext: entryPrice ? String(entryPrice) : "—",
+        entry: entryPrice ? String(entryPrice) : "—",
+        stopLoss: stopLossPct ? String(stopLossPct) : "—",
+        progressMin: 0,
+        progressMax: 100,
+        progressValue: Math.min(100, Math.max(0, Math.floor((score || 0) * 100))),
+        entryPrice: entryPrice ? String(entryPrice) : "—",
+        stopLossPrice: stopLossPrice ? String(stopLossPrice) : "—",
+        takeProfit1: takeProfitPct ? String(takeProfitPct) : "—",
+        target: "",
+        insights: explanationText ? [explanationText] : [],
+        profit: "0%",
+        profitValue: 0,
+        volume: "—",
+        volumeValue: 0,
+        winRate: "—",
+        winRateValue: 0,
+        hoursAgo: signal.timestamp ? Math.floor((Date.now() - new Date(signal.timestamp).getTime()) / (1000 * 60 * 60)) : 0,
+        trend_score: score,
+        trend_direction: "STABLE",
+        score_change: 0,
+        volume_ratio: 1,
+        volume_status: "NORMAL",
+      } as Trade;
+    });
+  };
+
+  // --- Get current strategy and its signals ---
+  const currentStrategy = preBuiltStrategies[activeTab] || null;
+  const currentSignals = currentStrategy ? (strategySignals[currentStrategy.strategy_id] || []) : [];
+  const currentTrades = mapSignalsToTrades(currentSignals);
 
   // --- Preview: Apply strategy to trendingTrades but do NOT generate signals ---
   const previewStrategy = async (strategyId: string) => {
@@ -263,163 +347,57 @@ export default function TopTradesPage() {
       setStrategyState((s) => ({ ...s, [strategyId]: "PREVIEW" }));
       setCurrentAppliedStrategyId(strategyId);
       // apply preview to trendingTrades using cached content
-      applyPreviewToTrending(previewCache[strategyId], strategyId);
+      try {
+        const preview = previewCache[strategyId];
+        const mapped = mapBackendToTrades(preview.assets || preview);
+        setTrendingTrades(mapped);
+      } catch (err) {
+        // ignore mapping errors
+      }
       return;
     }
 
+    // Fetch strategy (try to decide whether user strategy or pre-built)
+    let strategy: any = null;
     try {
-      setStrategyState((s) => ({ ...s, [strategyId]: "DISCOVERY" }));
+      strategy = await apiRequest<never, Strategy>({ path: `/strategies/${strategyId}`, method: "GET" }).catch(() => null as any);
+    } catch {
+      strategy = null as any;
+    }
 
-      // Try to find strategy locally (admin templates or user-created). If not present, fetch details from API.
-      let strategy = preBuiltStrategies.find((s) => s.strategy_id === strategyId) || userStrategies.find((s) => s.strategy_id === strategyId);
-      if (!strategy) {
-        try {
-          strategy = await apiRequest<never, Strategy>({ path: `/strategies/${strategyId}`, method: "GET" }).catch(() => null as any);
-        } catch {
-          strategy = null as any;
-        }
-      }
+    // Choose preview endpoint based on strategy type if available. User strategies use the generic preview path.
+    const isUserStrategy = (strategy as any)?.type === "user" || false;
+    const previewPath = isUserStrategy ? `/strategies/${strategyId}/preview?limit=20` : `/strategies/pre-built/${strategyId}/preview?limit=20`;
 
-      // Choose preview endpoint based on strategy type if available. User strategies use the generic preview path.
-      const isUserStrategy = (strategy as any)?.type === "user" || userStrategies.some((s) => s.strategy_id === strategyId);
-      const previewPath = isUserStrategy ? `/strategies/${strategyId}/preview?limit=20` : `/strategies/pre-built/${strategyId}/preview?limit=20`;
-
-      // Fetch preview assets (try appropriate endpoint)
+    try {
       const preview = await apiRequest<never, any>({ path: previewPath, method: "GET" });
-
-      // Combine preview with strategy parameters (use fetched strategy if needed)
       const strategyAny = strategy as any;
       const previewWithParams = {
         assets: Array.isArray(preview) ? preview : (preview?.assets ?? preview?.results ?? []),
         stop_loss_value: strategyAny?.stop_loss_value ?? strategyAny?.stopLossValue ?? null,
         take_profit_value: strategyAny?.take_profit_value ?? strategyAny?.takeProfitValue ?? null,
-        entry_rules: strategyAny?.entry_rules ?? strategyAny?.entryRules ?? null,
-        exit_rules: strategyAny?.exit_rules ?? strategyAny?.exitRules ?? null,
-        engine_weights: strategyAny?.engine_weights ?? strategyAny?.engineWeights ?? null,
-      };
+      } as any;
 
-      setPreviewCache((p) => ({ ...p, [strategyId]: previewWithParams }));
+      // cache preview
+      setPreviewCache((c) => ({ ...c, [strategyId]: previewWithParams }));
       setStrategyState((s) => ({ ...s, [strategyId]: "PREVIEW" }));
       setCurrentAppliedStrategyId(strategyId);
-      applyPreviewToTrending(previewWithParams, strategyId);
-    } catch (err) {
-      console.error("Failed to preview strategy:", err);
-      setStrategyState((s) => ({ ...s, [strategyId]: "DISCOVERY" }));
-    }
-  };
 
-  // Apply preview payload to trendingTrades (modify trade fields inline)
-  const applyPreviewToTrending = (preview: any, strategyId: string) => {
-    // preview might be an object with `assets` array or a map keyed by asset_id; handle both
-    const assetsPreview: any[] = Array.isArray(preview) ? preview : (preview?.assets ?? preview?.results ?? []);
-    const strategyStopLoss = preview?.stop_loss_value;
-    const strategyTakeProfit = preview?.take_profit_value;
-    const strategyEntryRules = preview?.entry_rules ?? null;
-    const strategyExitRules = preview?.exit_rules ?? null;
-    const strategyEngineWeights = preview?.engine_weights ?? null;
-
-    setTrendingTrades((prev) => {
-      const byAssetId = new Map<string, any>();
-      const bySymbol = new Map<string, any>();
-      for (const a of assetsPreview) {
-        const aid = a.asset_id ?? a.asset?.asset_id ?? a.assetId ?? null;
-        const sym = (a.symbol ?? a.asset?.symbol ?? a.asset_symbol ?? '').toString().toUpperCase();
-        if (aid) byAssetId.set(aid, a);
-        if (sym) bySymbol.set(sym, a);
+      // apply preview to trendingTrades (map preview assets into trades)
+      try {
+        const mapped = mapBackendToTrades(previewWithParams.assets || []);
+        setTrendingTrades(mapped);
+      } catch (err) {
+        // best-effort
       }
-      return prev.map((t) => {
-        if (!t.assetId && !t.pair) return t;
-        // try by asset id first, then by symbol extracted from pair
-        let p = t.assetId ? byAssetId.get(t.assetId) : undefined;
-        if (!p) {
-          const symFromPair = (t.pair ?? '').split('/')[0].trim().toUpperCase();
-          p = bySymbol.get(symFromPair) ?? bySymbol.get((t.pair ?? '').trim().toUpperCase());
-        }
-
-        // Build entry/exit rules display: per-asset preview overrides strategy-level rules
-        const entryRules = p?.entry_rules ?? strategyEntryRules ?? [];
-        const exitRules = p?.exit_rules ?? strategyExitRules ?? [];
-
-        // Flexible field extraction with many fallbacks
-        const extVal = p?.price ?? p?.price_usd ?? p?.priceUsd ?? p?.last_price ?? p?.quote ?? p?.market_price ?? t.ext;
-        // Prefer explicit entry values from preview, otherwise fall back to preview price or existing trade entry
-        const entryVal = p?.entry ?? p?.entry_price ?? p?.entryPrice ?? p?.suggested_entry ?? extVal ?? t.entry;
-        const entryPriceVal = p?.entryPrice ?? p?.entry_price ?? p?.entry ?? extVal ?? t.entryPrice;
-        const stopLossVal = p?.stop_loss ?? p?.stopLoss ?? strategyStopLoss ?? t.stopLoss;
-        const stopLossPriceVal = p?.stop_loss_price ?? p?.stopLossPrice ?? stopLossVal ?? t.stopLossPrice;
-        const takeProfitVal = p?.take_profit ?? p?.takeProfit ?? strategyTakeProfit ?? t.takeProfit1;
-
-        // Profit / change
-        const profitRaw = p?.changePercent ?? p?.change_pct ?? p?.profit ?? p?.pnl ?? t.profitValue ?? null;
-        const profitDisplay = profitRaw !== null && profitRaw !== undefined ? (String(profitRaw).toString().includes('%') ? String(profitRaw) : `${String(profitRaw)}%`) : t.profit;
-        const profitValue = Number(String(profitRaw ?? t.profitValue ?? 0)) || 0;
-
-        // Volume
-        const volumeVal = p?.market_volume ?? p?.volume ?? p?.volumeValue ?? t.volume;
-        const volumeValue = Number(p?.market_volume ?? p?.volume ?? p?.volumeValue ?? t.volumeValue ?? 0) || 0;
-
-        // Win rate
-        const winRateRaw = p?.winRate ?? p?.win_rate ?? p?.win_pct ?? t.winRate;
-        const winRateDisplay = winRateRaw !== null && winRateRaw !== undefined ? (String(winRateRaw).toString().includes('%') ? String(winRateRaw) : `${String(winRateRaw)}%`) : t.winRate;
-        const winRateValue = Number(String(winRateRaw ?? t.winRateValue ?? 0)) || 0;
-
-        // Apply preview fields if available, otherwise use strategy-level parameters
-        return {
-          ...t,
-          ext: String(extVal ?? entryPriceVal ?? entryVal ?? t.ext ?? '—'),
-          entry: entryVal ?? t.entry,
-          entryPrice: entryPriceVal ?? t.entryPrice,
-          stopLoss: stopLossVal ?? t.stopLoss,
-          stopLossPrice: stopLossPriceVal ?? t.stopLossPrice,
-          takeProfit1: takeProfitVal ?? t.takeProfit1,
-          insights: (p?.insights ?? p?.reasons ?? t.insights) as string[],
-          target: p?.target ?? t.target,
-          profit: profitDisplay ?? t.profit,
-          profitValue,
-          volume: volumeVal ?? t.volume,
-          volumeValue,
-          winRate: winRateDisplay ?? t.winRate,
-          winRateValue,
-          // attach rules and engine weights for UI
-          entryRules: entryRules,
-          exitRules: exitRules,
-          engineWeights: strategyEngineWeights ?? (t as any).engineWeights ?? null,
-        } as Trade & { entryRules?: any[]; exitRules?: any[]; engineWeights?: any };
-      });
-    });
-  };
-
-  // --- Execute/View Trade: generate signals then fetch signals ---
-  const executeStrategyForAsset = async (strategyId: string, assetId?: string) => {
-    if (!strategyId) return;
-    const key = `${strategyId}:${assetId ?? "all"}`;
-    if (executionLoading[key]) return;
-
-    setExecutionLoading((p) => ({ ...p, [key]: true }));
-    setExecutionError((p) => { const c = { ...p }; delete c[key]; return c; });
-
-    try {
-      // Call POST /strategies/:id/generate-signals with optional assetIds
-      await apiRequest<unknown, any>({ path: `/strategies/${strategyId}/generate-signals`, method: "POST", body: assetId ? { assetIds: [assetId] } : {} });
-
-      // Then fetch signals for the strategy (latest_only=true to get one per asset)
-      const signals = await apiRequest<never, any[]>({ path: `/strategies/${strategyId}/signals?latest_only=true`, method: "GET" });
-      // filter signals for this asset if assetId provided
-      const filtered = Array.isArray(signals) ? (assetId ? signals.filter((s) => (s.asset?.asset_id ?? s.asset_id ?? s.asset)?.toString() === assetId) : signals) : [];
-      setGeneratedSignals((p) => ({ ...p, [key]: filtered }));
-      // mark strategy as executed
-      setStrategyState((s) => ({ ...s, [strategyId]: "EXECUTED" }));
-    } catch (err: any) {
-      console.error("Execution failed:", err);
-      setExecutionError((p) => ({ ...p, [key]: err?.message ?? String(err) }));
-    } finally {
-      setExecutionLoading((p) => ({ ...p, [key]: false }));
+    } catch (err) {
+      console.error('Failed to fetch preview for strategy', strategyId, err);
     }
   };
 
   // --- Pagination / sorting helpers ---
   const filteredAndSortedTrades = useMemo(() => {
-    let filtered = [...trendingTrades];
+    let filtered = [...currentTrades];
     if (timeFilter !== "all") {
       const hoursLimit = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 168 : 720;
       filtered = filtered.filter((trade) => trade.hoursAgo <= hoursLimit);
@@ -437,36 +415,17 @@ export default function TopTradesPage() {
       }
     });
     return filtered;
-  }, [timeFilter, sortBy, trendingTrades]);
+  }, [timeFilter, sortBy, currentTrades]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedTrades.length / ITEMS_PER_PAGE));
   const paginatedTrades = filteredAndSortedTrades.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  useEffect(() => { setCurrentPage(1); }, [timeFilter, sortBy, trendingTrades.length]);
+  useEffect(() => { setCurrentPage(1); }, [timeFilter, sortBy, currentTrades.length, activeTab]);
 
-  // --- View Trade handler (opens overlay and triggers execution when appropriate) ---
+  // --- View Trade handler ---
   const handleViewTrade = async (index: number) => {
     setSelectedTradeIndex(index);
-    const trade = paginatedTrades[index];
-    // if there is an applied strategy, execute for this asset and then show overlay
-    if (currentAppliedStrategyId && trade?.assetId) {
-      // attempt to reuse cached execution
-      const key = `${currentAppliedStrategyId}:${trade.assetId}`;
-      if (!generatedSignals[key] && !executionLoading[key]) {
-        await executeStrategyForAsset(currentAppliedStrategyId, trade.assetId);
-      }
-    }
     setShowTradeOverlay(true);
-  };
-
-  // Utility to render signal info inside overlay for current trade
-  const currentSignalForOverlay = () => {
-    const trade = filteredAndSortedTrades[selectedTradeIndex];
-    if (!trade) return null;
-    const strategyId = currentAppliedStrategyId;
-    if (!strategyId || !trade.assetId) return null;
-    const key = `${strategyId}:${trade.assetId}`;
-    return generatedSignals[key] ?? null;
   };
 
   // --- UI Rendering (reuse existing layout and style) ---
@@ -500,91 +459,74 @@ export default function TopTradesPage() {
         </div>
       </div>
 
-      {/* Pre-built strategies list (Discovery) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {loadingPreBuilt ? (
-          <div className="col-span-full rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
-            <p className="text-sm text-slate-400">Loading templates...</p>
-          </div>
-        ) : preBuiltError ? (
-          <div className="col-span-full rounded-xl bg-red-600/10 p-6 text-center">
-            <p className="text-sm text-red-300">Failed to load templates: {preBuiltError}</p>
-          </div>
-        ) : preBuiltStrategies.length > 0 ? (
-          preBuiltStrategies.map((s, idx) => {
-            const id = s.strategy_id || String(idx);
-            const state = strategyState[id] ?? "DISCOVERY";
-            return (
-              <div key={id} className={`rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 backdrop-blur ${currentAppliedStrategyId === id ? 'ring-2 ring-[#fc4f02]/40' : ''}`}>
-                <div className="mb-2 flex items-center justify-between">
-                  <div>
-                    <p className="mb-1 text-xs text-slate-400">Template</p>
-                    <p className="text-2xl font-bold text-white">{s.name}</p>
-                    <p className="text-xs text-slate-400">Risk: <span className="text-white">{s.risk_level}</span></p>
-                  </div>
-
+      {/* Strategy Tabs */}
+      {loadingPreBuilt ? (
+        <div className="rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
+          <p className="text-sm text-slate-400">Loading strategies...</p>
+        </div>
+      ) : preBuiltError ? (
+        <div className="rounded-xl bg-red-600/10 p-6 text-center">
+          <p className="text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
+        </div>
+      ) : preBuiltStrategies.length > 0 ? (
+        <div className="rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 backdrop-blur">
+          <div className="flex gap-2 border-b border-slate-700/50">
+            {preBuiltStrategies.map((strategy, idx) => {
+              const strategyId = strategy.strategy_id;
+              const isLoading = loadingSignals[strategyId];
+              const error = signalsError[strategyId];
+              const signalCount = strategySignals[strategyId]?.length || 0;
+              
+              return (
+                <button
+                  key={strategyId}
+                  onClick={() => setActiveTab(idx)}
+                  className={`px-4 py-2 text-sm font-medium transition-all rounded-t-lg ${
+                    activeTab === idx
+                      ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30'
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => previewStrategy(id)}
-                      className={`rounded-lg px-3 py-1.5 text-xs font-medium ${state === "PREVIEW" ? 'bg-[#06b6d4] text-white' : 'bg-[--color-surface] text-slate-300 hover:text-white'}`}
-                    >
-                      {state === "PREVIEW" ? 'Applied' : (state === "EXECUTED" ? 'Executed' : 'Apply Strategy')}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-3 space-y-2 rounded-md bg-[--color-surface] p-3 text-xs text-slate-300">
-                  <div>
-                    <p className="text-sm text-white font-semibold">{s.name}</p>
-                    <p className="text-xs text-slate-400">{s.description || "No description"}</p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-slate-400">Entry Rules</p>
-                    {s.entry_rules && s.entry_rules.length > 0 ? (
-                      <ul className="ml-3 list-disc">
-                        {s.entry_rules.map((r, i) => (
-                          <li key={i} className="text-xs text-slate-300">{r.indicator} {r.operator} {String(r.value)}{r.timeframe ? ` (${r.timeframe})` : ''}</li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="text-xs text-slate-400">None</p>
+                    <span>{strategy.name}</span>
+                    {isLoading && <span className="text-xs">⏳</span>}
+                    {!isLoading && !error && signalCount > 0 && (
+                      <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded">{signalCount}</span>
                     )}
+                    {error && <span className="text-xs">⚠️</span>}
                   </div>
-
-                  <div className="flex gap-4">
-                    <div>
-                      <p className="text-xs text-slate-400">Stop Loss</p>
-                      <p className="text-sm text-white">{s.stop_loss_type || '—'} {s.stop_loss_value ?? '—'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-400">Take Profit</p>
-                      <p className="text-sm text-white">{s.take_profit_type || '—'} {s.take_profit_value ?? '—'}</p>
-                    </div>
-                  </div>
-
-                  {/* show cached preview results when available */}
-                  {previewCache[id] && (
-                    <div className="mt-3 space-y-2 rounded-md bg-[--color-surface]/80 p-3 text-xs text-slate-200">
-                      <p className="text-sm font-semibold text-white">Preview Applied</p>
-                      <p className="text-xs text-slate-400">Preview cached while page open</p>
-                    </div>
-                  )}
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* Tab Content */}
+          {currentStrategy && (
+            <div className="mt-4">
+              <div className="mb-4 rounded-lg bg-[--color-surface]/50 p-4">
+                <h3 className="text-lg font-semibold text-white mb-1">{currentStrategy.name}</h3>
+                <p className="text-sm text-slate-400">{currentStrategy.description || "No description"}</p>
+                <div className="mt-2 flex gap-4 text-xs text-slate-300">
+                  <span>Risk: <span className="text-white">{currentStrategy.risk_level}</span></span>
+                  <span>Stop Loss: <span className="text-white">{currentStrategy.stop_loss_value}%</span></span>
+                  <span>Take Profit: <span className="text-white">{currentStrategy.take_profit_value}%</span></span>
                 </div>
               </div>
-            );
-          })
-        ) : (
-          <div className="col-span-full rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
-            <p className="text-sm text-slate-400">No pre-built admin templates available</p>
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
+          <p className="text-sm text-slate-400">No pre-built strategies available</p>
+        </div>
+      )}
 
-      {/* Top Trades List */}
+      {/* Signals/Trades List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Top Performing Trades</h2>
+          <h2 className="text-lg font-semibold text-white">
+            {currentStrategy ? `${currentStrategy.name} Signals` : 'Trading Signals'}
+          </h2>
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400">Sort by:</span>
             <select
@@ -599,7 +541,21 @@ export default function TopTradesPage() {
           </div>
         </div>
 
-        {filteredAndSortedTrades.length > 0 ? (
+        {currentStrategy && loadingSignals[currentStrategy.strategy_id] ? (
+          <div className="rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur">
+            <p className="text-sm text-slate-400">Loading signals...</p>
+          </div>
+        ) : currentStrategy && signalsError[currentStrategy.strategy_id] ? (
+          <div className="rounded-2xl bg-red-600/10 p-8 text-center">
+            <p className="text-sm text-red-300">Failed to load signals: {signalsError[currentStrategy.strategy_id]}</p>
+            <button
+              onClick={() => fetchStrategySignals(currentStrategy.strategy_id)}
+              className="mt-4 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filteredAndSortedTrades.length > 0 ? (
           <div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {paginatedTrades.map((trade, index) => (
@@ -713,7 +669,11 @@ export default function TopTradesPage() {
           </div>
         ) : (
           <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
-            <p className="text-sm text-slate-400">No trades found for the selected time period</p>
+            <p className="text-sm text-slate-400">
+              {currentStrategy 
+                ? `No signals available for ${currentStrategy.name}. Signals are generated every 10 minutes.`
+                : 'No signals found for the selected time period'}
+            </p>
           </div>
         )}
       </div>
@@ -755,61 +715,44 @@ export default function TopTradesPage() {
                 ))}
               </div>
 
-              {/* Execution / Signals area */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-white">Execution & Signals</h3>
-                <div className="rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent p-4 text-xs text-slate-300">
-                  {currentAppliedStrategyId ? (
-                    <>
-                      <p className="text-xs text-slate-400">Applied Strategy: <span className="text-white">{currentAppliedStrategyId}</span></p>
-                      <div className="mt-3">
-                        {(() => {
-                          const trade = filteredAndSortedTrades[selectedTradeIndex];
-                          const key = `${currentAppliedStrategyId}:${trade.assetId ?? "all"}`;
-                          if (executionLoading[key]) return <p className="text-xs text-slate-400">Generating signals...</p>;
-                          if (executionError[key]) return <p className="text-xs text-red-300">Error: {executionError[key]}</p>;
-                          const sigs = generatedSignals[key];
-                          if (!sigs) {
-                            return (
-                              <div>
-                                <p className="text-xs text-slate-400">No execution data yet.</p>
-                                <div className="mt-2 flex gap-2">
-                                  <button onClick={() => executeStrategyForAsset(currentAppliedStrategyId, trade.assetId)} className="rounded-md bg-gradient-to-r from-[#10b981] to-[#06b6d4] px-3 py-1.5 text-xs font-medium text-white">Generate Signals</button>
-                                </div>
-                              </div>
-                            );
-                          }
-                          if (sigs.length === 0) return <p className="text-xs text-slate-400">No signals returned</p>;
-                          return (
-                            <div className="space-y-3">
-                              {sigs.map((sig: any, i: number) => (
-                                <div key={i} className="space-y-1">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="text-xs text-slate-400">{sig.asset?.symbol ?? sig.asset_id ?? 'ASSET'}</p>
-                                      <p className="text-sm font-medium text-white">{(sig.action || sig.final_action || sig.recommendation || 'HOLD').toString()}</p>
-                                      <p className="text-xs text-slate-400">Score: {sig.final_score ?? sig.score ?? sig.confidence ?? '—'}</p>
-                                    </div>
-                                    <div className="max-w-[60%] text-xs text-slate-300">{sig.explanations && sig.explanations.length > 0 ? sig.explanations[0].text : sig.explanation || sig.summary || 'No explanation'}</div>
-                                  </div>
-                                  {/* score breakdown if present */}
-                                  {sig.breakdown && (
-                                    <div className="mt-1 grid grid-cols-2 gap-2 text-xs text-slate-400">
-                                      {Object.entries(sig.breakdown).map(([k, v]) => <div key={k}><span className="text-slate-300">{k}:</span> <span className="ml-1 text-white">{String(v)}</span></div>)}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })()}
+              {/* Signal Details */}
+              {(() => {
+                const trade = filteredAndSortedTrades[selectedTradeIndex];
+                const signal = currentSignals.find((s: any) => {
+                  const assetId = s.asset?.asset_id || s.asset_id;
+                  return assetId === trade.assetId;
+                });
+                
+                if (!signal) return null;
+                
+                return (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-white">Signal Details</h3>
+                    <div className="rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent p-4 text-xs text-slate-300">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Action:</span>
+                          <span className="font-medium text-white">{signal.action || 'HOLD'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Final Score:</span>
+                          <span className="font-medium text-white">{signal.final_score ?? '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-400">Confidence:</span>
+                          <span className="font-medium text-white">{signal.confidence ?? '—'}</span>
+                        </div>
+                        {signal.explanations && signal.explanations.length > 0 && (
+                          <div className="mt-3 pt-3 border-t border-slate-700/50">
+                            <p className="text-xs text-slate-400 mb-2">Explanation:</p>
+                            <p className="text-sm text-slate-200">{signal.explanations[0].text}</p>
+                          </div>
+                        )}
                       </div>
-                    </>
-                  ) : (
-                    <p className="text-xs text-slate-400">No strategy applied. Click "Apply Strategy" on a template to preview it against trending assets.</p>
-                  )}
-                </div>
-              </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
             </div>
           </div>
