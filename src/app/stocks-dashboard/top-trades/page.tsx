@@ -357,11 +357,11 @@ export default function StocksTopTradesPage() {
       {/* Trade Details Overlay */}
       {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
         <div
-          className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm"
           onClick={() => setShowTradeOverlay(false)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur"
+            className="relative mx-4 w-full max-w-4xl max-h-[700px] rounded-2xl  bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 shadow-2xl shadow-black/50 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-6 flex items-center justify-between">
@@ -377,7 +377,7 @@ export default function StocksTopTradesPage() {
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <span
                   className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY"
@@ -391,25 +391,49 @@ export default function StocksTopTradesPage() {
                 <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
               </div>
 
-              <div className="space-y-4 rounded-xl  bg-[--color-surface]/60 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Entry</span>
-                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].entryPrice}</span>
+              {/* Two-column layout for details and stats */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left column - Trade Details */}
+                <div className="space-y-4 rounded-xl  bg-[--color-surface]/60 p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Entry</span>
+                    <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].entryPrice}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Stop-Loss</span>
+                    <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].stopLossPrice}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Take Profit 1</span>
+                    <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit1}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Take Profit 2</span>
+                    <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit2}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Stop-Loss</span>
-                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].stopLossPrice}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Take Profit 1</span>
-                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit1}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Take Profit 2</span>
-                  <span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit2}</span>
+
+                {/* Right column - Profit & Volume Stats */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-white">Trade Stats</h3>
+                  <div className="flex flex-col gap-2 rounded-xl  bg-[--color-surface]/60 p-4">
+                  <div>
+                    <p className="text-xs text-slate-400">Profit</p>
+                    <p className="text-lg font-semibold text-green-400">{filteredAndSortedTrades[selectedTradeIndex].profit}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">Volume</p>
+                    <p className="text-lg font-semibold text-white">{filteredAndSortedTrades[selectedTradeIndex].volume}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400">Win Rate</p>
+                    <p className="text-lg font-semibold text-white">{filteredAndSortedTrades[selectedTradeIndex].winRate}</p>
+                  </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Insights below - full width */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-white">Insights</h3>
                 {filteredAndSortedTrades[selectedTradeIndex].insights.map((insight: string, idx: number) => (
@@ -419,15 +443,6 @@ export default function StocksTopTradesPage() {
                   </div>
                 ))}
               </div>
-
-              <div className="flex items-center gap-6 rounded-xl  bg-[--color-surface]/60 p-4">
-                <div>
-                  <p className="text-xs text-slate-400">Profit</p>
-                  <p className="text-lg font-semibold text-green-400">{filteredAndSortedTrades[selectedTradeIndex].profit}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-400">Volume</p>
-                  <p className="text-lg font-semibold text-white">{filteredAndSortedTrades[selectedTradeIndex].volume}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-400">Win Rate</p>

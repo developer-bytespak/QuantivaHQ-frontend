@@ -693,8 +693,8 @@ export default function TopTradesPage() {
 
       {/* Trade Details Overlay */}
       {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
-        <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowTradeOverlay(false)}>
-          <div className="relative mx-4 w-full max-w-2xl rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowTradeOverlay(false)}>
+          <div className="relative mx-4 w-full max-w-4xl max-h-[700px] rounded-2xl  bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 shadow-2xl shadow-black/50 backdrop-blur" onClick={(e) => e.stopPropagation()}>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Trade Details</h2>
               <button onClick={() => setShowTradeOverlay(false)} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white" aria-label="Close">
@@ -702,7 +702,7 @@ export default function TopTradesPage() {
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
                   {filteredAndSortedTrades[selectedTradeIndex].type}
@@ -711,13 +711,57 @@ export default function TopTradesPage() {
                 <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
               </div>
 
-                <div className="space-y-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4">
+              {/* Two-column layout for details and signal */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left column - Trade Details */}
+                <div className="space-y-4 rounded-xl bg-gradient-to-br from-white/[0.12] to-white/[0.03] p-4">
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Entry</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].entryPrice ?? filteredAndSortedTrades[selectedTradeIndex].entry)}</span></div>
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Stop-Loss</span><span className="text-base font-medium text-white">{((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss) ? `${formatPercent((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss_price ?? filteredAndSortedTrades[selectedTradeIndex].stopLossPrice)})` : '—'}</span></div>
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Take Profit 1</span><span className="text-base font-medium text-white">{(filteredAndSortedTrades[selectedTradeIndex] as any).take_profit ? `${formatPercent((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit_price ?? filteredAndSortedTrades[selectedTradeIndex].takeProfit1)})` : (filteredAndSortedTrades[selectedTradeIndex].takeProfit1 ? `${formatPercent(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit_price ?? filteredAndSortedTrades[selectedTradeIndex].takeProfit1)})` : '—')}</span></div>
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Additional Info</span><span className="text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span></div>
                 </div>
 
+                {/* Right column - Signal Details */}
+                {(() => {
+                  const trade = filteredAndSortedTrades[selectedTradeIndex];
+                  const signal = currentSignals.find((s: any) => {
+                    const assetId = s.asset?.asset_id || s.asset_id;
+                    return assetId === trade.assetId;
+                  });
+                  
+                  if (!signal) return null;
+                  
+                  return (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-semibold text-white">Signal Details</h3>
+                      <div className="rounded-xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] p-4 text-xs text-slate-300">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Action:</span>
+                            <span className="font-medium text-white">{signal.action || 'HOLD'}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Final Score:</span>
+                            <span className="font-medium text-white">{signal.final_score ?? '—'}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-400">Confidence:</span>
+                            <span className="font-medium text-white">{signal.confidence ?? '—'}</span>
+                          </div>
+                          {signal.explanations && signal.explanations.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-slate-700/50">
+                              <p className="text-xs text-slate-400 mb-2">Explanation:</p>
+                              <p className="text-sm text-slate-200">{signal.explanations[0].text}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Insights below - full width */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-white">Insights</h3>
                 {filteredAndSortedTrades[selectedTradeIndex].insights.map((insight: string, idx: number) => (
@@ -727,45 +771,6 @@ export default function TopTradesPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Signal Details */}
-              {(() => {
-                const trade = filteredAndSortedTrades[selectedTradeIndex];
-                const signal = currentSignals.find((s: any) => {
-                  const assetId = s.asset?.asset_id || s.asset_id;
-                  return assetId === trade.assetId;
-                });
-                
-                if (!signal) return null;
-                
-                return (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-white">Signal Details</h3>
-                    <div className="rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent p-4 text-xs text-slate-300">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">Action:</span>
-                          <span className="font-medium text-white">{signal.action || 'HOLD'}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">Final Score:</span>
-                          <span className="font-medium text-white">{signal.final_score ?? '—'}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-slate-400">Confidence:</span>
-                          <span className="font-medium text-white">{signal.confidence ?? '—'}</span>
-                        </div>
-                        {signal.explanations && signal.explanations.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-slate-700/50">
-                            <p className="text-xs text-slate-400 mb-2">Explanation:</p>
-                            <p className="text-sm text-slate-200">{signal.explanations[0].text}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
 
             </div>
           </div>
