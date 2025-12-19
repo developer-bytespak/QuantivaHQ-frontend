@@ -10,6 +10,23 @@ import { StrategyCard } from "./components/strategy-card";
 import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
 
+// --- Formatting helpers ---
+const formatCurrency = (v: any) => {
+  if (v === null || v === undefined || v === '—' || v === '') return '—';
+  const n = Number(String(v));
+  if (isNaN(n)) return String(v);
+  return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
+};
+
+const formatPercent = (v: any) => {
+  if (v === null || v === undefined || v === '—' || v === '') return '—';
+  const s = String(v).trim();
+  if (s.endsWith('%')) return s;
+  const n = Number(s);
+  if (isNaN(n)) return s;
+  return `${n}%`;
+};
+
 interface Trade {
   id: number;
   assetId?: string;
@@ -480,6 +497,77 @@ export default function PaperTradingPage() {
           </div>
         )}
       </div>
+
+      {/* Trade Details Overlay */}
+      {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
+        <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowTradeOverlay(false)}>
+          <div className="relative mx-4 w-full max-w-4xl max-h-[700px] rounded-2xl  bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 shadow-2xl shadow-black/50 backdrop-blur overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-6 flex items-center justify-between sticky top-0 bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 -m-4 mb-2">
+              <h2 className="text-2xl font-bold text-white">Trade Details</h2>
+              <button onClick={() => setShowTradeOverlay(false)} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white" aria-label="Close">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="space-y-4 p-4">
+              <div className="flex items-center gap-3">
+                <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
+                  {filteredAndSortedTrades[selectedTradeIndex].type}
+                </span>
+                <span className="text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].pair}</span>
+                <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
+              </div>
+
+              {/* Two-column layout for details */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Left column - Trade Details */}
+                <div className="space-y-4 rounded-xl bg-gradient-to-br from-white/[0.12] to-white/[0.03] p-4">
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Entry</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].entryPrice ?? filteredAndSortedTrades[selectedTradeIndex].entry)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Stop-Loss</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].stopLossPrice ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Take Profit 1</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Additional Info</span><span className="text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span></div>
+                </div>
+
+                {/* Right column - Stats */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-white">Trade Stats</h3>
+                  <div className="rounded-xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] p-4 text-xs text-slate-300">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Profit</span>
+                        <span className="font-medium text-green-400">{filteredAndSortedTrades[selectedTradeIndex].profit}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Volume</span>
+                        <span className="font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].volume}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-400">Win Rate</span>
+                        <span className="font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].winRate}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Insights below - full width */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-white">Insights</h3>
+                {filteredAndSortedTrades[selectedTradeIndex].insights && filteredAndSortedTrades[selectedTradeIndex].insights.length > 0 ? (
+                  filteredAndSortedTrades[selectedTradeIndex].insights.map((insight: string, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-400" />
+                      <p className="text-sm text-slate-300">{insight}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-400">No insights available</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {showAutoTradeModal && selectedSignal && (

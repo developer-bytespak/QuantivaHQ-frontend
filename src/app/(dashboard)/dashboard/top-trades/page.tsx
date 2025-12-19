@@ -35,11 +35,11 @@ const formatPercent = (v: any) => {
 const getTrendDirectionBadge = (direction?: string) => {
   switch (direction) {
     case 'TRENDING_UP':
-      return { color: 'bg-green-500/20 text-green-400', icon: '📈', label: 'UP' };
+      return { color: 'bg-green-500/20 text-green-400', number: '1', label: 'UP' };
     case 'TRENDING_DOWN':
-      return { color: 'bg-red-500/20 text-red-400', icon: '📉', label: 'DOWN' };
+      return { color: 'bg-red-500/20 text-red-400', number: '2', label: 'DOWN' };
     default:
-      return { color: 'bg-slate-500/20 text-slate-300', icon: '→', label: 'STABLE' };
+      return { color: 'bg-slate-500/20 text-slate-300', number: '3', label: 'STABLE' };
   }
 };
 
@@ -47,11 +47,11 @@ const getTrendDirectionBadge = (direction?: string) => {
 const getVolumeStatusBadge = (status?: string) => {
   switch (status) {
     case 'MASSIVE_SURGE':
-      return { color: 'bg-purple-500/20 text-purple-300', icon: '🚀', label: 'SURGE' };
+      return { color: 'bg-purple-500/20 text-purple-300', number: '1', label: 'SURGE' };
     case 'VOLUME_SURGE':
-      return { color: 'bg-blue-500/20 text-blue-300', icon: '📊', label: 'SURGE' };
+      return { color: 'bg-blue-500/20 text-blue-300', number: '2', label: 'SURGE' };
     default:
-      return { color: 'bg-slate-600/20 text-slate-400', icon: '◆', label: 'NORMAL' };
+      return { color: 'bg-slate-600/20 text-slate-400', number: '3', label: 'NORMAL' };
   }
 };
 
@@ -588,7 +588,7 @@ export default function TopTradesPage() {
                         const trendBadge = getTrendDirectionBadge(trade.trend_direction);
                         return (
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${trendBadge.color}`}>
-                            {trendBadge.icon} {trendBadge.label}
+                            #{trendBadge.number} {trendBadge.label}
                           </span>
                         );
                       })()}
@@ -598,7 +598,7 @@ export default function TopTradesPage() {
                         const volBadge = getVolumeStatusBadge(trade.volume_status);
                         return (
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${volBadge.color}`}>
-                            {volBadge.icon} {volBadge.label}
+                            #{volBadge.number} {volBadge.label}
                           </span>
                         );
                       })()}

@@ -25,11 +25,11 @@ export function StrategyCard({
   const getTrendDirectionBadge = (direction?: string) => {
     switch (direction) {
       case "TRENDING_UP":
-        return { color: "bg-green-500/20 text-green-400", icon: "📈", label: "UP" };
+        return { color: "bg-green-500/20 text-green-400", number: "1", label: "UP" };
       case "TRENDING_DOWN":
-        return { color: "bg-red-500/20 text-red-400", icon: "📉", label: "DOWN" };
+        return { color: "bg-red-500/20 text-red-400", number: "2", label: "DOWN" };
       default:
-        return { color: "bg-slate-500/20 text-slate-300", icon: "→", label: "STABLE" };
+        return { color: "bg-slate-500/20 text-slate-300", number: "3", label: "STABLE" };
     }
   };
 
@@ -37,11 +37,11 @@ export function StrategyCard({
   const getVolumeStatusBadge = (status?: string) => {
     switch (status) {
       case "MASSIVE_SURGE":
-        return { color: "bg-purple-500/20 text-purple-300", icon: "🚀", label: "SURGE" };
+        return { color: "bg-purple-500/20 text-purple-300", number: "1", label: "SURGE" };
       case "VOLUME_SURGE":
-        return { color: "bg-blue-500/20 text-blue-300", icon: "📊", label: "SURGE" };
+        return { color: "bg-blue-500/20 text-blue-300", number: "2", label: "SURGE" };
       default:
-        return { color: "bg-slate-600/20 text-slate-400", icon: "◆", label: "NORMAL" };
+        return { color: "bg-slate-600/20 text-slate-400", number: "3", label: "NORMAL" };
     }
   };
 
@@ -90,10 +90,10 @@ export function StrategyCard({
         {/* Trend & Volume Badges */}
         <div className="flex gap-2">
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${trendBadge.color}`}>
-            {trendBadge.icon} {trendBadge.label}
+            #{trendBadge.number} {trendBadge.label}
           </span>
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${volBadge.color}`}>
-            {volBadge.icon} {volBadge.label}
+            #{volBadge.number} {volBadge.label}
           </span>
         </div>
 
@@ -194,19 +194,19 @@ export function StrategyCard({
             onClick={onAutoTrade}
             className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
           >
-            🤖 Auto Trade
+            Auto Trade
           </button>
           <button
             onClick={onManualTrade}
             className="flex-1 rounded-xl bg-slate-700/50 px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:bg-slate-700 hover:text-white"
           >
-            ✋ Manual
+            Manual
           </button>
           <button
             onClick={onViewDetails}
             className="rounded-xl bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white"
           >
-            👁️ View
+            View
           </button>
         </div>
       </div>
