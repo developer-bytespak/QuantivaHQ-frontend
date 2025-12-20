@@ -9,6 +9,7 @@ import { BalanceOverview } from "./components/balance-overview";
 import { StrategyCard } from "./components/strategy-card";
 import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
+import { OrdersPanel } from "./components/orders-panel";
 import TradeLeaderboard from "./components/trade-leaderboard";
 
 // ⏱️ API Refresh Intervals (in milliseconds)
@@ -93,6 +94,7 @@ export default function PaperTradingPage() {
   // Leaderboard (frontend-only, ephemeral)
   const [tradeRecords, setTradeRecords] = useState<TradeRecord[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showOrdersPanel, setShowOrdersPanel] = useState(false);
 
   // --- Load testnet status on mount ---
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function PaperTradingPage() {
   useEffect(() => {
     if (status && status.configured) {
       loadAccountData();
-      const interval = setInterval(loadAccountData, 10000);
+      const interval = setInterval(loadAccountData, ACCOUNT_DATA_REFRESH_INTERVAL);
       return () => clearInterval(interval);
     }
   }, [status?.configured]);
@@ -121,7 +123,7 @@ export default function PaperTradingPage() {
       setLoadingBalance(true);
       const [balanceData, openOrders] = await Promise.all([
         binanceTestnetService.getAccountBalance(),
-        binanceTestnetService.getOpenOrders(),
+        binanceTestnetService.getAllOrders(),  // Fetch all orders to count open ones 
       ]);
 
       setBalance(balanceData.totalBalanceUSD);
@@ -192,7 +194,7 @@ export default function PaperTradingPage() {
     }
   }, [preBuiltStrategies]);
 
-  // --- Auto-refresh signals every 60 seconds ---
+  // --- Auto-refresh signals every interval ---
   useEffect(() => {
     if (preBuiltStrategies.length === 0) return;
 
@@ -200,7 +202,7 @@ export default function PaperTradingPage() {
       preBuiltStrategies.forEach((strategy) => {
         fetchStrategySignals(strategy.strategy_id);
       });
-    }, 60000);
+    }, SIGNALS_REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
   }, [preBuiltStrategies]);
@@ -377,8 +379,21 @@ export default function PaperTradingPage() {
           </p>
         </div>
 
-        {/* Leaderboard toggle button */}
-        <div>
+        {/* Action Buttons */}
+        <div className="flex gap-3">
+          {/* Orders Panel Button */}
+          <button
+            onClick={() => setShowOrdersPanel(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50"
+            title="View all orders"
+          >
+            <span>Orders</span>
+            <span className="text-xs bg-gradient-to-r from-blue-500 to-blue-400 text-white px-2 py-0.5 rounded-full font-bold">
+              {openOrdersCount}
+            </span>
+          </button>
+
+          {/* Leaderboard Button */}
           <button
             onClick={() => setShowLeaderboard(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50"
@@ -558,6 +573,13 @@ export default function PaperTradingPage() {
         <div className="fixed bottom-8 right-8 z-[10000] animate-fade-in rounded-lg bg-green-600 px-6 py-3 text-white shadow-lg">
           {successMessage}
         </div>
+      )}
+
+      {/* Orders Panel */}
+      {showOrdersPanel && (
+        <OrdersPanel
+          onClose={() => setShowOrdersPanel(false)}
+        />
       )}
 
       {/* Leaderboard panel */}
