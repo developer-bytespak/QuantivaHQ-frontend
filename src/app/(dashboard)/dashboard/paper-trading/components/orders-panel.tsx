@@ -29,9 +29,33 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "open" | "filled" | "canceled">("all");
 
+  // Comprehensive list of all major trading symbols to fetch orders from
+  const TRADING_SYMBOLS = [
+    // Top cryptocurrencies
+    "BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "ADAUSDT", "DOGEUSDT", "SOLUSDT", "MATICUSDT",
+    // Layer 2 & Scaling
+    "ARBUSDT", "OPUSDT", "LUSUSDT", "STRKUSDT",
+    // DeFi tokens
+    "AAVEUSD T", "UNIUSDT", "LINKUSDT", "CURVEUSDT", "CONVEXUSDT", "BALANCER",
+    // L1 Alternatives
+    "AVAXUSDT", "ATOMUSDT", "NEARUSDT", "COSUSDT", "THETAUSDT", "ALGOUSDT",
+    // Altcoins
+    "LTCUSDT", "BCHUSDT", "ETCUSDT", "VETUSDT", "FILAUSDT", "ICPUSDT", "APTUDT",
+    // Meme coins
+    "SHIBUSDT", "PEPEUSDT", "BONKUSDT", "WIFUSDT",
+    // Payments
+    "USDCUSDT", "DAIUSDT", "TUSDT", "BUSDUSDT",
+    // Gaming & Metaverse
+    "AXSUSDT", "SANDUSDT", "ENJUSDT", "GALAUSED",
+    // Oracle & Data
+    "CHRUSDT", "AARUSDT",
+    // Additional major pairs
+    "RSKUSDT", "MKRUSDT", "COMPUSDT", "SNXUSDT", "SUSHIUSDT",
+  ];
+
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 5000); // Refresh every 5 seconds
+    const interval = setInterval(fetchOrders, 200000); // Refresh every 2 seconds
     return () => clearInterval(interval);
   }, []);
 
@@ -47,9 +71,23 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
     try {
       setLoading(true);
       setError(null);
-      // Uses /binance-testnet/orders/all endpoint
-      const allOrders = await binanceTestnetService.getAllOrders(undefined, 50);
-      setOrders((allOrders as unknown as Order[]) || []);
+
+      // Fetch orders for all common trading symbols
+      const allOrdersData: Order[] = [];
+      const fetchPromises = TRADING_SYMBOLS.map((symbol) =>
+        binanceTestnetService.getAllOrders(symbol, 50)
+          .then((orders) => allOrdersData.push(...((orders as unknown as Order[]) || [])))
+          .catch((err) => console.warn(`Failed to fetch orders for ${symbol}:`, err))
+      );
+
+      await Promise.all(fetchPromises);
+
+      // Deduplicate by orderId and sort by most recent
+      const uniqueOrders = Array.from(
+        new Map(allOrdersData.map((order) => [order.orderId, order])).values()
+      ).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      setOrders(uniqueOrders || []);
     } catch (err: any) {
       console.error("Failed to fetch orders:", err);
       setError(err?.message || "Failed to fetch orders");
