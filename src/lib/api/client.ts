@@ -54,15 +54,13 @@ export async function apiRequest<TRequest, TResponse = unknown>({
   // Determine timeout: use provided timeout, or detect ML operations (news/sentiment), or default to 30s
   let requestTimeout = timeout;
   if (!requestTimeout) {
-    // Increase timeout for ML-heavy operations (news, sentiment analysis)
-    // FinBERT initialization on first use requires:
-    // - Downloading 438MB model from Hugging Face (2-5 minutes depending on internet speed)
-    // - Loading model into memory (30-60 seconds)
-    // Total can take 5-10 minutes on first use
-    if (path.includes('/news/') || path.includes('/sentiment')) {
-      requestTimeout = 600000; // 10 minutes for ML operations (allows time for model download + init)
+    // News/sentiment now read from DB (instant), but still allow extra time for Python refresh
+    if (path.includes('/news/') && path.includes('forceRefresh=true')) {
+      requestTimeout = 300000; // 5 minutes only for force refresh
+    } else if (path.includes('/sentiment')) {
+      requestTimeout = 60000; // 1 minute for sentiment analysis
     } else {
-      requestTimeout = 30000; // 30 seconds for regular API requests
+      requestTimeout = 30000; // 30 seconds for regular API requests (including DB news reads)
     }
   }
 

@@ -416,18 +416,11 @@ export default function AIInsightsPage() {
       setIsInitializingML(false);
       
       // Enhance news with AI insights
-      // Extract coin symbol from news title/description if possible, otherwise use "CRYPTO"
-      const enhancedNews = data.news_items.map((item) => {
-        // Try to detect coin symbol from title/description
-        let detectedSymbol = "CRYPTO";
-        const text = `${item.title} ${item.description}`.toUpperCase();
-        for (const coin of POPULAR_COINS) {
-          if (text.includes(coin) || text.includes(coin.toLowerCase())) {
-            detectedSymbol = coin;
-            break;
-          }
-        }
-        return enhanceNewsWithAI(item, detectedSymbol);
+      // Use the symbol field from the API response (already includes symbol for each news item)
+      const enhancedNews = data.news_items.map((item: any) => {
+        // Use the symbol from the response, fallback to "CRYPTO" if not available
+        const symbol = item.symbol || "CRYPTO";
+        return enhanceNewsWithAI(item, symbol);
       });
       
       // Sort by date (most recent first)
