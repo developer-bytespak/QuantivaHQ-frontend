@@ -115,6 +115,7 @@ export default function SignUpPage() {
             username: fullName.split(" ")[0] || email.split("@")[0],
             password,
           },
+          credentials: "include",
         });
 
         // Store user info
@@ -135,15 +136,22 @@ export default function SignUpPage() {
               emailOrUsername: email,
               password,
             },
+            credentials: "include",
           });
 
           // Store pending email and password for 2FA verification
           localStorage.setItem("quantivahq_pending_email", email);
           localStorage.setItem("quantivahq_pending_password", password);
 
+          // Debug: Log cookies
+          if (process.env.NODE_ENV === "development") {
+            console.log("[Signup] Cookies after auto-login:", document.cookie);
+          }
+
           // Navigate to 2FA verification page
           router.push("/onboarding/verify-2fa");
         } catch (loginError: any) {
+          console.error("[Signup] Auto-login error:", loginError);
           // If auto-login fails, show error but don't switch tabs
           setError(loginError.message || "Registration successful, but automatic login failed. Please log in manually.");
           setIsLoading(false);
@@ -173,6 +181,7 @@ export default function SignUpPage() {
             emailOrUsername: email,
             password,
           },
+          credentials: "include",
         });
 
         // Store pending email and password for 2FA verification
@@ -181,9 +190,15 @@ export default function SignUpPage() {
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_auth_method", "email");
 
+        // Debug: Log cookies
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Login] Cookies after login:", document.cookie);
+        }
+
         // Navigate to 2FA verification page
         router.push("/onboarding/verify-2fa");
       } catch (error: any) {
+        console.error("[Login] Login error:", error);
         setError(error.message || "Login failed. Please check your credentials.");
         setIsLoading(false);
       }

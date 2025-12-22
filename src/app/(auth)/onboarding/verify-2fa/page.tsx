@@ -14,55 +14,8 @@ export default function Verify2FAPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-  // Check if user is already authenticated and redirect if so
-  useEffect(() => {
-    let isMounted = true;
-    
-    const checkAuth = async () => {
-      try {
-        // Try to get current user - if successful, user is already authenticated
-        await getCurrentUser();
-        
-        // User is already authenticated, redirect immediately
-        if (isMounted) {
-          await navigateToNextRoute(router);
-          return;
-        }
-      } catch (error: any) {
-        // User is not authenticated (expected for 2FA page)
-        // Check if it's a 401/unauthorized error (expected)
-        if (error?.status === 401 || error?.statusCode === 401 || 
-            error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
-          // User is not authenticated, allow access to 2FA page
-          if (isMounted) {
-            setIsCheckingAuth(false);
-          }
-        } else {
-          // Other error - still allow access but log it
-          console.error("Error checking authentication:", error);
-          if (isMounted) {
-            setIsCheckingAuth(false);
-          }
-        }
-      }
-    };
-    
-    // Add timeout to prevent hanging
-    const timeoutId = setTimeout(() => {
-      if (isMounted) {
-        setIsCheckingAuth(false);
-      }
-    }, 5000); // 5 second timeout
-    
-    checkAuth();
-    
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [router]);
+  // No auth check needed here - users come to this page BEFORE they're authenticated
+  // The auth check was causing issues by trying to verify cookies that don't exist yet
 
   useEffect(() => {
     // Get email/username from localStorage (set during login)
@@ -118,9 +71,29 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
 
+      // Debug: Log cookies to verify they're being set
+      if (process.env.NODE_ENV === "development") {
+        console.log("[2FA] Cookies after verification:", document.cookie);
+      }
+
+      // Wait for cookies to be properly stored by the browser before navigation
+      // This is critical for cross-origin cookie handling in production
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      // Verify authentication before navigating
+      try {
+        await getCurrentUser();
+        console.log("[2FA] Authentication verified successfully");
+      } catch (authError: any) {
+        console.error("[2FA] Authentication verification failed:", authError);
+        // If auth verification fails, still try to navigate but log the issue
+        // The flow router will handle redirects if needed
+      }
+
       // Use flow router to determine next step
       await navigateToNextRoute(router);
     } catch (error: any) {
+      console.error("[2FA] Verification error:", error);
       setError(error.message || "Invalid verification code. Please try again.");
     } finally {
       setIsLoading(false);
@@ -162,20 +135,6 @@ export default function Verify2FAPage() {
       setIsLoading(false);
     }
   };
-
-  // Show loading state while checking authentication
-  if (isCheckingAuth) {
-    return (
-      <div className="relative flex h-full w-full overflow-hidden">
-        <div className="absolute inset-0 bg-black flex items-center justify-center">
-          <div className="text-center">
-            <QuantivaLogo className="h-12 w-12 md:h-14 md:w-14 mx-auto mb-4 animate-pulse" />
-            <p className="text-slate-400 text-sm">Loading...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
