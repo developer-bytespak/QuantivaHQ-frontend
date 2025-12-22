@@ -56,18 +56,14 @@ export async function getCryptoNews(
  */
 export async function getGeneralCryptoNews(
   limit: number = 20
-): Promise<CryptoNewsResponse> {
+): Promise<{ total_count: number; news_items: Array<CryptoNewsItem & { symbol: string }>; timestamp: string }> {
   try {
-    // Use BTC as a general crypto news source, or we can modify backend to support general news
-    const response = await apiRequest<never, CryptoNewsResponse>({
-      path: `/news/crypto?symbol=BTC&limit=${limit}`,
+    // Use new /news/all endpoint to get news for all coins
+    const response = await apiRequest<never, { total_count: number; news_items: Array<CryptoNewsItem & { symbol: string }>; timestamp: string }>({
+      path: `/news/all?limit=${limit}`,
       method: "GET",
     });
-    // Override symbol to show it's general news
-    return {
-      ...response,
-      symbol: "CRYPTO",
-    };
+    return response;
   } catch (error) {
     console.error("Failed to fetch general crypto news:", error);
     throw error;

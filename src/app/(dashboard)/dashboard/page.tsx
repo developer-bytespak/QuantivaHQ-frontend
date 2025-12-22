@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
 import { getTopCoins, CoinGeckoCoin } from "@/lib/api/coingecko.service";
-import { getCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
+import { getCryptoNews, getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
 
 interface Activity {
@@ -46,7 +46,7 @@ export default function DashboardPage() {
   const [marketError, setMarketError] = useState<string | null>(null);
 
   // News data state
-  const [newsData, setNewsData] = useState<CryptoNewsResponse | null>(null);
+  const [newsData, setNewsData] = useState<{ total_count: number; news_items: Array<CryptoNewsItem & { symbol: string }>; timestamp: string } | null>(null);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
 
@@ -228,12 +228,12 @@ export default function DashboardPage() {
     }
   }, [activeTab, fetchMarketData]);
 
-  // Fetch crypto news with sentiment
-  const fetchCryptoNews = useCallback(async (symbol: string = "BTC", limit: number = 2) => {
+  // Fetch crypto news with sentiment (all coins)
+  const fetchCryptoNews = useCallback(async (limit: number = 30) => {
     setIsLoadingNews(true);
     setNewsError(null);
     try {
-      const data = await getCryptoNews(symbol, limit);
+      const data = await getGeneralCryptoNews(limit);
       setNewsData(data);
     } catch (error: any) {
       console.error("Failed to fetch crypto news:", error);
@@ -245,13 +245,13 @@ export default function DashboardPage() {
 
   // Fetch news on mount
   useEffect(() => {
-    fetchCryptoNews("BTC", 2);
+    fetchCryptoNews(30);
   }, [fetchCryptoNews]);
 
   // Auto-refresh news every 5 minutes
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      fetchCryptoNews("BTC", 2);
+      fetchCryptoNews(30);
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(refreshInterval);
@@ -643,6 +643,7 @@ export default function DashboardPage() {
 
             {/* AI Insights News Cards */}
             <div className="space-y-3">
+              
               {isLoadingNews ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -652,7 +653,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-red-300">{newsError}</p>
                 </div>
               ) : newsData && newsData.news_items.length > 0 ? (
-                newsData.news_items.map((news, index) => (
+                newsData.news_items.slice(0, 2).map((news, index) => (
                   <div
                     key={index}
                     onClick={() => {
@@ -663,6 +664,10 @@ export default function DashboardPage() {
                   >
                     <div className="mb-4 flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        <span className="rounded-md bg-[#fc4f02]/10 px-2 py-1 text-xs font-semibold text-[#fc4f02]">
+                          {news.symbol}
+                        </span>
+                        <span className="text-xs text-slate-500">•</span>
                         <span className="text-xs text-slate-400">
                           {news.published_at
                             ? new Date(news.published_at).toLocaleDateString("en-US", {
