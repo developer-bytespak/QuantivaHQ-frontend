@@ -10,6 +10,7 @@ import { StrategyCard } from "./components/strategy-card";
 import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
 import TradeLeaderboard from "./components/trade-leaderboard";
+import { OrdersPanel } from "./components/orders-panel";
 
 // ⏱️ API Refresh Intervals (in milliseconds)
 const ACCOUNT_DATA_REFRESH_INTERVAL = 300000;  // 5 minutes - Account balance & orders
@@ -120,6 +121,10 @@ export default function PaperTradingPage() {
   const [createRiskLevel, setCreateRiskLevel] = useState<"low"|"medium"|"high">("medium");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Orders panel state
+  const [showOrdersPanel, setShowOrdersPanel] = useState(false);
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   // --- Load testnet status on mount ---
   useEffect(() => {
@@ -387,6 +392,8 @@ export default function PaperTradingPage() {
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
     loadAccountData();
+    // Trigger instant refresh in OrdersPanel
+    setOrdersRefreshKey((k) => k + 1);
   };
 
   // --- Error state ---
@@ -430,6 +437,16 @@ export default function PaperTradingPage() {
             className={`rounded-md px-4 py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white`}
           >
             Create Custom Strategy
+          </button>
+          <button
+            onClick={() => setShowOrdersPanel(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-800 to-blue-700 px-4 py-2 text-sm font-medium text-blue-200 hover:from-blue-700 hover:to-blue-600 transition-all border border-blue-600/50"
+            title="View all orders"
+          >
+            <span>Orders</span>
+            <span className="text-xs bg-gradient-to-r from-blue-500 to-blue-400 text-white px-2 py-0.5 rounded-full font-bold">
+              {openOrdersCount}
+            </span>
           </button>
           <button
             onClick={() => setShowLeaderboard(true)}
@@ -801,6 +818,14 @@ export default function PaperTradingPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Orders Panel (ephemeral, frontend-only) */}
+      {showOrdersPanel && (
+        <OrdersPanel
+          onClose={() => setShowOrdersPanel(false)}
+          refreshTrigger={ordersRefreshKey}
+        />
       )}
     </div>
   );
