@@ -106,9 +106,16 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       route: "/dashboard",
       reason: "User is fully onboarded with KYC approved and exchange connected",
     };
-  } catch (error) {
+  } catch (error: any) {
     // If checks fail, default to proof-upload (KYC start)
-    console.log("Could not verify user status, redirecting to proof-upload:", error);
+    console.error("[FlowRouter] Could not verify user status:", error);
+    
+    // If it's a 401/unauthorized error, user needs to re-authenticate
+    if (error?.status === 401 || error?.statusCode === 401 || 
+        error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
+      console.error("[FlowRouter] User not authenticated - cookies may not be set properly");
+    }
+    
     return {
       route: "/onboarding/proof-upload",
       reason: "Error checking user status, defaulting to proof upload",
