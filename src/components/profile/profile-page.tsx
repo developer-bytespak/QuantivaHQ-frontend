@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { authService } from "@/lib/auth/auth.service";
+import { getTrendingAssets, getCoinGeckoLogoUrl } from "@/lib/api/trending-assets.service";
 
 interface Coin {
   id: string;
@@ -168,111 +169,55 @@ export function ProfilePage() {
     loadUserData();
   }, [mounted]);
 
-  // Fetch coin logos from CoinGecko API
+  // Fetch coin data from backend database (no CoinGecko API rate limits)
   useEffect(() => {
     if (!mounted || coins.length === 0) return;
 
-    const fetchCoinLogos = async () => {
+    const fetchCoinData = async () => {
       try {
-        const COINGECKO_API_URL = "https://api.coingecko.com/api/v3";
-        const COINGECKO_API_KEY = process.env.NEXT_PUBLIC_COINGECKO_API_KEY || "";
-        const COINGECKO_IMAGE_CDN = "https://assets.coingecko.com/coins/images";
+        // Get trending assets from backend (includes logos and market data)
+        const trendingAssets = await getTrendingAssets(20, true);
         
-        const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
-          BTC: "bitcoin",
-          ETH: "ethereum",
-          SOL: "solana",
-          XRP: "ripple",
-          BNB: "binancecoin",
-          ADA: "cardano",
-          DOGE: "dogecoin",
-          MATIC: "matic-network",
-          LINK: "chainlink",
-          AVAX: "avalanche-2",
-          TRX: "tron",
-          TRON: "tron",
-        };
-
-        const COIN_IMAGE_IDS: Record<string, number> = {
-          BTC: 1,
-          ETH: 279,
-          SOL: 4128,
-          XRP: 52,
-          BNB: 1839,
-          ADA: 2010,
-          DOGE: 5,
-          MATIC: 4713,
-          LINK: 1975,
-          AVAX: 12559,
-          TRX: 1958,
-          TRON: 1958,
-        };
-
-        const headers: HeadersInit = {
-          "Content-Type": "application/json",
-        };
-
-        const hasApiKey = COINGECKO_API_KEY && 
-                          COINGECKO_API_KEY !== "x-cg-demo-api-key" && 
-                          COINGECKO_API_KEY !== "x-cg-pro-api-key" &&
-                          COINGECKO_API_KEY.length > 10;
-
-        if (hasApiKey) {
-          headers["x-cg-pro-api-key"] = COINGECKO_API_KEY;
-        }
-
+        // Create a map for quick lookup
+        const assetMap = new Map(
+          trendingAssets.map(asset => [asset.symbol.toUpperCase(), asset])
+        );
+        
+        // Set logo map for display
         const logoMap: Record<string, string> = {};
+        trendingAssets.forEach(asset => {
+          const symbol = asset.symbol.toUpperCase();
+          // Use DB logo if available, otherwise fallback to CoinGecko CDN
+          logoMap[symbol] = asset.logo_url || getCoinGeckoLogoUrl(symbol) || "";
+        });
         
-        // Get unique coin symbols from coins array
-        const coinSymbols = [...new Set(coins.map(coin => coin.symbol.toUpperCase()))];
-        
-        // First, use CDN URLs as fallback
-        coinSymbols.forEach((symbol) => {
-          const imageId = COIN_IMAGE_IDS[symbol];
-          const coinId = SYMBOL_TO_COINGECKO_ID[symbol];
-          if (imageId && coinId) {
-            logoMap[symbol] = `${COINGECKO_IMAGE_CDN}/${imageId}/large/${coinId}.png`;
+        // Also add fallback logos for coins not in trending assets
+        coins.forEach(coin => {
+          const symbol = coin.symbol.toUpperCase();
+          if (!logoMap[symbol]) {
+            const fallbackLogo = getCoinGeckoLogoUrl(symbol);
+            if (fallbackLogo) {
+              logoMap[symbol] = fallbackLogo;
+            }
           }
         });
-
-        // Try to fetch from API
-        const coinIds = coinSymbols.map(symbol => SYMBOL_TO_COINGECKO_ID[symbol]).filter(Boolean).join(",");
-        if (coinIds) {
-          const marketsUrl = `${COINGECKO_API_URL}/coins/markets?vs_currency=usd&ids=${coinIds}&order=market_cap_desc&per_page=100&page=1&sparkline=false`;
-          
-          try {
-            const marketsResponse = await fetch(marketsUrl, {
-              method: "GET",
-              headers,
-              cache: "default",
-            });
-            
-            if (marketsResponse.ok) {
-              const marketsData = await marketsResponse.json();
-              const coinIdToSymbol: Record<string, string> = {};
-              Object.entries(SYMBOL_TO_COINGECKO_ID).forEach(([symbol, coinId]) => {
-                coinIdToSymbol[coinId.toLowerCase()] = symbol;
-              });
-              
-              marketsData.forEach((coin: any) => {
-                const symbol = coinIdToSymbol[coin.id?.toLowerCase()];
-                if (symbol && coin.image) {
-                  logoMap[symbol] = coin.image;
-                }
-              });
-            }
-          } catch (apiError) {
-            console.warn("CoinGecko API unavailable, using CDN URLs:", apiError);
-          }
-        }
         
         setCoinLogos(logoMap);
       } catch (error) {
-        console.error("Failed to fetch coin logos:", error);
+        console.error("Failed to fetch coin data:", error);
+        // Fallback to CDN URLs
+        const fallbackLogos: Record<string, string> = {};
+        coins.forEach(coin => {
+          const logo = getCoinGeckoLogoUrl(coin.symbol);
+          if (logo) {
+            fallbackLogos[coin.symbol.toUpperCase()] = logo;
+          }
+        });
+        setCoinLogos(fallbackLogos);
       }
     };
 
-    fetchCoinLogos();
+    fetchCoinData();
   }, [mounted, coins]);
 
   // Trend Graph Component using PNG images
