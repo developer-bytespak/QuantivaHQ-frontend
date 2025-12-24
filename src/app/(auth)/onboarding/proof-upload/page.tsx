@@ -109,11 +109,13 @@ export default function ProofUploadPage() {
     if (savedFileData) {
       try {
         const data = JSON.parse(savedFileData);
-        if (data.preview) {
-          setPreview(data.preview);
+        // Preview is no longer stored (to avoid localStorage quota issues)
+        // Just show that a file was uploaded by displaying metadata
+        if (data.documentId) {
           // Set a placeholder file object to indicate file was uploaded
           setUploadedFile(new File([], data.fileName || "uploaded-file", { type: data.fileType || "image/jpeg" }));
-          // Progress will animate to 50% via the main useEffect
+          setDocumentId(data.documentId);
+          // Don't set preview - user will need to re-upload if they come back to this page
         }
       } catch (e) {
         console.error("Failed to load saved proof upload", e);
@@ -221,12 +223,12 @@ export default function ProofUploadPage() {
       // Store document ID for later use
       setDocumentId(response.document_id);
       
-      // Also store in localStorage as fallback
+      // Store metadata only in localStorage (not the full preview to avoid quota issues)
+      // Base64 previews can be 5MB+ which exceeds localStorage limits
       const fileData = {
         fileName: uploadedFile.name,
         fileSize: uploadedFile.size,
         fileType: uploadedFile.type,
-        preview: preview,
         uploadDate: new Date().toISOString(),
         documentId: response.document_id,
         documentType: documentType,
