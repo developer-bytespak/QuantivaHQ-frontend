@@ -122,6 +122,7 @@ export default function SignUpPage() {
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_user_name", fullName || email.split("@")[0]);
         localStorage.setItem("quantivahq_auth_method", "email");
+        localStorage.setItem("quantivahq_is_authenticated", "true");
 
         // Automatically log in after successful registration
         try {
@@ -220,6 +221,7 @@ export default function SignUpPage() {
 
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_auth_method", "email");
+        localStorage.setItem("quantivahq_is_authenticated", "true");
 
         // Debug: Log cookies and response
         console.log("[Login] Cookies after login:", document.cookie);
