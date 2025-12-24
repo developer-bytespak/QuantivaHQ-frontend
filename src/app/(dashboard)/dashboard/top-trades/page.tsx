@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
-import { getPreBuiltStrategySignals } from "@/lib/api/strategies";
+import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight } from "@/lib/api/strategies";
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -111,6 +111,10 @@ export default function TopTradesPage() {
   const [strategySignals, setStrategySignals] = useState<Record<string, any[]>>({});
   const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
   const [signalsError, setSignalsError] = useState<Record<string, string>>({});
+
+  // AI insights state
+  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, string>>>({});
+  const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // UI filters / pagination / overlay
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
@@ -238,7 +242,7 @@ export default function TopTradesPage() {
     return () => { mounted = false; };
   }, []);
 
-  // --- Fetch signals for a strategy ---
+  // --- Fetch signals for a strategy with AI insights ---
   const fetchStrategySignals = async (strategyId: string) => {
     if (loadingSignals[strategyId]) return;
     
@@ -246,14 +250,89 @@ export default function TopTradesPage() {
     setSignalsError((p) => { const c = { ...p }; delete c[strategyId]; return c; });
 
     try {
-      const signals = await getPreBuiltStrategySignals(strategyId);
-      setStrategySignals((p) => ({ ...p, [strategyId]: signals || [] }));
+      // Use new AI insights endpoint that returns top 2 with insights
+      const response = await getTrendingAssetsWithInsights(strategyId, 10);
+      const assets = response.assets || [];
+      
+      // Store AI insights separately
+      const insights: Record<string, string> = {};
+      assets.forEach(asset => {
+        if (asset.hasAiInsight && asset.aiInsight) {
+          insights[asset.asset_id] = asset.aiInsight;
+        }
+      });
+      setAiInsights((p) => ({ ...p, [strategyId]: insights }));
+      
+      // Map assets to signals format for compatibility with existing code
+      const signals = assets.map(asset => ({
+        signal_id: asset.signal?.signal_id || asset.asset_id,
+        strategy_id: strategyId,
+        asset_id: asset.asset_id,
+        asset: {
+          asset_id: asset.asset_id,
+          symbol: asset.symbol,
+          display_name: asset.display_name,
+        },
+        action: asset.signal?.action || 'HOLD',
+        confidence: asset.signal?.confidence || 0,
+        final_score: asset.signal?.final_score || 0,
+        details: asset.signal ? [{
+          entry_price: asset.signal.entry_price,
+          stop_loss: asset.signal.stop_loss,
+          take_profit_1: asset.signal.take_profit_1,
+        }] : [],
+        realtime_data: {
+          price: asset.price_usd,
+          priceChangePercent: asset.price_change_24h,
+          volume24h: asset.volume_24h,
+        },
+        hasAiInsight: asset.hasAiInsight,
+      }));
+      
+      setStrategySignals((p) => ({ ...p, [strategyId]: signals }));
     } catch (err: any) {
       console.error(`Failed to load signals for strategy ${strategyId}:`, err);
       setSignalsError((p) => ({ ...p, [strategyId]: err?.message || String(err) }));
       setStrategySignals((p) => ({ ...p, [strategyId]: [] }));
     } finally {
       setLoadingSignals((p) => ({ ...p, [strategyId]: false }));
+    }
+  };
+
+  // --- Generate AI insight on-demand for specific asset ---
+  const handleGenerateInsight = async (strategyId: string, assetId: string) => {
+    const key = `${strategyId}-${assetId}`;
+    if (loadingInsight[key]) return;
+    
+    setLoadingInsight((p) => ({ ...p, [key]: true }));
+    
+    try {
+      const response = await generateAssetInsight(strategyId, assetId);
+      
+      // Update AI insights
+      setAiInsights((p) => ({
+        ...p,
+        [strategyId]: {
+          ...(p[strategyId] || {}),
+          [assetId]: response.insight,
+        },
+      }));
+      
+      // Update signal to mark it has insight
+      setStrategySignals((p) => {
+        const signals = p[strategyId] || [];
+        return {
+          ...p,
+          [strategyId]: signals.map(s => 
+            s.asset_id === assetId ? { ...s, hasAiInsight: true } : s
+          ),
+        };
+      });
+    } catch (err: any) {
+      console.error(`Failed to generate insight for ${assetId}:`, err);
+      alert(`Failed to generate insight: ${err.message}`);
+    } finally {
+      setLoadingInsight((p) => ({ ...p, [key]: false }));
     }
   };
 
@@ -657,6 +736,53 @@ export default function TopTradesPage() {
                           </div>
                         )}
                       </div>
+
+                    {/* AI Insights Section */}
+                    {currentStrategy && (() => {
+                      const assetId = (trade as any).assetId || (trade as any).asset_id;
+                      const strategyInsights = aiInsights[currentStrategy.strategy_id] || {};
+                      const insight = assetId ? strategyInsights[assetId] : null;
+                      const hasInsight = (trade as any).hasAiInsight || !!insight;
+                      const key = `${currentStrategy.strategy_id}-${assetId}`;
+                      const loading = loadingInsight[key];
+
+                      return (
+                        <div className="relative pt-3 space-y-2">
+                          <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-[#fc4f02]" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M13 7H7v6h6V7z" />
+                              <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-xs font-semibold text-[#fc4f02]">AI Insight</span>
+                          </div>
+                          
+                          {hasInsight && insight ? (
+                            <div className="rounded-lg bg-gradient-to-br from-[#fc4f02]/10 to-[#fda300]/5 p-3 text-xs text-slate-300 leading-relaxed border border-[#fc4f02]/20">
+                              {insight}
+                            </div>
+                          ) : assetId ? (
+                            <button
+                              onClick={() => handleGenerateInsight(currentStrategy.strategy_id, assetId)}
+                              disabled={loading}
+                              className="w-full rounded-lg bg-gradient-to-r from-slate-700/50 to-slate-600/50 px-3 py-2 text-xs font-medium text-slate-300 transition-all hover:from-[#fc4f02]/20 hover:to-[#fda300]/20 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600/30 hover:border-[#fc4f02]/50"
+                            >
+                              {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                  </svg>
+                                  Generating insight...
+                                </span>
+                              ) : (
+                                'Generate AI Insight'
+                              )}
+                            </button>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex gap-2 pt-2">
                       <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">Auto Trade</button>

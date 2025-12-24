@@ -156,6 +156,55 @@ export async function getPreBuiltStrategySignals(strategyId: string): Promise<St
 }
 
 /**
+ * Get trending assets with AI insights for a pre-built strategy
+ * Returns top N assets with AI insights generated for the top 2
+ */
+export async function getTrendingAssetsWithInsights(strategyId: string, limit: number = 10): Promise<{
+  strategy: { id: string; name: string; description: string };
+  assets: Array<{
+    asset_id: string;
+    symbol: string;
+    display_name: string;
+    price_usd: number;
+    price_change_24h: number;
+    volume_24h: number;
+    trend_score: number;
+    hasAiInsight: boolean;
+    aiInsight?: string;
+    signal?: {
+      signal_id: string;
+      action: string;
+      confidence: number;
+      final_score: number;
+      entry_price?: number;
+      stop_loss?: number;
+      take_profit_1?: number;
+    };
+  }>;
+}> {
+  return apiRequest<unknown, any>({
+    path: `/strategies/pre-built/${strategyId}/trending-with-insights?limit=${limit}`,
+    method: 'GET',
+  });
+}
+
+/**
+ * Generate AI insight for a specific asset on-demand
+ */
+export async function generateAssetInsight(strategyId: string, assetId: string): Promise<{
+  asset_id: string;
+  strategy_id: string;
+  insight: string;
+  generated_at: string;
+  signal?: any;
+}> {
+  return apiRequest<unknown, any>({
+    path: `/strategies/pre-built/${strategyId}/assets/${assetId}/generate-insight`,
+    method: 'POST',
+  });
+}
+
+/**
  * Update a strategy
  */
 export async function updateStrategy(
