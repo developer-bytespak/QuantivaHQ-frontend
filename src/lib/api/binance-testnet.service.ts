@@ -12,14 +12,14 @@ interface TestnetBalance {
 interface TestnetOrder {
   orderId: number;
   symbol: string;
-  side: string;
-  type: string;
+  side: "BUY" | "SELL";
+  type: "LIMIT" | "MARKET";
   quantity: number;
   price: number;
-  status: string;
+  status: "NEW" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "REJECTED" | "EXPIRED";
   timestamp: number;
   executedQuantity: number;
-  cumulativeQuoteAssetTransacted: number;
+  cumulativeQuoteAssetTransacted: number | null;
 }
 
 interface PlaceOrderPayload {
@@ -141,7 +141,9 @@ class BinanceTestnetService {
       throw new Error(errorMessage);
     }
 
-    return response.json();
+    const data = await response.json();
+    // Backend returns { orders: [...] }, extract the array
+    return (Array.isArray(data) ? data : data?.orders || []);
   }
 
   /**
