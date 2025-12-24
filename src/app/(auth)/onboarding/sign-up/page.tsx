@@ -414,15 +414,17 @@ export default function SignUpPage() {
                   </div>
 
                       {/* OAuth Buttons */}
-                      <div className="grid grid-cols-1 gap-2.5">
-                        {/* Google Sign-In button (GSI) */}
-                        <div>
-                          {/* lazy-loaded Google button component */}
-                          {/* eslint-disable-next-line @next/next/no-before-interactive-script-load */}
-                          {/* @ts-ignore */}
-                          <GoogleSignInButton />
+                      {activeTab === "login" && (
+                        <div className="grid grid-cols-1 gap-2.5">
+                          {/* Google Sign-In button (GSI) */}
+                          <div>
+                            {/* lazy-loaded Google button component */}
+                            {/* eslint-disable-next-line @next/next/no-before-interactive-script-load */}
+                            {/* @ts-ignore */}
+                            <GoogleSignInButton />
+                          </div>
                         </div>
-                      </div>
+                      )}
                 </div>
               </div>
             </div>
