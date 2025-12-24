@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile } from "@/lib/api/user";
+import { useMobileNav } from "@/hooks/useMobileNav";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Crypto Dashboard",
@@ -56,6 +57,32 @@ function getPageTitle(pathname: string | null): string {
   return segments.length > 0
     ? segments[segments.length - 1].replace(/\b\w/g, (l) => l.toUpperCase())
     : "Dashboard";
+}
+
+// Mobile Menu Button Component
+function MobileMenuButton() {
+  const { isOpen, toggle } = useMobileNav();
+
+  return (
+    <button
+      onClick={toggle}
+      className="sm:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-white/[0.07] to-transparent border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 transition-all"
+      aria-label="Toggle menu"
+    >
+      <svg
+        className="h-6 w-6 text-white"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        {isOpen ? (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        )}
+      </svg>
+    </button>
+  );
 }
 
 // User Profile Component
@@ -209,9 +236,9 @@ function UserProfileSection() {
         <button
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-3 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-3 py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
+          className="flex items-center gap-2 sm:gap-3 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2 sm:px-3 py-1.5 sm:py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
         >
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
+          <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
             {profileImage ? (
               <img
                 src={profileImage}
@@ -222,11 +249,11 @@ function UserProfileSection() {
               userInitial
             )}
           </div>
-          <div className="flex items-center min-w-0">
-            <p className="truncate text-sm font-semibold text-white">{userName}</p>
+          <div className="hidden sm:flex items-center min-w-0">
+            <p className="truncate text-xs sm:text-sm font-semibold text-white">{userName}</p>
           </div>
           <svg
-            className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            className={`h-3 w-3 sm:h-4 sm:w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -240,18 +267,18 @@ function UserProfileSection() {
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-64 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] p-2 shadow-2xl shadow-black/50"
+          className="fixed z-[100] w-56 sm:w-64 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
           style={{
             top: `${dropdownPosition.top}px`,
             right: `${dropdownPosition.right}px`,
           }}
         >
-          <div className="space-y-1">
+          <div className="space-y-0.5 sm:space-y-1">
             <button
               onClick={handleLogout}
-              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 hover:shadow-sm"
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 hover:shadow-sm"
             >
-              <svg className="h-5 w-5 transition-colors text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 transition-colors text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span className="transition-colors text-white group-hover:font-semibold">Logout</span>
@@ -430,10 +457,10 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-3 py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
+        className="flex items-center gap-1 sm:gap-2 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2 sm:px-3 py-1 sm:py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
       >
         <svg
-          className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          className={`h-3 w-3 sm:h-4 sm:w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -446,7 +473,7 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-56 rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-2 shadow-2xl shadow-black/50 backdrop-blur"
+          className="fixed z-[100] w-48 sm:w-56 rounded-lg sm:rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-1.5 sm:p-2 shadow-2xl shadow-black/50 backdrop-blur"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -459,9 +486,9 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
                 router.push("/stocks-dashboard");
                 setIsOpen(false);
               }}
-              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
             >
-              <svg className="h-5 w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
               <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Stocks Dashboard</span>
@@ -472,9 +499,9 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
                 router.push("/dashboard");
                 setIsOpen(false);
               }}
-              className="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
             >
-              <svg className="h-5 w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Crypto Dashboard</span>
@@ -493,12 +520,15 @@ export function TopBar() {
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   return (
-    <header className="sticky top-0 z-50 flex h-24 items-center justify-between gap-8 border-b border-[#fc4f02]/30 bg-[--color-surface-alt] px-8">
-      <div className="flex items-center gap-3 relative">
-        <h1 ref={headingRef} className="text-2xl font-bold text-white">{pageTitle}</h1>
+    <header className="sticky top-0 z-50 flex h-16 sm:h-20 lg:h-24 items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-b border-[#fc4f02]/30 bg-[--color-surface-alt] px-3 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-2 sm:gap-3 relative min-w-0">
+        <h1 ref={headingRef} className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">{pageTitle}</h1>
         <DashboardSwitcher headingRef={headingRef} />
       </div>
-      <UserProfileSection />
+      <div className="flex items-center gap-2 sm:gap-3">
+        <MobileMenuButton />
+        <UserProfileSection />
+      </div>
     </header>
   );
 }
