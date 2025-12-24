@@ -1437,23 +1437,23 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Settings Menu */}
-      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
-        <h3 className="text-xl font-bold text-white mb-6">Settings</h3>
+      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+        <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Settings</h3>
         <div className="space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={item.onClick}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+              className="w-1/2 mx-auto flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
             >
-              <div className={`flex-shrink-0 ${item.color || "text-[#fc4f02]"}`}>
+              <div className={`flex-shrink-0 text-4 sm:text-6 ${item.color || "text-[#fc4f02]"}`}>
                 {item.icon}
               </div>
-              <span className={`flex-1 text-left text-base font-medium ${item.color || "text-white"} group-hover:text-[#fc4f02] transition-colors`}>
+              <span className={`flex-1 text-left text-sm sm:text-base font-medium ${item.color || "text-white"} group-hover:text-[#fc4f02] transition-colors`}>
                 {item.label}
               </span>
               <svg
-                className={`w-5 h-5 flex-shrink-0 ${item.color || "text-slate-400"} group-hover:text-[#fc4f02] transition-colors`}
+                className={`w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0 ${item.color || "text-slate-400"} group-hover:text-[#fc4f02] transition-colors`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"

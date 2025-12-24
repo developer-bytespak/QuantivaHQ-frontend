@@ -267,7 +267,7 @@ function UserProfileSection() {
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-56 sm:w-64 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
+          className="fixed z-[100] w-24 sm:w-28 md:w-32 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
           style={{
             top: `${dropdownPosition.top}px`,
             right: `${dropdownPosition.right}px`,
