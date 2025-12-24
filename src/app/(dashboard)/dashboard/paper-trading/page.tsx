@@ -436,23 +436,23 @@ export default function PaperTradingPage() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-3 sm:space-y-6 pb-8 p-4 sm:p-0">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Paper Trading Strategies</h1>
-          <p className="text-sm text-slate-400">
+          <h1 className="text-xl sm:text-3xl font-bold text-white">Paper Trading Strategies</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Execute trades on Binance testnet using AI-powered strategy signals
           </p>
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowCreateModal(true)}
-            className={`rounded-md px-4 py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white`}
+            className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white w-full sm:w-auto`}
           >
-            Create Custom Strategy
+            Create Strategy
           </button>
           <button
             onClick={() => setShowOrdersPanel(true)}
@@ -466,7 +466,7 @@ export default function PaperTradingPage() {
           </button>
           <button
             onClick={() => setShowLeaderboard(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 w-full sm:w-auto"
             title="Open session leaderboard"
           >
             <span>Leaderboard</span>
@@ -486,16 +486,16 @@ export default function PaperTradingPage() {
 
       {/* Strategy Tabs */}
       {loadingPreBuilt ? (
-        <div className="rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
-          <p className="text-sm text-slate-400">Loading strategies...</p>
+        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-4 sm:p-6 text-center">
+          <p className="text-xs sm:text-sm text-slate-400">Loading strategies...</p>
         </div>
       ) : preBuiltError ? (
-        <div className="rounded-xl bg-red-600/10 p-6 text-center">
-          <p className="text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
+        <div className="rounded-lg sm:rounded-xl bg-red-600/10 p-4 sm:p-6 text-center">
+          <p className="text-xs sm:text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
         </div>
       ) : preBuiltStrategies.length > 0 ? (
-        <div className="rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 backdrop-blur">
-          <div className="flex gap-2 border-b border-slate-700/50 overflow-x-auto">
+        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4 backdrop-blur">
+          <div className="flex gap-1 sm:gap-2 border-b border-slate-700/50 overflow-x-auto smooth-scroll-horizontal">
             {preBuiltStrategies.map((strategy, idx) => {
               const strategyId = strategy.strategy_id;
               const isLoading = loadingSignals[strategyId];
@@ -506,7 +506,7 @@ export default function PaperTradingPage() {
                 <button
                   key={strategyId}
                   onClick={() => setActiveTab(idx)}
-                  className={`px-4 py-2 text-sm font-medium transition-all rounded-t-lg whitespace-nowrap ${
+                  className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all rounded-t-lg whitespace-nowrap ${
                     activeTab === idx
                       ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
@@ -514,7 +514,7 @@ export default function PaperTradingPage() {
                 >
                   {strategy.name}
                   {!isLoading && !error && (
-                    <span className="ml-2 text-xs opacity-70">({signalCount})</span>
+                    <span className="ml-1 sm:ml-2 text-xs opacity-70">({signalCount})</span>
                   )}
                 </button>
               );
@@ -522,30 +522,30 @@ export default function PaperTradingPage() {
           </div>
 
           {/* Filters */}
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
+          <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3">
+            <div className="flex gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 w-full sm:w-auto">
               {(["24h", "7d", "30d", "all"] as const).map((period) => (
                 <button
                   key={period}
                   onClick={() => setTimeFilter(period)}
-                  className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${
+                  className={`rounded-md px-2 sm:px-4 py-1 sm:py-2 text-xs font-medium transition-all flex-1 sm:flex-none ${
                     timeFilter === period
                       ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
-                  {period === "all" ? "All Time" : period}
+                  {period === "all" ? "All" : period}
                 </button>
               ))}
             </div>
 
-            <div className="flex gap-2">
-              <span className="text-sm text-slate-400">Sort:</span>
+            <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
+              <span className="text-xs sm:text-sm text-slate-400">Sort:</span>
               {(["profit", "volume", "winrate"] as const).map((sort) => (
                 <button
                   key={sort}
                   onClick={() => setSortBy(sort)}
-                  className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
+                  className={`rounded-md px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium transition-all ${
                     sortBy === sort
                       ? "bg-slate-700 text-white"
                       : "text-slate-400 hover:text-white"
@@ -562,18 +562,18 @@ export default function PaperTradingPage() {
       {/* Signals Grid */}
       <div>
         {currentStrategy && loadingSignals[currentStrategy.strategy_id] ? (
-          <div className="rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur">
-            <p className="text-sm text-slate-400">Loading signals...</p>
+          <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 text-center backdrop-blur">
+            <p className="text-xs sm:text-sm text-slate-400">Loading signals...</p>
           </div>
         ) : signalsError[currentStrategy?.strategy_id || ""] ? (
-          <div className="rounded-2xl bg-red-600/10 p-8 text-center">
-            <p className="text-sm text-red-300">
+          <div className="rounded-lg sm:rounded-2xl bg-red-600/10 p-6 sm:p-8 text-center">
+            <p className="text-xs sm:text-sm text-red-300">
               Failed to load signals: {signalsError[currentStrategy?.strategy_id || ""]}
             </p>
           </div>
         ) : paginatedTrades.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {paginatedTrades.map((trade, index) => (
                 <StrategyCard
                   key={trade.id}
@@ -587,11 +587,11 @@ export default function PaperTradingPage() {
             </div>
 
             {totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-center gap-3">
+              <div className="mt-4 flex items-center justify-center gap-2 sm:gap-3">
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
                 >
                   Prev
                 </button>
@@ -601,7 +601,7 @@ export default function PaperTradingPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
                 >
                   Next
                 </button>
@@ -609,8 +609,8 @@ export default function PaperTradingPage() {
             )}
           </>
         ) : (
-          <div className="rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur">
-            <p className="text-sm text-slate-400">
+          <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 text-center backdrop-blur">
+            <p className="text-xs sm:text-sm text-slate-400">
               {currentStrategy
                 ? `No signals available for ${currentStrategy.name}. Signals are generated every 10 minutes.`
                 : "No signals found for the selected time period"}
@@ -621,39 +621,39 @@ export default function PaperTradingPage() {
 
       {/* Trade Details Overlay */}
       {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
-        <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowTradeOverlay(false)}>
-          <div className="relative mx-4 w-full max-w-4xl max-h-[700px] rounded-2xl  bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 shadow-2xl shadow-black/50 backdrop-blur overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-6 flex items-center justify-between sticky top-0 bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 -m-4 mb-2">
-              <h2 className="text-2xl font-bold text-white">Trade Details</h2>
-              <button onClick={() => setShowTradeOverlay(false)} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white" aria-label="Close">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowTradeOverlay(false)}>
+          <div className="relative w-full max-w-4xl max-h-[90vh] rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 sm:mb-6 flex items-center justify-between sticky top-0 bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-3 sm:p-4 -m-4 sm:-m-6 mb-2 sm:mb-4">
+              <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
+              <button onClick={() => setShowTradeOverlay(false)} className="rounded-lg p-1.5 sm:p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white" aria-label="Close">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
-            <div className="space-y-4 p-4">
-              <div className="flex items-center gap-3">
-                <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
+            <div className="space-y-3 sm:space-y-4 p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-base font-semibold text-white whitespace-nowrap ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
                   {filteredAndSortedTrades[selectedTradeIndex].type}
                 </span>
-                <span className="text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].pair}</span>
-                <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
+                <span className="text-base sm:text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].pair}</span>
+                <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].confidence}</span>
               </div>
 
               {/* Two-column layout for details */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Left column - Trade Details */}
-                <div className="space-y-4 rounded-xl bg-gradient-to-br from-white/[0.12] to-white/[0.03] p-4">
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Entry</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].entryPrice ?? filteredAndSortedTrades[selectedTradeIndex].entry)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Stop-Loss</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].stopLossPrice ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Take Profit 1</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Additional Info</span><span className="text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span></div>
+                <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.12] to-white/[0.03] p-3 sm:p-4">
+                  <div className="flex items-center justify-between"><span className="text-xs sm:text-sm text-slate-400">Entry</span><span className="text-sm sm:text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].entryPrice ?? filteredAndSortedTrades[selectedTradeIndex].entry)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-xs sm:text-sm text-slate-400">Stop-Loss</span><span className="text-sm sm:text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].stopLossPrice ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-xs sm:text-sm text-slate-400">Take Profit 1</span><span className="text-sm sm:text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-xs sm:text-sm text-slate-400">Additional Info</span><span className="text-sm sm:text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span></div>
                 </div>
 
                 {/* Right column - Stats */}
                 <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-white">Trade Stats</h3>
-                  <div className="rounded-xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] p-4 text-xs text-slate-300">
-                    <div className="space-y-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-white">Trade Stats</h3>
+                  <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] p-3 sm:p-4 text-xs text-slate-300">
+                    <div className="space-y-2 sm:space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-slate-400">Profit</span>
                         <span className="font-medium text-green-400">{filteredAndSortedTrades[selectedTradeIndex].profit}</span>
@@ -672,8 +672,8 @@ export default function PaperTradingPage() {
               </div>
 
               {/* Insights below - full width */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-white">Insights</h3>
+              <div className="space-y-2 sm:space-y-3">
+                <h3 className="text-xs sm:text-sm font-semibold text-white">Insights</h3>
                 {filteredAndSortedTrades[selectedTradeIndex].insights && filteredAndSortedTrades[selectedTradeIndex].insights.length > 0 ? (
                   filteredAndSortedTrades[selectedTradeIndex].insights.map((insight: string, idx: number) => (
                     <div key={idx} className="flex items-start gap-2">

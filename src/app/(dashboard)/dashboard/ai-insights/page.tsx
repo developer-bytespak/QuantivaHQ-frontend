@@ -592,12 +592,12 @@ export default function AIInsightsPage() {
   };
 
   return (
-    <div className="relative space-y-6 pb-8">
+    <div className="relative space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0 overflow-x-hidden w-full">
       {/* Interactive Background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fda300]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 right-1/3 h-64 w-64 rounded-full bg-[#fc4f02]/3 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 max-w-full">
+        <div className="absolute top-1/4 left-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[#fda300]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 right-1/3 h-48 sm:h-64 w-48 sm:w-64 rounded-full bg-[#fc4f02]/3 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
         <FloatingCoinSymbols coins={POPULAR_COINS} />
         <AnimatedConnectionLines />
         <DataStreamParticles />
@@ -606,38 +606,38 @@ export default function AIInsightsPage() {
       {/* Content */}
       <div className="relative z-10">
       {/* Page Header */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
         <div>
-            <p className="text-sm text-slate-400 mb-2">AI-powered market news and analysis</p>
-            <h1 className="text-3xl font-bold text-white">AI Insights</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mb-1 sm:mb-2">AI-powered market news and analysis</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Insights</h1>
         </div>
 
           {/* Filter Buttons */}
           <FilterButtons activeFilter={activeFilter} onFilterChange={setActiveFilter} />
 
           {/* Sort Options */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-400">Latest</span>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <span className="text-xs sm:text-sm text-slate-400">Latest</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+              className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 w-full sm:w-auto"
             >
-              <option value="most-recent">Sort by Most recent</option>
-              <option value="coin-based">Sort by Coin-based</option>
-              <option value="sentiment-level">Sort by Sentiment level</option>
+              <option value="most-recent">Most recent</option>
+              <option value="coin-based">Coin-based</option>
+              <option value="sentiment-level">Sentiment level</option>
             </select>
         </div>
       </div>
 
       {/* News Items */}
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {isLoadingNews ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <div className="flex flex-col items-center justify-center py-8 sm:py-12 space-y-3 sm:space-y-4">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
             {isInitializingML && (
-              <div className="text-center max-w-md">
-                <p className="text-sm text-slate-300 mb-2">
+              <div className="text-center max-w-xs sm:max-w-md px-4">
+                <p className="text-xs sm:text-sm text-slate-300 mb-2">
                   Initializing FinBERT ML Model
                 </p>
                 <p className="text-xs text-slate-400">
@@ -651,26 +651,26 @@ export default function AIInsightsPage() {
               </div>
             )}
             {!isInitializingML && (
-              <p className="text-sm text-slate-400">Loading news...</p>
+              <p className="text-xs sm:text-sm text-slate-400">Loading news...</p>
             )}
           </div>
         ) : newsError ? (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
-            <p className="text-sm text-red-300">{newsError}</p>
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 sm:p-4 text-center">
+            <p className="text-xs sm:text-sm text-red-300">{newsError}</p>
           </div>
           ) : filteredAndSortedNews.length > 0 ? (
             filteredAndSortedNews.map((news, index) => (
             <div
                 key={`${news.symbol}-${index}`}
               onClick={() => handleNewsClick(news)}
-                className="group cursor-pointer rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_25px_30px_-5px_rgba(0,0,0,0.15),0_0_25px_rgba(252,79,2,0.12),0_0_35px_rgba(253,163,0,0.1)]"
+                className="group cursor-pointer rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_25px_30px_-5px_rgba(0,0,0,0.15),0_0_25px_rgba(252,79,2,0.12),0_0_35px_rgba(253,163,0,0.1)]"
               >
                 {/* Title Row with Coin Logo and Sparkline on Right */}
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <h2 className="text-xl font-bold text-white group-hover:text-[#fc4f02] transition-colors text-left flex-1">
+                <div className="flex items-start justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
+                  <h2 className="text-base sm:text-xl font-bold text-white group-hover:text-[#fc4f02] transition-colors text-left flex-1 leading-tight">
                     {news.title}
                   </h2>
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     {/* Coin Logo */}
                     <CoinLogo symbol={news.symbol} size="md" logoUrl={coinLogos[news.symbol]} />
                     
@@ -683,36 +683,36 @@ export default function AIInsightsPage() {
 
                 {/* AI Summary */}
                 {news.aiSummary && (
-                  <div className="space-y-1 text-left mb-4">
+                  <div className="space-y-1 text-left mb-3 sm:mb-4">
                     <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">AI Summary</p>
-                    <p className="text-sm text-slate-300 leading-relaxed">{news.aiSummary}</p>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">{news.aiSummary}</p>
                   </div>
                 )}
 
                 {/* Horizontal Line */}
-                <div className="border-t border-slate-700/50 my-4"></div>
+                <div className="border-t border-slate-700/50 my-3 sm:my-4"></div>
 
                 {/* Single Line: Market Mood, Impact on Coin, Impact Level, Timestamp */}
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2 sm:gap-4 flex-wrap text-xs sm:text-sm">
                   {/* Market Mood */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">Market Mood</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-xs text-slate-400 hidden sm:inline">Market Mood</span>
                     <MarketMoodBadge mood={news.marketMood || "Neutral"} />
                   </div>
 
                   {/* Impact on Coin */}
                   {news.impactScore !== undefined && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400">Impact on {news.symbol}</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="text-xs text-slate-400 hidden sm:inline">Impact</span>
                       <span className="text-xs font-semibold px-2 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30">
-                        {news.impactScore} / 100
+                        {news.impactScore}
                       </span>
                     </div>
                   )}
 
                   {/* Impact Level */}
                   {news.impactLevel && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       <span className={`text-xs font-medium ${
                         news.impactLevel === "High" ? "text-orange-400" :
                         news.impactLevel === "Medium" ? "text-yellow-400" :
@@ -724,15 +724,15 @@ export default function AIInsightsPage() {
                   )}
 
                   {/* Timestamp */}
-                  <div className="flex items-center gap-2 ml-auto">
+                  <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
                     <span className="text-xs text-slate-400">{getTimeAgo(news.published_at)}</span>
                   </div>
                 </div>
             </div>
           ))
         ) : (
-          <div className="py-12 text-center text-slate-400">
-              <p className="text-sm">No news available</p>
+          <div className="py-8 sm:py-12 text-center text-slate-400">
+              <p className="text-xs sm:text-sm">No news available</p>
           </div>
         )}
         </div>
@@ -741,58 +741,58 @@ export default function AIInsightsPage() {
       {/* Right Sidebar Panel - Enhanced */}
       {selectedNews && (
         <>
-          {/* Backdrop with animation - covers entire page including top bar */}
+          {/* Backdrop with animation - Mobile only */}
           <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-xl z-[100] animate-fade-in"
+            className="fixed inset-0 bg-black/90 z-[100] sm:hidden"
             onClick={handleCloseSidebar}
             style={{ 
               animationName: 'fade-in',
               animationDuration: '0.3s',
               animationTimingFunction: 'ease-out',
               animationFillMode: 'forwards',
+              position: 'fixed',
               top: 0,
               left: 0,
               right: 0,
               bottom: 0,
-              width: '100vw',
-              height: '100vh',
-              position: 'fixed'
+              width: '100%',
+              height: '100%'
             }}
           />
           
-          {/* Sidebar with fade-in animation - Centered */}
+          {/* Sidebar with fade-in animation - Mobile Centered Modal / Desktop Centered */}
           <div 
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] z-[110] overflow-y-auto"
+            className="fixed left-4 right-4 top-1/2 -translate-y-1/2 max-h-[70vh] sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:top-1/2 sm:w-full sm:max-w-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-lg sm:rounded-lg border border-slate-700/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] z-[110] overflow-y-auto overflow-x-hidden"
             style={{ animation: "fade-in-center 0.2s ease-out" }}
           >
-            <div className="p-6 space-y-6">
+            <div className="p-3 sm:p-6 space-y-3 sm:space-y-6 pb-8 sm:pb-0">
               {/* Header with gradient accent */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-700/50">
+              <div className="flex items-center justify-between pb-2 sm:pb-4 border-b border-slate-700/50">
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-6 bg-gradient-to-b from-[#fc4f02] to-[#fda300] rounded-full"></div>
-                  <h2 className="text-2xl font-bold text-white">AI Deep Insight</h2>
+                  <div className="w-1 h-4 sm:h-6 bg-gradient-to-b from-[#fc4f02] to-[#fda300] rounded-full"></div>
+                  <h2 className="text-base sm:text-2xl font-bold text-white truncate">AI Deep Insight</h2>
                 </div>
                 <button
                   onClick={handleCloseSidebar}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-700/50 hover:text-white transition-all hover:scale-110"
+                  className="rounded-lg p-1.5 sm:p-2 text-slate-400 hover:bg-slate-700/50 hover:text-white transition-all hover:scale-110 flex-shrink-0"
                   aria-label="Close"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
               {/* Coin Info Card */}
-              <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-4 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
-                <div className="flex items-center gap-4">
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+                <div className="flex items-center gap-2 sm:gap-4">
                   <CoinLogo symbol={selectedNews.symbol} size="lg" logoUrl={coinLogos[selectedNews.symbol]} />
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-white mb-1">{selectedNews.symbol}</h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-slate-400">{selectedNews.source}</span>
-                      <span className="text-slate-600">•</span>
-                      <span className="text-sm text-slate-400">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base sm:text-xl font-bold text-white truncate mb-0.5 sm:mb-1">{selectedNews.symbol}</h3>
+                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap text-xs">
+                      <span className="text-slate-400 truncate">{selectedNews.source}</span>
+                      <span className="text-slate-600 hidden sm:inline">•</span>
+                      <span className="text-slate-400 whitespace-nowrap">
                         {getTimeAgo(selectedNews.published_at)}
                       </span>
                     </div>
@@ -802,32 +802,32 @@ export default function AIInsightsPage() {
 
               {/* Title */}
               <div>
-                <h2 className="text-2xl font-bold text-white leading-tight">{selectedNews.title}</h2>
+                <h2 className="text-lg sm:text-2xl font-bold text-white leading-tight">{selectedNews.title}</h2>
               </div>
 
               {/* AI Summary Card */}
               {selectedNews.aiSummary && (
-                <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-5 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
                     <div className="w-2 h-2 rounded-full bg-[#fc4f02] animate-pulse"></div>
-                    <p className="text-sm font-semibold text-[#fc4f02] uppercase tracking-wide">AI Summary</p>
+                    <p className="text-xs font-semibold text-[#fc4f02] uppercase tracking-wide">AI Summary</p>
                   </div>
-                  <p className="text-base text-slate-200 leading-relaxed">{selectedNews.aiSummary}</p>
+                  <p className="text-xs sm:text-base text-slate-200 leading-relaxed">{selectedNews.aiSummary}</p>
                 </div>
               )}
 
               {/* Key Metrics Grid */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 {/* Market Mood */}
-                <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-3">Market Mood</p>
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
+                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Market Mood</p>
                   <MarketMoodBadge mood={selectedNews.marketMood || "Neutral"} />
                 </div>
 
                 {/* Impact Level */}
-                <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-3">Impact Level</p>
-                  <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
+                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Impact Level</p>
+                  <span className={`inline-block px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold ${
                     selectedNews.impactLevel === "High" ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" :
                     selectedNews.impactLevel === "Low" ? "bg-slate-500/20 text-slate-400 border border-slate-500/30" :
                     "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
@@ -839,21 +839,21 @@ export default function AIInsightsPage() {
 
               {/* Impact Score with Visual Bar */}
               {selectedNews.impactScore !== undefined && (
-                <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-5 backdrop-blur border border-slate-700/30">
-                  <div className="flex items-center justify-between mb-3">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30">
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
                     <p className="text-xs text-slate-400 uppercase tracking-wide">Impact Score</p>
-                    <span className="text-lg font-bold text-white">{selectedNews.impactScore}/100</span>
+                    <span className="text-base sm:text-lg font-bold text-white">{selectedNews.impactScore}/100</span>
                   </div>
                   <ImpactScoreBar score={selectedNews.impactScore} level={selectedNews.impactLevel || "Medium"} />
                 </div>
               )}
 
               {/* Risk & Trend Row */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 {/* Risk Rating */}
-                <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-3">Risk Rating</p>
-                  <span className={`inline-block px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
+                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Risk Rating</p>
+                  <span className={`inline-block px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold ${
                     selectedNews.riskRating === "Low" ? "bg-green-500/20 text-green-400 border border-green-500/30" :
                     selectedNews.riskRating === "High" ? "bg-red-500/20 text-red-400 border border-red-500/30" :
                     "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
@@ -863,13 +863,13 @@ export default function AIInsightsPage() {
                 </div>
 
                 {/* Trend Direction */}
-                <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-3">Trend</p>
-                  <div className="flex items-center gap-2">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
+                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Trend</p>
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     {selectedNews.trendDirection && (
                       <TrendGraph trend={selectedNews.trendDirection} />
                     )}
-                    <span className={`text-sm font-semibold ${
+                    <span className={`text-xs sm:text-sm font-semibold truncate ${
                       selectedNews.trendDirection === "up" ? "text-green-400" :
                       selectedNews.trendDirection === "down" ? "text-red-400" :
                       "text-slate-400"
@@ -883,12 +883,12 @@ export default function AIInsightsPage() {
               </div>
 
               {/* Sentiment Score */}
-              <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-5 backdrop-blur border border-slate-700/30">
-                <p className="text-xs text-slate-400 uppercase tracking-wide mb-3">Sentiment Analysis</p>
-                <div className="space-y-3">
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30">
+                <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Sentiment Analysis</p>
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Score</span>
-                    <span className={`text-sm font-semibold ${
+                    <span className="text-xs sm:text-sm text-slate-300">Score</span>
+                    <span className={`text-xs sm:text-sm font-semibold ${
                       selectedNews.sentiment.score > 0 ? "text-green-400" :
                       selectedNews.sentiment.score < 0 ? "text-red-400" :
                       "text-slate-400"
@@ -897,8 +897,8 @@ export default function AIInsightsPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-300">Confidence</span>
-                    <span className="text-sm font-semibold text-white">
+                    <span className="text-xs sm:text-sm text-slate-300">Confidence</span>
+                    <span className="text-xs sm:text-sm font-semibold text-white">
                       {(selectedNews.sentiment.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -916,13 +916,13 @@ export default function AIInsightsPage() {
               </div>
 
               {/* Full Description */}
-              <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-5 backdrop-blur border border-slate-700/30">
-                <p className="text-xs text-slate-400 uppercase tracking-wide mb-3">Full Description</p>
-                <p className="text-sm text-slate-300 leading-relaxed">{selectedNews.description}</p>
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30">
+                <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Full Description</p>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{selectedNews.description}</p>
               </div>
 
               {/* Footer with Actions */}
-              <div className="pt-4 border-t border-slate-700/50 space-y-3">
+              <div className="pt-2 sm:pt-4 border-t border-slate-700/50 space-y-2 sm:space-y-3">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span>
                     Published: {selectedNews.published_at 
@@ -941,10 +941,10 @@ export default function AIInsightsPage() {
                     href={selectedNews.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02]"
+                    className="flex items-center justify-center gap-2 w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold text-sm sm:text-base hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02]"
                   >
                     <span>Read Full Article</span>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                   </a>

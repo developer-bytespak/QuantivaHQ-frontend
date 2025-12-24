@@ -443,30 +443,30 @@ export default function TopTradesPage() {
 
   // --- UI Rendering (reuse existing layout and style) ---
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-slate-400">Track your best performing trades and strategies</p>
+          <p className="text-xs sm:text-sm text-slate-400">Track your best performing trades and strategies</p>
         </div>
-        <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
-          <Link href="/dashboard/my-strategies" className="rounded-md px-3 py-2 text-xs font-medium transition-all bg-transparent text-slate-300 hover:text-white border border-transparent hover:border-white/10">My Strategies</Link>
+        <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
+          <Link href="/dashboard/my-strategies" className="rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium transition-all bg-transparent text-slate-300 hover:text-white border border-transparent hover:border-white/10 whitespace-nowrap">My Strategies</Link>
           <button
             onClick={() => setShowCreateModal(true)}
-            className={`rounded-md px-4 py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white`}
+            className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white whitespace-nowrap`}
           >
-            Create Custom Strategy
+            Create
           </button>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}
               onClick={() => setTimeFilter(period)}
-              className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${timeFilter === period
+              className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all whitespace-nowrap ${timeFilter === period
                 ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                 : "text-slate-400 hover:text-white"
                 }`}
             >
-              {period === "all" ? "All Time" : period}
+              {period === "all" ? "All" : period}
             </button>
           ))}
         </div>
@@ -474,63 +474,73 @@ export default function TopTradesPage() {
 
       {/* Strategy Tabs */}
       {loadingPreBuilt ? (
-        <div className="rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
-          <p className="text-sm text-slate-400">Loading strategies...</p>
+        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-4 sm:p-6 text-center">
+          <p className="text-xs sm:text-sm text-slate-400">Loading strategies...</p>
         </div>
       ) : preBuiltError ? (
-        <div className="rounded-xl bg-red-600/10 p-6 text-center">
-          <p className="text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
+        <div className="rounded-lg sm:rounded-xl bg-red-600/10 p-4 sm:p-6 text-center">
+          <p className="text-xs sm:text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
         </div>
       ) : preBuiltStrategies.length > 0 ? (
-        <div className="rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 backdrop-blur">
-          <div className="flex gap-2 border-b border-slate-700/50">
-            {preBuiltStrategies.map((strategy, idx) => {
-              const strategyId = strategy.strategy_id;
-              const isLoading = loadingSignals[strategyId];
-              const error = signalsError[strategyId];
-              const signalCount = strategySignals[strategyId]?.length || 0;
-              
-              return (
-                <button
-                  key={strategyId}
-                  onClick={() => setActiveTab(idx)}
-                  className={`px-4 py-2 text-sm font-medium transition-all rounded-t-lg ${
-                    activeTab === idx
-                      ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span>{strategy.name}</span>
-                    {isLoading && <span className="text-xs">⏳</span>}
-                    {!isLoading && !error && signalCount > 0 && (
-                      <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded">{signalCount}</span>
-                    )}
-                    {error && <span className="text-xs">⚠️</span>}
-                  </div>
-                </button>
-              );
-            })}
+        <div className="space-y-3 sm:space-y-4">
+          {/* Strategy Tabs */}
+          <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-2 sm:p-3 backdrop-blur overflow-x-auto smooth-scroll-horizontal">
+            <div className="flex gap-1 sm:gap-2 min-w-max">
+              {preBuiltStrategies.map((strategy, idx) => {
+                const strategyId = strategy.strategy_id;
+                const isLoading = loadingSignals[strategyId];
+                const error = signalsError[strategyId];
+                const signalCount = strategySignals[strategyId]?.length || 0;
+                
+                return (
+                  <button
+                    key={strategyId}
+                    onClick={() => setActiveTab(idx)}
+                    className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all rounded-lg whitespace-nowrap ${
+                      activeTab === idx
+                        ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{strategy.name}</span>
+                      {isLoading && <span className="text-xs">⏳</span>}
+                      {!isLoading && !error && signalCount > 0 && (
+                        <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded">{signalCount}</span>
+                      )}
+                      {error && <span className="text-xs">⚠️</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           
-          {/* Tab Content */}
+          {/* Strategy Description Card */}
           {currentStrategy && (
-            <div className="mt-4">
-              <div className="mb-4 rounded-lg bg-[--color-surface]/50 p-4">
-                <h3 className="text-lg font-semibold text-white mb-1">{currentStrategy.name}</h3>
-                <p className="text-sm text-slate-400">{currentStrategy.description || "No description"}</p>
-                <div className="mt-2 flex gap-4 text-xs text-slate-300">
-                  <span>Risk: <span className="text-white">{currentStrategy.risk_level}</span></span>
-                  <span>Stop Loss: <span className="text-white">{currentStrategy.stop_loss_value}%</span></span>
-                  <span>Take Profit: <span className="text-white">{currentStrategy.take_profit_value}%</span></span>
+            <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur border border-[#fc4f02]/20 p-4 sm:p-5">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-2">{currentStrategy.name}</h3>
+              <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">{currentStrategy.description || "No description available"}</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg bg-[--color-surface]/50 p-3">
+                  <span className="text-xs text-slate-400 block mb-1">Risk Level</span>
+                  <span className="text-sm sm:text-base font-semibold text-white uppercase">{currentStrategy.risk_level || '—'}</span>
+                </div>
+                <div className="rounded-lg bg-[--color-surface]/50 p-3">
+                  <span className="text-xs text-slate-400 block mb-1">Stop Loss</span>
+                  <span className="text-sm sm:text-base font-semibold text-white">{currentStrategy.stop_loss_value || '—'}%</span>
+                </div>
+                <div className="rounded-lg bg-[--color-surface]/50 p-3">
+                  <span className="text-xs text-slate-400 block mb-1">Take Profit</span>
+                  <span className="text-sm sm:text-base font-semibold text-white">{currentStrategy.take_profit_value || '—'}%</span>
                 </div>
               </div>
             </div>
           )}
         </div>
       ) : (
-        <div className="rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-6 text-center">
-          <p className="text-sm text-slate-400">No pre-built strategies available</p>
+        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-4 sm:p-6 text-center">
+          <p className="text-xs sm:text-sm text-slate-400">No pre-built strategies available</p>
         </div>
       )}
 
@@ -570,11 +580,11 @@ export default function TopTradesPage() {
           </div>
         ) : filteredAndSortedTrades.length > 0 ? (
           <div>
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
               {paginatedTrades.map((trade, index) => (
-                <div key={trade.id} className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
+                <div key={trade.id} className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
                       <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
                         {trade.type}
                       </span>

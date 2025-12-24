@@ -765,14 +765,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         onClick={onBack}
         className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-4"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 sm:w-5 h-4 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        <span className="text-sm font-medium">Back to Profile</span>
+        <span className="text-xs sm:text-sm font-medium">Back to Profile</span>
       </button>
 
       {/* Profile Header Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#fc4f02] via-[#fd6a00] to-[#fd8a00] p-8 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#fc4f02] via-[#fd6a00] to-[#fd8a00] p-4 sm:p-8 shadow-xl">
         <div className="relative z-10 flex flex-col items-center text-center">
           <div className="mb-4 relative flex items-center justify-center">
             {/* Avatar */}
@@ -782,10 +782,10 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   src={profileImage}
                   alt={userName}
                   onClick={() => setShowImageOverlay(true)}
-                  className="w-24 h-24 rounded-full border-4 border-white/30 object-cover shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  className="w-16 sm:w-24 h-16 sm:h-24 rounded-full border-4 border-white/30 object-cover shadow-lg cursor-pointer hover:opacity-90 transition-opacity"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm border-4 border-white/30 flex items-center justify-center shadow-lg">
+                <div className="w-16 sm:w-24 h-16 sm:h-24 rounded-full bg-white/20 backdrop-blur-sm border-4 border-white/30 flex items-center justify-center shadow-lg">
                   <span className="text-4xl font-bold text-white">{userInitial}</span>
                 </div>
               )}
@@ -794,11 +794,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
               <button
                 ref={cameraButtonRef}
                 onClick={() => setShowImageMenu(!showImageMenu)}
-                className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[#fc4f02] border-2 border-white flex items-center justify-center shadow-lg hover:bg-[#fd6a00] transition-all duration-200 z-10"
+                className="absolute bottom-0 right-0 w-7 sm:w-8 h-7 sm:h-8 rounded-full bg-[#fc4f02] border-2 border-white flex items-center justify-center shadow-lg hover:bg-[#fd6a00] transition-all duration-200 z-10"
                 aria-label="Change profile picture"
               >
                 <svg
-                  className="w-4 h-4 text-white"
+                  className="w-3 sm:w-4 h-3 sm:h-4 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -823,14 +823,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
             {showImageMenu && (
               <div
                 ref={menuRef}
-                className="absolute left-full top-1/2 transform -translate-y-1/2 ml-3 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 min-w-[200px] overflow-hidden"
+                className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 sm:ml-3 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 min-w-[180px] sm:min-w-[200px] overflow-hidden"
               >
                 <button
                   onClick={handleUploadClick}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-white"
+                  className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-slate-700 transition-colors text-white"
                 >
                   <svg
-                    className="w-5 h-5 text-[#fc4f02]"
+                    className="w-4 sm:w-5 h-4 sm:h-5 text-[#fc4f02]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -842,14 +842,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  <span className="text-sm font-medium text-white">Upload Photo</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">Upload Photo</span>
                 </button>
                 <button
                   onClick={handleCameraClick}
-                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-700 transition-colors text-white border-t border-slate-700"
+                  className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-slate-700 transition-colors text-white border-t border-slate-700"
                 >
                   <svg
-                    className="w-5 h-5 text-[#fc4f02]"
+                    className="w-4 sm:w-5 h-4 sm:h-5 text-[#fc4f02]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -867,15 +867,15 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                     />
                   </svg>
-                  <span className="text-sm font-medium text-white">Capture Photo</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">Capture Photo</span>
                 </button>
                 {profileImage && (
                   <button
                     onClick={handleRemoveImage}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-red-500/20 transition-colors text-red-400 border-t border-slate-700"
+                    className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-red-500/20 transition-colors text-red-400 border-t border-slate-700"
                   >
                     <svg
-                      className="w-5 h-5 text-red-400"
+                      className="w-4 sm:w-5 h-4 sm:h-5 text-red-400"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -887,7 +887,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                       />
                     </svg>
-                    <span className="text-sm font-medium text-red-400">Remove Photo</span>
+                    <span className="text-xs sm:text-sm font-medium text-red-400">Remove Photo</span>
                   </button>
                 )}
               </div>
@@ -1437,23 +1437,23 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Settings Menu */}
-      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
-        <h3 className="text-xl font-bold text-white mb-6">Settings</h3>
+      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+        <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Settings</h3>
         <div className="space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={item.onClick}
-              className="w-full flex items-center gap-4 p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+              className="w-full flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
             >
-              <div className={`flex-shrink-0 ${item.color || "text-[#fc4f02]"}`}>
+              <div className={`flex-shrink-0 text-sm sm:text-base ${item.color || "text-[#fc4f02]"}`}>
                 {item.icon}
               </div>
-              <span className={`flex-1 text-left text-base font-medium ${item.color || "text-white"} group-hover:text-[#fc4f02] transition-colors`}>
+              <span className={`flex-1 text-left text-xs sm:text-sm font-medium ${item.color || "text-white"} group-hover:text-[#fc4f02] transition-colors`}>
                 {item.label}
               </span>
               <svg
-                className={`w-5 h-5 flex-shrink-0 ${item.color || "text-slate-400"} group-hover:text-[#fc4f02] transition-colors`}
+                className={`w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0 ${item.color || "text-slate-400"} group-hover:text-[#fc4f02] transition-colors`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
