@@ -92,11 +92,11 @@ export default function MarketPage() {
   };
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0 scroll-smooth">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Market Overview</h1>
+          <h1 className="text-base sm:text-xl md:text-2xl font-bold text-white">Market Overview</h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-400">Top 500 cryptocurrencies by market cap</p>
         </div>
         <button
@@ -108,10 +108,10 @@ export default function MarketPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+      <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
         <div className="relative">
           <svg
-            className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+            className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -128,20 +128,20 @@ export default function MarketPage() {
             placeholder="Search by name or symbol..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+            className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
           />
         </div>
       </div>
 
       {/* Error Display */}
       {error && (
-        <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-4">
-          <div className="flex items-start gap-3">
-            <svg className="h-5 w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-3 sm:p-4">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <svg className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm text-red-200 font-medium mb-2">{error}</p>
+              <p className="text-xs sm:text-sm text-red-200 font-medium mb-2">{error}</p>
               <button
                 onClick={() => {
                   setError(null);
@@ -166,10 +166,9 @@ export default function MarketPage() {
       )}
 
       {/* Market Table */}
-      <div className="rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10">
-        <div className="overflow-x-auto -mx-4 sm:-mx-6 px-4 sm:px-6">
-          <div className="w-full inline-block min-w-full">
-            <table className="w-full min-w-[500px] sm:min-w-[640px]">
+      <div className="rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10 overflow-hidden">
+        <div className="smooth-scroll-horizontal">
+          <table className="w-full min-w-[600px]">
               <colgroup>
                 <col className="w-[50px] sm:w-[60px]" />
                 <col className="w-[140px] sm:w-[160px]" />
@@ -233,18 +232,17 @@ export default function MarketPage() {
                 )}
               </tbody>
             </table>
-          </div>
         </div>
       </div>
 
       {/* Pagination Controls */}
       {!isLoading && filteredCoins.length > 0 && totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
           <div className="text-xs sm:text-sm text-slate-400 text-center sm:text-left">
             Showing {startIndex + 1} - {Math.min(endIndex, filteredCoins.length)} of {filteredCoins.length} coins
           </div>
           
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5 overflow-x-auto">
             {/* Previous Button */}
             <button
               onClick={() => handlePageChange(currentPage - 1)}

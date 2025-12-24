@@ -493,3 +493,34 @@ select option:hover {
   scrollbar-width: thin;
   scrollbar-color: rgba(252, 79, 2, 0.6) rgba(255, 255, 255, 0.05);
 }
+
+/* Smooth horizontal scrolling for tables */
+.smooth-scroll-horizontal {
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  /* Enable hardware acceleration */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  /* Smooth deceleration */
+  scroll-snap-type: x mandatory;
+}
+
+.smooth-scroll-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.smooth-scroll-horizontal::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.smooth-scroll-horizontal::-webkit-scrollbar-thumb {
+  background: linear-gradient(to right, rgba(252, 79, 2, 0.4), rgba(253, 163, 0, 0.4));
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.smooth-scroll-horizontal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to right, rgba(252, 79, 2, 0.7), rgba(253, 163, 0, 0.7));
+}
