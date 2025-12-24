@@ -139,14 +139,21 @@ export default function SignUpPage() {
             credentials: "include",
           });
 
-          // Debug: Log cookies
-          if (process.env.NODE_ENV === "development") {
-            console.log("[Signup] Cookies after auto-login:", document.cookie);
-            console.log("[Signup] Login response:", loginResponse);
-          }
+          // Debug: Log cookies and response
+          console.log("[Signup] Cookies after auto-login:", document.cookie);
+          console.log("[Signup] Login response:", loginResponse);
+
+          // Small delay to ensure cookies are set in browser
+          await new Promise(resolve => setTimeout(resolve, 100));
 
           // Navigate to next step in onboarding flow
-          await navigateToNextRoute(router);
+          try {
+            await navigateToNextRoute(router);
+          } catch (navError: any) {
+            console.error("[Signup] Navigation error:", navError);
+            // If navigation fails, default to proof upload
+            router.push("/onboarding/proof-upload");
+          }
         } catch (loginError: any) {
           console.error("[Signup] Auto-login error:", loginError);
           // If auto-login fails, show error but don't switch tabs
@@ -184,14 +191,32 @@ export default function SignUpPage() {
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_auth_method", "email");
 
-        // Debug: Log cookies
-        if (process.env.NODE_ENV === "development") {
-          console.log("[Login] Cookies after login:", document.cookie);
-          console.log("[Login] Login response:", response);
-        }
+        // Debug: Log cookies and response
+        console.log("[Login] Cookies after login:", document.cookie);
+        console.log("[Login] Login response:", response);
+
+        // Small delay to ensure cookies are set in browser
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Navigate to next step in onboarding flow
-        await navigateToNextRoute(router);
+        try {
+          await navigateToNextRoute(router);
+        } catch (navError: any) {
+          console.error("[Login] Navigation error:", navError);
+          console.error("[Login] Error details:", {
+            status: navError.status,
+            statusCode: navError.statusCode,
+            message: navError.message,
+          });
+          // If authentication failed (401), show error to user
+          if (navError.status === 401 || navError.statusCode === 401) {
+            setError("Login succeeded but session couldn't be established. This may be a cookie/CORS issue. Please try again or contact support.");
+            setIsLoading(false);
+          } else {
+            // For other errors, default to proof upload
+            router.push("/onboarding/proof-upload");
+          }
+        }
       } catch (error: any) {
         console.error("[Login] Login error:", error);
         setError(error.message || "Login failed. Please check your credentials.");

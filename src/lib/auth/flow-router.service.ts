@@ -114,6 +114,12 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     if (error?.status === 401 || error?.statusCode === 401 || 
         error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
       console.error("[FlowRouter] User not authenticated - cookies may not be set properly");
+      console.error("[FlowRouter] This may be due to:");
+      console.error("  - Cookies not being sent (check sameSite/secure settings)");
+      console.error("  - CORS credentials not enabled");
+      console.error("  - Backend cookie settings mismatch with frontend");
+      // Re-throw the error so calling code knows authentication failed
+      throw error;
     }
     
     return {
