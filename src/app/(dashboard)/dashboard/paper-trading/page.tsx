@@ -140,10 +140,12 @@ export default function PaperTradingPage() {
   }, []);
 
   // --- Load account data ---
+  // NOTE: Polling interval set to 1 minute to avoid Binance rate limiting
+  // The backend now caches results for 30s, so this interval is optimal
   useEffect(() => {
     if (status && status.configured) {
       loadAccountData();
-      const interval = setInterval(loadAccountData, 10000);
+      const interval = setInterval(loadAccountData, 60000); // 1 minute polling
       return () => clearInterval(interval);
     }
   }, [status?.configured]);
