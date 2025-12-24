@@ -148,6 +148,20 @@ export default function PaperTradingPage() {
     }
   }, [status?.configured]);
 
+  // --- Load all orders on page load and then every 1 minute ---
+  useEffect(() => {
+    const loadAllOrders = async () => {
+      try {
+        await binanceTestnetService.getAllOrders(undefined, 100);
+      } catch (err: any) {
+        console.error("Failed to fetch all orders:", err);
+      }
+    };
+    loadAllOrders();
+    const interval = setInterval(loadAllOrders, 60000); // Refresh every 1 minute
+    return () => clearInterval(interval);
+  }, []);
+
   const loadAccountData = async () => {
     try {
       setLoadingBalance(true);
