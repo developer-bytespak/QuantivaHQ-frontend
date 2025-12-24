@@ -125,8 +125,8 @@ export default function SignUpPage() {
 
         // Automatically log in after successful registration
         try {
-          // Call login API to trigger 2FA code
-          await apiRequest<{
+          // Call login API (2FA temporarily disabled, returns tokens directly)
+          const loginResponse = await apiRequest<{
             emailOrUsername: string;
             password: string;
           }>({
@@ -139,17 +139,14 @@ export default function SignUpPage() {
             credentials: "include",
           });
 
-          // Store pending email and password for 2FA verification
-          localStorage.setItem("quantivahq_pending_email", email);
-          localStorage.setItem("quantivahq_pending_password", password);
-
           // Debug: Log cookies
           if (process.env.NODE_ENV === "development") {
             console.log("[Signup] Cookies after auto-login:", document.cookie);
+            console.log("[Signup] Login response:", loginResponse);
           }
 
-          // Navigate to 2FA verification page
-          router.push("/onboarding/verify-2fa");
+          // Navigate to next step in onboarding flow
+          await navigateToNextRoute(router);
         } catch (loginError: any) {
           console.error("[Signup] Auto-login error:", loginError);
           // If auto-login fails, show error but don't switch tabs
@@ -170,7 +167,7 @@ export default function SignUpPage() {
       setIsLoading(true);
 
       try {
-        // Step 1: Login (sends 2FA code)
+        // Login (2FA temporarily disabled, returns tokens directly)
         const response = await apiRequest<{
           emailOrUsername: string;
           password: string;
@@ -184,19 +181,17 @@ export default function SignUpPage() {
           credentials: "include",
         });
 
-        // Store pending email and password for 2FA verification
-        localStorage.setItem("quantivahq_pending_email", email);
-        localStorage.setItem("quantivahq_pending_password", password);
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_auth_method", "email");
 
         // Debug: Log cookies
         if (process.env.NODE_ENV === "development") {
           console.log("[Login] Cookies after login:", document.cookie);
+          console.log("[Login] Login response:", response);
         }
 
-        // Navigate to 2FA verification page
-        router.push("/onboarding/verify-2fa");
+        // Navigate to next step in onboarding flow
+        await navigateToNextRoute(router);
       } catch (error: any) {
         console.error("[Login] Login error:", error);
         setError(error.message || "Login failed. Please check your credentials.");
