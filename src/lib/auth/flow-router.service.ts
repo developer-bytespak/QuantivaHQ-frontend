@@ -9,6 +9,7 @@ import { getKycStatus } from "../api/kyc";
 import { exchangesService } from "../api/exchanges.service";
 
 export type FlowRoute =
+  | "/onboarding/personal-info"
   | "/onboarding/proof-upload"
   | "/onboarding/verification-status"
   | "/onboarding/account-type"
@@ -23,7 +24,8 @@ export interface FlowCheckResult {
  * Determines the next route after authentication based on user state
  * Flow logic:
  * 1. Check KYC status:
- *    - No KYC record → /onboarding/proof-upload (start KYC)
+ *    - No KYC record → Check personal info, if missing go to /onboarding/personal-info
+ *    - No KYC record + has personal info → /onboarding/proof-upload (start KYC)
  *    - KYC pending/review → /onboarding/verification-status
  *    - KYC approved → Continue to step 2
  * 2. Check exchange connection:
@@ -32,6 +34,19 @@ export interface FlowCheckResult {
  */
 export async function determineNextRoute(): Promise<FlowCheckResult> {
   try {
+    // Check if this is a new signup (always show personal-info for new signups)
+    const isNewSignup = typeof window !== "undefined" && 
+                        localStorage.getItem("quantivahq_is_new_signup") === "true";
+    
+    if (isNewSignup) {
+      // Clear the flag after checking
+      localStorage.removeItem("quantivahq_is_new_signup");
+      return {
+        route: "/onboarding/personal-info",
+        reason: "New signup - collecting personal info",
+      };
+    }
+
     // Step 1: Check KYC status
     const currentUser = await getCurrentUser();
     let kycStatus: "pending" | "approved" | "rejected" | "review" | null =
@@ -123,8 +138,8 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     }
     
     return {
-      route: "/onboarding/proof-upload",
-      reason: "Error checking user status, defaulting to proof upload",
+      route: "/onboarding/personal-info",
+      reason: "Error checking user status, defaulting to personal info",
     };
   }
 }
