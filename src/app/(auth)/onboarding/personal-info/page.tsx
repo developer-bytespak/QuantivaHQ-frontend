@@ -233,9 +233,8 @@ export default function PersonalInfoPage() {
       localStorage.setItem("quantivahq_personal_info", JSON.stringify(formData));
       
       setIsLoading(false);
-      // Use flow router to determine next step
-      const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
-      await navigateToNextRoute(router);
+      // After personal info, always go to KYC proof upload (first KYC step)
+      router.push("/onboarding/proof-upload");
     } catch (error) {
       console.error("Failed to update personal info:", error);
       setErrors({

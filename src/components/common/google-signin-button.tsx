@@ -118,14 +118,18 @@ export default function GoogleSignInButton({ onSuccess }: Props) {
           "quantivahq_is_authenticated",
           data?.accessToken ? "true" : "false"
         );
+        // Set new signup flag if this is a new user
+        if (data?.isNewUser) {
+          localStorage.setItem("quantivahq_is_new_signup", "true");
+        }
       } catch {}
 
       onSuccess?.(data);
 
-      // Verify token by fetching current user, then navigate to dashboard
+      // Use flow router to determine next step in onboarding
+      const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
       try {
-        await getCurrentUser();
-        router.push("/dashboard");
+        await navigateToNextRoute(router);
       } catch (verifyErr: any) {
         const msg = verifyErr?.message || "Failed to verify session after sign-in.";
         console.warn("Verification after Google sign-in failed:", verifyErr);

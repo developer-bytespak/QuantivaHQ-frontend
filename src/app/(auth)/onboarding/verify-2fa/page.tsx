@@ -50,10 +50,19 @@ export default function Verify2FAPage() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest<{
-        emailOrUsername: string;
-        code: string;
-      }>({
+      const response = await apiRequest<
+        {
+          emailOrUsername: string;
+          code: string;
+        },
+        {
+          user: any;
+          accessToken?: string;
+          refreshToken?: string;
+          sessionId?: string;
+          message: string;
+        }
+      >({
         path: "/auth/verify-2fa",
         method: "POST",
         body: {
@@ -64,12 +73,24 @@ export default function Verify2FAPage() {
       });
 
       // Store user info
-      const userData = (response as any).user;
+      const userData = response.user;
       localStorage.setItem("quantivahq_user_email", userData.email);
       localStorage.setItem("quantivahq_user_name", userData.username);
       localStorage.setItem("quantivahq_user_id", userData.user_id);
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
+
+      // Store tokens from response as fallback if cookies don't work (cross-origin issue)
+      if (response.accessToken) {
+        console.log("[2FA] Storing tokens from response body as fallback");
+        localStorage.setItem("quantivahq_access_token", response.accessToken);
+        if (response.refreshToken) {
+          localStorage.setItem("quantivahq_refresh_token", response.refreshToken);
+        }
+        if (response.sessionId) {
+          localStorage.setItem("quantivahq_session_id", response.sessionId);
+        }
+      }
 
       // Debug: Log cookies to verify they're being set
       if (process.env.NODE_ENV === "development") {
