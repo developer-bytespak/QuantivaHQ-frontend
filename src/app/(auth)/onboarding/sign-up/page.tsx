@@ -126,10 +126,19 @@ export default function SignUpPage() {
         // Automatically log in after successful registration
         try {
           // Call login API (2FA temporarily disabled, returns tokens directly)
-          const loginResponse = await apiRequest<{
-            emailOrUsername: string;
-            password: string;
-          }>({
+          const loginResponse = await apiRequest<
+            {
+              emailOrUsername: string;
+              password: string;
+            },
+            {
+              user: any;
+              accessToken?: string;
+              refreshToken?: string;
+              sessionId?: string;
+              message: string;
+            }
+          >({
             path: "/auth/login",
             method: "POST",
             body: {
@@ -142,6 +151,18 @@ export default function SignUpPage() {
           // Debug: Log cookies and response
           console.log("[Signup] Cookies after auto-login:", document.cookie);
           console.log("[Signup] Login response:", loginResponse);
+
+          // Store tokens from response as fallback if cookies don't work (cross-origin issue)
+          if (loginResponse.accessToken) {
+            console.log("[Signup] Storing tokens from response body as fallback");
+            localStorage.setItem("quantivahq_access_token", loginResponse.accessToken);
+            if (loginResponse.refreshToken) {
+              localStorage.setItem("quantivahq_refresh_token", loginResponse.refreshToken);
+            }
+            if (loginResponse.sessionId) {
+              localStorage.setItem("quantivahq_session_id", loginResponse.sessionId);
+            }
+          }
 
           // Small delay to ensure cookies are set in browser
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -175,10 +196,19 @@ export default function SignUpPage() {
 
       try {
         // Login (2FA temporarily disabled, returns tokens directly)
-        const response = await apiRequest<{
-          emailOrUsername: string;
-          password: string;
-        }>({
+        const response = await apiRequest<
+          {
+            emailOrUsername: string;
+            password: string;
+          },
+          {
+            user: any;
+            accessToken?: string;
+            refreshToken?: string;
+            sessionId?: string;
+            message: string;
+          }
+        >({
           path: "/auth/login",
           method: "POST",
           body: {
@@ -194,6 +224,18 @@ export default function SignUpPage() {
         // Debug: Log cookies and response
         console.log("[Login] Cookies after login:", document.cookie);
         console.log("[Login] Login response:", response);
+
+        // Store tokens from response as fallback if cookies don't work (cross-origin issue)
+        if (response.accessToken) {
+          console.log("[Login] Storing tokens from response body as fallback");
+          localStorage.setItem("quantivahq_access_token", response.accessToken);
+          if (response.refreshToken) {
+            localStorage.setItem("quantivahq_refresh_token", response.refreshToken);
+          }
+          if (response.sessionId) {
+            localStorage.setItem("quantivahq_session_id", response.sessionId);
+          }
+        }
 
         // Small delay to ensure cookies are set in browser
         await new Promise(resolve => setTimeout(resolve, 100));
