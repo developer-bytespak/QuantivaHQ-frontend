@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
-import { getTopCoins, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 import { getCryptoNews, getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
 
@@ -210,8 +210,8 @@ export default function DashboardPage() {
     setIsLoadingMarket(true);
     setMarketError(null);
     try {
-      const coins = await getTopCoins(5);
-      setMarketData(coins);
+      const result = await getCachedMarketData(5);
+      setMarketData(result.coins);
       setMarketError(null);
     } catch (error: any) {
       console.error("Failed to fetch market data:", error);
