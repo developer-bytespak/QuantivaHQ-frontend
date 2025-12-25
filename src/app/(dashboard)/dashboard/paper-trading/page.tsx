@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
-import { binanceWebSocketService } from "@/lib/api/binance-websocket.service";
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals } from "@/lib/api/strategies";
@@ -144,42 +143,6 @@ export default function PaperTradingPage() {
     };
     loadStatus();
   }, []);
-
-  // --- WebSocket Connection: Real-time updates (eliminates polling) ---
-  useEffect(() => {
-    if (!status?.configured) return;
-
-    console.log("🔌 Connecting to Binance WebSocket for real-time updates");
-    
-    // Connect WebSocket
-    binanceWebSocketService.connect().catch((err) => {
-      console.error("Failed to connect WebSocket:", err);
-    });
-
-    // Listen for order updates
-    const unsubOrder = binanceWebSocketService.onOrderUpdate((order) => {
-      console.log("📦 Order update:", order);
-      // Trigger orders panel refresh
-      setOrdersRefreshKey((k) => k + 1);
-      // Refresh account data to update balance
-      loadAccountData();
-    });
-
-    // Listen for balance updates
-    const unsubBalance = binanceWebSocketService.onBalanceUpdate((balances) => {
-      console.log("💰 Balance update:", balances);
-      // Refresh account data
-      loadAccountData();
-    });
-
-    // Cleanup on unmount
-    return () => {
-      console.log("🔌 Disconnecting WebSocket");
-      unsubOrder();
-      unsubBalance();
-      binanceWebSocketService.disconnect();
-    };
-  }, [status?.configured]);
 
   // --- Page Visibility API: Pause polling when tab is hidden ---
   useEffect(() => {
