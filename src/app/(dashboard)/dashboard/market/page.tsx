@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getTop500Coins, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 
 export default function MarketPage() {
   const router = useRouter();
@@ -11,6 +11,8 @@ export default function MarketPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [timeSinceSync, setTimeSinceSync] = useState<string>("");
   const coinsPerPage = 50;
 
   useEffect(() => {
@@ -18,8 +20,11 @@ export default function MarketPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const data = await getTop500Coins();
-        setCoins(data);
+        const result = await getCachedMarketData(500);
+        setCoins(result.coins);
+        if (result.lastSyncTime) {
+          setLastSyncTime(new Date(result.lastSyncTime));
+        }
       } catch (err: any) {
         console.error("Failed to fetch market data:", err);
         // Provide user-friendly error message
@@ -39,7 +44,35 @@ export default function MarketPage() {
     };
 
     fetchCoins();
+
+    // Auto-refresh every 5 minutes to match cron job schedule
+    const refreshInterval = setInterval(fetchCoins, 5 * 60 * 1000);
+
+    return () => clearInterval(refreshInterval);
   }, []);
+
+  // Update "time since sync" display every second
+  useEffect(() => {
+    if (!lastSyncTime) return;
+
+    const updateTimeSinceSync = () => {
+      const now = new Date();
+      const diff = Math.floor((now.getTime() - lastSyncTime.getTime()) / 1000);
+      
+      if (diff < 60) {
+        setTimeSinceSync(`${diff}s ago`);
+      } else if (diff < 3600) {
+        setTimeSinceSync(`${Math.floor(diff / 60)}m ago`);
+      } else {
+        setTimeSinceSync(`${Math.floor(diff / 3600)}h ago`);
+      }
+    };
+
+    updateTimeSinceSync();
+    const timer = setInterval(updateTimeSinceSync, 1000);
+
+    return () => clearInterval(timer);
+  }, [lastSyncTime]);
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -97,7 +130,15 @@ export default function MarketPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-base sm:text-xl md:text-2xl font-bold text-white">Market Overview</h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-400">Top 500 cryptocurrencies by market cap</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs sm:text-sm text-slate-400">Top 500 cryptocurrencies by market cap</p>
+            {lastSyncTime && (
+              <span className="text-xs text-emerald-400 flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Updated {timeSinceSync}
+              </span>
+            )}
+          </div>
         </div>
         <button
           onClick={() => router.back()}
@@ -146,9 +187,12 @@ export default function MarketPage() {
                 onClick={() => {
                   setError(null);
                   setIsLoading(true);
-                  getTop500Coins()
-                    .then((data) => {
-                      setCoins(data);
+                  getCachedMarketData(500)
+                    .then((result) => {
+                      setCoins(result.coins);
+                      if (result.lastSyncTime) {
+                        setLastSyncTime(new Date(result.lastSyncTime));
+                      }
                       setIsLoading(false);
                     })
                     .catch((err: any) => {
