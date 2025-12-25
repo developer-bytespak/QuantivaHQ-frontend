@@ -49,15 +49,27 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
 
     // Step 1: Check KYC status
     const currentUser = await getCurrentUser();
+    
+    // Check if personal info is complete (required before KYC)
+    if (!currentUser.full_name || !currentUser.dob || !currentUser.nationality) {
+      return {
+        route: "/onboarding/personal-info",
+        reason: "Personal information not completed",
+      };
+    }
+
+    // Step 1: Check KYC status
     let kycStatus: "pending" | "approved" | "rejected" | "review" | null =
       currentUser.kyc_status || null;
     let hasKycRecord = false;
+    let kycId: string | null = null;
 
     // If kyc_status is not available, try to get it from KYC endpoint
     if (!kycStatus || kycStatus === null) {
       try {
         const kycResponse = await getKycStatus();
         kycStatus = kycResponse.status;
+        kycId = kycResponse.kyc_id;
         hasKycRecord = true;
       } catch (kycError: any) {
         // If KYC endpoint returns 404 or error, user hasn't started KYC
@@ -82,11 +94,36 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
 
     if (!isKycApproved) {
       // KYC is not approved, check if KYC record exists
-      if (hasKycRecord) {
-        return {
-          route: "/onboarding/verification-status",
-          reason: "KYC record exists but not approved",
-        };
+      if (hasKycRecord && kycId) {
+        // Check if documents have been uploaded
+        try {
+          const { getVerificationDetails } = await import("../api/kyc");
+          const verification = await getVerificationDetails(kycId);
+          
+          const hasDocuments = verification.documents && verification.documents.length > 0;
+          const hasFaceMatch = verification.face_matches && verification.face_matches.length > 0;
+          
+          if (!hasDocuments || !hasFaceMatch) {
+            // KYC record exists but no documents uploaded yet
+            return {
+              route: "/onboarding/proof-upload",
+              reason: "KYC record exists but documents not uploaded",
+            };
+          }
+          
+          // Documents uploaded, show verification status
+          return {
+            route: "/onboarding/verification-status",
+            reason: "KYC documents uploaded, pending verification",
+          };
+        } catch (verifyError) {
+          console.log("Error checking verification details:", verifyError);
+          // If we can't get verification details, default to proof upload
+          return {
+            route: "/onboarding/proof-upload",
+            reason: "Cannot verify document upload status",
+          };
+        }
       } else {
         // No KYC record, start KYC flow
         return {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
-import { getPreBuiltStrategySignals } from "@/lib/api/strategies";
+import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight } from "@/lib/api/strategies";
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -72,6 +72,7 @@ interface Trade {
   entryPrice: string;
   stopLossPrice: string;
   takeProfit1: string;
+  takeProfitPrice?: string;
   target: string;
   insights: string[];
   profit: string;
@@ -111,6 +112,10 @@ export default function TopTradesPage() {
   const [strategySignals, setStrategySignals] = useState<Record<string, any[]>>({});
   const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
   const [signalsError, setSignalsError] = useState<Record<string, string>>({});
+
+  // AI insights state with timestamps
+  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
+  const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // UI filters / pagination / overlay
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
@@ -238,7 +243,7 @@ export default function TopTradesPage() {
     return () => { mounted = false; };
   }, []);
 
-  // --- Fetch signals for a strategy ---
+  // --- Fetch signals for a strategy with AI insights ---
   const fetchStrategySignals = async (strategyId: string) => {
     if (loadingSignals[strategyId]) return;
     
@@ -246,14 +251,100 @@ export default function TopTradesPage() {
     setSignalsError((p) => { const c = { ...p }; delete c[strategyId]; return c; });
 
     try {
-      const signals = await getPreBuiltStrategySignals(strategyId);
-      setStrategySignals((p) => ({ ...p, [strategyId]: signals || [] }));
+      // Use new AI insights endpoint that returns top 2 with insights
+      const response = await getTrendingAssetsWithInsights(strategyId, 10);
+      const assets = response.assets || [];
+      
+      // Store AI insights separately with timestamps
+      const insights: Record<string, { text: string; timestamp: number }> = {};
+      assets.forEach(asset => {
+        if (asset.hasAiInsight && asset.aiInsight) {
+          insights[asset.asset_id] = {
+            text: asset.aiInsight,
+            timestamp: Date.now()
+          };
+        }
+      });
+      setAiInsights((p) => ({ ...p, [strategyId]: insights }));
+      
+      // Map assets to signals format for compatibility with existing code
+      const signals = assets.map(asset => ({
+        signal_id: asset.signal?.signal_id || asset.asset_id,
+        strategy_id: strategyId,
+        asset_id: asset.asset_id,
+        asset: {
+          asset_id: asset.asset_id,
+          symbol: asset.symbol,
+          display_name: asset.display_name,
+        },
+        action: asset.signal?.action || 'HOLD',
+        confidence: asset.signal?.confidence || 0,
+        final_score: asset.signal?.final_score || 0,
+        entry_price: asset.signal?.entry_price,
+        stop_loss_price: asset.signal?.stop_loss,
+        take_profit_price: asset.signal?.take_profit_1,
+        stop_loss: asset.signal?.stop_loss_pct, // Percentage from strategy
+        take_profit: asset.signal?.take_profit_pct, // Percentage from strategy
+        details: asset.signal ? [{
+          entry_price: asset.signal.entry_price,
+          stop_loss: asset.signal.stop_loss,
+          take_profit_1: asset.signal.take_profit_1,
+        }] : [],
+        realtime_data: {
+          price: asset.price_usd,
+          priceChangePercent: asset.price_change_24h,
+          volume24h: asset.volume_24h,
+        },
+        hasAiInsight: asset.hasAiInsight,
+      }));
+      
+      setStrategySignals((p) => ({ ...p, [strategyId]: signals }));
     } catch (err: any) {
       console.error(`Failed to load signals for strategy ${strategyId}:`, err);
       setSignalsError((p) => ({ ...p, [strategyId]: err?.message || String(err) }));
       setStrategySignals((p) => ({ ...p, [strategyId]: [] }));
     } finally {
       setLoadingSignals((p) => ({ ...p, [strategyId]: false }));
+    }
+  };
+
+  // --- Generate AI insight on-demand for specific asset ---
+  const handleGenerateInsight = async (strategyId: string, assetId: string) => {
+    const key = `${strategyId}-${assetId}`;
+    if (loadingInsight[key]) return;
+    
+    setLoadingInsight((p) => ({ ...p, [key]: true }));
+    
+    try {
+      const response = await generateAssetInsight(strategyId, assetId);
+      
+      // Update AI insights with timestamp
+      setAiInsights((p) => ({
+        ...p,
+        [strategyId]: {
+          ...(p[strategyId] || {}),
+          [assetId]: {
+            text: response.insight,
+            timestamp: Date.now()
+          },
+        },
+      }));
+      
+      // Update signal to mark it has insight
+      setStrategySignals((p) => {
+        const signals = p[strategyId] || [];
+        return {
+          ...p,
+          [strategyId]: signals.map(s => 
+            s.asset_id === assetId ? { ...s, hasAiInsight: true } : s
+          ),
+        };
+      });
+    } catch (err: any) {
+      console.error(`Failed to generate insight for ${assetId}:`, err);
+      alert(`Failed to generate insight: ${err.message}`);
+    } finally {
+      setLoadingInsight((p) => ({ ...p, [key]: false }));
     }
   };
 
@@ -298,11 +389,11 @@ export default function TopTradesPage() {
       const realtimePriceChange = signal.realtime_data?.priceChangePercent ?? null;
       
       // Get entry price from signal details or asset or realtime data
-      const entryPrice = signal.details?.[0]?.entry_price || signal.entry_price || signal.entry || realtimePrice || null;
-      const stopLossPrice = signal.details?.[0]?.stop_loss || signal.stop_loss_price || null;
-      const takeProfitPrice = signal.details?.[0]?.take_profit_1 || signal.take_profit_price || null;
+      const entryPrice = signal.entry_price || signal.details?.[0]?.entry_price || realtimePrice || null;
+      const stopLossPrice = signal.stop_loss_price || signal.details?.[0]?.stop_loss || null;
+      const takeProfitPrice = signal.take_profit_price || signal.details?.[0]?.take_profit_1 || null;
       
-      // Get stop loss and take profit percentages from strategy
+      // Get stop loss and take profit percentages from strategy (already formatted)
       const stopLossPct = signal.stop_loss || null;
       const takeProfitPct = signal.take_profit || null;
       
@@ -324,6 +415,7 @@ export default function TopTradesPage() {
         entryPrice: entryPrice ? String(entryPrice) : "—",
         stopLossPrice: stopLossPrice ? String(stopLossPrice) : "—",
         takeProfit1: takeProfitPct ? String(takeProfitPct) : "—",
+        takeProfitPrice: takeProfitPrice ? String(takeProfitPrice) : "—",
         target: "",
         insights: explanationText ? [explanationText] : [],
         profit: realtimePriceChange ? `${Number(realtimePriceChange).toFixed(2)}%` : "0%",
@@ -623,11 +715,11 @@ export default function TopTradesPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-slate-400">Stop Loss</span>
-                        <span className="font-medium text-white">{(trade.stopLoss ?? '—') ? `${formatPercent(trade.stopLoss)} (${formatCurrency(trade.stopLossPrice ?? trade.stopLoss)})` : '—'}</span>
+                        <span className="font-medium text-white">{trade.stopLoss && trade.stopLoss !== '—' ? `${formatPercent(trade.stopLoss)}${trade.stopLossPrice && trade.stopLossPrice !== '—' ? ` (${formatCurrency(trade.stopLossPrice)})` : ''}` : '—'}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-slate-400">Take Profit</span>
-                        <span className="font-medium text-white">{trade.takeProfit1 ? `${formatPercent(trade.takeProfit1)} (${formatCurrency((trade as any).take_profit_price ?? trade.takeProfit1)})` : '—'}</span>
+                        <span className="font-medium text-white">{trade.takeProfit1 && trade.takeProfit1 !== '—' ? `${formatPercent(trade.takeProfit1)}${trade.takeProfitPrice && trade.takeProfitPrice !== '—' ? ` (${formatCurrency(trade.takeProfitPrice)})` : ''}` : '—'}</span>
                       </div>
                     </div>
 
@@ -667,6 +759,81 @@ export default function TopTradesPage() {
                           </div>
                         )}
                       </div>
+
+                    {/* AI Insights Section */}
+                    {currentStrategy && (() => {
+                      const assetId = (trade as any).assetId || (trade as any).asset_id;
+                      const strategyInsights = aiInsights[currentStrategy.strategy_id] || {};
+                      const insightData = assetId ? strategyInsights[assetId] : null;
+                      const hasInsight = (trade as any).hasAiInsight || !!insightData;
+                      const key = `${currentStrategy.strategy_id}-${assetId}`;
+                      const loading = loadingInsight[key];
+
+                      // Format timestamp
+                      const formatTimeAgo = (timestamp: number) => {
+                        const minutes = Math.floor((Date.now() - timestamp) / 60000);
+                        if (minutes < 1) return 'just now';
+                        if (minutes < 60) return `${minutes}m ago`;
+                        const hours = Math.floor(minutes / 60);
+                        if (hours < 24) return `${hours}h ago`;
+                        const days = Math.floor(hours / 24);
+                        return `${days}d ago`;
+                      };
+
+                      return (
+                        <div className="relative pt-3 space-y-2">
+                          <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4 text-[#fc4f02]" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 7H7v6h6V7z" />
+                                <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold text-[#fc4f02]">AI Insight</span>
+                            </div>
+                            {hasInsight && insightData && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-500">{formatTimeAgo(insightData.timestamp)}</span>
+                                <button
+                                  onClick={() => handleGenerateInsight(currentStrategy.strategy_id, assetId)}
+                                  disabled={loading}
+                                  className="text-slate-400 hover:text-[#fc4f02] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Refresh insight"
+                                >
+                                  <svg className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {hasInsight && insightData ? (
+                            <div className="rounded-lg bg-gradient-to-br from-[#fc4f02]/10 to-[#fda300]/5 p-3 text-xs text-slate-300 leading-relaxed border border-[#fc4f02]/20">
+                              {insightData.text}
+                            </div>
+                          ) : assetId ? (
+                            <button
+                              onClick={() => handleGenerateInsight(currentStrategy.strategy_id, assetId)}
+                              disabled={loading}
+                              className="w-full rounded-lg bg-gradient-to-r from-slate-700/50 to-slate-600/50 px-3 py-2 text-xs font-medium text-slate-300 transition-all hover:from-[#fc4f02]/20 hover:to-[#fda300]/20 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600/30 hover:border-[#fc4f02]/50"
+                            >
+                              {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                  <svg className="animate-spin h-3 w-3" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                  </svg>
+                                  Generating insight...
+                                </span>
+                              ) : (
+                                'Generate AI Insight'
+                              )}
+                            </button>
+                          ) : null}
+                        </div>
+                      );
+                    })()}
 
                     <div className="flex gap-2 pt-2">
                       <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">Auto Trade</button>
@@ -726,8 +893,8 @@ export default function TopTradesPage() {
                 {/* Left column - Trade Details */}
                 <div className="space-y-4 rounded-xl bg-gradient-to-br from-white/[0.12] to-white/[0.03] p-4">
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Entry</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].entryPrice ?? filteredAndSortedTrades[selectedTradeIndex].entry)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Stop-Loss</span><span className="text-base font-medium text-white">{((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss) ? `${formatPercent((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss_price ?? filteredAndSortedTrades[selectedTradeIndex].stopLossPrice)})` : '—'}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Take Profit 1</span><span className="text-base font-medium text-white">{(filteredAndSortedTrades[selectedTradeIndex] as any).take_profit ? `${formatPercent((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit_price ?? filteredAndSortedTrades[selectedTradeIndex].takeProfit1)})` : (filteredAndSortedTrades[selectedTradeIndex].takeProfit1 ? `${formatPercent(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit_price ?? filteredAndSortedTrades[selectedTradeIndex].takeProfit1)})` : '—')}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Stop-Loss</span><span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].stopLoss && filteredAndSortedTrades[selectedTradeIndex].stopLoss !== '—' ? `${formatPercent(filteredAndSortedTrades[selectedTradeIndex].stopLoss)}${filteredAndSortedTrades[selectedTradeIndex].stopLossPrice && filteredAndSortedTrades[selectedTradeIndex].stopLossPrice !== '—' ? ` (${formatCurrency(filteredAndSortedTrades[selectedTradeIndex].stopLossPrice)})` : ''}` : '—'}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Take Profit 1</span><span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit1 && filteredAndSortedTrades[selectedTradeIndex].takeProfit1 !== '—' ? `${formatPercent(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)}${filteredAndSortedTrades[selectedTradeIndex].takeProfitPrice && filteredAndSortedTrades[selectedTradeIndex].takeProfitPrice !== '—' ? ` (${formatCurrency(filteredAndSortedTrades[selectedTradeIndex].takeProfitPrice)})` : ''}` : '—'}</span></div>
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Additional Info</span><span className="text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span></div>
                 </div>
 

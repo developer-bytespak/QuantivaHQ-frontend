@@ -79,6 +79,19 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_user_id", userData.user_id);
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
+      localStorage.removeItem("quantivahq_pending_password");
+
+      // Store tokens from response as fallback if cookies don't work (cross-origin issue)
+      if (response.accessToken) {
+        console.log("[2FA] Storing tokens from response body as fallback");
+        localStorage.setItem("quantivahq_access_token", response.accessToken);
+        if (response.refreshToken) {
+          localStorage.setItem("quantivahq_refresh_token", response.refreshToken);
+        }
+        if (response.sessionId) {
+          localStorage.setItem("quantivahq_session_id", response.sessionId);
+        }
+      }
 
       // Store tokens from response as fallback if cookies don't work (cross-origin issue)
       if (response.accessToken) {
