@@ -112,8 +112,8 @@ export default function TopTradesPage() {
   const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
   const [signalsError, setSignalsError] = useState<Record<string, string>>({});
 
-  // AI insights state
-  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, string>>>({});
+  // AI insights state with timestamps
+  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
   const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // UI filters / pagination / overlay
@@ -254,11 +254,14 @@ export default function TopTradesPage() {
       const response = await getTrendingAssetsWithInsights(strategyId, 10);
       const assets = response.assets || [];
       
-      // Store AI insights separately
-      const insights: Record<string, string> = {};
+      // Store AI insights separately with timestamps
+      const insights: Record<string, { text: string; timestamp: number }> = {};
       assets.forEach(asset => {
         if (asset.hasAiInsight && asset.aiInsight) {
-          insights[asset.asset_id] = asset.aiInsight;
+          insights[asset.asset_id] = {
+            text: asset.aiInsight,
+            timestamp: Date.now()
+          };
         }
       });
       setAiInsights((p) => ({ ...p, [strategyId]: insights }));
@@ -309,12 +312,15 @@ export default function TopTradesPage() {
     try {
       const response = await generateAssetInsight(strategyId, assetId);
       
-      // Update AI insights
+      // Update AI insights with timestamp
       setAiInsights((p) => ({
         ...p,
         [strategyId]: {
           ...(p[strategyId] || {}),
-          [assetId]: response.insight,
+          [assetId]: {
+            text: response.insight,
+            timestamp: Date.now()
+          },
         },
       }));
       
@@ -378,8 +384,8 @@ export default function TopTradesPage() {
       
       // Get entry price from signal details or asset or realtime data
       const entryPrice = signal.details?.[0]?.entry_price || signal.entry_price || signal.entry || realtimePrice || null;
-      const stopLossPrice = signal.details?.[0]?.stop_loss || signal.stop_loss_price || null;
-      const takeProfitPrice = signal.details?.[0]?.take_profit_1 || signal.take_profit_price || null;
+      const stopLossPrice = signal.details?.[0]?.stop_loss || signal.stop_loss_price || signal.stop_loss || null;
+      const takeProfitPrice = signal.details?.[0]?.take_profit_1 || signal.take_profit_price || signal.take_profit || null;
       
       // Get stop loss and take profit percentages from strategy
       const stopLossPct = signal.stop_loss || null;
@@ -741,25 +747,53 @@ export default function TopTradesPage() {
                     {currentStrategy && (() => {
                       const assetId = (trade as any).assetId || (trade as any).asset_id;
                       const strategyInsights = aiInsights[currentStrategy.strategy_id] || {};
-                      const insight = assetId ? strategyInsights[assetId] : null;
-                      const hasInsight = (trade as any).hasAiInsight || !!insight;
+                      const insightData = assetId ? strategyInsights[assetId] : null;
+                      const hasInsight = (trade as any).hasAiInsight || !!insightData;
                       const key = `${currentStrategy.strategy_id}-${assetId}`;
                       const loading = loadingInsight[key];
+
+                      // Format timestamp
+                      const formatTimeAgo = (timestamp: number) => {
+                        const minutes = Math.floor((Date.now() - timestamp) / 60000);
+                        if (minutes < 1) return 'just now';
+                        if (minutes < 60) return `${minutes}m ago`;
+                        const hours = Math.floor(minutes / 60);
+                        if (hours < 24) return `${hours}h ago`;
+                        const days = Math.floor(hours / 24);
+                        return `${days}d ago`;
+                      };
 
                       return (
                         <div className="relative pt-3 space-y-2">
                           <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
-                          <div className="flex items-center gap-2">
-                            <svg className="w-4 h-4 text-[#fc4f02]" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M13 7H7v6h6V7z" />
-                              <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
-                            </svg>
-                            <span className="text-xs font-semibold text-[#fc4f02]">AI Insight</span>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <svg className="w-4 h-4 text-[#fc4f02]" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 7H7v6h6V7z" />
+                                <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+                              </svg>
+                              <span className="text-xs font-semibold text-[#fc4f02]">AI Insight</span>
+                            </div>
+                            {hasInsight && insightData && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-slate-500">{formatTimeAgo(insightData.timestamp)}</span>
+                                <button
+                                  onClick={() => handleGenerateInsight(currentStrategy.strategy_id, assetId)}
+                                  disabled={loading}
+                                  className="text-slate-400 hover:text-[#fc4f02] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Refresh insight"
+                                >
+                                  <svg className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                </button>
+                              </div>
+                            )}
                           </div>
                           
-                          {hasInsight && insight ? (
+                          {hasInsight && insightData ? (
                             <div className="rounded-lg bg-gradient-to-br from-[#fc4f02]/10 to-[#fda300]/5 p-3 text-xs text-slate-300 leading-relaxed border border-[#fc4f02]/20">
-                              {insight}
+                              {insightData.text}
                             </div>
                           ) : assetId ? (
                             <button
