@@ -11,9 +11,10 @@ import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
 import TradeLeaderboard from "./components/trade-leaderboard";
 import { OrdersPanel } from "./components/orders-panel";
+import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
 
-// ⏱️ API Refresh Intervals (in milliseconds)
-const ACCOUNT_DATA_REFRESH_INTERVAL = 300000;  // 5 minutes - Account balance & orders
+// ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
+const ACCOUNT_DATA_REFRESH_INTERVAL = 600000;  // 10 minutes - Fallback only
 const SIGNALS_REFRESH_INTERVAL = 300000;      // 5 minutes - Strategy signals
 
 // --- Formatting helpers ---
@@ -76,10 +77,17 @@ type TradeRecord = {
 };
 
 export default function PaperTradingPage() {
+  // WebSocket connection for real-time updates
+  const realtimeData = useRealtimePaperTrading('default-user');
+  
   // Refs to track last fetch times and prevent aggressive reloads
   const lastAccountDataFetch = useRef<number>(0);
   const lastAllOrdersFetch = useRef<number>(0);
   const isPageVisible = useRef<boolean>(true);
+  const isInitialMount = useRef<boolean>(true);
+  
+  // Rate limit protection - global lock to prevent any API calls during cooldown
+  const [isRateLimited, setIsRateLimited] = useState(false);
   
   // Account data
   const [balance, setBalance] = useState(0);
@@ -131,6 +139,39 @@ export default function PaperTradingPage() {
   const [showOrdersPanel, setShowOrdersPanel] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
+  // --- Monitor WebSocket errors for rate limiting ---
+  useEffect(() => {
+    if (realtimeData.error) {
+      const errorMsg = realtimeData.error.toLowerCase();
+      
+      // Check if it's a rate limit error
+      if (errorMsg.includes('rate_limited') || errorMsg.includes('rate limit')) {
+        console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.error("⛔ RATE LIMIT PROTECTION ACTIVATED");
+        console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        console.error("Reason: WebSocket reported rate limit from Binance");
+        console.error("Action: ALL REST API calls blocked for 10 minutes");
+        console.error("Next Steps:");
+        console.error("  1. DO NOT refresh the page");
+        console.error("  2. Wait for the red banner to disappear");
+        console.error("  3. System will auto-recover after cooldown");
+        console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        
+        setIsRateLimited(true);
+        
+        // Auto-clear after 10 minutes
+        setTimeout(() => {
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          console.log("✅ RATE LIMIT COOLDOWN COMPLETE");
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          console.log("API calls re-enabled. System resuming normal operation.");
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          setIsRateLimited(false);
+        }, 600000);
+      }
+    }
+  }, [realtimeData.error]);
+
   // --- Load testnet status on mount ---
   useEffect(() => {
     const loadStatus = async () => {
@@ -153,14 +194,14 @@ export default function PaperTradingPage() {
         // Tab became visible - check if we need to refresh data
         const now = Date.now();
         
-        // Only refresh if data is stale (older than 2 minutes)
-        if (now - lastAccountDataFetch.current > 120000) {
+        // Only refresh if data is stale (older than 10 minutes) AND WebSocket disconnected AND not rate limited
+        if (now - lastAccountDataFetch.current > 600000 && !realtimeData.connected && !isRateLimited) {
           console.log("Tab visible again, refreshing stale account data");
           loadAccountData();
         }
         
-        // Only refresh orders if very stale (older than 3 minutes)
-        if (now - lastAllOrdersFetch.current > 180000) {
+        // Only refresh orders if very stale (older than 10 minutes) AND WebSocket disconnected AND not rate limited
+        if (now - lastAllOrdersFetch.current > 600000 && !realtimeData.connected && !isRateLimited) {
           console.log("Tab visible again, refreshing stale orders data");
           loadAllOrders();
         }
@@ -174,67 +215,132 @@ export default function PaperTradingPage() {
     };
   }, [status?.configured]);
 
-  // --- Load account data (significantly reduced polling due to WebSocket) ---
-  // NOTE: Polling interval increased to 5 minutes since WebSocket provides real-time updates
-  // We only poll occasionally as a fallback
+  // --- Load account data (fallback polling when WebSocket disconnected) ---
+  // WebSocket provides real-time updates; we only poll when disconnected
   useEffect(() => {
-    if (status && status.configured) {
-      // Check if we recently fetched (within last 30 seconds) to avoid aggressive remount
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastAccountDataFetch.current;
-      
-      if (timeSinceLastFetch > 30000) {
-        loadAccountData();
-      } else {
-        console.log("Skipping account data fetch - recently fetched", timeSinceLastFetch, "ms ago");
+    if (status && status.configured && !isRateLimited) {
+      // Skip initial load entirely - wait for WebSocket or user action
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        console.log("⏸️ Initial mount - waiting 10 seconds before any API calls");
+        
+        // Wait 10 seconds, then check if we need to load
+        const initialDelay = setTimeout(() => {
+          const now = Date.now();
+          const timeSinceLastFetch = now - lastAccountDataFetch.current;
+          
+          // Only load if WebSocket failed to connect AND we never fetched before
+          if (!realtimeData.connected && timeSinceLastFetch > 300000) {
+            console.log("WebSocket not connected after delay, loading account data via REST");
+            loadAccountData();
+          } else if (realtimeData.connected) {
+            console.log("✓ WebSocket connected - using real-time updates, no REST needed");
+          }
+        }, 10000);
+        
+        return () => clearTimeout(initialDelay);
       }
       
-      // Much longer interval since WebSocket handles real-time updates
+      // Longer fallback interval - only poll when WebSocket is disconnected
       const interval = setInterval(() => {
-        // Only poll if page is visible
-        if (isPageVisible.current) {
+        // Only poll if page is visible AND WebSocket is disconnected AND not rate limited
+        if (isPageVisible.current && !realtimeData.connected && !isRateLimited) {
+          console.log("WebSocket disconnected, using REST fallback");
           loadAccountData();
         }
-      }, 300000); // 5 minute polling as fallback
+      }, ACCOUNT_DATA_REFRESH_INTERVAL);
       
       return () => clearInterval(interval);
     }
-  }, [status?.configured]);
+  }, [status?.configured, realtimeData.connected, isRateLimited]);
 
   // --- Load all orders on page load (WebSocket handles updates) ---
   // Significantly reduced polling - WebSocket provides real-time order updates
   useEffect(() => {
-    // Check if we recently fetched (within last 60 seconds) to avoid aggressive remount
+    // Skip on initial mount - no orders call at all on fresh load
+    if (isInitialMount.current || isRateLimited) {
+      return;
+    }
+    
+    // Only load if WebSocket disconnected and data is very stale
     const now = Date.now();
     const timeSinceLastFetch = now - lastAllOrdersFetch.current;
     
-    if (timeSinceLastFetch > 60000) {
+    if (timeSinceLastFetch > 300000 && !realtimeData.connected && !isRateLimited) {
+      console.log("WebSocket not connected, loading orders via REST");
       loadAllOrders();
-    } else {
-      console.log("Skipping all orders fetch - recently fetched", timeSinceLastFetch, "ms ago");
     }
     
-    // Much longer interval since WebSocket provides real-time updates
+    // Fallback polling only when WebSocket disconnected
     const interval = setInterval(() => {
-      // Only poll if page is visible
-      if (isPageVisible.current) {
+      // Only poll if page is visible AND WebSocket disconnected AND not rate limited
+      if (isPageVisible.current && !realtimeData.connected && !isRateLimited) {
+        console.log("WebSocket disconnected, using REST fallback for orders");
         loadAllOrders();
       }
-    }, 600000); // Refresh every 10 minutes as fallback
+    }, ACCOUNT_DATA_REFRESH_INTERVAL);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [realtimeData.connected, isRateLimited]);
+
+  // --- Sync WebSocket order updates with open orders count ---
+  useEffect(() => {
+    if (realtimeData.orders && realtimeData.orders.length > 0) {
+      // Count open orders from WebSocket data
+      const openCount = realtimeData.orders.filter(
+        (order) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
+      ).length;
+      setOpenOrdersCount(openCount);
+      
+      // Trigger OrdersPanel refresh
+      setOrdersRefreshKey((k) => k + 1);
+    }
+  }, [realtimeData.orders]);
+
+  // --- Sync WebSocket balance with local state ---
+  useEffect(() => {
+    if (realtimeData.balance) {
+      // Calculate total balance in USD (simplified - assuming USDT as proxy for USD)
+      const usdtBalance = realtimeData.balance['USDT'];
+      if (usdtBalance) {
+        const totalUSD = parseFloat(usdtBalance.free) + parseFloat(usdtBalance.locked);
+        setBalance(totalUSD);
+      }
+    }
+  }, [realtimeData.balance]);
 
   const loadAllOrders = async () => {
+    // Rate limit protection
+    if (isRateLimited) {
+      console.log("⛔ API calls blocked - in rate limit cooldown period");
+      return;
+    }
+    
     try {
       lastAllOrdersFetch.current = Date.now();
       await binanceTestnetService.getAllOrders(undefined, 100);
     } catch (err: any) {
       console.error("Failed to fetch all orders:", err);
+      
+      // Detect rate limiting
+      if (err?.message?.includes('Rate limit') || err?.statusCode === 400 || err?.statusCode === 429) {
+        console.error("⛔ RATE LIMITED - Blocking all API calls for 10 minutes");
+        setIsRateLimited(true);
+        setTimeout(() => {
+          console.log("✅ Rate limit cooldown complete - API calls re-enabled");
+          setIsRateLimited(false);
+        }, 600000); // 10 minute cooldown
+      }
     }
   };
 
   const loadAccountData = async () => {
+    // Rate limit protection
+    if (isRateLimited) {
+      console.log("⛔ API calls blocked - in rate limit cooldown period");
+      return;
+    }
+    
     try {
       lastAccountDataFetch.current = Date.now();
       setLoadingBalance(true);
@@ -247,6 +353,16 @@ export default function PaperTradingPage() {
       setOpenOrdersCount(openOrders.length);
     } catch (err: any) {
       console.error("Failed to load account data:", err);
+      
+      // Detect rate limiting
+      if (err?.message?.includes('Rate limit') || err?.statusCode === 400 || err?.statusCode === 429) {
+        console.error("⛔ RATE LIMITED - Blocking all API calls for 10 minutes");
+        setIsRateLimited(true);
+        setTimeout(() => {
+          console.log("✅ Rate limit cooldown complete - API calls re-enabled");
+          setIsRateLimited(false);
+        }, 600000); // 10 minute cooldown
+      }
     } finally {
       setLoadingBalance(false);
     }
@@ -508,6 +624,52 @@ export default function PaperTradingPage() {
 
   return (
     <div className="space-y-3 sm:space-y-6 pb-8 p-4 sm:p-0">
+      {/* Rate Limit Warning Banner */}
+      {isRateLimited && (
+        <div className="rounded-xl bg-red-600/20 border-2 border-red-500/50 p-4 sm:p-6">
+          <div className="flex items-start gap-3">
+            <div className="text-3xl">⛔</div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-red-300 mb-2">Rate Limit Protection Active</h3>
+              <p className="text-sm text-red-200 mb-2">
+                Binance API rate limit detected. All API calls have been blocked for 10 minutes to prevent further issues.
+              </p>
+              <p className="text-xs text-red-300">
+                This is a safety measure. The page will automatically resume normal operation after the cooldown period.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* WebSocket Connection Status */}
+      {realtimeData.reconnecting && (
+        <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+          <span className="text-sm text-yellow-300">Reconnecting to live data stream...</span>
+        </div>
+      )}
+      {realtimeData.error && !realtimeData.connected && !realtimeData.reconnecting && (
+        <div className="rounded-lg bg-red-500/10 border border-red-500/30 p-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-red-500" />
+            <span className="text-sm text-red-300">
+              {realtimeData.error.includes('RATE_LIMITED') 
+                ? '⛔ Rate limited - All API calls blocked for 10 minutes'
+                : realtimeData.error.includes('rate limit')
+                ? '⛔ Rate limited - Please wait 10-15 minutes'
+                : 'Connection error - Using fallback mode'}
+            </span>
+          </div>
+        </div>
+      )}
+      {realtimeData.connected && !realtimeData.reconnecting && !isRateLimited && (
+        <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-2 flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="text-xs text-green-300">Live data stream active - no API polling</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
