@@ -73,6 +73,35 @@ export async function getTop500Coins(): Promise<CoinGeckoCoin[]> {
 }
 
 /**
+ * Fetch cached market data from database (updated every 5 minutes)
+ * Much faster than live CoinGecko API calls
+ */
+export async function getCachedMarketData(
+  limit: number = 500,
+  search?: string,
+): Promise<{ coins: CoinGeckoCoin[]; lastSyncTime: string | null }> {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append('limit', limit.toString());
+    if (search) {
+      queryParams.append('search', search);
+    }
+
+    const data = await apiRequest<never, { coins: CoinGeckoCoin[]; lastSyncTime: string | null }>({
+      path: `/api/market/coins/cached?${queryParams.toString()}`,
+      method: 'GET',
+      timeout: 10000, // Faster timeout since it's from database
+    });
+    return data;
+  } catch (error: any) {
+    console.error('Failed to fetch cached market data from backend:', error);
+    throw new Error(
+      error.message || 'Failed to fetch market data from database. Please ensure the backend is running.',
+    );
+  }
+}
+
+/**
  * Search for a coin by symbol and return its ID
  */
 async function searchCoinBySymbol(symbol: string): Promise<string | null> {

@@ -201,6 +201,14 @@ export async function uploadFile<TResponse = unknown>({
 
   const headers: HeadersInit = {};
 
+  // Add Authorization header from stored client JWT if available
+  if (typeof window !== "undefined") {
+    const accessToken = localStorage.getItem("quantivahq_access_token");
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+  }
+
   // Add device ID header for 2FA verification
   if (typeof window !== "undefined") {
     headers["x-device-id"] = getDeviceId();

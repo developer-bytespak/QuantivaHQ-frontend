@@ -182,8 +182,8 @@ export default function SignUpPage() {
               await navigateToNextRoute(router);
             } catch (navError: any) {
               console.error("[Signup] Navigation error:", navError);
-              // If navigation fails, default to personal info
-              router.push("/onboarding/personal-info");
+              // If navigation fails, default to proof upload
+              router.push("/onboarding/proof-upload");
             }
           }
         } catch (loginError: any) {
@@ -279,8 +279,8 @@ export default function SignUpPage() {
               setError("Login succeeded but session couldn't be established. This may be a cookie/CORS issue. Please try again or contact support.");
               setIsLoading(false);
             } else {
-              // For other errors, default to personal info
-              router.push("/onboarding/personal-info");
+              // For other errors, default to proof upload
+              router.push("/onboarding/proof-upload");
             }
           }
         }
@@ -414,15 +414,17 @@ export default function SignUpPage() {
                   </div>
 
                       {/* OAuth Buttons */}
-                      <div className="grid grid-cols-1 gap-2.5">
-                        {/* Google Sign-In button (GSI) */}
-                        <div>
-                          {/* lazy-loaded Google button component */}
-                          {/* eslint-disable-next-line @next/next/no-before-interactive-script-load */}
-                          {/* @ts-ignore */}
-                          <GoogleSignInButton />
+                      {activeTab === "login" && (
+                        <div className="grid grid-cols-1 gap-2.5">
+                          {/* Google Sign-In button (GSI) */}
+                          <div>
+                            {/* lazy-loaded Google button component */}
+                            {/* eslint-disable-next-line @next/next/no-before-interactive-script-load */}
+                            {/* @ts-ignore */}
+                            <GoogleSignInButton />
+                          </div>
                         </div>
-                      </div>
+                      )}
                 </div>
               </div>
             </div>

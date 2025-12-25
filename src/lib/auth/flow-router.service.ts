@@ -47,7 +47,7 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       };
     }
 
-    // Get current user first
+    // Step 1: Check KYC status
     const currentUser = await getCurrentUser();
     
     // Check if personal info is complete (required before KYC)

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
-import { getTopCoins, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 import { getCryptoNews, getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
 
@@ -210,8 +210,8 @@ export default function DashboardPage() {
     setIsLoadingMarket(true);
     setMarketError(null);
     try {
-      const coins = await getTopCoins(5);
-      setMarketData(coins);
+      const result = await getCachedMarketData(5);
+      setMarketData(result.coins);
       setMarketError(null);
     } catch (error: any) {
       console.error("Failed to fetch market data:", error);
@@ -258,16 +258,16 @@ export default function DashboardPage() {
   }, [fetchCryptoNews]);
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
       {/* Error Display */}
       {error && (
-        <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-4">
-          <div className="flex items-start gap-3">
-            <svg className="h-5 w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-3 sm:p-4">
+          <div className="flex items-start gap-2 sm:gap-3">
+            <svg className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm text-red-200">{error}</p>
+              <p className="text-xs sm:text-sm text-red-200">{error}</p>
               <button
                 onClick={() => {
                   if (connectionId) {
@@ -290,88 +290,88 @@ export default function DashboardPage() {
       )}
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-6 lg:grid-cols-3">
         {/* Left Column - Main Dashboard Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
-          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Portfolio</h2>
+          <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+            <div className="mb-3 sm:mb-4 flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-semibold text-white">Portfolio</h2>
               {lastUpdated && (
-                <p className="text-xs text-slate-400">
+                <p className="text-[10px] sm:text-xs text-slate-400">
                   Updated {lastUpdated.toLocaleTimeString()}
                 </p>
               )}
             </div>
 
             {isLoading && !dashboardData ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+              <div className="flex items-center justify-center py-6 sm:py-8">
+                <div className="h-6 sm:h-8 w-6 sm:w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
               </div>
             ) : dashboardData ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 sm:gap-4 sm:grid-cols-2">
                 {/* Total Profit Value Inner Box */}
-                <div className="rounded-xl  bg-gradient-to-br from-white/[0.07] to-transparent p-4">
-                  <p className="mb-2 text-xs text-slate-400">Total Portfolio Value</p>
-                  <p className="mb-2 text-2xl font-bold text-white">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
+                  <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs text-slate-400">Total Portfolio Value</p>
+                  <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
                     {formatCurrency(dashboardData.portfolio.totalValue)}
                   </p>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-medium ${dashboardData.portfolio.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`text-xs sm:text-sm font-medium ${dashboardData.portfolio.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {formatCurrency(dashboardData.portfolio.totalPnl)}
                     </span>
-                    <span className={`text-sm ${dashboardData.portfolio.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <span className={`text-xs sm:text-sm ${dashboardData.portfolio.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       ({formatPercent(dashboardData.portfolio.pnlPercent)})
                     </span>
                   </div>
                 </div>
 
                 {/* Active Strategies Inner Box */}
-                <div className="rounded-xl  bg-gradient-to-br from-white/[0.07] to-transparent p-4">
-                  <p className="mb-2 text-xs text-slate-400">Active Positions</p>
-                  <p className="mb-2 text-2xl font-bold text-white">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
+                  <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs text-slate-400">Active Positions</p>
+                  <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
                     {dashboardData.positions.length}
                   </p>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-slate-400">
+                    <span className="text-xs sm:text-sm font-medium text-slate-400">
                       {dashboardData.orders.filter(o => o.status === 'NEW' || o.status === 'PARTIALLY_FILLED').length} open orders
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <p className="mt-1 text-[10px] sm:text-xs text-slate-400">
                     {dashboardData.positions.length} {dashboardData.positions.length === 1 ? 'position' : 'positions'}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-slate-400">
+              <div className="text-center py-6 sm:py-8 text-slate-400 text-xs sm:text-sm">
                 No portfolio data available
               </div>
             )}
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Action Center</h2>
+          <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+            <div className="mb-3 sm:mb-4 flex items-center justify-between">
+              <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
             </div>
             <div className="space-y-4">
-              <div className="py-8 text-center text-slate-400">
-                <p className="text-sm">No activities yet</p>
-                <p className="mt-1 text-xs text-slate-500">Activities will appear here when available</p>
+              <div className="py-6 sm:py-8 text-center text-slate-400">
+                <p className="text-xs sm:text-sm">No activities yet</p>
+                <p className="mt-1 text-[10px] sm:text-xs text-slate-500">Activities will appear here when available</p>
               </div>
             </div>
           </div>
 
           {/* Holdings & Market */}
-          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur">
-            <div className="relative p-6 pb-4">
+          <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur">
+            <div className="relative p-4 sm:p-6 pb-3 sm:pb-4">
               <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
-                <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                <h2 className="text-base sm:text-lg font-semibold text-white">Holdings & Market</h2>
+                <div className="flex gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
                   <button
                     onClick={() => setActiveTab("holdings")}
-                    className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${activeTab === "holdings"
+                    className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all ${activeTab === "holdings"
                       ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                       : "text-slate-400 hover:text-white"
                       }`}
@@ -380,7 +380,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => setActiveTab("market")}
-                    className={`rounded-md px-4 py-2 text-xs font-medium transition-all ${activeTab === "market"
+                    className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all ${activeTab === "market"
                       ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                       : "text-slate-400 hover:text-white"
                       }`}
@@ -390,25 +390,26 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="overflow-x-auto p-6">
+            <div className="overflow-x-auto p-3 sm:p-6">
               {activeTab === "holdings" ? (
-              <table className="w-full">
+              <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+              <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
                 <thead className="divide-y divide-[--color-border]">
                   <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <th className="py-3 text-sm font-medium text-white text-left">Assets</th>
-                    <th className="py-3 text-sm font-medium text-white text-left">holding</th>
-                    <th className="py-3 text-sm font-medium text-white text-left">values</th>
-                    <th className="py-3 text-sm font-medium text-white text-left">entry</th>
-                    <th className="py-3 text-sm font-medium text-white text-left">P/L</th>
-                    <th className="py-3 text-sm font-medium text-white text-left">P/L value</th>
+                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Assets</th>
+                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Holding</th>
+                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Values</th>
+                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Entry</th>
+                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">P/L</th>
+                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left hidden sm:table-cell">P/L value</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
                   {isLoading && !dashboardData ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center">
+                      <td colSpan={6} className="py-6 sm:py-8 text-center">
                         <div className="flex items-center justify-center">
-                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                          <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
                         </div>
                       </td>
                     </tr>
@@ -420,14 +421,14 @@ export default function DashboardPage() {
                           key={index}
                           className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                         >
-                          <td className="py-3 text-sm font-medium text-white">{symbol}</td>
-                          <td className="py-3 text-sm text-slate-300">{position.quantity.toFixed(4)}</td>
-                          <td className="py-3 text-sm text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
-                          <td className="py-3 text-sm text-slate-300">{formatCurrency(position.entryPrice)}</td>
-                          <td className={`py-3 text-sm font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white">{symbol}</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{position.quantity.toFixed(4)}</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{formatCurrency(position.entryPrice)}</td>
+                          <td className={`py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {formatPercent(position.pnlPercent)}
                           </td>
-                          <td className={`py-3 text-sm text-slate-400 ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <td className={`py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-400 ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'} hidden sm:table-cell`}>
                             {formatCurrency(position.unrealizedPnl)}
                           </td>
                         </tr>
@@ -435,13 +436,14 @@ export default function DashboardPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-400">
+                      <td colSpan={6} className="py-6 sm:py-8 text-center text-xs sm:text-sm text-slate-400">
                         No positions found
                       </td>
                     </tr>
                   )}
                   </tbody>
                 </table>
+              </div>
               ) : (
                 <div className="space-y-4">
                   {isLoadingMarket ? (
@@ -464,8 +466,8 @@ export default function DashboardPage() {
                     </div>
                   ) : marketData.length > 0 ? (
                     <>
-                      <div className="w-full -ml-6">
-                        <table className="w-full table-auto">
+                      <div className="sm:w-full sm:-ml-6 overflow-x-auto sm:overflow-x-visible -mx-4 sm:mx-0 px-4 sm:px-0">
+                        <table className="w-full table-auto min-w-[600px] sm:min-w-0">
                           <colgroup>
                             <col style={{ width: '8%' }} />
                             <col style={{ width: '22%' }} />
@@ -514,24 +516,24 @@ export default function DashboardPage() {
                           </tbody>
                         </table>
                       </div>
-                      <div className="pt-4 text-center">
+                      <div className="pt-2 sm:pt-4 text-center">
                         <button
                           onClick={() => router.push("/dashboard/market")}
-                          className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                          className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
                         >
                           View More
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div className="py-8 text-center space-y-3">
-                      <p className="text-sm text-slate-400">
+                    <div className="py-6 sm:py-8 text-center space-y-3">
+                      <p className="text-xs sm:text-sm text-slate-400">
                         {marketError || "No market data available"}
                       </p>
                       {marketError && (
                         <button
                           onClick={() => fetchMarketData()}
-                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                          className="px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-xs sm:text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
                         >
                           Retry
                         </button>
@@ -545,58 +547,58 @@ export default function DashboardPage() {
         </div>
 
         {/* Right Column - Trade & AI Insights */}
-        <div className="space-y-6">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6">
           {/* Trade Section */}
           <div className="space-y-2">
             {/* Trade Header - Outside Box */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">Trade</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <h2 className="text-base sm:text-lg font-semibold text-white">Trade</h2>
               <button
                 onClick={() => router.push("/dashboard/top-trades")}
-                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
+                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
               >
                 View All Trades
               </button>
             </div>
 
             {/* Trade Cards */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {trades.map((trade, index) => (
-                 <div key={trade.id} className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
+                 <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
                   {/* Top Trade Opportunity */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY"
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                      <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
                         ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
                         : "bg-gradient-to-r from-red-500 to-red-600"
                         }`}>
                         {trade.type}
                       </span>
-                      <span className="text-sm font-medium text-white">{trade.pair}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
+                      <span className="text-xs sm:text-sm font-medium text-white">{trade.pair}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
                         }`}>{trade.confidence}</span>
                     </div>
 
-                    <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Ext. {trade.ext}</p>
-                      <div className="flex items-center gap-2 text-sm">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <p className="text-[10px] sm:text-xs text-slate-400">Ext. {trade.ext}</p>
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
                         <span className="text-slate-400">Entry</span>
                         <span className="font-medium text-white">{trade.entryShort}</span>
                         <span className="text-slate-500">&gt;</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
+                      <div className="flex items-center gap-2 text-xs sm:text-sm">
                         <span className="text-slate-400">Stop Loss</span>
                         <span className="font-medium text-white">{trade.stopLossShort}</span>
                       </div>
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-slate-400">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-400">
                         <span>{trade.progressMin}</span>
                         <span>{trade.progressMax}</span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                      <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800">
                         <div
                           className={`h-full bg-gradient-to-r ${trade.type === "BUY"
                             ? "from-green-500 to-emerald-500"
@@ -608,8 +610,8 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2 pt-2">
-                      <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
+                    <div className="flex gap-1.5 sm:gap-2 pt-2">
+                      <button className="flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
                         Auto Trade
                       </button>
                       <button
@@ -617,7 +619,7 @@ export default function DashboardPage() {
                           setSelectedTrade(index);
                           setShowTradeOverlay(true);
                         }}
-                         className="rounded-xl  bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300  hover:text-white"
+                         className="rounded-lg sm:rounded-xl bg-[--color-surface] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-300 transition-all duration-300  hover:text-white"
                       >
                         View Trade
                       </button>
@@ -631,26 +633,26 @@ export default function DashboardPage() {
           {/* AI Insights Section */}
           <div className="space-y-2">
             {/* AI Insights Header - Outside Box */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">AI Insights</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+              <h2 className="text-base sm:text-lg font-semibold text-white">AI Insights</h2>
               <button
                 onClick={() => router.push("/dashboard/ai-insights")}
-                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
+                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
               >
                 View All AI Insights
               </button>
             </div>
 
             {/* AI Insights News Cards */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               
               {isLoadingNews ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                <div className="flex items-center justify-center py-6 sm:py-8">
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
                 </div>
               ) : newsError ? (
-                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
-                  <p className="text-sm text-red-300">{newsError}</p>
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 sm:p-4 text-center">
+                  <p className="text-xs sm:text-sm text-red-300">{newsError}</p>
                 </div>
               ) : newsData && newsData.news_items.length > 0 ? (
                 newsData.news_items.slice(0, 2).map((news, index) => (
@@ -660,15 +662,15 @@ export default function DashboardPage() {
                       setSelectedNews(index);
                       setShowNewsOverlay(true);
                     }}
-                     className="cursor-pointer rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur"
+                     className="cursor-pointer rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
                   >
-                    <div className="mb-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="rounded-md bg-[#fc4f02]/10 px-2 py-1 text-xs font-semibold text-[#fc4f02]">
+                    <div className="mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
+                      <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                        <span className="rounded-md bg-[#fc4f02]/10 px-2 py-1 text-[10px] sm:text-xs font-semibold text-[#fc4f02]">
                           {news.symbol}
                         </span>
-                        <span className="text-xs text-slate-500">•</span>
-                        <span className="text-xs text-slate-400">
+                        <span className="text-[10px] sm:text-xs text-slate-500">•</span>
+                        <span className="text-[10px] sm:text-xs text-slate-400">
                           {news.published_at
                             ? new Date(news.published_at).toLocaleDateString("en-US", {
                                 month: "short",
@@ -678,8 +680,8 @@ export default function DashboardPage() {
                               })
                             : "Recent"}
                         </span>
-                        <span className="text-xs text-slate-500">•</span>
-                        <span className="text-xs text-slate-400">{news.source}</span>
+                        <span className="text-[10px] sm:text-xs text-slate-500">•</span>
+                        <span className="text-[10px] sm:text-xs text-slate-400">{news.source}</span>
                       </div>
                       <SentimentBadge
                         label={news.sentiment.label}
@@ -689,12 +691,12 @@ export default function DashboardPage() {
                       />
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-2 sm:space-y-4">
                       {/* News Heading */}
-                      <h3 className="text-base font-semibold text-white">{news.title}</h3>
+                      <h3 className="text-sm sm:text-base font-semibold text-white">{news.title}</h3>
 
                       {/* Description */}
-                      <div className="space-y-2 text-sm text-slate-300">
+                      <div className="space-y-2 text-xs sm:text-sm text-slate-300">
                         <p className="line-clamp-2">
                           {news.description}
                         </p>
@@ -703,8 +705,8 @@ export default function DashboardPage() {
                   </div>
                 ))
               ) : (
-                <div className="py-8 text-center text-slate-400">
-                  <p className="text-sm">No news available</p>
+                <div className="py-6 sm:py-8 text-center text-slate-400">
+                  <p className="text-xs sm:text-sm">No news available</p>
                 </div>
               )}
             </div>
@@ -715,23 +717,23 @@ export default function DashboardPage() {
       {/* Trade Details Overlay */}
       {showTradeOverlay && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={() => setShowTradeOverlay(false)}
         >
           <div
-             className="relative mx-4 w-full max-w-2xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur"
+             className="relative w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Trade Details</h2>
+            <div className="mb-4 sm:mb-6 flex items-center justify-between">
+              <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
               <button
                 onClick={() => setShowTradeOverlay(false)}
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
                 aria-label="Close"
               >
                 <svg
-                  className="h-5 w-5"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -747,46 +749,46 @@ export default function DashboardPage() {
             </div>
 
             {/* Trade Info */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Pair and Type */}
-              <div className="flex items-center gap-3">
-                <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${trades[selectedTrade].type === "BUY"
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-semibold text-white ${trades[selectedTrade].type === "BUY"
                     ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
                     : "bg-gradient-to-r from-red-500 to-red-600"
                   }`}>
                   {trades[selectedTrade].type}
                 </span>
-                <span className="text-lg font-medium text-white">{trades[selectedTrade].pair}</span>
-                <span className="rounded-full bg-slate-700 px-3 py-1 text-sm text-slate-300">{trades[selectedTrade].confidence}</span>
+                <span className="text-base sm:text-lg font-medium text-white">{trades[selectedTrade].pair}</span>
+                <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{trades[selectedTrade].confidence}</span>
               </div>
 
               {/* Trade Details */}
-               <div className="space-y-4 rounded-xl  bg-gradient-to-br from-white/[0.07] to-transparent p-4">
+               <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Entry</span>
-                  <span className="text-base font-medium text-white">{trades[selectedTrade].entry}</span>
+                  <span className="text-xs sm:text-sm text-slate-400">Entry</span>
+                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].entry}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Stop-Loss</span>
-                  <span className="text-base font-medium text-white">{trades[selectedTrade].stopLoss}</span>
+                  <span className="text-xs sm:text-sm text-slate-400">Stop-Loss</span>
+                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].stopLoss}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Take Profit 1</span>
-                  <span className="text-base font-medium text-white">{trades[selectedTrade].takeProfit1}</span>
+                  <span className="text-xs sm:text-sm text-slate-400">Take Profit 1</span>
+                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].takeProfit1}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-400">Additional Info</span>
-                  <span className="text-base font-medium text-slate-300">{trades[selectedTrade].additionalInfo}</span>
+                  <span className="text-xs sm:text-sm text-slate-400">Additional Info</span>
+                  <span className="text-sm sm:text-base font-medium text-slate-300">{trades[selectedTrade].additionalInfo}</span>
                 </div>
               </div>
 
               {/* Reasons */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-white">Reasons</h3>
+              <div className="space-y-2 sm:space-y-3">
+                <h3 className="text-sm sm:text-base font-semibold text-white">Reasons</h3>
                 {trades[selectedTrade].reasons.map((reason: string, index: number) => (
                   <div key={index} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-400" />
-                    <p className="text-sm text-slate-300">{reason}</p>
+                    <span className="mt-1 sm:mt-1.5 h-1 w-1 sm:h-1.5 sm:w-1.5 flex-shrink-0 rounded-full bg-green-400" />
+                    <p className="text-xs sm:text-sm text-slate-300">{reason}</p>
                   </div>
                 ))}
               </div>
@@ -798,25 +800,25 @@ export default function DashboardPage() {
       {/* News Overlay */}
       {showNewsOverlay && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={() => setShowNewsOverlay(false)}
         >
           <div
-             className="relative mx-4 w-full max-w-2xl rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur"
+             className="relative w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">
+            <div className="mb-3 sm:mb-6 flex items-center justify-between gap-2">
+              <h2 className="text-sm sm:text-2xl font-bold text-white line-clamp-2">
                 {newsData?.news_items[selectedNews]?.title || "News"}
               </h2>
               <button
                 onClick={() => setShowNewsOverlay(false)}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                className="flex-shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
                 aria-label="Close"
               >
                 <svg
-                  className="h-5 w-5"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -833,8 +835,8 @@ export default function DashboardPage() {
 
             {/* Timestamp and Source */}
             {newsData?.news_items[selectedNews] && (
-              <div className="mb-4 flex items-center gap-3">
-                <span className="text-xs text-slate-400">
+              <div className="mb-3 sm:mb-4 flex flex-wrap items-center gap-1.5 sm:gap-3">
+                <span className="text-[10px] sm:text-xs text-slate-400">
                   {newsData.news_items[selectedNews].published_at
                     ? new Date(newsData.news_items[selectedNews].published_at).toLocaleString("en-US", {
                         month: "short",
@@ -845,16 +847,16 @@ export default function DashboardPage() {
                       })
                     : "Recent"}
                 </span>
-                <span className="text-xs text-slate-500">•</span>
-                <span className="text-xs text-slate-400">{newsData.news_items[selectedNews].source}</span>
+                <span className="text-[10px] sm:text-xs text-slate-500">•</span>
+                <span className="text-[10px] sm:text-xs text-slate-400">{newsData.news_items[selectedNews].source}</span>
                 {newsData.news_items[selectedNews].url && (
                   <>
-                    <span className="text-xs text-slate-500">•</span>
+                    <span className="text-[10px] sm:text-xs text-slate-500">•</span>
                     <a
                       href={newsData.news_items[selectedNews].url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-[#fc4f02] hover:underline"
+                      className="text-[10px] sm:text-xs text-[#fc4f02] hover:underline"
                     >
                       Read full article
                     </a>
@@ -865,7 +867,7 @@ export default function DashboardPage() {
 
             {/* Sentiment Badge */}
             {newsData?.news_items[selectedNews]?.sentiment && (
-              <div className="mb-4">
+              <div className="mb-3 sm:mb-4">
                 <SentimentBadge
                   label={newsData.news_items[selectedNews].sentiment.label}
                   score={newsData.news_items[selectedNews].sentiment.score}
@@ -877,7 +879,7 @@ export default function DashboardPage() {
 
             {/* Description */}
             <div className="space-y-4">
-              <div className="space-y-2 text-sm leading-relaxed text-slate-300">
+              <div className="space-y-2 text-xs sm:text-sm leading-relaxed text-slate-300">
                 <p>{newsData?.news_items[selectedNews]?.description || "No description available"}</p>
               </div>
             </div>

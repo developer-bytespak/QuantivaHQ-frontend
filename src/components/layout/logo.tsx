@@ -25,12 +25,12 @@ export function Logo({ collapsed = false }: LogoProps) {
   return (
     <button
       onClick={handleClick}
-      className="group flex items-center gap-3 text-lg font-semibold tracking-tight text-slate-100 transition-opacity hover:opacity-80 cursor-pointer"
+      className="group flex items-center gap-2 sm:gap-3 text-base sm:text-lg font-semibold tracking-tight text-slate-100 transition-opacity hover:opacity-80 cursor-pointer"
       aria-label="Go to dashboard"
     >
-      <div className="relative flex h-14 w-14 items-center justify-center transition-transform duration-300 group-hover:scale-105">
+      <div className="relative flex h-10 sm:h-14 w-10 sm:w-14 items-center justify-center transition-transform duration-300 group-hover:scale-105">
         {imageError ? (
-          <span className="text-2xl font-bold text-white">Q</span>
+          <span className="text-lg sm:text-2xl font-bold text-white">Q</span>
         ) : (
           <Image
             src="/logo_quantiva.svg"
@@ -45,8 +45,8 @@ export function Logo({ collapsed = false }: LogoProps) {
         )}
       </div>
       {!collapsed && (
-        <div className="flex flex-col leading-tight">
-          <span className="text-base font-bold uppercase tracking-[0.15em] text-white">
+        <div className="hidden sm:flex flex-col leading-tight">
+          <span className="text-xs sm:text-base font-bold uppercase tracking-[0.15em] text-white">
             QuantivaHQ
           </span>
           <span className="text-[10px] text-slate-400 group-hover:text-slate-300">
