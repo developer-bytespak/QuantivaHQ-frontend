@@ -179,6 +179,8 @@ export async function getTrendingAssetsWithInsights(strategyId: string, limit: n
       entry_price?: number;
       stop_loss?: number;
       take_profit_1?: number;
+      stop_loss_pct?: number;
+      take_profit_pct?: number;
     };
   }>;
 }> {

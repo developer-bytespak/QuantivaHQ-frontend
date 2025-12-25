@@ -72,6 +72,7 @@ interface Trade {
   entryPrice: string;
   stopLossPrice: string;
   takeProfit1: string;
+  takeProfitPrice?: string;
   target: string;
   insights: string[];
   profit: string;
@@ -279,6 +280,11 @@ export default function TopTradesPage() {
         action: asset.signal?.action || 'HOLD',
         confidence: asset.signal?.confidence || 0,
         final_score: asset.signal?.final_score || 0,
+        entry_price: asset.signal?.entry_price,
+        stop_loss_price: asset.signal?.stop_loss,
+        take_profit_price: asset.signal?.take_profit_1,
+        stop_loss: asset.signal?.stop_loss_pct, // Percentage from strategy
+        take_profit: asset.signal?.take_profit_pct, // Percentage from strategy
         details: asset.signal ? [{
           entry_price: asset.signal.entry_price,
           stop_loss: asset.signal.stop_loss,
@@ -383,11 +389,11 @@ export default function TopTradesPage() {
       const realtimePriceChange = signal.realtime_data?.priceChangePercent ?? null;
       
       // Get entry price from signal details or asset or realtime data
-      const entryPrice = signal.details?.[0]?.entry_price || signal.entry_price || signal.entry || realtimePrice || null;
-      const stopLossPrice = signal.details?.[0]?.stop_loss || signal.stop_loss_price || signal.stop_loss || null;
-      const takeProfitPrice = signal.details?.[0]?.take_profit_1 || signal.take_profit_price || signal.take_profit || null;
+      const entryPrice = signal.entry_price || signal.details?.[0]?.entry_price || realtimePrice || null;
+      const stopLossPrice = signal.stop_loss_price || signal.details?.[0]?.stop_loss || null;
+      const takeProfitPrice = signal.take_profit_price || signal.details?.[0]?.take_profit_1 || null;
       
-      // Get stop loss and take profit percentages from strategy
+      // Get stop loss and take profit percentages from strategy (already formatted)
       const stopLossPct = signal.stop_loss || null;
       const takeProfitPct = signal.take_profit || null;
       
@@ -409,6 +415,7 @@ export default function TopTradesPage() {
         entryPrice: entryPrice ? String(entryPrice) : "—",
         stopLossPrice: stopLossPrice ? String(stopLossPrice) : "—",
         takeProfit1: takeProfitPct ? String(takeProfitPct) : "—",
+        takeProfitPrice: takeProfitPrice ? String(takeProfitPrice) : "—",
         target: "",
         insights: explanationText ? [explanationText] : [],
         profit: realtimePriceChange ? `${Number(realtimePriceChange).toFixed(2)}%` : "0%",
@@ -698,11 +705,11 @@ export default function TopTradesPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-slate-400">Stop Loss</span>
-                        <span className="font-medium text-white">{(trade.stopLoss ?? '—') ? `${formatPercent(trade.stopLoss)} (${formatCurrency(trade.stopLossPrice ?? trade.stopLoss)})` : '—'}</span>
+                        <span className="font-medium text-white">{trade.stopLoss && trade.stopLoss !== '—' ? `${formatPercent(trade.stopLoss)}${trade.stopLossPrice && trade.stopLossPrice !== '—' ? ` (${formatCurrency(trade.stopLossPrice)})` : ''}` : '—'}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-slate-400">Take Profit</span>
-                        <span className="font-medium text-white">{trade.takeProfit1 ? `${formatPercent(trade.takeProfit1)} (${formatCurrency((trade as any).take_profit_price ?? trade.takeProfit1)})` : '—'}</span>
+                        <span className="font-medium text-white">{trade.takeProfit1 && trade.takeProfit1 !== '—' ? `${formatPercent(trade.takeProfit1)}${trade.takeProfitPrice && trade.takeProfitPrice !== '—' ? ` (${formatCurrency(trade.takeProfitPrice)})` : ''}` : '—'}</span>
                       </div>
                     </div>
 
@@ -876,8 +883,8 @@ export default function TopTradesPage() {
                 {/* Left column - Trade Details */}
                 <div className="space-y-4 rounded-xl bg-gradient-to-br from-white/[0.12] to-white/[0.03] p-4">
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Entry</span><span className="text-base font-medium text-white">{formatCurrency(filteredAndSortedTrades[selectedTradeIndex].entryPrice ?? filteredAndSortedTrades[selectedTradeIndex].entry)}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Stop-Loss</span><span className="text-base font-medium text-white">{((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss) ? `${formatPercent((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss ?? filteredAndSortedTrades[selectedTradeIndex].stopLoss)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).stop_loss_price ?? filteredAndSortedTrades[selectedTradeIndex].stopLossPrice)})` : '—'}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Take Profit 1</span><span className="text-base font-medium text-white">{(filteredAndSortedTrades[selectedTradeIndex] as any).take_profit ? `${formatPercent((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit_price ?? filteredAndSortedTrades[selectedTradeIndex].takeProfit1)})` : (filteredAndSortedTrades[selectedTradeIndex].takeProfit1 ? `${formatPercent(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)} (${formatCurrency((filteredAndSortedTrades[selectedTradeIndex] as any).take_profit_price ?? filteredAndSortedTrades[selectedTradeIndex].takeProfit1)})` : '—')}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Stop-Loss</span><span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].stopLoss && filteredAndSortedTrades[selectedTradeIndex].stopLoss !== '—' ? `${formatPercent(filteredAndSortedTrades[selectedTradeIndex].stopLoss)}${filteredAndSortedTrades[selectedTradeIndex].stopLossPrice && filteredAndSortedTrades[selectedTradeIndex].stopLossPrice !== '—' ? ` (${formatCurrency(filteredAndSortedTrades[selectedTradeIndex].stopLossPrice)})` : ''}` : '—'}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Take Profit 1</span><span className="text-base font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].takeProfit1 && filteredAndSortedTrades[selectedTradeIndex].takeProfit1 !== '—' ? `${formatPercent(filteredAndSortedTrades[selectedTradeIndex].takeProfit1)}${filteredAndSortedTrades[selectedTradeIndex].takeProfitPrice && filteredAndSortedTrades[selectedTradeIndex].takeProfitPrice !== '—' ? ` (${formatCurrency(filteredAndSortedTrades[selectedTradeIndex].takeProfitPrice)})` : ''}` : '—'}</span></div>
                   <div className="flex items-center justify-between"><span className="text-sm text-slate-400">Additional Info</span><span className="text-base font-medium text-slate-300">{filteredAndSortedTrades[selectedTradeIndex].target}</span></div>
                 </div>
 
