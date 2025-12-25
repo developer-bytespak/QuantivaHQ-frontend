@@ -222,3 +222,38 @@ export async function uploadProfilePicture(
     throw error;
   }
 }
+
+/**
+ * Delete user account
+ * @returns Success response
+ */
+export async function deleteAccount(): Promise<{ success: boolean; message: string }> {
+  try {
+    return await apiRequest<never, { success: boolean; message: string }>({
+      path: "/users/me",
+      method: "DELETE",
+      credentials: "include",
+    });
+  } catch (error: any) {
+    // If we get a 401, try to refresh the token and retry once
+    if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+      try {
+        // Try to refresh the token
+        const { authService } = await import("../auth/auth.service");
+        await authService.refresh();
+        
+        // Retry the request after refresh
+        return await apiRequest<never, { success: boolean; message: string }>({
+          path: "/users/me",
+          method: "DELETE",
+          credentials: "include",
+        });
+      } catch (refreshError) {
+        // If refresh fails, throw a more helpful error
+        console.error("Token refresh failed:", refreshError);
+        throw new Error("Session expired. Please log in again.");
+      }
+    }
+    throw error;
+  }
+}

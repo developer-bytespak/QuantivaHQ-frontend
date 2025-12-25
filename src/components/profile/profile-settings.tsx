@@ -92,6 +92,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [showComingSoonModal, setShowComingSoonModal] = useState<boolean>(false);
   const [comingSoonFeature, setComingSoonFeature] = useState<string>("");
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
@@ -330,6 +331,44 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const handleDeleteAccountClick = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    try {
+      setIsLoading(true);
+      const { deleteAccount } = await import("@/lib/api/user");
+      await deleteAccount();
+      
+      // Clear all local storage and session storage
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_is_authenticated");
+        localStorage.removeItem("quantivahq_user_name");
+        localStorage.removeItem("quantivahq_user_email");
+        localStorage.removeItem("quantivahq_user_id");
+        localStorage.removeItem("quantivahq_profile_image");
+        sessionStorage.clear();
+      }
+      
+      // Show success notification
+      setNotificationMessage("Account deleted successfully");
+      setShowNotification(true);
+      
+      // Redirect to homepage after 2 seconds
+      setTimeout(() => {
+        router.push("/");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Failed to delete account:", error);
+      setNotificationMessage(error.message || "Failed to delete account. Please try again.");
+      setShowNotification(true);
+      setShowDeleteConfirmation(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const menuItems: SettingsMenuItem[] = [
     {
       id: "tokenomics",
@@ -402,6 +441,17 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       onClick: () => {
         router.push("/dashboard/settings/terms");
       },
+    },
+    {
+      id: "delete-account",
+      label: "Delete Account",
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      ),
+      onClick: handleDeleteAccountClick,
+      color: "text-red-400",
     },
     {
       id: "logout",
@@ -1464,6 +1514,55 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
           ))}
         </div>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      {showDeleteConfirmation && mounted && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md mx-4 bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-4">
+                <svg className="w-12 h-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-white text-center mb-2">Delete Account?</h3>
+              <p className="text-slate-300 text-center mb-6">
+                Are you sure you want to permanently delete your account? This action cannot be undone.
+              </p>
+              
+              {/* Account Details */}
+              <div className="bg-slate-700/50 rounded-lg p-4 mb-6 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Email:</span>
+                  <span className="text-white text-sm font-medium">{userEmail}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">Username:</span>
+                  <span className="text-white text-sm font-medium">{userName}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDeleteAccount}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-medium transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? "Deleting..." : "Delete Account"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
