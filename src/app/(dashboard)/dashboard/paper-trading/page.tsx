@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
@@ -76,6 +76,11 @@ type TradeRecord = {
 };
 
 export default function PaperTradingPage() {
+  // Refs to track last fetch times and prevent aggressive reloads
+  const lastAccountDataFetch = useRef<number>(0);
+  const lastAllOrdersFetch = useRef<number>(0);
+  const isPageVisible = useRef<boolean>(true);
+  
   // Account data
   const [balance, setBalance] = useState(0);
   const [openOrdersCount, setOpenOrdersCount] = useState(0);
@@ -139,33 +144,99 @@ export default function PaperTradingPage() {
     loadStatus();
   }, []);
 
-  // --- Load account data ---
-  // NOTE: Polling interval set to 1 minute to avoid Binance rate limiting
-  // The backend now caches results for 30s, so this interval is optimal
+  // --- Page Visibility API: Pause polling when tab is hidden ---
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      isPageVisible.current = !document.hidden;
+      
+      if (!document.hidden) {
+        // Tab became visible - check if we need to refresh data
+        const now = Date.now();
+        
+        // Only refresh if data is stale (older than 2 minutes)
+        if (now - lastAccountDataFetch.current > 120000) {
+          console.log("Tab visible again, refreshing stale account data");
+          loadAccountData();
+        }
+        
+        // Only refresh orders if very stale (older than 3 minutes)
+        if (now - lastAllOrdersFetch.current > 180000) {
+          console.log("Tab visible again, refreshing stale orders data");
+          loadAllOrders();
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [status?.configured]);
+
+  // --- Load account data (significantly reduced polling due to WebSocket) ---
+  // NOTE: Polling interval increased to 5 minutes since WebSocket provides real-time updates
+  // We only poll occasionally as a fallback
   useEffect(() => {
     if (status && status.configured) {
-      loadAccountData();
-      const interval = setInterval(loadAccountData, 60000); // 1 minute polling
+      // Check if we recently fetched (within last 30 seconds) to avoid aggressive remount
+      const now = Date.now();
+      const timeSinceLastFetch = now - lastAccountDataFetch.current;
+      
+      if (timeSinceLastFetch > 30000) {
+        loadAccountData();
+      } else {
+        console.log("Skipping account data fetch - recently fetched", timeSinceLastFetch, "ms ago");
+      }
+      
+      // Much longer interval since WebSocket handles real-time updates
+      const interval = setInterval(() => {
+        // Only poll if page is visible
+        if (isPageVisible.current) {
+          loadAccountData();
+        }
+      }, 300000); // 5 minute polling as fallback
+      
       return () => clearInterval(interval);
     }
   }, [status?.configured]);
 
-  // --- Load all orders on page load and then every 1 minute ---
+  // --- Load all orders on page load (WebSocket handles updates) ---
+  // Significantly reduced polling - WebSocket provides real-time order updates
   useEffect(() => {
-    const loadAllOrders = async () => {
-      try {
-        await binanceTestnetService.getAllOrders(undefined, 100);
-      } catch (err: any) {
-        console.error("Failed to fetch all orders:", err);
+    // Check if we recently fetched (within last 60 seconds) to avoid aggressive remount
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastAllOrdersFetch.current;
+    
+    if (timeSinceLastFetch > 60000) {
+      loadAllOrders();
+    } else {
+      console.log("Skipping all orders fetch - recently fetched", timeSinceLastFetch, "ms ago");
+    }
+    
+    // Much longer interval since WebSocket provides real-time updates
+    const interval = setInterval(() => {
+      // Only poll if page is visible
+      if (isPageVisible.current) {
+        loadAllOrders();
       }
-    };
-    loadAllOrders();
-    const interval = setInterval(loadAllOrders, 60000); // Refresh every 1 minute
+    }, 600000); // Refresh every 10 minutes as fallback
+    
     return () => clearInterval(interval);
   }, []);
 
+  const loadAllOrders = async () => {
+    try {
+      lastAllOrdersFetch.current = Date.now();
+      await binanceTestnetService.getAllOrders(undefined, 100);
+    } catch (err: any) {
+      console.error("Failed to fetch all orders:", err);
+    }
+  };
+
   const loadAccountData = async () => {
     try {
+      lastAccountDataFetch.current = Date.now();
       setLoadingBalance(true);
       const [balanceData, openOrders] = await Promise.all([
         binanceTestnetService.getAccountBalance(),
