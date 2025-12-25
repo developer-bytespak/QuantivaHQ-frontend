@@ -92,6 +92,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const [isCapturing, setIsCapturing] = useState<boolean>(false);
   const [showComingSoonModal, setShowComingSoonModal] = useState<boolean>(false);
   const [comingSoonFeature, setComingSoonFeature] = useState<string>("");
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
+  const [deletePassword, setDeletePassword] = useState<string>("");
+  const [deleteTwoFactorCode, setDeleteTwoFactorCode] = useState<string>("");
+  const [deleteReason, setDeleteReason] = useState<string>("");
+  const [showDeletePassword, setShowDeletePassword] = useState<boolean>(false);
+  const [deleteError, setDeleteError] = useState<string>("");
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [isCodeSent, setIsCodeSent] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
@@ -330,6 +338,137 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     }
   };
 
+  const handleDeleteAccountClick = () => {
+    // Reset form fields and errors when opening modal
+    setDeletePassword("");
+    setDeleteTwoFactorCode("");
+    setDeleteReason("");
+    setShowDeletePassword(false);
+    setDeleteError("");
+    setDeleteStep(1);
+    setIsCodeSent(false);
+    setShowDeleteConfirmation(true);
+  };
+
+  const handleSendVerificationCode = async () => {
+    // Validate password
+    setDeleteError("");
+
+    if (!deletePassword) {
+      setDeleteError("Password is required");
+      return;
+    }
+
+    if (deletePassword.length < 8) {
+      setDeleteError("Password must be at least 8 characters");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { requestDeleteAccountCode } = await import("@/lib/api/user");
+      
+      await requestDeleteAccountCode();
+      
+      // Show success and move to step 2
+      setIsCodeSent(true);
+      setDeleteStep(2);
+      setNotificationMessage("Verification code sent to your email");
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 3000);
+    } catch (error: any) {
+      console.error("Failed to send verification code:", error);
+      const errorMessage = error.message || error.toString();
+      
+      if (errorMessage.includes("Session expired") || errorMessage.includes("Unauthorized")) {
+        setDeleteError("Your session has expired. Please log in again.");
+        setTimeout(() => {
+          router.push("/onboarding/sign-up?tab=login");
+        }, 2000);
+      } else {
+        setDeleteError(errorMessage || "Failed to send verification code. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    // Validate inputs
+    setDeleteError("");
+
+    if (!deletePassword) {
+      setDeleteError("Password is required");
+      return;
+    }
+
+    if (deletePassword.length < 8) {
+      setDeleteError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (!deleteTwoFactorCode) {
+      setDeleteError("Verification code is required");
+      return;
+    }
+
+    if (deleteTwoFactorCode.length !== 6 || !/^\d+$/.test(deleteTwoFactorCode)) {
+      setDeleteError("Verification code must be exactly 6 digits");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { deleteAccount } = await import("@/lib/api/user");
+      
+      // Call API with password and 2FA code
+      const result = await deleteAccount(deletePassword, deleteTwoFactorCode, deleteReason);
+      
+      // Clear all local storage and session storage
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+        sessionStorage.clear();
+      }
+      
+      // Show success notification
+      setNotificationMessage("Account deleted successfully. Redirecting...");
+      setShowNotification(true);
+      setShowDeleteConfirmation(false);
+      
+      // Redirect to homepage after 2 seconds
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 2000);
+    } catch (error: any) {
+      console.error("Failed to delete account:", error);
+      setIsLoading(false);
+      
+      // Handle specific error cases based on API documentation
+      const errorMessage = error.message || error.toString();
+      
+      if (errorMessage.includes("Invalid password") || errorMessage.includes("password")) {
+        setDeleteError("Incorrect password. Please try again.");
+      } else if (errorMessage.includes("Invalid 2FA code") || errorMessage.includes("Invalid verification code")) {
+        setDeleteError("Invalid or expired verification code. Please request a new code.");
+      } else if (errorMessage.includes("active or recent order")) {
+        setDeleteError("You have active orders. Please cancel or complete them before deleting your account.");
+      } else if (errorMessage.includes("open position")) {
+        setDeleteError("You have open positions. Please close all positions before deleting your account.");
+      } else if (errorMessage.includes("active subscription")) {
+        setDeleteError("You have active subscriptions. Please cancel them before deleting your account.");
+      } else if (errorMessage.includes("Session expired") || errorMessage.includes("Unauthorized")) {
+        setDeleteError("Your session has expired. Please log in again.");
+        setTimeout(() => {
+          router.push("/onboarding/sign-up?tab=login");
+        }, 2000);
+      } else {
+        setDeleteError(errorMessage || "Failed to delete account. Please try again or contact support.");
+      }
+    }
+  };
+
   const menuItems: SettingsMenuItem[] = [
     {
       id: "tokenomics",
@@ -402,6 +541,17 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       onClick: () => {
         router.push("/dashboard/settings/terms");
       },
+    },
+    {
+      id: "delete-account",
+      label: "Delete Account",
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      ),
+      onClick: handleDeleteAccountClick,
+      color: "text-red-400",
     },
     {
       id: "logout",
@@ -1464,6 +1614,211 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
           ))}
         </div>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      {showDeleteConfirmation && mounted && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg mx-4 bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-2xl border border-[#fc4f02]/20 shadow-[0_0_50px_rgba(252,79,2,0.15)] overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="p-3">
+              {/* Warning Icon */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-[#fc4f02]/20 blur rounded-full"></div>
+                  <svg className="w-10 h-10 text-[#fc4f02] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+              </div>
+              
+              {/* Title */}
+              <h3 className="text-2xl font-bold text-white text-center mb-2">
+                {deleteStep === 1 ? "Delete Account?" : "Enter Verification Code"}
+              </h3>
+
+              {/* Step Indicator */}
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <div className={`h-2 w-8 rounded-full transition-all ${deleteStep === 1 ? "bg-gradient-to-r from-[#fc4f02] to-[#FDA300] shadow-[0_0_10px_rgba(252,79,2,0.5)]" : "bg-slate-700"}`}></div>
+                <div className={`h-2 w-8 rounded-full transition-all ${deleteStep === 2 ? "bg-gradient-to-r from-[#fc4f02] to-[#FDA300] shadow-[0_0_10px_rgba(252,79,2,0.5)]" : "bg-slate-700"}`}></div>
+              </div>
+              
+              {/* Warning Message - Show on Step 1 */}
+              {deleteStep === 1 && (
+                <>
+                  <div className="bg-[#fc4f02]/10 border border-[#fc4f02]/30 rounded-lg p-4 mb-6 shadow-[0_0_20px_rgba(252,79,2,0.1)]">
+                    <p className="text-[#fc4f02] text-xs font-semibold mb-1">⚠️ This action cannot be undone!</p>
+                    <p className="text-slate-300 text-xs">All your data, trading history, and connections will be permanently deleted.</p>
+                  </div>
+                  {/* ...account details removed... */}
+
+                  {/* Password Input */}
+                  <div className="mb-4">
+                    <label className="block text-slate-300 text-xs font-medium mb-1">
+                      Password <span className="text-[#fc4f02]">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showDeletePassword ? "text" : "password"}
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        placeholder="Enter password"
+                        disabled={isLoading}
+                        className="w-full px-3 py-2 pr-10 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowDeletePassword(!showDeletePassword)}
+                        disabled={isLoading}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#fc4f02] transition-colors disabled:opacity-50"
+                        tabIndex={-1}
+                      >
+                        {showDeletePassword ? (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Reason Input (Optional) */}
+                  <div className="mb-6">
+                    <label className="block text-slate-300 text-xs font-medium mb-1">
+                      Why are you leaving? (Optional)
+                    </label>
+                    <textarea
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                      placeholder="Feedback (optional)"
+                      maxLength={500}
+                      rows={2}
+                      disabled={isLoading}
+                      className="w-full px-3 py-2 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 text-xs transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <p className="text-slate-400 text-[10px] mt-0.5 text-right">
+                      {deleteReason.length}/500
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {/* Step 2 - Verification Code */}
+              {deleteStep === 2 && (
+                <>
+                  <div className="bg-gradient-to-br from-[#FDA300]/10 to-[#fc4f02]/10 border border-[#FDA300]/30 rounded-lg p-4 mb-6 shadow-[0_0_20px_rgba(253,163,0,0.1)]">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-[#FDA300] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <div>
+                        <p className="text-[#FDA300] text-sm font-medium">Verification code sent!</p>
+                        <p className="text-slate-300 text-sm mt-1">
+                          Check your email ({userEmail}) for the 6-digit code.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 2FA Code Input */}
+                  <div className="mb-6">
+                    <label className="block text-slate-300 text-sm font-medium mb-2">
+                      Enter 6-digit verification code <span className="text-[#fc4f02]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={deleteTwoFactorCode}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        if (value.length <= 6) {
+                          setDeleteTwoFactorCode(value);
+                        }
+                      }}
+                      placeholder="000000"
+                      maxLength={6}
+                      disabled={isLoading}
+                      autoFocus
+                      className="w-full px-4 py-3 rounded-lg bg-slate-800/70 border border-slate-600 text-white text-center text-2xl tracking-widest placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    <button
+                      onClick={handleSendVerificationCode}
+                      disabled={isLoading}
+                      className="text-[#fc4f02] hover:text-[#fd6a00] text-sm mt-2 transition-colors disabled:opacity-50"
+                    >
+                      Didn't receive code? Resend
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Error Message */}
+              {deleteError && (
+                <div className="mb-4 p-3 rounded-lg bg-[#fc4f02]/10 border border-[#fc4f02]/30">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-[#fc4f02] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-[#fc4f02]/90 text-sm">{deleteError}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                {deleteStep === 2 && (
+                  <button
+                    onClick={() => {
+                      setDeleteStep(1);
+                      setDeleteTwoFactorCode("");
+                      setDeleteError("");
+                    }}
+                    disabled={isLoading}
+                    className="px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Back
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirmation(false);
+                    setDeletePassword("");
+                    setDeleteTwoFactorCode("");
+                    setDeleteReason("");
+                    setDeleteError("");
+                    setDeleteStep(1);
+                    setIsCodeSent(false);
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={deleteStep === 1 ? handleSendVerificationCode : handleConfirmDeleteAccount}
+                  disabled={isLoading || (deleteStep === 1 ? !deletePassword : !deleteTwoFactorCode)}
+                  className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] hover:from-[#fd6a00] hover:to-[#fe8410] text-white font-bold transition-all duration-200 shadow-[0_0_20px_rgba(252,79,2,0.3)] hover:shadow-[0_0_30px_rgba(252,79,2,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[#fc4f02] disabled:hover:to-[#fd6a00] disabled:shadow-none"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      {deleteStep === 1 ? "Processing..." : "Deleting..."}
+                    </span>
+                  ) : (
+                    deleteStep === 1 ? "Delete Account" : "Delete My Account"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
