@@ -372,8 +372,8 @@ export default function SignUpPage() {
           </div>
 
           {/* Two Column Layout */}
-          <div className="flex items-center gap-8 animate-text-enter" style={{ animationDelay: "0.6s" }}>
-            {/* Left Side: Tabs and OAuth */}
+          <div className="flex flex-col-reverse lg:flex-row lg:items-center lg:gap-8 animate-text-enter" style={{ animationDelay: "0.6s" }}>
+            {/* Left Side: Tabs and OAuth (shows second on mobile, first on desktop) */}
             <div className="flex-1 flex items-center justify-center">
               <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -429,17 +429,27 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            {/* Middle: Vertical Divider */}
-            <div className="relative flex items-center justify-center self-stretch">
-              <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 bg-[--color-border]" />
-              <div className="relative z-10">
-                <span className="text-xs uppercase text-slate-400 font-semibold tracking-wider whitespace-nowrap writing-vertical-rl" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+            {/* Middle: Divider (horizontal on mobile, vertical on desktop) - hidden on mobile for signup */}
+            {!(activeTab === "signup") && (
+            <div className="relative flex items-center justify-center lg:items-center lg:justify-center lg:self-stretch my-4 lg:my-0 w-full lg:w-auto">
+              <div className="w-0.5 h-0.5 lg:h-auto lg:w-0.5 bg-[--color-border] lg:absolute lg:inset-y-0 lg:left-1/2 lg:-translate-x-1/2" />
+              <div className="relative z-10 px-3 lg:px-0 lg:bg-transparent bg-black">
+                {/* Horizontal on mobile */}
+                <span className="lg:hidden text-xs uppercase text-slate-400 font-semibold tracking-wider whitespace-nowrap">
+                  Or Continue With Email
+                </span>
+                {/* Vertical on desktop */}
+                <span 
+                  className="hidden lg:inline text-xs uppercase text-slate-400 font-semibold tracking-wider whitespace-nowrap"
+                  style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+                >
                   Or Continue With Email
                 </span>
               </div>
             </div>
+            )}
 
-            {/* Right Side: Email Form */}
+            {/* Right Side: Email Form (shows first on mobile, second on desktop) */}
             <div className="flex-1 flex items-center justify-center">
               <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -448,7 +458,7 @@ export default function SignUpPage() {
                   {/* Email Form */}
                   <form onSubmit={handleSubmit} className="space-y-2">
                   {activeTab === "signup" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label htmlFor="fullName" className="mb-1.5 block text-xs font-medium text-white">
                           Username
