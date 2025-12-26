@@ -11,9 +11,10 @@ import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
 import TradeLeaderboard from "./components/trade-leaderboard";
 import { OrdersPanel } from "./components/orders-panel";
+import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
 
-// ⏱️ API Refresh Intervals (in milliseconds)
-const ACCOUNT_DATA_REFRESH_INTERVAL = 300000;  // 5 minutes - Account balance & orders
+// ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
+const ACCOUNT_DATA_REFRESH_INTERVAL = 600000;  // 10 minutes - Fallback only
 const SIGNALS_REFRESH_INTERVAL = 300000;      // 5 minutes - Strategy signals
 
 // --- Formatting helpers ---
@@ -76,10 +77,18 @@ type TradeRecord = {
 };
 
 export default function PaperTradingPage() {
+  // WebSocket connection for real-time updates
+  const [socketKey, setSocketKey] = useState(0);
+  const realtimeData = useRealtimePaperTrading('default-user', socketKey);
+  
   // Refs to track last fetch times and prevent aggressive reloads
   const lastAccountDataFetch = useRef<number>(0);
   const lastAllOrdersFetch = useRef<number>(0);
   const isPageVisible = useRef<boolean>(true);
+  const isInitialMount = useRef<boolean>(true);
+  
+  // Rate limit protection - global lock to prevent any API calls during cooldown
+  const [isRateLimited, setIsRateLimited] = useState(false);
   
   // Account data
   const [balance, setBalance] = useState(0);
@@ -153,15 +162,15 @@ export default function PaperTradingPage() {
         // Tab became visible - check if we need to refresh data
         const now = Date.now();
         
-        // Only refresh if data is stale (older than 2 minutes)
-        if (now - lastAccountDataFetch.current > 120000) {
+        // Only refresh if data is stale (older than 10 minutes) AND WebSocket disconnected AND not rate limited
+        if (now - lastAccountDataFetch.current > 600000 && !realtimeData.connected && !isRateLimited) {
           console.log("Tab visible again, refreshing stale account data");
           loadAccountData();
         }
         
-        // Only refresh orders if very stale (older than 3 minutes)
-        if (now - lastAllOrdersFetch.current > 180000) {
-          console.log("Tab visible again, refreshing stale orders data");
+        // Only refresh orders if the Orders panel is open (user explicitly requested orders)
+        if (showOrdersPanel && now - lastAllOrdersFetch.current > 600000 && !realtimeData.connected && !isRateLimited) {
+          console.log("Tab visible again, refreshing stale orders data (Orders panel open)");
           loadAllOrders();
         }
       }
@@ -172,81 +181,137 @@ export default function PaperTradingPage() {
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [status?.configured]);
+  }, [status?.configured, showOrdersPanel, realtimeData.connected, isRateLimited]);
 
-  // --- Load account data (significantly reduced polling due to WebSocket) ---
-  // NOTE: Polling interval increased to 5 minutes since WebSocket provides real-time updates
-  // We only poll occasionally as a fallback
+  // --- Load account data on mount (one-time initial load) ---
   useEffect(() => {
     if (status && status.configured) {
-      // Check if we recently fetched (within last 30 seconds) to avoid aggressive remount
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastAccountDataFetch.current;
-      
-      if (timeSinceLastFetch > 30000) {
-        loadAccountData();
-      } else {
-        console.log("Skipping account data fetch - recently fetched", timeSinceLastFetch, "ms ago");
+      // Single initial load with delay to allow WebSocket to connect
+      if (isInitialMount.current) {
+        isInitialMount.current = false;
+        console.log("⏸️ Initial mount - waiting for WebSocket connection");
+        
+        const initialDelay = setTimeout(() => {
+          // Load once. If WebSocket is not connected OR it is connected but NOT providing balance data,
+          // fall back to the REST balance snapshot to ensure the UI has immediate balances.
+          if (!realtimeData.connected || !realtimeData.balance || Object.keys(realtimeData.balance).length === 0) {
+            console.log("Loading initial account data (REST fallback)");
+            loadAccountData();
+          } else {
+            console.log("✓ WebSocket connected and providing balance - using real-time updates");
+          }
+        }, 10000);
+        
+        return () => clearTimeout(initialDelay);
       }
-      
-      // Much longer interval since WebSocket handles real-time updates
-      const interval = setInterval(() => {
-        // Only poll if page is visible
-        if (isPageVisible.current) {
-          loadAccountData();
-        }
-      }, 300000); // 5 minute polling as fallback
-      
-      return () => clearInterval(interval);
     }
+  }, [status?.configured, realtimeData.connected, realtimeData.balance]);
+
+  // --- Load initial orders on mount ---
+  useEffect(() => {
+    // Intentionally not auto-loading orders on mount.
+    // Orders are loaded only when the user opens the Orders panel (OrdersPanel will fetch them).
   }, [status?.configured]);
 
-  // --- Load all orders on page load (WebSocket handles updates) ---
-  // Significantly reduced polling - WebSocket provides real-time order updates
+  // --- Sync WebSocket order updates with open orders count ---
   useEffect(() => {
-    // Check if we recently fetched (within last 60 seconds) to avoid aggressive remount
-    const now = Date.now();
-    const timeSinceLastFetch = now - lastAllOrdersFetch.current;
-    
-    if (timeSinceLastFetch > 60000) {
-      loadAllOrders();
-    } else {
-      console.log("Skipping all orders fetch - recently fetched", timeSinceLastFetch, "ms ago");
+    if (realtimeData.orders && realtimeData.orders.length > 0) {
+      // Count open orders from WebSocket data
+      const openCount = realtimeData.orders.filter(
+        (order) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
+      ).length;
+      setOpenOrdersCount(openCount);
+      
+      // Trigger OrdersPanel refresh
+      setOrdersRefreshKey((k) => k + 1);
     }
-    
-    // Much longer interval since WebSocket provides real-time updates
-    const interval = setInterval(() => {
-      // Only poll if page is visible
-      if (isPageVisible.current) {
-        loadAllOrders();
+  }, [realtimeData.orders]);
+
+  // If WebSocket connects but we haven't received a balance snapshot via socket yet,
+  // fetch a REST balance snapshot so the UI shows immediate balances.
+  useEffect(() => {
+    if (realtimeData.connected && (!realtimeData.balance || Object.keys(realtimeData.balance).length === 0) && !isRateLimited) {
+      const now = Date.now();
+      // Avoid repeated immediate calls - only fetch if last fetch > 60s
+      if (now - lastAccountDataFetch.current > 60000) {
+        console.log("WebSocket connected but no balance received — fetching REST balance snapshot");
+        loadAccountData();
       }
-    }, 600000); // Refresh every 10 minutes as fallback
-    
-    return () => clearInterval(interval);
-  }, []);
+    }
+  }, [realtimeData.connected, realtimeData.balance, isRateLimited]);
+
+  // --- Sync WebSocket balance with local state ---
+  useEffect(() => {
+    if (realtimeData.balance) {
+      // Calculate total balance in USD (simplified - assuming USDT as proxy for USD)
+      const usdtBalance = realtimeData.balance['USDT'];
+      if (usdtBalance) {
+        const totalUSD = parseFloat(usdtBalance.free) + parseFloat(usdtBalance.locked);
+        setBalance(totalUSD);
+      }
+    }
+  }, [realtimeData.balance]);
 
   const loadAllOrders = async () => {
+    // Rate limit protection
+    if (isRateLimited) {
+      console.log("⛔ API calls blocked - in rate limit cooldown period");
+      return;
+    }
+    
     try {
       lastAllOrdersFetch.current = Date.now();
       await binanceTestnetService.getAllOrders(undefined, 100);
     } catch (err: any) {
       console.error("Failed to fetch all orders:", err);
+      
+      // Detect rate limiting
+      if (err?.message?.includes('Rate limit') || err?.statusCode === 400 || err?.statusCode === 429) {
+        console.error("⛔ RATE LIMITED - Blocking all API calls for 10 minutes");
+        setIsRateLimited(true);
+        setTimeout(() => {
+          console.log("✅ Rate limit cooldown complete - API calls re-enabled");
+          setIsRateLimited(false);
+        }, 600000); // 10 minute cooldown
+      }
     }
   };
 
   const loadAccountData = async () => {
+    // Rate limit protection
+    if (isRateLimited) {
+      console.log("⛔ API calls blocked - in rate limit cooldown period");
+      return;
+    }
+
     try {
       lastAccountDataFetch.current = Date.now();
       setLoadingBalance(true);
-      const [balanceData, openOrders] = await Promise.all([
-        binanceTestnetService.getAccountBalance(),
-        binanceTestnetService.getOpenOrders(),
-      ]);
 
+      // Fetch only the account snapshot (fast single call to /balance)
+      const balanceData = await binanceTestnetService.getAccountBalance();
       setBalance(balanceData.totalBalanceUSD);
-      setOpenOrdersCount(openOrders.length);
+
+      // Do NOT fetch orders here - only update open orders count from WebSocket if available.
+      // This prevents the expensive /orders/all aggregation unless explicitly requested by the user.
+      if (realtimeData.orders && Array.isArray(realtimeData.orders)) {
+        const openCount = realtimeData.orders.filter(
+          (order: any) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
+        ).length;
+        setOpenOrdersCount(openCount);
+      }
     } catch (err: any) {
       console.error("Failed to load account data:", err);
+
+      // Detect rate limiting
+      if (err?.message?.includes('Rate limit') || err?.statusCode === 400 || err?.statusCode === 429) {
+        console.error("⛔ RATE LIMITED - Blocking all API calls for 10 minutes");
+        setIsRateLimited(true);
+        setTimeout(() => {
+          console.log("✅ Rate limit cooldown complete - API calls re-enabled");
+          setIsRateLimited(false);
+        }, 600000); // 10 minute cooldown
+      }
     } finally {
       setLoadingBalance(false);
     }
@@ -508,6 +573,31 @@ export default function PaperTradingPage() {
 
   return (
     <div className="space-y-3 sm:space-y-6 pb-8 p-4 sm:p-0">
+
+      
+      {/* WebSocket Connection Status */}
+      {realtimeData.reconnecting && (
+        <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+          <span className="text-sm text-yellow-300">Reconnecting to live data stream...</span>
+        </div>
+      )}
+      {realtimeData.binanceStatus?.state === 'RATE_LIMITED' && (
+        <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
+          <span className="text-sm text-yellow-300">
+            {realtimeData.error || 'Binance API temporarily unavailable - automatic retry in progress'}
+          </span>
+        </div>
+      )}
+
+      {realtimeData.connected && realtimeData.binanceStatus?.state === 'CONNECTED' && (
+        <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-2 flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="text-xs text-green-300">Live data stream active - no API polling</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
