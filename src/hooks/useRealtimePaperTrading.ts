@@ -27,11 +27,18 @@ interface ConnectionStatus {
   message?: string;
 }
 
+interface BinanceStatus {
+  state: 'CONNECTING' | 'CONNECTED' | 'RATE_LIMITED' | 'DISCONNECTED' | 'ERROR';
+  retryAt?: number | null;
+  message?: string | null;
+}
+
 interface UseRealtimePaperTrading {
   connected: boolean;
   balance: Record<string, { free: string; locked: string }> | null;
   orders: OrderUpdate[];
   connectionStatus: ConnectionStatus;
+  binanceStatus: BinanceStatus | null;
   reconnecting: boolean;
   error: string | null;
 }
@@ -40,13 +47,14 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 const RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 2000;
 
-export function useRealtimePaperTrading(userId: string = 'default-user'): UseRealtimePaperTrading {
+export function useRealtimePaperTrading(userId: string = 'default-user', key?: any): UseRealtimePaperTrading {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [balance, setBalance] = useState<Record<string, { free: string; locked: string }> | null>(null);
   const [orders, setOrders] = useState<OrderUpdate[]>([]);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({ connected: false });
+  const [binanceStatus, setBinanceStatus] = useState<BinanceStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   
   const reconnectAttempts = useRef(0);
@@ -160,17 +168,29 @@ export function useRealtimePaperTrading(userId: string = 'default-user'): UseRea
       });
     });
 
-    // Error events from server
-    newSocket.on('error', (data: { code: string; message: string }) => {
-      console.error('[WebSocket] Server error:', data);
-      setError(`${data.code}: ${data.message}`);
+    // Binance data source status (state-based, not error-based)
+    newSocket.on('binance:status', (data: BinanceStatus) => {
+      console.log('[WebSocket] Binance status:', data);
+      setBinanceStatus(data);
       
-      // If rate limited, stop trying to reconnect
-      if (data.code === 'RATE_LIMITED') {
-        console.warn('⛔ Rate limit detected - stopping reconnection attempts');
-        reconnectAttempts.current = RECONNECT_ATTEMPTS; // Max out attempts to stop reconnects
-        setReconnecting(false);
-        setConnected(false);
+      // Update UI based on Binance state (for display purposes only)
+      switch (data.state) {
+        case 'CONNECTING':
+          setError(null);
+          break;
+        case 'CONNECTED':
+          setError(null);
+          break;
+        case 'RATE_LIMITED':
+          const retryIn = data.retryAt ? Math.ceil((data.retryAt - Date.now()) / 1000) : 600;
+          setError(`Binance temporarily unavailable. Automatic retry in ${retryIn}s.`);
+          break;
+        case 'DISCONNECTED':
+          setError('Binance disconnected. Reconnecting...');
+          break;
+        case 'ERROR':
+          setError(`Binance error: ${data.message || 'Unknown error'}`);
+          break;
       }
     });
 
@@ -187,16 +207,36 @@ export function useRealtimePaperTrading(userId: string = 'default-user'): UseRea
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current);
       }
-      newSocket.emit('unsubscribe:account');
-      newSocket.close();
+
+      // Wait a tick to allow socket to finish connecting if it's mid-handshake
+      setTimeout(() => {
+        try {
+          // Check connection state
+          if (newSocket.connected) {
+            // Properly connected - clean disconnect
+            newSocket.emit('unsubscribe:account');
+            newSocket.disconnect();
+          } else if ((newSocket as any).io?.readyState === 'opening') {
+            // Still opening - force close to prevent "closed before connection" error
+            (newSocket as any).io?.engine?.close();
+          } else {
+            // Not connected and not opening - just cleanup
+            newSocket.removeAllListeners();
+            newSocket.close();
+          }
+        } catch (e) {
+          // Silently handle any cleanup errors
+        }
+      }, 0);
     };
-  }, [userId]);
+  }, [userId, key]);
 
   return {
     connected,
     balance,
     orders,
     connectionStatus,
+    binanceStatus,
     reconnecting,
     error,
   };

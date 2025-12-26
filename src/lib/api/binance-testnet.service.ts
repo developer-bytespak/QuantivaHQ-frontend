@@ -49,6 +49,21 @@ class BinanceTestnetService {
   }
 
   /**
+   * Get available trading symbols from testnet
+   */
+  async getAvailableSymbols(): Promise<{ symbols: string[]; count: number; source: string }> {
+    const response = await fetch(`${this.baseUrl}/symbols`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to get available symbols");
+    }
+
+    return response.json();
+  }
+
+  /**
    * Verify testnet connection
    */
   async verifyConnection(): Promise<{ valid: boolean }> {
