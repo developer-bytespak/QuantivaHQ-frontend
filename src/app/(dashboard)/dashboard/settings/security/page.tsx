@@ -169,7 +169,7 @@ export default function SecurityPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {notification && (
         <Notification
           message={notification.message}
@@ -179,23 +179,23 @@ export default function SecurityPage() {
       )}
       <SettingsBackButton />
       
-      <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-2xl p-8 shadow-lg">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center">
-            <svg className="w-6 h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-white">Security</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-white">Security</h1>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Password Section */}
-          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-xl p-6">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4">
               <div>
-                <h2 className="text-xl font-semibold text-white mb-1">Password</h2>
-                <p className="text-sm text-slate-400">Change your account password</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">{showChangePassword ? "Change Password" : "Password"}</h2>
+                <p className="text-xs sm:text-sm text-slate-400">Change your account password</p>
               </div>
               <button
                 onClick={() => {
@@ -205,16 +205,16 @@ export default function SecurityPage() {
                     setShowChangePassword(true);
                   }
                 }}
-                className="px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white hover:border-[#fc4f02]/50 transition-all duration-200"
+                className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 transition-all duration-200"
               >
                 {showChangePassword ? "Cancel" : "Change Password"}
               </button>
             </div>
 
             {showChangePassword && (
-              <div className="mt-4 space-y-4">
+              <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Current Password</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Current Password</label>
                   <input
                     id="current-password-input"
                     type="password"
@@ -227,9 +227,9 @@ export default function SecurityPage() {
                     }}
                     onKeyDown={(e) => handleKeyDown(e, "next", "new-password-input")}
                     disabled={isRequestingCode || isChangingPassword}
-                    className={`w-full px-4 py-2 rounded-lg bg-[--color-surface] border ${
+                    className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
                       formErrors.currentPassword ? "border-red-500" : "border-[--color-border]"
-                    } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Enter current password"
                   />
                   {formErrors.currentPassword && (
@@ -237,7 +237,7 @@ export default function SecurityPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">New Password</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">New Password</label>
                   <input
                     id="new-password-input"
                     type="password"
@@ -250,9 +250,9 @@ export default function SecurityPage() {
                     }}
                     onKeyDown={(e) => handleKeyDown(e, "next", "confirm-password-input")}
                     disabled={isRequestingCode || isChangingPassword}
-                    className={`w-full px-4 py-2 rounded-lg bg-[--color-surface] border ${
+                    className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
                       formErrors.newPassword ? "border-red-500" : "border-[--color-border]"
-                    } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Enter new password (min 8 characters)"
                   />
                   {formErrors.newPassword && (
@@ -260,7 +260,7 @@ export default function SecurityPage() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Confirm New Password</label>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Confirm New Password</label>
                   <input
                     id="confirm-password-input"
                     type="password"
@@ -285,9 +285,9 @@ export default function SecurityPage() {
                       }
                     }}
                     disabled={isRequestingCode || isChangingPassword}
-                    className={`w-full px-4 py-2 rounded-lg bg-[--color-surface] border ${
+                    className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
                       formErrors.confirmPassword ? "border-red-500" : "border-[--color-border]"
-                    } text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Confirm new password"
                   />
                   {formErrors.confirmPassword && (
@@ -299,7 +299,7 @@ export default function SecurityPage() {
                   <button
                     onClick={handleRequest2FACode}
                     disabled={isRequestingCode || isChangingPassword}
-                    className="w-full px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isRequestingCode ? (
                       <>
@@ -315,15 +315,15 @@ export default function SecurityPage() {
                   </button>
                 ) : (
                   <>
-                    <div className="p-5 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/30 rounded-xl shadow-lg backdrop-blur-sm">
-                      <div className="flex items-start gap-3 mb-4">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center">
-                          <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="p-3 sm:p-5 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/30 rounded-lg sm:rounded-xl shadow-lg backdrop-blur-sm">
+                      <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
+                        <div className="flex-shrink-0 w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center">
+                          <svg className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                           </svg>
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-blue-300 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-medium text-blue-300 mb-1">
                             Verification code sent
                           </p>
                           <p className="text-xs text-blue-400/80">
@@ -333,10 +333,10 @@ export default function SecurityPage() {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-3 text-center">
+                        <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-3 text-center">
                           2FA Verification Code
                         </label>
-                        <div className="flex justify-center gap-2 mb-2">
+                        <div className="flex justify-center gap-1 sm:gap-2 mb-2">
                           {[0, 1, 2, 3, 4, 5].map((index) => (
                             <input
                               key={index}
@@ -421,13 +421,13 @@ export default function SecurityPage() {
                               }}
                               disabled={isChangingPassword}
                               id={`otp-digit-${index}`}
-                              className={`w-12 h-14 rounded-lg bg-[--color-surface] border-2 ${
+                              className={`w-10 sm:w-12 h-12 sm:h-14 rounded-lg bg-[--color-surface] border-2 ${
                                 formErrors.twoFactorCode 
                                   ? "border-red-500" 
                                   : passwordData.twoFactorCode[index]
                                     ? "border-blue-500/50"
                                     : "border-[--color-border]"
-                              } text-white text-center text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+                              } text-white text-center text-lg sm:text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
                             />
                           ))}
                         </div>
@@ -439,18 +439,18 @@ export default function SecurityPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                       <button
                         onClick={handleRequest2FACode}
                         disabled={isRequestingCode || isChangingPassword}
-                        className="flex-1 px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white hover:border-[#fc4f02]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                        className="flex-1 px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-xs sm:text-sm hover:border-[#fc4f02]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Resend Code
                       </button>
                       <button
                         onClick={handleChangePassword}
                         disabled={isChangingPassword || isRequestingCode}
-                        className="flex-1 px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-1 px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-xs sm:text-sm font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {isChangingPassword ? (
                           <>
@@ -472,51 +472,51 @@ export default function SecurityPage() {
           </div>
 
           {/* Two-Factor Authentication */}
-          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-xl p-6">
-            <div className="flex items-center justify-between">
+          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div className="flex-1">
-                <h2 className="text-xl font-semibold text-white mb-1">Two-Factor Authentication</h2>
-                <p className="text-sm text-slate-400">Add an extra layer of security to your account</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">Two-Factor Authentication</h2>
+                <p className="text-xs sm:text-sm text-slate-400">Add an extra layer of security to your account</p>
               </div>
               <button
                 onClick={toggleTwoFactor}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-[--color-surface] ${
+                className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-[--color-surface] flex-shrink-0 ${
                   twoFactorEnabled ? "bg-[#fc4f02]" : "bg-slate-600"
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    twoFactorEnabled ? "translate-x-6" : "translate-x-1"
+                  className={`inline-block h-3 sm:h-4 w-3 sm:w-4 transform rounded-full bg-white transition-transform ${
+                    twoFactorEnabled ? "translate-x-5 sm:translate-x-6" : "translate-x-0.5 sm:translate-x-1"
                   }`}
                 />
               </button>
             </div>
             {twoFactorEnabled && (
-              <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p className="text-sm text-green-300">Two-factor authentication is enabled</p>
+              <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-xs sm:text-sm text-green-300">Two-factor authentication is enabled</p>
               </div>
             )}
           </div>
 
           {/* Active Sessions */}
-          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Active Sessions</h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 bg-[--color-surface] border border-[--color-border]/50 rounded-lg">
-                <div>
-                  <p className="text-white font-medium">Current Session</p>
-                  <p className="text-sm text-slate-400">Windows • Chrome • Last active: Now</p>
+          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Active Sessions</h2>
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-[--color-surface] border border-[--color-border]/50 rounded-lg">
+                <div className="min-w-0">
+                  <p className="text-white font-medium text-sm sm:text-base">Current Session</p>
+                  <p className="text-xs sm:text-sm text-slate-400">Windows • Chrome • Last active: Now</p>
                 </div>
-                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-500/30 flex-shrink-0 w-fit">
                   Active
                 </span>
               </div>
-              <div className="flex items-center justify-between p-4 bg-[--color-surface] border border-[--color-border]/50 rounded-lg">
-                <div>
-                  <p className="text-white font-medium">Mobile Device</p>
-                  <p className="text-sm text-slate-400">iOS • Safari • Last active: 2 hours ago</p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-[--color-surface] border border-[--color-border]/50 rounded-lg">
+                <div className="min-w-0">
+                  <p className="text-white font-medium text-sm sm:text-base">Mobile Device</p>
+                  <p className="text-xs sm:text-sm text-slate-400">iOS • Safari • Last active: 2 hours ago</p>
                 </div>
-                <button className="px-3 py-1 text-sm rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all duration-200">
+                <button className="w-full sm:w-auto px-3 py-1 text-xs sm:text-sm rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all duration-200 flex-shrink-0">
                   Revoke
                 </button>
               </div>
@@ -524,13 +524,13 @@ export default function SecurityPage() {
           </div>
 
           {/* Security Tips */}
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-6">
-            <div className="flex items-start gap-3">
-              <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <svg className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
               <div>
-                <p className="text-sm text-blue-300 font-medium mb-2">Security Tips</p>
+                <p className="text-xs sm:text-sm text-blue-300 font-medium mb-2">Security Tips</p>
                 <ul className="text-xs text-blue-400/80 space-y-1">
                   <li>• Use a strong, unique password</li>
                   <li>• Enable two-factor authentication for better security</li>
