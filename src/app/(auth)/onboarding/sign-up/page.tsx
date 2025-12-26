@@ -448,7 +448,8 @@ export default function SignUpPage() {
                   {/* Email Form */}
                   <form onSubmit={handleSubmit} className="space-y-2">
                   {activeTab === "signup" && (
-                    <div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                      <div>
                         <label htmlFor="fullName" className="mb-1.5 block text-xs font-medium text-white">
                           Username
                         </label>
@@ -461,9 +462,26 @@ export default function SignUpPage() {
                           placeholder="johndoe"
                           required={activeTab === "signup"}
                         />
+                      </div>
+
+                      <div>
+                        <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-white">
+                          Email Address
+                        </label>
+                        <input
+                          id="email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                          placeholder="you@example.com"
+                          required
+                        />
+                      </div>
                     </div>
                   )}
 
+                  {activeTab === "login" && (
                     <div>
                       <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-white">
                         Email Address
@@ -478,7 +496,9 @@ export default function SignUpPage() {
                         required
                       />
                     </div>
+                  )}
 
+                  {activeTab === "login" && (
                     <div>
                       <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-white">
                         Password
@@ -512,39 +532,75 @@ export default function SignUpPage() {
                         )}
                       </div>
                     </div>
+                  )}
 
                     {activeTab === "signup" && (
-                      <div>
-                        <label htmlFor="confirmPassword" className="mb-1.5 block text-xs font-medium text-white">
-                          Confirm Password
-                        </label>
-                        <div className="relative">
-                          <input
-                            id="confirmPassword"
-                            type={showConfirmPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
-                            placeholder="••••••••"
-                            required={activeTab === "signup"}
-                          />
-                          {confirmPassword.length > 0 && (
-                            <button
-                              type="button"
-                              onMouseDown={() => setShowConfirmPassword(true)}
-                              onMouseUp={() => setShowConfirmPassword(false)}
-                              onMouseLeave={() => setShowConfirmPassword(false)}
-                              onTouchStart={() => setShowConfirmPassword(true)}
-                              onTouchEnd={() => setShowConfirmPassword(false)}
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[#fc4f02] transition-colors cursor-pointer"
-                              aria-label="Hold to show password"
-                            >
-                              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
-                            </button>
-                          )}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                        <div>
+                          <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-white">
+                            Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              id="password"
+                              type={showPassword ? "text" : "password"}
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                              placeholder="••••••••"
+                              required
+                            />
+                            {password.length > 0 && (
+                              <button
+                                type="button"
+                                onMouseDown={() => setShowPassword(true)}
+                                onMouseUp={() => setShowPassword(false)}
+                                onMouseLeave={() => setShowPassword(false)}
+                                onTouchStart={() => setShowPassword(true)}
+                                onTouchEnd={() => setShowPassword(false)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[#fc4f02] transition-colors cursor-pointer"
+                                aria-label="Hold to show password"
+                              >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <label htmlFor="confirmPassword" className="mb-1.5 block text-xs font-medium text-white">
+                            Confirm Password
+                          </label>
+                          <div className="relative">
+                            <input
+                              id="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                              placeholder="••••••••"
+                              required={activeTab === "signup"}
+                            />
+                            {confirmPassword.length > 0 && (
+                              <button
+                                type="button"
+                                onMouseDown={() => setShowConfirmPassword(true)}
+                                onMouseUp={() => setShowConfirmPassword(false)}
+                                onMouseLeave={() => setShowConfirmPassword(false)}
+                                onTouchStart={() => setShowConfirmPassword(true)}
+                                onTouchEnd={() => setShowConfirmPassword(false)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[#fc4f02] transition-colors cursor-pointer"
+                                aria-label="Hold to show password"
+                              >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
