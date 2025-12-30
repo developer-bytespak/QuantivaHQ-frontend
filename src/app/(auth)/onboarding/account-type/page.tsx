@@ -165,7 +165,7 @@ export default function AccountTypePage() {
             <div className="mb-2 sm:mb-3 flex justify-center animate-logo-enter">
               <QuantivaLogo className="h-7 sm:h-10 md:h-12 lg:h-14" />
             </div>
-            <h1 className="mb-3 sm:mb-2 text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-white leading-tight animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-3 sm:mb-2 text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-white leading-tight animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Select Your <span className="text-white">Account Type</span>
             </h1>
             <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 animate-text-enter px-3 sm:px-2 leading-tight" style={{ animationDelay: "0.4s" }}>
