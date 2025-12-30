@@ -127,7 +127,7 @@ export default function BankDetailsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {notification && (
         <Notification
           message={notification.message}
@@ -154,19 +154,19 @@ export default function BankDetailsPage() {
           onClick={() => setSelectedAccount(null)}
         >
           <div
-            className="relative mx-4 w-full max-w-2xl rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-6 shadow-2xl shadow-black/50 backdrop-blur animate-in zoom-in-95 duration-200"
+            className="relative mx-4 w-full max-w-2xl rounded-lg sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{selectedAccount.bankName}</h2>
+                  <h2 className="text-lg sm:text-2xl font-bold text-white">{selectedAccount.bankName}</h2>
                   {selectedAccount.isPrimary && (
                     <span className="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30">
                       Primary Account
@@ -176,7 +176,7 @@ export default function BankDetailsPage() {
               </div>
               <button
                 onClick={() => setSelectedAccount(null)}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white self-start sm:self-auto"
                 aria-label="Close"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -186,36 +186,36 @@ export default function BankDetailsPage() {
             </div>
 
             {/* Content */}
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Account Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-xl p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Account Holder Name</p>
-                  <p className="text-lg font-semibold text-white">{selectedAccount.accountHolderName}</p>
+                  <p className="text-base sm:text-lg font-semibold text-white">{selectedAccount.accountHolderName}</p>
                 </div>
-                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-xl p-4">
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Account Type</p>
-                  <p className="text-lg font-semibold text-white capitalize">{selectedAccount.accountType}</p>
+                  <p className="text-base sm:text-lg font-semibold text-white capitalize">{selectedAccount.accountType}</p>
                 </div>
-                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-xl p-4">
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Account Number</p>
-                  <p className="text-lg font-semibold text-white font-mono tracking-wider">{selectedAccount.accountNumber}</p>
+                  <p className="text-base sm:text-lg font-semibold text-white font-mono tracking-wider">{selectedAccount.accountNumber}</p>
                 </div>
-                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-xl p-4">
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Routing Number</p>
-                  <p className="text-lg font-semibold text-white font-mono tracking-wider">{selectedAccount.routingNumber}</p>
+                  <p className="text-base sm:text-lg font-semibold text-white font-mono tracking-wider">{selectedAccount.routingNumber}</p>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="pt-6 border-t border-[--color-border]/50 flex gap-3">
+              <div className="pt-4 sm:pt-6 border-t border-[--color-border]/50 flex flex-col sm:flex-row gap-2 sm:gap-3">
                 {!selectedAccount.isPrimary && (
                   <button
                     onClick={() => {
                       handleSetPrimary(selectedAccount.id);
                       setSelectedAccount(null);
                     }}
-                    className="flex-1 px-4 py-2.5 rounded-lg bg-[--color-surface] border border-[--color-border] text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
+                    className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
                   >
                     Set as Primary
                   </button>
@@ -225,7 +225,7 @@ export default function BankDetailsPage() {
                     setSelectedAccount(null);
                     handleDeleteAccount(selectedAccount.id);
                   }}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all duration-200 font-medium"
+                  className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm sm:text-base hover:bg-red-500/30 transition-all duration-200 font-medium"
                 >
                   Delete Account
                 </button>
@@ -236,84 +236,84 @@ export default function BankDetailsPage() {
         document.body
       )}
       
-      <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-2xl p-8 shadow-lg">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center">
-              <svg className="w-6 h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-white">Bank Details</h1>
+            <h1 className="text-xl sm:text-3xl font-bold text-white">Bank Details</h1>
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200"
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200"
           >
             {showAddForm ? "Cancel" : "+ Add Account"}
           </button>
         </div>
 
         {showAddForm && (
-          <div className="mb-6 bg-[--color-surface]/50 border border-[--color-border]/50 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Add Bank Account</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="mb-4 sm:mb-6 bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Add Bank Account</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Bank Name</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Bank Name</label>
                 <input
                   id="bank-name-input"
                   type="text"
                   value={formData.bankName}
                   onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "account-holder-input")}
-                  className="w-full px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
                   placeholder="Enter bank name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Account Holder Name</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Account Holder Name</label>
                 <input
                   id="account-holder-input"
                   type="text"
                   value={formData.accountHolderName}
                   onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "account-number-input")}
-                  className="w-full px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
                   placeholder="Enter account holder name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Account Number</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Account Number</label>
                 <input
                   id="account-number-input"
                   type="text"
                   value={formData.accountNumber}
                   onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "routing-number-input")}
-                  className="w-full px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
                   placeholder="Enter account number"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Routing Number</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Routing Number</label>
                 <input
                   id="routing-number-input"
                   type="text"
                   value={formData.routingNumber}
                   onChange={(e) => setFormData({ ...formData, routingNumber: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "account-type-select")}
-                  className="w-full px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
                   placeholder="Enter routing number"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Account Type</label>
+                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Account Type</label>
                 <select
                   id="account-type-select"
                   value={formData.accountType}
                   onChange={(e) => setFormData({ ...formData, accountType: e.target.value as "checking" | "savings" })}
                   onKeyDown={(e) => handleKeyDown(e)}
-                  className="w-full px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
                 >
                   <option value="checking">Checking</option>
                   <option value="savings">Savings</option>
@@ -322,46 +322,46 @@ export default function BankDetailsPage() {
             </div>
             <button
               onClick={handleAddAccount}
-              className="mt-4 px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200"
+              className="mt-3 sm:mt-4 w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200"
             >
               Add Account
             </button>
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {accounts.length === 0 ? (
-            <div className="text-center py-12 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-xl">
-              <svg className="w-16 h-16 text-slate-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center py-8 sm:py-12 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl">
+              <svg className="w-12 sm:w-16 h-12 sm:h-16 text-slate-500 mx-auto mb-3 sm:mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
-              <p className="text-slate-400 text-lg">No bank accounts added yet</p>
-              <p className="text-slate-500 text-sm mt-2">Click "Add Account" to get started</p>
+              <p className="text-slate-400 text-base sm:text-lg">No bank accounts added yet</p>
+              <p className="text-slate-500 text-xs sm:text-sm mt-2">Click "Add Account" to get started</p>
             </div>
           ) : (
             accounts.map((account) => (
               <div
                 key={account.id}
                 onClick={() => setSelectedAccount(account)}
-                className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-xl p-6 hover:border-[#fc4f02]/30 transition-all duration-200 cursor-pointer"
+                className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6 hover:border-[#fc4f02]/30 transition-all duration-200 cursor-pointer"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-white">{account.bankName}</h3>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white truncate">{account.bankName}</h3>
                       {account.isPrimary && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30 flex-shrink-0">
                           Primary
                         </span>
                       )}
                     </div>
-                    <div className="mt-4">
-                      <p className="text-sm text-slate-400 mb-1">Account Number</p>
-                      <p className="text-white font-medium">****{account.accountNumber.slice(-4)}</p>
+                    <div className="mt-3 sm:mt-4">
+                      <p className="text-xs sm:text-sm text-slate-400 mb-1">Account Number</p>
+                      <p className="text-sm sm:text-base text-white font-medium">****{account.accountNumber.slice(-4)}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                    <svg className="w-4 sm:w-5 h-4 sm:h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
