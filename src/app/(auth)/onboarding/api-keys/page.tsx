@@ -176,17 +176,17 @@ export default function ApiKeysPage() {
       </div >
 
       {/* Content */}
-      < div className="relative z-10 flex h-full w-full items-center justify-center overflow-hidden" >
-        <div className="mx-auto w-full max-w-2xl px-4 py-4 sm:px-6 lg:px-8">
+      < div className="relative z-10 flex h-full w-full items-start sm:items-center justify-center overflow-hidden pt-6 pb-3 sm:py-6" >
+        <div className="mx-auto w-full max-w-2xl px-2 sm:px-6 lg:px-8">
           {/* Header Section */}
-          <div className="mb-4 text-center">
-            <div className="mb-2 flex justify-center">
+          <div className="mb-3 sm:mb-6 text-center">
+            <div className="mb-2 sm:mb-3 flex justify-center">
               {currentExchange.logo}
             </div>
-            <h1 className="mb-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl lg:text-3xl">
+            <h1 className="mb-2 sm:mb-2 text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-white leading-tight">
               Enter Your <span className="text-white">API Keys</span>
             </h1>
-            <p className="mx-auto max-w-xl text-xs text-slate-400 sm:text-sm">
+            <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 px-2 leading-tight">
               Connect your {exchangeName} account by entering your API credentials securely.
             </p>
           </div>
@@ -204,10 +204,10 @@ export default function ApiKeysPage() {
                 </div>
               </div>
             )}
-            <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-sm p-3.5 shadow-xl">
+            <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-sm p-3 sm:p-3.5 shadow-xl space-y-5 sm:space-y-6">
               {/* API Key Input */}
-              <div className="mb-3">
-                <label htmlFor="apiKey" className="mb-2 block text-sm font-semibold text-white">
+              <div className="mb-5 sm:mb-6">
+                <label htmlFor="apiKey" className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-semibold text-white">
                   API Key <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
@@ -221,7 +221,7 @@ export default function ApiKeysPage() {
                         setErrors({ ...errors, apiKey: "" });
                       }
                     }}
-                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.apiKey
+                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.apiKey
                       ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                       : "border-slate-700/50"
                       }`}
@@ -230,14 +230,14 @@ export default function ApiKeysPage() {
                   <button
                     type="button"
                     onClick={() => setShowApiKey(!showApiKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
                   >
                     {showApiKey ? (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                       </svg>
                     ) : (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
@@ -250,8 +250,8 @@ export default function ApiKeysPage() {
               </div>
 
               {/* Secret Key Input */}
-              <div className="mb-3">
-                <label htmlFor="secretKey" className="mb-2 block text-sm font-semibold text-white">
+              <div className="mb-5 sm:mb-6">
+                <label htmlFor="secretKey" className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-semibold text-white">
                   Secret Key <span className="text-red-400">*</span>
                 </label>
                 <div className="relative">
@@ -265,7 +265,7 @@ export default function ApiKeysPage() {
                         setErrors({ ...errors, secretKey: "" });
                       }
                     }}
-                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.secretKey
+                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.secretKey
                       ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                       : "border-slate-700/50"
                       }`}
@@ -274,14 +274,14 @@ export default function ApiKeysPage() {
                   <button
                     type="button"
                     onClick={() => setShowSecretKey(!showSecretKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
                   >
                     {showSecretKey ? (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                       </svg>
                     ) : (
-                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
@@ -295,8 +295,8 @@ export default function ApiKeysPage() {
 
               {/* Passphrase Input (Optional) */}
               {currentExchange.requiresPassphrase && (
-                <div className="mb-3">
-                  <label htmlFor="passphrase" className="mb-2 block text-sm font-semibold text-white">
+                <div className="mb-0 sm:mb-3">
+                  <label htmlFor="passphrase" className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-semibold text-white">
                     Passphrase <span className="text-xs text-slate-400">(Optional)</span>
                   </label>
                   <div className="relative">
@@ -305,20 +305,20 @@ export default function ApiKeysPage() {
                       type={showPassphrase ? "text" : "password"}
                       value={passphrase}
                       onChange={(e) => setPassphrase(e.target.value)}
-                      className="w-full rounded-lg border-2 border-slate-700/50 bg-slate-800/60 px-4 py-3 pr-12 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
+                      className="w-full rounded-lg border-2 border-slate-700/50 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
                       placeholder="Enter passphrase (if required)"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassphrase(!showPassphrase)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                      className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
                     >
                       {showPassphrase ? (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
                         </svg>
                       ) : (
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
@@ -329,18 +329,18 @@ export default function ApiKeysPage() {
               )}
 
               {/* Enable Trading Toggle */}
-              <div className="mb-3 rounded-lg border border-slate-700/50 bg-slate-800/40 p-3">
-                <label className="flex cursor-pointer items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-semibold text-white">Enable Trading</span>
-                      <span className="rounded bg-green-500/20 border border-green-500/30 px-2 py-0.5 text-xs font-medium text-green-400">Recommended</span>
+              <div className="mb-5 sm:mb-6 rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 sm:p-3.5">
+                <label className="flex cursor-pointer items-center justify-between flex-col sm:flex-row gap-2 sm:gap-0">
+                  <div className="flex-1 w-full">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <span className="text-xs sm:text-sm font-semibold text-white">Enable Trading</span>
+                      <span className="rounded bg-green-500/20 border border-green-500/30 px-2 py-0.5 text-[10px] sm:text-xs font-medium text-green-400">Recommended</span>
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">
                       Allow QuantivaHQ to execute trades and manage your trading strategies automatically.
                     </p>
                   </div>
-                  <div className="ml-3">
+                  <div className="ml-0 sm:ml-3">
                     <button
                       type="button"
                       onClick={() => setEnableTrading(!enableTrading)}
@@ -357,12 +357,12 @@ export default function ApiKeysPage() {
               </div>
 
               {/* Security Notice */}
-              <div className="rounded-lg border-l-4 border-green-500/50 bg-green-500/10 p-2.5">
+              <div className="rounded-lg border-l-4 border-green-500/50 bg-green-500/10 p-2 sm:p-2.5">
                 <div className="flex items-start gap-2">
-                  <svg className="h-4 w-4 shrink-0 text-green-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-green-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
-                  <p className="text-[10px] text-green-200 leading-relaxed">
+                  <p className="text-[10px] sm:text-xs text-green-200 leading-relaxed">
                     <span className="font-semibold">We do NOT store or share your keys.</span> All keys are encrypted using industry-standard AES-256 encryption and stored securely. Your keys are only used to connect to your exchange account.
                   </p>
                 </div>
@@ -370,15 +370,15 @@ export default function ApiKeysPage() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex justify-center mt-3">
+            <div className="flex justify-center mt-3 sm:mt-4 px-2 sm:px-0">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
               >
                 {isLoading ? (
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    <svg className="h-5 w-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
@@ -387,7 +387,7 @@ export default function ApiKeysPage() {
                 ) : (
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     Connect Account
-                    <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
                   </span>
