@@ -393,49 +393,49 @@ export default function ApiKeyTutorialPage() {
       action: (
         <div className="space-y-3">
           {/* API Key Display */}
-          <div className="rounded-lg border border-slate-700/50 bg-slate-800/40 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-semibold text-white">API Key</label>
-              <span className="rounded bg-blue-500/20 border border-blue-500/30 px-2 py-0.5 text-xs font-medium text-blue-400">Public</span>
+          <div className="rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 sm:p-3.5">
+            <div className="mb-2 flex items-center justify-between flex-col sm:flex-row gap-1.5 sm:gap-0">
+              <label className="text-xs sm:text-sm font-semibold text-white">API Key</label>
+              <span className="rounded bg-blue-500/20 border border-blue-500/30 px-2 py-0.5 text-[10px] sm:text-xs font-medium text-blue-400">Public</span>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/60 px-3 py-2">
-              <code className="flex-1 font-mono text-sm text-slate-300">
+            <div className="flex items-center gap-2 rounded-lg border border-slate-700/50 bg-slate-900/60 px-2 sm:px-3 py-1.5 sm:py-2 overflow-x-auto">
+              <code className="flex-1 font-mono text-xs sm:text-sm text-slate-300 whitespace-nowrap">
                 {selectedExchange === "binance" ? "bin_" : "bybit_"}
                 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
               </code>
-              <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/60 border border-slate-700/50 text-[#fc4f02] transition-colors hover:bg-slate-700/60 hover:text-[#fda300]">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button className="flex h-7 sm:h-8 w-7 sm:w-8 items-center justify-center rounded-lg bg-slate-800/60 border border-slate-700/50 text-[#fc4f02] transition-colors hover:bg-slate-700/60 hover:text-[#fda300] flex-shrink-0">
+                <svg className="h-3 sm:h-3.5 w-3 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </button>
             </div>
-            <p className="mt-2 text-xs text-slate-400">This is your public API key. You can view this again later.</p>
+            <p className="mt-2 text-[10px] sm:text-xs text-slate-400">This is your public API key. You can view this again later.</p>
           </div>
 
           {/* Secret Key Display */}
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-sm font-semibold text-white">Secret Key</label>
-              <span className="rounded bg-red-500/20 border border-red-500/30 px-2 py-0.5 text-xs font-medium text-red-400">Private</span>
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 sm:p-3.5">
+            <div className="mb-2 flex items-center justify-between flex-col sm:flex-row gap-1.5 sm:gap-0">
+              <label className="text-xs sm:text-sm font-semibold text-white">Secret Key</label>
+              <span className="rounded bg-red-500/20 border border-red-500/30 px-2 py-0.5 text-[10px] sm:text-xs font-medium text-red-400">Private</span>
             </div>
-            <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-slate-900/60 px-3 py-2">
-              <code className="flex-1 font-mono text-sm text-slate-300">
+            <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-slate-900/60 px-2 sm:px-3 py-1.5 sm:py-2 overflow-x-auto">
+              <code className="flex-1 font-mono text-xs sm:text-sm text-slate-300 whitespace-nowrap">
                 ••••••••••••••••••••••••••••••••••••••••
               </code>
-              <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-800/60 border border-amber-500/30 text-amber-400 transition-colors hover:bg-slate-700/60 hover:text-amber-300">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <button className="flex h-7 sm:h-8 w-7 sm:w-8 items-center justify-center rounded-lg bg-slate-800/60 border border-amber-500/30 text-amber-400 transition-colors hover:bg-slate-700/60 hover:text-amber-300 flex-shrink-0">
+                <svg className="h-3 sm:h-3.5 w-3 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
             </div>
-            <p className="mt-2 text-xs text-amber-300">⚠️ Copy this immediately! You won't be able to see it again.</p>
+            <p className="mt-2 text-[10px] sm:text-xs text-amber-300">⚠️ Copy this immediately! You won't be able to see it again.</p>
           </div>
 
           {/* Storage Tips */}
-          <div className="rounded-lg border border-slate-700/50 bg-slate-800/40 p-3">
-            <h4 className="mb-2 text-sm font-semibold text-slate-300">💾 Storage Tips:</h4>
-            <ul className="space-y-1.5 text-xs text-slate-400">
+          <div className="rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 sm:p-3.5">
+            <h4 className="mb-2 text-xs sm:text-sm font-semibold text-slate-300">💾 Storage Tips:</h4>
+            <ul className="space-y-1.5 text-[10px] sm:text-xs text-slate-400">
               <li className="flex items-start gap-1.5">
                 <span className="text-green-400 mt-0.5">✓</span>
                 <span>Save in a password manager</span>

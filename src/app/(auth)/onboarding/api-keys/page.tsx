@@ -183,7 +183,7 @@ export default function ApiKeysPage() {
             <div className="mb-2 sm:mb-3 flex justify-center">
               {currentExchange.logo}
             </div>
-            <h1 className="mb-2 sm:mb-2 text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-white leading-tight">
+            <h1 className="mb-2 sm:mb-2 text-lg sm:text-xl md:text-2xl lg:text-2xl font-bold tracking-tight text-white leading-tight">
               Enter Your <span className="text-white">API Keys</span>
             </h1>
             <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 px-2 leading-tight">
@@ -204,9 +204,9 @@ export default function ApiKeysPage() {
                 </div>
               </div>
             )}
-            <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-sm p-3 sm:p-3.5 shadow-xl space-y-5 sm:space-y-6">
+            <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 backdrop-blur-sm p-3 sm:p-3.5 shadow-xl space-y-5 sm:space-y-6 lg:space-y-4">
               {/* API Key Input */}
-              <div className="mb-5 sm:mb-6">
+              <div className="mb-5 sm:mb-6 lg:mb-0">
                 <label htmlFor="apiKey" className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-semibold text-white">
                   API Key <span className="text-red-400">*</span>
                 </label>
@@ -250,7 +250,7 @@ export default function ApiKeysPage() {
               </div>
 
               {/* Secret Key Input */}
-              <div className="mb-5 sm:mb-6">
+              <div className="mb-5 sm:mb-6 lg:mb-2">
                 <label htmlFor="secretKey" className="mb-1.5 sm:mb-2 block text-xs sm:text-sm font-semibold text-white">
                   Secret Key <span className="text-red-400">*</span>
                 </label>
@@ -329,7 +329,7 @@ export default function ApiKeysPage() {
               )}
 
               {/* Enable Trading Toggle */}
-              <div className="mb-5 sm:mb-6 rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 sm:p-3.5">
+              <div className="mb-5 sm:mb-6 lg:mb-2 rounded-lg border border-slate-700/50 bg-slate-800/40 p-3 sm:p-3.5">
                 <label className="flex cursor-pointer items-center justify-between flex-col sm:flex-row gap-2 sm:gap-0">
                   <div className="flex-1 w-full">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
