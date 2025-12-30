@@ -22,7 +22,7 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect }: Ex
       onClick={onSelect}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group relative overflow-hidden rounded-xl border-2 border-[--color-border] bg-[--color-surface-alt]/60 backdrop-blur transition-all duration-300 p-6 sm:p-8 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
+      className="group relative overflow-hidden rounded-lg sm:rounded-xl border-2 border-[--color-border] bg-[--color-surface-alt]/60 backdrop-blur transition-all duration-300 p-4 sm:p-6 md:p-7 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 min-h-max"
       style={{ animationDelay: delay }}
     >
       {/* Gradient overlay on hover */}
@@ -34,11 +34,11 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect }: Ex
 
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-4 flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center transition-transform duration-300 group-hover:scale-110">
+        <div className="mb-3 sm:mb-4 flex h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center transition-transform duration-300 group-hover:scale-110">
           {logo}
         </div>
-        <h3 className="mb-2 text-lg sm:text-xl font-semibold text-white">{name}</h3>
-        <p className="text-sm leading-relaxed text-slate-400">{description}</p>
+        <h3 className="mb-2 sm:mb-2.5 text-sm sm:text-base md:text-lg font-semibold text-white">{name}</h3>
+        <p className="text-xs sm:text-sm md:text-sm leading-snug text-slate-300">{description}</p>
       </div>
 
       {/* Shine effect */}
@@ -97,7 +97,7 @@ export default function CryptoExchangePage() {
           alt="Binance"
           width={48}
           height={48}
-          className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
+          className="h-9 w-9 sm:h-12 sm:w-12 md:h-16 md:w-16 object-contain"
         />
       ),
       onSelect: () => handleExchangeSelect("binance"),
@@ -112,7 +112,7 @@ export default function CryptoExchangePage() {
           alt="Bybit"
           width={48}
           height={48}
-          className="h-10 w-10 sm:h-12 sm:w-12 object-contain"
+          className="h-9 w-9 sm:h-12 sm:w-12 md:h-16 md:w-16 object-contain"
         />
       ),
       onSelect: () => handleExchangeSelect("bybit"),
@@ -130,23 +130,23 @@ export default function CryptoExchangePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-2 py-3 sm:px-6 sm:py-6 lg:px-8">
         <div className="w-full max-w-4xl flex flex-col justify-center">
           {/* Header Section */}
-          <div className="mb-6 sm:mb-8 text-center flex-shrink-0">
-            <div className="mb-2 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14" />
+          <div className="mb-3 sm:mb-8 text-center flex-shrink-0">
+            <div className="mb-2 sm:mb-3 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 lg:h-24 lg:w-24" />
             </div>
-            <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-3 sm:mb-2 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-white leading-tight animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Choose Your <span className="text-white">Crypto Exchange</span>
             </h1>
-            <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 animate-text-enter px-3 sm:px-2 leading-tight" style={{ animationDelay: "0.4s" }}>
               Select the platform you want to connect to your trading account.
             </p>
           </div>
 
           {/* Exchange Cards */}
-          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 animate-text-enter mb-6 sm:mb-8 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 animate-text-enter mb-4 sm:mb-6 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
             {exchanges.map((exchange, index) => (
               <ExchangeCard
                 key={exchange.name}
@@ -161,7 +161,7 @@ export default function CryptoExchangePage() {
           </div>
 
           {/* Help Link Section */}
-          <div className="w-full flex-shrink-0 text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
+          <div className="w-full flex-shrink-0 text-center animate-text-enter px-3" style={{ animationDelay: "0.8s" }}>
             <button
               onClick={() => setShowFAQModal(true)}
               className="text-xs sm:text-sm text-slate-400 hover:text-[#fc4f02] transition-colors duration-200 underline underline-offset-2"
@@ -182,46 +182,46 @@ export default function CryptoExchangePage() {
           />
 
           {/* Modal Content */}
-          <div className="relative z-10 w-full max-w-2xl max-h-[90vh] rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt] to-[--color-surface] shadow-2xl shadow-black/50 overflow-hidden flex flex-col">
+          <div className="relative z-10 w-full mx-3 sm:mx-0 max-w-2xl max-h-[90vh] rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt] to-[--color-surface] shadow-2xl shadow-black/50 overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[--color-border] bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-[--color-border] bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 px-4 sm:px-6 py-3 sm:py-4 gap-2 sm:gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
-                  <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Why do I need API Keys?</h2>
+                  <h2 className="text-sm sm:text-lg font-bold text-white">Why do I need API Keys?</h2>
                   <p className="text-xs text-slate-400">Understanding API integration</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowFAQModal(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[--color-surface-alt] text-slate-400 transition-all duration-200 hover:bg-[--color-surface] hover:text-white"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-[--color-surface-alt] text-slate-400 transition-all duration-200 hover:bg-[--color-surface] hover:text-white flex-shrink-0"
               >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-6">
-              <div className="space-y-4 text-sm text-slate-300">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+              <div className="space-y-4 text-xs sm:text-sm text-slate-300">
                 <div>
-                  <h3 className="mb-2 text-base font-semibold text-white">What are API Keys?</h3>
+                  <h3 className="mb-2 text-sm sm:text-base font-semibold text-white">What are API Keys?</h3>
                   <p className="leading-relaxed">
                     API (Application Programming Interface) keys are secure credentials that allow QuantivaHQ to connect to your exchange account. They enable our platform to read your account data and execute trades on your behalf, all while keeping your account secure.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="mb-2 text-base font-semibold text-white">Why are they required?</h3>
+                  <h3 className="mb-2 text-sm sm:text-base font-semibold text-white">Why are they required?</h3>
                   <p className="leading-relaxed">
                     API keys are essential for QuantivaHQ to provide you with:
                   </p>
-                  <ul className="mt-2 ml-4 list-disc space-y-1">
+                  <ul className="mt-2 ml-4 list-disc space-y-1 text-xs sm:text-sm">
                     <li>Real-time portfolio tracking and analysis</li>
                     <li>Automated trading strategies execution</li>
                     <li>AI-powered market insights based on your holdings</li>
@@ -230,11 +230,11 @@ export default function CryptoExchangePage() {
                 </div>
 
                 <div>
-                  <h3 className="mb-2 text-base font-semibold text-white">Is it safe?</h3>
+                  <h3 className="mb-2 text-sm sm:text-base font-semibold text-white">Is it safe?</h3>
                   <p className="leading-relaxed">
                     Yes! We use industry-standard security practices:
                   </p>
-                  <ul className="mt-2 ml-4 list-disc space-y-1">
+                  <ul className="mt-2 ml-4 list-disc space-y-1 text-xs sm:text-sm">
                     <li>API keys are encrypted and stored securely</li>
                     <li>You can set read-only permissions (no withdrawal access)</li>
                     <li>Keys can be revoked at any time from your exchange</li>
@@ -243,7 +243,7 @@ export default function CryptoExchangePage() {
                 </div>
 
                 <div>
-                  <h3 className="mb-2 text-base font-semibold text-white">How to get API Keys?</h3>
+                  <h3 className="mb-2 text-sm sm:text-base font-semibold text-white">How to get API Keys?</h3>
                   <p className="leading-relaxed">
                     After selecting your exchange, we'll guide you through the simple process of generating API keys from your exchange account. It typically takes just a few minutes and requires no technical knowledge.
                   </p>
@@ -252,10 +252,10 @@ export default function CryptoExchangePage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-[--color-border] bg-gradient-to-r from-[#fc4f02]/5 to-[#fda300]/5 px-6 py-4">
+            <div className="border-t border-[--color-border] bg-gradient-to-r from-[#fc4f02]/5 to-[#fda300]/5 px-4 sm:px-6 py-3 sm:py-4">
               <button
                 onClick={() => setShowFAQModal(false)}
-                className="w-full rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                className="w-full rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
               >
                 Got it, thanks!
               </button>
