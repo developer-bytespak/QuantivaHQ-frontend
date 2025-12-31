@@ -8,7 +8,7 @@ import { exchangesService } from "@/lib/api/exchanges.service";
 
 export default function ApiKeysPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | "alpaca" | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [passphrase, setPassphrase] = useState("");
@@ -23,7 +23,12 @@ export default function ApiKeysPage() {
   useEffect(() => {
     // Get selected exchange from localStorage
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
-    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr") {
+    if (
+      exchange === "binance" ||
+      exchange === "bybit" ||
+      exchange === "ibkr" ||
+      exchange === "alpaca"
+    ) {
       setSelectedExchange(exchange);
     } else {
       // Default to Binance if not set
@@ -33,10 +38,16 @@ export default function ApiKeysPage() {
     // Fetch or create exchange ID from backend
     const fetchExchangeId = async () => {
       try {
-        const exchangeName = exchange === "binance" ? "Binance" : 
-                           exchange === "bybit" ? "Bybit" : 
-                           "Interactive Brokers";
-        const exchangeType = exchange === "ibkr" ? "stocks" : "crypto";
+        const exchangeName =
+          exchange === "binance"
+            ? "Binance"
+            : exchange === "bybit"
+            ? "Bybit"
+            : exchange === "alpaca"
+            ? "Alpaca"
+            : "Interactive Brokers";
+            const exchangeType =
+              exchange === "ibkr" || exchange === "alpaca" ? "stocks" : "crypto";
         
         // Ensure exchange exists in database (creates if doesn't exist)
         const exchangeData = await exchangesService.ensureExchange(exchangeName, exchangeType);
@@ -92,6 +103,21 @@ export default function ApiKeysPage() {
           <Image
             src="/IBKR_logo.png"
             alt="Interactive Brokers"
+            width={48}
+            height={48}
+            className="h-full w-full object-contain"
+          />
+        </div>
+      ),
+      requiresPassphrase: false,
+    },
+    alpaca: {
+      name: "Alpaca",
+      logo: (
+        <div className="flex h-12 w-12 items-center justify-center p-2">
+          <Image
+            src="/alpaca_logo.png"
+            alt="Alpaca"
             width={48}
             height={48}
             className="h-full w-full object-contain"
@@ -368,6 +394,30 @@ export default function ApiKeysPage() {
                 </div>
               </div>
             </div>
+
+            {/* Alpaca OAuth Connect (Stocks only) */}
+            {selectedExchange === "alpaca" && (
+              <div className="mb-4">
+                <p className="text-xs text-slate-400 mb-2">Prefer connecting via Alpaca OAuth? Click below to connect your Alpaca account.</p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!exchangeId) {
+                        setErrors({ general: "Exchange information not loaded. Please refresh the page." });
+                        return;
+                      }
+                                localStorage.setItem("quantivahq_selected_exchange", "alpaca");
+                      // Redirect to backend OAuth starter endpoint (backend should implement this route)
+                      window.location.href = `/exchanges/alpaca/authorize?exchange_id=${exchangeId}`;
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#1f7af6] to-[#4fd1c5] px-4 py-2 text-sm font-semibold text-white shadow"
+                  >
+                    Connect with Alpaca
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-center mt-3 sm:mt-4 px-2 sm:px-0">
