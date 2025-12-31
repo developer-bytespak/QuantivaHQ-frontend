@@ -23,7 +23,7 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
       onClick={() => onSelect(value)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`group relative overflow-hidden rounded-xl border-2 transition-all duration-300 p-4 sm:p-5 md:p-6 backdrop-blur text-left ${isSelected
+      className={`group relative overflow-hidden rounded-lg sm:rounded-xl border-2 transition-all duration-300 p-4 sm:p-5 md:p-6 lg:p-7 backdrop-blur text-left min-h-max ${isSelected
           ? "border-[#fc4f02] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 shadow-2xl shadow-[#fc4f02]/30"
           : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
         }`}
@@ -37,8 +37,8 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Selected indicator */}
       {isSelected && (
-        <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] shadow-lg shadow-[#fc4f02]/50">
-          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 flex h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] shadow-lg shadow-[#fc4f02]/50">
+          <svg className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
@@ -46,12 +46,12 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Content */}
       <div className="relative z-10">
-        <div className={`mb-3 sm:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-110"
+        <div className={`mb-3 sm:mb-4 md:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-110"
           }`}>
           {icon}
         </div>
-        <h3 className="mb-2 text-base sm:text-lg font-semibold text-white">{title}</h3>
-        <p className="text-xs sm:text-sm leading-relaxed text-slate-400">{description}</p>
+        <h3 className="mb-2 sm:mb-2.5 text-sm sm:text-base md:text-lg font-semibold text-white leading-tight">{title}</h3>
+        <p className="text-xs sm:text-xs md:text-sm leading-snug text-slate-300">{description}</p>
       </div>
 
       {/* Shine effect */}
@@ -101,11 +101,11 @@ export default function AccountTypePage() {
       description: "Trade cryptocurrencies with AI-powered insights. Access real-time market data, sentiment analysis, and automated trading strategies for Bitcoin, Ethereum, and altcoins.",
       gradient: "from-[#fc4f02] to-[#fda300]",
       icon: (
-        <div className="relative h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 flex items-center justify-center">
+        <div className="relative h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 flex items-center justify-center">
           {/* Circular golden background */}
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600"></div>
           {/* Bitcoin symbol (₿) */}
-          <span className="relative z-10 text-white font-bold text-sm sm:text-base md:text-lg">₿</span>
+          <span className="relative z-10 text-white font-bold text-sm sm:text-base md:text-lg lg:text-xl leading-none">₿</span>
         </div>
       ),
     },
@@ -115,7 +115,7 @@ export default function AccountTypePage() {
       description: "Trade stocks and equities with intelligent automation. Get AI-driven analysis, portfolio optimization, and automated execution for traditional markets.",
       gradient: "from-[#1d4ed8] to-[#3b82f6]",
       icon: (
-        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9" viewBox="0 0 24 24" fill="none">
+        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10" viewBox="0 0 24 24" fill="none">
           {/* Three candlestick charts: green, red, green */}
           {/* First candlestick (green) */}
           <rect x="4" y="8" width="3" height="6" fill="#10b981" />
@@ -140,7 +140,7 @@ export default function AccountTypePage() {
       description: "Access both crypto and stock markets in one unified platform. Maximize your trading opportunities with cross-market analysis and diversified strategies.",
       gradient: "from-[#10b981] to-[#34d399]",
       icon: (
-        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       ),
@@ -158,23 +158,23 @@ export default function AccountTypePage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-4 pt-4 pb-4 sm:px-6 sm:pt-6 sm:pb-6 lg:px-8">
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center overflow-hidden px-2 py-3 sm:px-6 sm:py-6 lg:px-8">
         <div className="w-full max-w-6xl flex flex-col justify-center">
           {/* Header Section */}
-          <div className="mb-6 sm:mb-8 text-center flex-shrink-0">
-            <div className="mb-2 flex justify-center animate-logo-enter">
-              <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14" />
+          <div className="mb-3 sm:mb-6 md:mb-8 text-center flex-shrink-0">
+            <div className="mb-2 sm:mb-3 flex justify-center animate-logo-enter">
+              <QuantivaLogo className="h-7 sm:h-10 md:h-12 lg:h-14" />
             </div>
-            <h1 className="mb-1 text-lg sm:text-xl font-bold tracking-tight text-white md:text-2xl lg:text-3xl animate-text-enter" style={{ animationDelay: "0.2s" }}>
+            <h1 className="mb-3 sm:mb-2 text-xl sm:text-xl md:text-2xl lg:text-3xl font-bold tracking-tight text-white leading-tight animate-text-enter" style={{ animationDelay: "0.2s" }}>
               Select Your <span className="text-white">Account Type</span>
             </h1>
-            <p className="mx-auto max-w-xl text-[10px] sm:text-xs text-slate-400 md:text-sm animate-text-enter" style={{ animationDelay: "0.4s" }}>
+            <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 animate-text-enter px-3 sm:px-2 leading-tight" style={{ animationDelay: "0.4s" }}>
               Choose your preferred trading markets. This will personalize your dashboard and optimize your trading experience.
             </p>
           </div>
 
           {/* Account Type Cards */}
-          <div className="grid gap-3 sm:gap-4 md:grid-cols-3 animate-text-enter mb-4 sm:mb-5 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5 animate-text-enter mb-4 sm:mb-6 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
             {accountTypes.map((type, index) => (
               <AccountTypeCard
                 key={type.value}
@@ -192,13 +192,13 @@ export default function AccountTypePage() {
 
           {/* Coming Soon Toast */}
           {showComingSoon && (
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
-              <div className="rounded-lg bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] px-6 py-3 shadow-2xl border border-[#3b82f6]/50 backdrop-blur-sm">
-                <div className="flex items-center gap-3">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="fixed top-3 sm:top-4 left-1/2 -translate-x-1/2 z-50 animate-fade-in mx-3 sm:mx-0">
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-r from-[#1d4ed8] to-[#3b82f6] px-4 sm:px-6 py-3 sm:py-3 shadow-2xl border border-[#3b82f6]/50 backdrop-blur-sm">
+                <div className="flex items-center gap-3 sm:gap-3">
+                  <svg className="h-5 w-5 sm:h-5 sm:w-5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p className="text-sm font-semibold text-white">Stocks trading coming soon!</p>
+                  <p className="text-xs sm:text-sm font-semibold text-white whitespace-nowrap">Stocks trading coming soon!</p>
                 </div>
               </div>
             </div>

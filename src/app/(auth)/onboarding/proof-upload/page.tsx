@@ -305,7 +305,7 @@ export default function ProofUploadPage() {
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
-              className="w-full rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[#fc4f02] transition-colors"
+              className="w-5/6 sm:w-full rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface] px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[#fc4f02] transition-colors"
             >
               <option value="id_card">National ID Card</option>
               <option value="passport">Passport</option>
