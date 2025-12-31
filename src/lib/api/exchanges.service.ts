@@ -461,6 +461,88 @@ export const exchangesService = {
       credentials: "include",
     });
   },
+
+  /**
+   * Get all user connections for current authenticated user
+   */
+  async getConnections(): Promise<any[]> {
+    try {
+      const response = await apiRequest<never, any>({
+        path: "/exchanges/my-connections",
+        method: "GET",
+        credentials: "include",
+      });
+      
+      // Handle different response structures
+      if (Array.isArray(response)) {
+        return response;
+      }
+      if (response?.data && Array.isArray(response.data)) {
+        return response.data;
+      }
+      if (response?.success && Array.isArray(response.data)) {
+        return response.data;
+      }
+      console.warn("Unexpected response format for getConnections:", response);
+      return [];
+    } catch (error: any) {
+      console.error("Failed to fetch connections:", error);
+      return [];
+    }
+  },
+
+  /**
+   * Update an exchange connection with new credentials
+   */
+  async updateConnection(
+    connectionId: string,
+    data: {
+      api_key: string;
+      api_secret: string;
+      password: string;
+      passphrase?: string;
+    }
+  ): Promise<any> {
+    return apiRequest<any, any>({
+      path: `/exchanges/connections/${connectionId}`,
+      method: "PUT",
+      body: data,
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Delete an exchange connection
+   */
+  async deleteConnection(connectionId: string): Promise<any> {
+    return apiRequest<never, any>({
+      path: `/exchanges/connections/${connectionId}`,
+      method: "DELETE",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Verify an exchange account with provided credentials
+   */
+  async verifyExchangeAccount(
+    exchangeName: string,
+    apiKey: string,
+    apiSecret: string,
+    passphrase?: string
+  ): Promise<any> {
+    return apiRequest<any, any>({
+      path: "/exchanges/verify-account",
+      method: "POST",
+      body: {
+        exchange_name: exchangeName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+        ...(passphrase && { passphrase }),
+      },
+      credentials: "include",
+    });
+  },
 };
 
 export interface OrderBook {
