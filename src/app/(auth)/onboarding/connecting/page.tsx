@@ -78,6 +78,16 @@ export default function ConnectingPage() {
             setTimeout(() => {
               router.push("/dashboard");
             }, 1000);
+          } else if (savedAccountType === "stocks" && (exchange === "ibkr" || exchange === "alpaca")) {
+            // For stocks-only account, go to stocks dashboard
+            setTimeout(() => {
+              router.push("/stocks-dashboard");
+            }, 1000);
+          } else if (savedAccountType === "crypto" && (exchange === "binance" || exchange === "bybit")) {
+            // For crypto-only account, go to crypto dashboard
+            setTimeout(() => {
+              router.push("/dashboard");
+            }, 1000);
           }
         } else {
           // Invalid API keys
@@ -214,7 +224,18 @@ export default function ConnectingPage() {
   };
 
   const handleGoToDashboard = () => {
-    router.push("/dashboard");
+    // Determine which dashboard to route to based on account type and exchange
+    if (accountType === "crypto" || selectedExchange === "binance" || selectedExchange === "bybit") {
+      router.push("/dashboard");
+    } else if (accountType === "stocks" || selectedExchange === "ibkr" || selectedExchange === "alpaca") {
+      router.push("/stocks-dashboard");
+    } else if (accountType === "both") {
+      // For "both", default to main dashboard
+      router.push("/dashboard");
+    } else {
+      // Fallback
+      router.push("/dashboard");
+    }
   };
 
   const handleConnectStocksAccount = () => {

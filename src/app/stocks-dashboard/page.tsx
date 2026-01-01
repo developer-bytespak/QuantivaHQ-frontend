@@ -1,7 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useStocksMarket, useStocksSectors } from "@/hooks/useStocksMarket";
+import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
+import {
+  formatMarketCap,
+  formatPrice,
+  formatPercent,
+  formatVolume,
+  formatTimeAgo,
+  getChangeColorClass,
+} from "@/lib/utils/format";
+import { MarketTable } from "@/components/market/MarketTable";
 
 interface Activity {
   id: number;
@@ -134,6 +145,73 @@ export default function StocksDashboardPage() {
   const [showHoldingOverlay, setShowHoldingOverlay] = useState(false);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
 
+  // Connection and dashboard data state
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
+
+  // Fetch active connection from backend
+  const fetchActiveConnection = useCallback(async () => {
+    try {
+      const response = await exchangesService.getActiveConnection();
+      setConnectionId(response.data.connection_id);
+      return response.data.connection_id;
+    } catch (err: any) {
+      if (err?.status !== 401 && err?.statusCode !== 401) {
+        console.error("Failed to fetch active connection:", err);
+      }
+      setProfileError("No active connection found.");
+      setIsLoadingProfile(false);
+      return null;
+    }
+  }, []);
+
+  // Fetch dashboard/profile data
+  const fetchDashboardData = useCallback(async (connId: string) => {
+    try {
+      setIsLoadingProfile(true);
+      const response = await exchangesService.getDashboard(connId);
+      setDashboardData(response.data);
+    } catch (err: any) {
+      console.error("Failed to fetch dashboard data:", err);
+      setProfileError(err.message || "Failed to load profile data.");
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  }, []);
+
+  // Initial load: fetch connection and profile data
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    
+    const initialize = async () => {
+      hasInitialized.current = true;
+      const connId = await fetchActiveConnection();
+      if (connId) {
+        await fetchDashboardData(connId);
+      }
+    };
+    
+    initialize();
+  }, [fetchActiveConnection, fetchDashboardData]);
+
+  // Fetch market data for S&P 500 stocks
+  const {
+    data: marketStocks,
+    loading: marketLoading,
+    error: marketError,
+    warnings: marketWarnings,
+    timestamp: marketTimestamp,
+    refresh: refreshMarket,
+    nextRefreshIn,
+  } = useStocksMarket({
+    limit: 50, // Show top 50 stocks
+    autoRefresh: true,
+    refreshInterval: 5 * 60 * 1000, // 5 minutes
+  });
+
   // Holding data for the card on dashboard
   const dashboardHolding: Holding = {
     symbol: "AAPL",
@@ -162,26 +240,38 @@ export default function StocksDashboardPage() {
               {/* Total Portfolio Value Inner Box */}
               <div className="rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <p className="mb-2 text-xs text-slate-400">Total Portfolio Value</p>
-                <p className="mb-2 text-2xl font-bold text-white">$248,340.52</p>
+                <p className="mb-2 text-2xl font-bold text-white">
+                  {isLoadingProfile ? "Loading..." : `$${dashboardData?.portfolio?.totalValue?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`}
+                </p>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-green-400">+$3,142.10</span>
-                  <span className="text-sm text-green-400">(+1.28% today)</span>
+                  <span className={`text-sm font-medium ${(dashboardData?.portfolio?.totalPnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {(dashboardData?.portfolio?.totalPnl || 0) >= 0 ? '+' : ''}${Math.abs(dashboardData?.portfolio?.totalPnl || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  <span className={`text-sm ${(dashboardData?.portfolio?.pnlPercent || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    ({(dashboardData?.portfolio?.pnlPercent || 0) >= 0 ? '+' : ''}{(dashboardData?.portfolio?.pnlPercent || 0).toFixed(2)}% today)
+                  </span>
                 </div>
               </div>
 
               {/* Asset Mix Inner Box */}
               <div className="rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4">
                 <p className="mb-2 text-xs text-slate-400">Asset Mix</p>
-                <p className="mb-2 text-2xl font-bold text-white">42 positions</p>
+                <p className="mb-2 text-2xl font-bold text-white">
+                  {isLoadingProfile ? "Loading..." : `${dashboardData?.positions?.length || 0} positions`}
+                </p>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-slate-300">8 sectors</span>
+                  <span className="text-sm font-medium text-slate-300">
+                    {dashboardData?.positions?.length ? `${new Set(dashboardData.positions.map((p: any) => p.sector)).size} sectors` : "No positions"}
+                  </span>
                 </div>
-                <div className="mt-2 flex gap-1">
-                  <div className="h-2 flex-1 rounded-full bg-blue-500"></div>
-                  <div className="h-2 flex-1 rounded-full bg-green-500"></div>
-                  <div className="h-2 flex-1 rounded-full bg-orange-500"></div>
-                  <div className="h-2 flex-1 rounded-full bg-purple-500"></div>
-                </div>
+                {(dashboardData?.positions?.length ?? 0) > 0 && (
+                  <div className="mt-2 flex gap-1">
+                    <div className="h-2 flex-1 rounded-full bg-blue-500"></div>
+                    <div className="h-2 flex-1 rounded-full bg-green-500"></div>
+                    <div className="h-2 flex-1 rounded-full bg-orange-500"></div>
+                    <div className="h-2 flex-1 rounded-full bg-purple-500"></div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -201,52 +291,85 @@ export default function StocksDashboardPage() {
                 </button>
               </div>
 
-              {/* Holding Card */}
-              <div
-                onClick={() => {
-                  setSelectedHolding(dashboardHolding);
-                  setShowHoldingOverlay(true);
-                }}
-                className="flex-1 rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur cursor-pointer transition-all duration-300 hover:scale-[1.02]"
-              >
-                <div className="flex flex-col h-full justify-between">
-                  <div className="flex items-center justify-between pb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20 text-base font-semibold text-white">
-                        A
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">AAPL</h3>
-                        <p className="text-sm text-slate-400">Apple Inc.</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-base font-semibold text-white">$182.45</p>
-                      <p className="text-sm font-medium text-green-400">+0.62%</p>
-                    </div>
+              {/* Holding Card or Empty State */}
+              {isLoadingProfile ? (
+                <div className="flex-1 rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-slate-400">Loading holdings...</p>
                   </div>
-                  
-                  <div className="relative grid grid-cols-2 gap-x-6 gap-y-6 pt-6">
-                    <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-slate-400">Quantity</p>
-                      <p className="text-xl font-semibold text-white">150</p>
+                </div>
+              ) : dashboardData?.positions && dashboardData.positions.length > 0 ? (
+                <div
+                  onClick={() => {
+                    const firstPosition = dashboardData.positions[0];
+                    setSelectedHolding({
+                      symbol: firstPosition.symbol,
+                      name: firstPosition.symbol,
+                      quantity: firstPosition.quantity,
+                      avgCost: firstPosition.entryPrice,
+                      currentPrice: firstPosition.currentPrice,
+                      marketValue: firstPosition.quantity * firstPosition.currentPrice,
+                      pl: firstPosition.unrealizedPnl,
+                      plPercent: firstPosition.pnlPercent,
+                      dayChange: 0,
+                      weight: 0,
+                    });
+                    setShowHoldingOverlay(true);
+                  }}
+                  className="flex-1 rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur cursor-pointer transition-all duration-300 hover:scale-[1.02]"
+                >
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="flex items-center justify-between pb-6">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/20 text-base font-semibold text-white">
+                          {dashboardData.positions[0].symbol.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-white">{dashboardData.positions[0].symbol}</h3>
+                          <p className="text-sm text-slate-400">{dashboardData.positions[0].symbol}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-base font-semibold text-white">${dashboardData.positions[0].currentPrice.toFixed(2)}</p>
+                        <p className={`text-sm font-medium ${dashboardData.positions[0].pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {dashboardData.positions[0].pnlPercent >= 0 ? '+' : ''}{dashboardData.positions[0].pnlPercent.toFixed(2)}%
+                        </p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-slate-400">Market Value</p>
-                      <p className="text-xl font-semibold text-white">$27,367.50</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-slate-400">P/L</p>
-                      <p className="text-xl font-semibold text-green-400">+$2,092.50</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-slate-400">P/L %</p>
-                      <p className="text-xl font-semibold text-green-400">+8.20%</p>
+                    
+                    <div className="relative grid grid-cols-2 gap-x-6 gap-y-6 pt-6">
+                      <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-400">Quantity</p>
+                        <p className="text-xl font-semibold text-white">{dashboardData.positions[0].quantity}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-400">Market Value</p>
+                        <p className="text-xl font-semibold text-white">${(dashboardData.positions[0].quantity * dashboardData.positions[0].currentPrice).toFixed(2)}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-400">P/L</p>
+                        <p className={`text-xl font-semibold ${dashboardData.positions[0].unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {dashboardData.positions[0].unrealizedPnl >= 0 ? '+' : ''}${Math.abs(dashboardData.positions[0].unrealizedPnl).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-slate-400">P/L %</p>
+                        <p className={`text-xl font-semibold ${dashboardData.positions[0].pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {dashboardData.positions[0].pnlPercent >= 0 ? '+' : ''}{dashboardData.positions[0].pnlPercent.toFixed(2)}%
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex-1 rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <p className="text-lg font-semibold text-white mb-2">No Holdings Yet</p>
+                    <p className="text-sm text-slate-400">Start investing to see your positions here</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Strategy Allocation and Buying Power */}
@@ -266,8 +389,12 @@ export default function StocksDashboardPage() {
                 {/* Buying Power */}
                 <div className="flex-1 rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
                   <h3 className="mb-2 text-sm font-semibold text-slate-400">Buying Power</h3>
-                  <p className="mb-1 text-2xl font-bold text-white">$37,845.00</p>
-                  <p className="mb-4 text-xs text-slate-400">Margin: $75,000 available</p>
+                  <p className="mb-1 text-2xl font-bold text-white">
+                    {isLoadingProfile ? "Loading..." : `$${(dashboardData?.balance?.totalValueUSD || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  </p>
+                  <p className="mb-4 text-xs text-slate-400">
+                    {dashboardData?.balance?.assets?.length ? `${dashboardData.balance.assets.length} asset${dashboardData.balance.assets.length > 1 ? 's' : ''}` : "No cash balance"}
+                  </p>
                   <button className="w-full rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-semibold text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#fc4f02]/30">
                     Deposit Funds
                   </button>
@@ -330,7 +457,14 @@ export default function StocksDashboardPage() {
             <div className="relative p-6 pb-4">
               <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Holdings & Market</h2>
+                  {activeTab === "market" && nextRefreshIn && (
+                    <p className="text-xs text-slate-400 mt-1">
+                      Next refresh in {Math.floor(nextRefreshIn / 1000 / 60)}m {Math.floor((nextRefreshIn / 1000) % 60)}s
+                    </p>
+                  )}
+                </div>
                 <div className="flex gap-2 rounded-lg bg-[--color-surface]/60 p-1">
                   <button
                     onClick={() => setActiveTab("holdings")}
@@ -348,59 +482,72 @@ export default function StocksDashboardPage() {
                       : "text-slate-400 hover:text-white"
                       }`}
                   >
-                    Market
+                    S&P 500 Market
                   </button>
                 </div>
               </div>
             </div>
-            <div className="overflow-x-auto p-6">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-[--color-border]">
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Symbol</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Quantity</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Current Price</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Market Value</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">P/L</th>
-                    <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Day Change</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[--color-border]">
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <td className="py-3 text-sm font-medium text-white">AAPL</td>
-                    <td className="py-3 text-sm text-slate-300">150</td>
-                    <td className="py-3 text-sm text-slate-300">$182.45</td>
-                    <td className="py-3 text-sm text-slate-300">$27,367.50</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+8.20%</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+0.62%</td>
-                  </tr>
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <td className="py-3 text-sm font-medium text-white">MSFT</td>
-                    <td className="py-3 text-sm text-slate-300">120</td>
-                    <td className="py-3 text-sm text-slate-300">$203.64</td>
-                    <td className="py-3 text-sm text-slate-300">$24,436.80</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+4.27%</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+0.45%</td>
-                  </tr>
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <td className="py-3 text-sm font-medium text-white">NVDA</td>
-                    <td className="py-3 text-sm text-slate-300">80</td>
-                    <td className="py-3 text-sm text-slate-300">$254.86</td>
-                    <td className="py-3 text-sm text-slate-300">$20,388.80</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+3.77%</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+1.23%</td>
-                  </tr>
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <td className="py-3 text-sm font-medium text-white">GOOGL</td>
-                    <td className="py-3 text-sm text-slate-300">140</td>
-                    <td className="py-3 text-sm text-slate-300">$122.93</td>
-                    <td className="py-3 text-sm text-slate-300">$17,210.20</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+2.02%</td>
-                    <td className="py-3 text-sm font-medium text-green-400">+0.28%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            
+            {/* Holdings Tab */}
+            {activeTab === "holdings" && (
+              <div className="overflow-x-auto p-6">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-[--color-border]">
+                      <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Symbol</th>
+                      <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Quantity</th>
+                      <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Current Price</th>
+                      <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Market Value</th>
+                      <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">P/L</th>
+                      <th className="pb-3 text-left text-xs font-medium uppercase text-slate-400">Day Change</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[--color-border]">
+                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                      <td className="py-3 text-sm font-medium text-white">AAPL</td>
+                      <td className="py-3 text-sm text-slate-300">150</td>
+                      <td className="py-3 text-sm text-slate-300">$182.45</td>
+                      <td className="py-3 text-sm text-slate-300">$27,367.50</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+8.20%</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+0.62%</td>
+                    </tr>
+                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                      <td className="py-3 text-sm font-medium text-white">MSFT</td>
+                      <td className="py-3 text-sm text-slate-300">120</td>
+                      <td className="py-3 text-sm text-slate-300">$203.64</td>
+                      <td className="py-3 text-sm text-slate-300">$24,436.80</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+4.27%</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+0.45%</td>
+                    </tr>
+                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                      <td className="py-3 text-sm font-medium text-white">NVDA</td>
+                      <td className="py-3 text-sm text-slate-300">80</td>
+                      <td className="py-3 text-sm text-slate-300">$254.86</td>
+                      <td className="py-3 text-sm text-slate-300">$20,388.80</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+3.77%</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+1.23%</td>
+                    </tr>
+                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                      <td className="py-3 text-sm font-medium text-white">GOOGL</td>
+                      <td className="py-3 text-sm text-slate-300">140</td>
+                      <td className="py-3 text-sm text-slate-300">$122.93</td>
+                      <td className="py-3 text-sm text-slate-300">$17,210.20</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+2.02%</td>
+                      <td className="py-3 text-sm font-medium text-green-400">+0.28%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Market Tab - S&P 500 Stocks */}
+            {activeTab === "market" && (
+              <MarketTable 
+                stocks={marketStocks} 
+                loading={marketLoading} 
+                error={marketError} 
+              />
+            )}
           </div>
         </div>
 
