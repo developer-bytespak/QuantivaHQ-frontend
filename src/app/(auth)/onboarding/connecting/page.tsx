@@ -15,7 +15,7 @@ type ErrorType =
 
 export default function ConnectingPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | "alpaca" | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "success" | "error">("connecting");
   const [errorType, setErrorType] = useState<ErrorType>(null);
   const [accountType, setAccountType] = useState<"crypto" | "stocks" | "both" | null>(null);
@@ -23,8 +23,8 @@ export default function ConnectingPage() {
   useEffect(() => {
     // Get selected exchange from localStorage
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
-    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr") {
-      setSelectedExchange(exchange);
+    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr" || exchange === "alpaca") {
+      setSelectedExchange(exchange as any);
     } else {
       setSelectedExchange("binance");
     }
@@ -55,13 +55,36 @@ export default function ConnectingPage() {
           // These are just UI flags, not sensitive data - connection status is in backend
           if (exchange === "binance" || exchange === "bybit") {
             sessionStorage.setItem("quantivahq_crypto_connected", "true");
-          } else if (exchange === "ibkr") {
+          } else if (exchange === "ibkr" || exchange === "alpaca") {
             sessionStorage.setItem("quantivahq_stocks_connected", "true");
           }
 
+          // Fetch authoritative active connection from backend so UI shows correct exchange name
+          try {
+            const active = await exchangesService.getActiveConnection();
+            if (active?.success && active.data?.exchange?.name) {
+              const name = active.data.exchange.name.toLowerCase();
+              if (name === 'binance' || name === 'bybit' || name === 'ibkr' || name === 'alpaca') {
+                setSelectedExchange(name as any);
+              }
+            }
+          } catch (err) {
+            console.warn('Failed to fetch active connection after verify:', err);
+          }
+
           // If account type is "both" and stocks is connected, navigate to crypto dashboard
-          if (savedAccountType === "both" && exchange === "ibkr") {
+          if (savedAccountType === "both" && (exchange === "ibkr" || exchange === "alpaca")) {
             // Small delay before navigation to show success message
+            setTimeout(() => {
+              router.push("/dashboard");
+            }, 1000);
+          } else if (savedAccountType === "stocks" && (exchange === "ibkr" || exchange === "alpaca")) {
+            // For stocks-only account, go to stocks dashboard
+            setTimeout(() => {
+              router.push("/stocks-dashboard");
+            }, 1000);
+          } else if (savedAccountType === "crypto" && (exchange === "binance" || exchange === "bybit")) {
+            // For crypto-only account, go to crypto dashboard
             setTimeout(() => {
               router.push("/dashboard");
             }, 1000);
@@ -139,6 +162,20 @@ export default function ConnectingPage() {
         </div>
       ),
     },
+    alpaca: {
+      name: "Alpaca",
+      logo: (
+        <div className="flex h-20 w-20 items-center justify-center p-2">
+          <Image
+            src="/alpaca_logo.png"
+            alt="Alpaca"
+            width={64}
+            height={64}
+            className="h-full w-full object-contain"
+          />
+        </div>
+      ),
+    },
   };
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
   const exchangeName = selectedExchange ? exchangeInfo[selectedExchange].name : "Binance";
@@ -187,7 +224,18 @@ export default function ConnectingPage() {
   };
 
   const handleGoToDashboard = () => {
-    router.push("/dashboard");
+    // Determine which dashboard to route to based on account type and exchange
+    if (accountType === "crypto" || selectedExchange === "binance" || selectedExchange === "bybit") {
+      router.push("/dashboard");
+    } else if (accountType === "stocks" || selectedExchange === "ibkr" || selectedExchange === "alpaca") {
+      router.push("/stocks-dashboard");
+    } else if (accountType === "both") {
+      // For "both", default to main dashboard
+      router.push("/dashboard");
+    } else {
+      // Fallback
+      router.push("/dashboard");
+    }
   };
 
   const handleConnectStocksAccount = () => {

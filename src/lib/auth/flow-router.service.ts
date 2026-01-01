@@ -13,7 +13,8 @@ export type FlowRoute =
   | "/onboarding/proof-upload"
   | "/onboarding/verification-status"
   | "/onboarding/account-type"
-  | "/dashboard";
+  | "/dashboard"
+  | "/stocks-dashboard";
 
 export interface FlowCheckResult {
   route: FlowRoute;
@@ -135,12 +136,18 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
 
     // Step 2: Check exchange connection (only if KYC is approved)
     let hasActiveConnection = false;
+    let exchangeType: "crypto" | "stocks" | null = null;
     try {
       const connectionResponse = await exchangesService.getActiveConnection();
       hasActiveConnection =
         connectionResponse.success &&
         connectionResponse.data !== null &&
         connectionResponse.data.status === "active";
+      
+      // Get exchange type from the active connection
+      if (hasActiveConnection && connectionResponse.data?.exchange) {
+        exchangeType = connectionResponse.data.exchange.type;
+      }
     } catch (connectionError) {
       // No active connection found
       console.log("No active exchange connection found");
@@ -154,10 +161,18 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     }
 
     // All checks passed - user is fully onboarded
-    return {
-      route: "/dashboard",
-      reason: "User is fully onboarded with KYC approved and exchange connected",
-    };
+    // Route to appropriate dashboard based on exchange type
+    if (exchangeType === "stocks") {
+      return {
+        route: "/stocks-dashboard",
+        reason: "User is fully onboarded with stocks exchange connected",
+      };
+    } else {
+      return {
+        route: "/dashboard",
+        reason: "User is fully onboarded with crypto exchange connected",
+      };
+    }
   } catch (error: any) {
     // If checks fail, default to proof-upload (KYC start)
     console.error("[FlowRouter] Could not verify user status:", error);

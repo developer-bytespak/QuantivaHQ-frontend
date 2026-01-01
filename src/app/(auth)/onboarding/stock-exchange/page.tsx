@@ -53,7 +53,7 @@ export default function StockExchangePage() {
     const router = useRouter();
     const [showFAQModal, setShowFAQModal] = useState(false);
 
-    const handleExchangeSelect = (exchange: "ibkr") => {
+    const handleExchangeSelect = (exchange: "alpaca") => {
         // Get existing selected exchanges
         const existingExchanges = JSON.parse(
             localStorage.getItem("quantivahq_selected_exchanges") || "[]"
@@ -61,7 +61,7 @@ export default function StockExchangePage() {
         
         // Add exchange if not already selected
         const exchangeData = {
-            name: "Interactive Brokers",
+            name: "Alpaca",
             type: "stocks",
             code: exchange,
         };
@@ -79,21 +79,21 @@ export default function StockExchangePage() {
 
     const exchanges = [
         {
-            name: "Interactive Brokers",
-            description: "Global leader in online trading. Access stocks, options, futures, currencies, bonds and funds on over 150 markets.",
-            gradient: "from-[#ce2029] to-[#e63946]", // IBKR red-ish colors
+            name: "Alpaca",
+            description: "Commission-free stock trading API built for developers and algo traders. Access US stocks and crypto with simple API integration.",
+            gradient: "from-[#fcba03] to-[#fda300]", // Alpaca yellow/gold colors
             logo: (
                 <div className="flex h-full w-full items-center justify-center p-2">
                     <Image
-                        src="/IBKR_logo.png"
-                        alt="Interactive Brokers"
+                        src="/alpaca_logo.png"
+                        alt="Alpaca"
                         width={64}
                         height={64}
                         className="h-full w-full object-contain"
                     />
                 </div>
             ),
-            onSelect: () => handleExchangeSelect("ibkr"),
+            onSelect: () => handleExchangeSelect("alpaca"),
         },
     ];
 
