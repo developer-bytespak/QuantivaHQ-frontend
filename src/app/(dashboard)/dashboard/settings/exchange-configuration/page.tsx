@@ -18,6 +18,17 @@ interface ExchangeConnection {
   verified: boolean;
 }
 
+const getExchangeIcon = (exchangeName: string) => {
+  switch (exchangeName?.toLowerCase()) {
+    case "binance":
+      return "🔷";
+    case "bybit":
+      return "📊";
+    default:
+      return "💱";
+  }
+};
+
 export default function ExchangeConfigurationPage() {
   const { notification, showNotification, hideNotification } = useNotification();
   const [connections, setConnections] = useState<ExchangeConnection[]>([]);
@@ -174,119 +185,176 @@ export default function ExchangeConfigurationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-2 sm:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <SettingsBackButton />
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
-            Exchange Configuration
-          </h1>
-        </div>
+    <div className="space-y-4 sm:space-y-6">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={hideNotification}
+        />
+      )}
+      <ConfirmationDialog
+        isOpen={deleteConfirmation.isOpen}
+        title="Delete Exchange Connection?"
+        message="Are you sure you want to delete this exchange connection? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirmation({ isOpen: false, connectionId: null })}
+        type="danger"
+      />
+      <SettingsBackButton />
+      
+      {/* Connection Details Overlay */}
+      {selectedConnection && mounted && typeof window !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedConnection(null)}
+        >
+          <div
+            className="relative mx-4 w-full max-w-2xl rounded-lg sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-2xl font-bold text-white">{selectedConnection.exchange_name}</h2>
+                  {selectedConnection.verified && (
+                    <span className="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30">
+                      Verified
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedConnection(null)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white self-start sm:self-auto"
+                aria-label="Close"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-        {/* Description */}
-        <p className="text-slate-300 text-sm sm:text-base mb-6 sm:mb-8">
-          Manage your exchange account connections. You can update your API credentials or add new exchange accounts.
-        </p>
+            {/* Content */}
+            <div className="space-y-4 sm:space-y-6">
+              {/* Status Details Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Status</p>
+                  <p className="text-base sm:text-lg font-semibold text-white capitalize">{selectedConnection.status}</p>
+                </div>
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Account Type</p>
+                  <p className="text-base sm:text-lg font-semibold text-white">{selectedConnection.account_type || 'Standard'}</p>
+                </div>
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Connected</p>
+                  <p className="text-base sm:text-lg font-semibold text-white">{new Date(selectedConnection.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                </div>
+                <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                  <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Connection ID</p>
+                  <p className="text-base sm:text-lg font-semibold text-white font-mono text-xs truncate">{selectedConnection.connection_id.substring(0, 12)}...</p>
+                </div>
+              </div>
 
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin">
-              <svg className="w-8 h-8 text-[#fc4f02]" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
+              {/* Actions */}
+              <div className="pt-4 sm:pt-6 border-t border-[--color-border]/50 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  onClick={() => {
+                    handleSelectConnection(selectedConnection);
+                  }}
+                  className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
+                >
+                  Update Credentials
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUpdateForm(false);
+                    handleDeleteConnection(selectedConnection.connection_id);
+                  }}
+                  className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm sm:text-base hover:bg-red-500/30 transition-all duration-200 font-medium"
+                >
+                  Delete Connection
+                </button>
+              </div>
             </div>
           </div>
+        </div>,
+        document.body
+      )}
+
+      <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h1 className="text-xl sm:text-3xl font-bold text-white">Exchange Connections</h1>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="text-center py-8 sm:py-12 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl">
+            <div className="animate-spin w-8 h-8 mx-auto mb-3">
+              <svg className="w-full h-full text-[#fc4f02]" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+            <p className="text-slate-400 text-base sm:text-lg">Loading connections...</p>
+          </div>
         ) : connections.length === 0 ? (
-          <div className="text-center py-12">
-            <svg className="w-16 h-16 mx-auto text-slate-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
+          <div className="text-center py-8 sm:py-12 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl">
+            <svg className="w-12 sm:w-16 h-12 sm:h-16 text-slate-500 mx-auto mb-3 sm:mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <p className="text-slate-400 text-sm sm:text-base">
-              No exchange connections found. Add one from your profile settings.
-            </p>
+            <p className="text-slate-400 text-base sm:text-lg">No exchange connections yet</p>
+            <p className="text-slate-500 text-xs sm:text-sm mt-2">Connect your exchange account to get started</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4">
             {connections.map((connection) => (
               <div
                 key={connection.connection_id}
-                className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-white/20 transition-all duration-300"
+                onClick={() => {
+                  setSelectedConnection(connection);
+                  setShowUpdateForm(false);
+                }}
+                className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6 hover:border-[#fc4f02]/30 transition-all duration-200 cursor-pointer"
               >
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
-                      {connection.exchange_name || "Unknown Exchange"}
-                    </h3>
-                    <div className="flex flex-wrap gap-3">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(
-                          connection.status
-                        )}`}
-                      >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <h3 className="text-lg sm:text-xl font-semibold text-white truncate">{connection.exchange_name}</h3>
+                      {connection.verified && (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30 flex-shrink-0">
+                          Verified
+                        </span>
+                      )}
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 border ${getStatusColor(connection.status)}`}>
                         {connection.status.charAt(0).toUpperCase() + connection.status.slice(1)}
                       </span>
-                      {connection.account_type && (
-                        <span className="inline-block px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-900/30 border border-blue-500/30 text-blue-400">
-                          {connection.account_type}
-                        </span>
-                      )}
-                      {connection.verified && (
-                        <span className="inline-block px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-green-900/30 border border-green-500/30 text-green-400">
-                          ✓ Verified
-                        </span>
-                      )}
+                    </div>
+                    <div className="mt-3 sm:mt-4">
+                      <p className="text-xs sm:text-sm text-slate-400 mb-1">Status</p>
+                      <p className="text-sm sm:text-base text-white font-medium capitalize">{connection.status}</p>
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleSelectConnection(connection)}
-                      className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-[#fc4f02]/20 hover:bg-[#fc4f02]/30 border border-[#fc4f02]/30 text-[#fc4f02] text-xs sm:text-sm font-medium transition-all duration-200"
-                    >
-                      Update
-                    </button>
-                    <button
-                      onClick={() => handleDeleteConnection(connection.connection_id)}
-                      className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-red-900/20 hover:bg-red-900/30 border border-red-500/30 text-red-400 text-xs sm:text-sm font-medium transition-all duration-200"
-                    >
-                      Delete
-                    </button>
+                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                    <svg className="w-4 sm:w-5 h-4 sm:h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
-                </div>
-
-                {/* Connection Info */}
-                <div className="text-xs sm:text-sm text-slate-400 space-y-1">
-                  <p>
-                    Created:{" "}
-                    {new Date(connection.created_at).toLocaleDateString(undefined, {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </p>
-                  {connection.updated_at && (
-                    <p>
-                      Updated:{" "}
-                      {new Date(connection.updated_at).toLocaleDateString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  )}
                 </div>
               </div>
             ))}
@@ -297,175 +365,161 @@ export default function ExchangeConfigurationPage() {
       {/* Update Form Modal */}
       {showUpdateForm && selectedConnection && mounted && typeof window !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 p-2 sm:p-4">
-            <div className="relative w-full max-w-lg bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-lg sm:rounded-2xl border border-[#fc4f02]/20 shadow-[0_0_50px_rgba(252,79,2,0.15)] overflow-hidden animate-in zoom-in-95 duration-200">
-              <div className="p-4 sm:p-6">
-                {/* Close Button */}
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-2xl overflow-hidden">
+              {/* Modal Header */}
+              <div className="border-b border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-5 sm:p-6 flex items-start justify-between">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">Update Credentials</h2>
+                  <p className="text-sm text-slate-400 mt-1">{selectedConnection.exchange_name}</p>
+                </div>
                 <button
                   onClick={() => {
                     setShowUpdateForm(false);
                     setSelectedConnection(null);
                   }}
-                  className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+                  className="text-slate-400 hover:text-white transition-colors flex-shrink-0"
                   aria-label="Close"
                 >
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
+              </div>
 
-                {/* Title */}
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-6">
-                  Update {selectedConnection.exchange_name} Connection
-                </h2>
-
-                {/* Warning */}
-                <div className="bg-[#fc4f02]/10 border border-[#fc4f02]/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
-                  <p className="text-[#fc4f02] text-xs sm:text-sm font-semibold">⚠️ Important</p>
-                  <p className="text-slate-300 text-xs sm:text-sm mt-1">
-                    Your new API credentials will be encrypted and verified before updating.
+              {/* Modal Body */}
+              <div className="p-5 sm:p-6 space-y-4 sm:space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
+                {/* Warning Box */}
+                <div className="bg-[#fc4f02]/10 border border-[#fc4f02]/30 rounded-lg p-3 sm:p-4">
+                  <p className="text-[#fc4f02] text-xs sm:text-sm font-semibold flex items-center gap-2">
+                    <span>⚠️</span> Security Notice
+                  </p>
+                  <p className="text-slate-300 text-xs sm:text-sm mt-2">
+                    Credentials are AES-256 encrypted. Your password is required for verification.
                   </p>
                 </div>
 
-                {/* Form */}
-                <div className="space-y-4 sm:space-y-5">
-                  {/* API Key */}
-                  <div>
-                    <label className="block text-white text-xs sm:text-sm font-semibold mb-2">
-                      API Key *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.api_key}
-                      onChange={(e) => {
-                        setFormData({ ...formData, api_key: e.target.value });
-                        if (formErrors.api_key) setFormErrors({ ...formErrors, api_key: "" });
-                      }}
-                      placeholder="Enter your API key"
-                      className={`w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-white/20 backdrop-blur-sm border ${
-                        formErrors.api_key ? "border-red-400" : "border-white/30"
-                      } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-xs sm:text-sm`}
-                    />
-                    {formErrors.api_key && (
-                      <p className="text-red-400 text-xs mt-1 font-semibold">{formErrors.api_key}</p>
-                    )}
-                  </div>
+                {/* API Key */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    API Key
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.api_key}
+                    onChange={(e) => {
+                      setFormData({ ...formData, api_key: e.target.value });
+                      if (formErrors.api_key) setFormErrors({ ...formErrors, api_key: "" });
+                    }}
+                    placeholder="Enter new API key"
+                    className={`w-full px-4 py-3 rounded-lg bg-[--color-surface-alt] border ${
+                      formErrors.api_key ? "border-red-500/50" : "border-[--color-border]"
+                    } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
+                  />
+                  {formErrors.api_key && (
+                    <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_key}</p>
+                  )}
+                </div>
 
-                  {/* API Secret */}
+                {/* API Secret */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    API Secret
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.api_secret}
+                    onChange={(e) => {
+                      setFormData({ ...formData, api_secret: e.target.value });
+                      if (formErrors.api_secret) setFormErrors({ ...formErrors, api_secret: "" });
+                    }}
+                    placeholder="Enter new API secret"
+                    className={`w-full px-4 py-3 rounded-lg bg-[--color-surface-alt] border ${
+                      formErrors.api_secret ? "border-red-500/50" : "border-[--color-border]"
+                    } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
+                  />
+                  {formErrors.api_secret && (
+                    <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_secret}</p>
+                  )}
+                </div>
+
+                {/* Passphrase for Bybit */}
+                {selectedConnection.exchange_name?.toLowerCase() === "bybit" && (
                   <div>
-                    <label className="block text-white text-xs sm:text-sm font-semibold mb-2">
-                      API Secret *
+                    <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                      Passphrase (Optional)
                     </label>
                     <input
                       type="password"
-                      value={formData.api_secret}
-                      onChange={(e) => {
-                        setFormData({ ...formData, api_secret: e.target.value });
-                        if (formErrors.api_secret) setFormErrors({ ...formErrors, api_secret: "" });
-                      }}
-                      placeholder="Enter your API secret"
-                      className={`w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-white/20 backdrop-blur-sm border ${
-                        formErrors.api_secret ? "border-red-400" : "border-white/30"
-                      } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-xs sm:text-sm`}
+                      value={formData.passphrase}
+                      onChange={(e) => setFormData({ ...formData, passphrase: e.target.value })}
+                      placeholder="Bybit passphrase if required"
+                      className="w-full px-4 py-3 rounded-lg bg-[--color-surface-alt] border border-[--color-border] focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0"
                     />
-                    {formErrors.api_secret && (
-                      <p className="text-red-400 text-xs mt-1 font-semibold">{formErrors.api_secret}</p>
-                    )}
                   </div>
+                )}
 
-                  {/* Optional Passphrase */}
-                  {selectedConnection.exchange_name?.toLowerCase() === "bybit" && (
-                    <div>
-                      <label className="block text-white text-xs sm:text-sm font-semibold mb-2">
-                        Passphrase (Optional)
-                      </label>
-                      <input
-                        type="password"
-                        value={formData.passphrase}
-                        onChange={(e) => setFormData({ ...formData, passphrase: e.target.value })}
-                        placeholder="Enter passphrase if required"
-                        className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-xs sm:text-sm"
-                      />
-                    </div>
+                {/* Password Verification Box */}
+                <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg p-4">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    Your Password (Required)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => {
+                        setFormData({ ...formData, password: e.target.value });
+                        if (formErrors.password) setFormErrors({ ...formErrors, password: "" });
+                      }}
+                      placeholder="Enter your password"
+                      className={`w-full px-4 py-3 pr-10 rounded-lg bg-[--color-surface-alt] border ${
+                        formErrors.password ? "border-red-500/50" : "border-[--color-border]"
+                      } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                      aria-label="Toggle password visibility"
+                    >
+                      {showPassword ? (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  {formErrors.password && (
+                    <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.password}</p>
                   )}
-
-                  {/* Password Verification */}
-                  <div>
-                    <label className="block text-white text-xs sm:text-sm font-semibold mb-2">
-                      Your Password (for verification) *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={(e) => {
-                          setFormData({ ...formData, password: e.target.value });
-                          if (formErrors.password) setFormErrors({ ...formErrors, password: "" });
-                        }}
-                        placeholder="Enter your account password"
-                        className={`w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 rounded-lg bg-white/20 backdrop-blur-sm border ${
-                          formErrors.password ? "border-red-400" : "border-white/30"
-                        } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 text-xs sm:text-sm`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
-                        aria-label="Toggle password visibility"
-                      >
-                        {showPassword ? (
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z"
-                            />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                            />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-                    {formErrors.password && (
-                      <p className="text-red-400 text-xs mt-1 font-semibold">{formErrors.password}</p>
-                    )}
-                  </div>
                 </div>
+              </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 sm:gap-4 mt-6 sm:mt-8">
-                  <button
-                    onClick={() => {
-                      setShowUpdateForm(false);
-                      setSelectedConnection(null);
-                    }}
-                    disabled={isSubmitting}
-                    className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:bg-slate-700 disabled:opacity-50 text-white text-xs sm:text-sm font-semibold transition-all duration-200"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleUpdateConnection}
-                    disabled={isSubmitting}
-                    className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#FDA300] hover:shadow-lg hover:shadow-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-semibold transition-all duration-200"
-                  >
-                    {isSubmitting ? "Updating..." : "Update Connection"}
-                  </button>
-                </div>
+              {/* Modal Footer */}
+              <div className="border-t border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-5 sm:p-6 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowUpdateForm(false);
+                    setSelectedConnection(null);
+                  }}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-3 rounded-lg border border-[--color-border] bg-[--color-surface] hover:bg-[--color-surface-alt] disabled:opacity-50 text-white text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateConnection}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#FDA300] hover:shadow-lg hover:shadow-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all duration-200"
+                >
+                  {isSubmitting ? "Updating..." : "Update"}
+                </button>
               </div>
             </div>
           </div>,
