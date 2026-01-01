@@ -197,7 +197,7 @@ export default function StocksDashboardPage() {
     initialize();
   }, [fetchActiveConnection, fetchDashboardData]);
 
-  // Fetch market data for S&P 500 stocks
+  // Fetch market data for S&P 500 stocks (only when market tab is active)
   const {
     data: marketStocks,
     loading: marketLoading,
@@ -207,9 +207,10 @@ export default function StocksDashboardPage() {
     refresh: refreshMarket,
     nextRefreshIn,
   } = useStocksMarket({
-    limit: 50, // Show top 50 stocks
-    autoRefresh: true,
+    limit: 5, // Show top 5 stocks on dashboard
+    autoRefresh: activeTab === "market", // Only auto-refresh when market tab is active
     refreshInterval: 5 * 60 * 1000, // 5 minutes
+    enabled: activeTab === "market", // Only fetch when market tab is active
   });
 
   // Holding data for the card on dashboard
@@ -542,11 +543,23 @@ export default function StocksDashboardPage() {
 
             {/* Market Tab - S&P 500 Stocks */}
             {activeTab === "market" && (
-              <MarketTable 
-                stocks={marketStocks} 
-                loading={marketLoading} 
-                error={marketError} 
-              />
+              <div>
+                <MarketTable 
+                  stocks={marketStocks} 
+                  loading={marketLoading} 
+                  error={marketError} 
+                />
+                {marketStocks.length > 0 && (
+                  <div className="pt-4 text-center">
+                    <button
+                      onClick={() => router.push("/stocks-dashboard/market")}
+                      className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                    >
+                      View More
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

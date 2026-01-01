@@ -28,6 +28,7 @@ interface UseStocksMarketOptions {
   sector?: string;
   autoRefresh?: boolean;
   refreshInterval?: number; // in milliseconds
+  enabled?: boolean; // Control whether to fetch data
 }
 
 interface UseStocksMarketResult {
@@ -52,16 +53,21 @@ export function useStocksMarket(
     sector,
     autoRefresh = true,
     refreshInterval = 5 * 60 * 1000, // 5 minutes
+    enabled = true, // Default to enabled
   } = options;
 
   const [data, setData] = useState<MarketStock[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [timestamp, setTimestamp] = useState<string | null>(null);
   const [nextRefreshIn, setNextRefreshIn] = useState<number | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -102,16 +108,18 @@ export function useStocksMarket(
     } finally {
       setLoading(false);
     }
-  }, [limit, symbols, search, sector]);
+  }, [limit, symbols, search, sector, enabled]);
 
   // Initial fetch
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (enabled) {
+      fetchData();
+    }
+  }, [fetchData, enabled]);
 
   // Auto-refresh with countdown
   useEffect(() => {
-    if (!autoRefresh) {
+    if (!autoRefresh || !enabled) {
       return;
     }
 
