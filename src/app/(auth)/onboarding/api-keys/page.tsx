@@ -140,7 +140,7 @@ export default function ApiKeysPage() {
     setErrors({});
 
     try {
-      // Create connection via backend
+      // Create connection with the provided API credentials
       const response = await exchangesService.createConnection({
         exchange_id: exchangeId,
         api_key: apiKey.trim(),
@@ -158,8 +158,22 @@ export default function ApiKeysPage() {
       router.push("/onboarding/connecting");
     } catch (error: any) {
       console.error("Failed to create connection:", error);
+      
+      // Extract specific error message
+      let errorMessage = error.message || "Failed to create connection. Please check your API keys and try again.";
+      
+      if (error.message?.includes("Invalid API Key") || error.message?.includes("invalid")) {
+        errorMessage = "Invalid API Key. Please check and try again.";
+      } else if (error.message?.includes("permission") || error.message?.includes("Permission")) {
+        errorMessage = "Insufficient permissions. Please ensure your API key has trading permissions enabled.";
+      } else if (error.message?.includes("whitelist") || error.message?.includes("IP")) {
+        errorMessage = "IP address not whitelisted. Please add your IP to the exchange API key settings.";
+      } else if (error.message?.includes("rate") || error.message?.includes("429")) {
+        errorMessage = "Too many requests. Please wait a moment and try again.";
+      }
+      
       setErrors({
-        general: error.message || "Failed to create connection. Please check your API keys and try again.",
+        general: errorMessage,
       });
       setIsLoading(false);
     }
@@ -200,7 +214,51 @@ export default function ApiKeysPage() {
                   <svg className="h-5 w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
-                  <p className="text-sm text-red-200">{errors.general}</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-red-200 mb-1">Connection Failed</p>
+                    <p className="text-xs text-red-200 leading-relaxed">{errors.general}</p>
+                    
+                    {/* Show helpful tips based on error type */}
+                    {errors.general.includes("Invalid") && (
+                      <div className="mt-2 text-xs text-red-200/80">
+                        <p className="font-semibold mb-1">💡 Try these solutions:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          <li>Double-check your API Key and Secret Key for typos</li>
+                          <li>Make sure you copied the entire key without spaces</li>
+                          <li>Verify the key is from a valid {exchangeName} account</li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {errors.general.includes("permission") && (
+                      <div className="mt-2 text-xs text-red-200/80">
+                        <p className="font-semibold mb-1">💡 Try these solutions:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          <li>Check that "Spot Trading" or "Trading" is enabled for this API key</li>
+                          <li>Verify the key has "Can Read" and "Can Trade" permissions</li>
+                          <li>Re-create the API key with proper permissions</li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {errors.general.includes("IP") && (
+                      <div className="mt-2 text-xs text-red-200/80">
+                        <p className="font-semibold mb-1">💡 Try these solutions:</p>
+                        <ul className="list-disc list-inside space-y-0.5">
+                          <li>Go to your {exchangeName} API settings</li>
+                          <li>Add your current IP address to the IP Whitelist</li>
+                          <li>Or disable IP restriction (less secure)</li>
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {errors.general.includes("rate") && (
+                      <div className="mt-2 text-xs text-red-200/80">
+                        <p className="font-semibold mb-1">💡 Please wait and try again</p>
+                        <p>You've made too many requests. Wait a minute and try again.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

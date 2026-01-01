@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { SettingsBackButton } from "@/components/settings/settings-back-button";
 import { useNotification, Notification } from "@/components/common/notification";
@@ -30,12 +31,14 @@ const getExchangeIcon = (exchangeName: string) => {
 };
 
 export default function ExchangeConfigurationPage() {
+  const router = useRouter();
   const { notification, showNotification, hideNotification } = useNotification();
   const [connections, setConnections] = useState<ExchangeConnection[]>([]);
   const [selectedConnection, setSelectedConnection] = useState<ExchangeConnection | null>(null);
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [exchangeToggle, setExchangeToggle] = useState<"binance" | "bybit">("binance");
 
   // Form states
   const [formData, setFormData] = useState({
@@ -184,6 +187,15 @@ export default function ExchangeConfigurationPage() {
     }
   };
 
+  const handleExchangeSwitch = () => {
+    const newExchange = exchangeToggle === "binance" ? "bybit" : "binance";
+    setExchangeToggle(newExchange);
+    localStorage.setItem("quantivahq_selected_exchange", newExchange);
+    
+    // Navigate to onboarding to connect the selected exchange
+    router.push("/onboarding/crypto-exchange");
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {notification && (
@@ -300,6 +312,69 @@ export default function ExchangeConfigurationPage() {
               </svg>
             </div>
             <h1 className="text-xl sm:text-3xl font-bold text-white">Exchange Connections</h1>
+          </div>
+        </div>
+
+        {/* Exchange Switch Section */}
+        <div className="bg-gradient-to-br from-[#fc4f02]/10 to-[#fc4f02]/5 border border-[#fc4f02]/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Switch Exchange
+          </h2>
+          <p className="text-sm text-slate-400 mb-6">Toggle between Binance and Bybit to connect your preferred exchange</p>
+          
+          <div className="flex items-center justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg p-4 sm:p-5">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                {/* Binance Icon */}
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                  exchangeToggle === "binance" 
+                    ? "bg-[#f7931a] text-white" 
+                    : "bg-[#f7931a]/20 text-[#f7931a]"
+                }`}>
+                  <span className="text-lg font-bold">B</span>
+                </div>
+                <span className="text-sm font-medium text-white">Binance</span>
+              </div>
+
+              {/* Toggle Switch */}
+              <button
+                onClick={handleExchangeSwitch}
+                className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                  exchangeToggle === "bybit"
+                    ? "bg-gradient-to-r from-[#f0b90b] to-[#ffc53d]"
+                    : "bg-slate-700"
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                    exchangeToggle === "bybit" ? "translate-x-7 sm:translate-x-9" : "translate-x-1"
+                  }`}
+                />
+              </button>
+
+              {/* Bybit Icon */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-white">Bybit</span>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                  exchangeToggle === "bybit" 
+                    ? "bg-[#f0b90b] text-white" 
+                    : "bg-[#f0b90b]/20 text-[#f0b90b]"
+                }`}>
+                  <span className="text-lg font-bold">₿</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Connect Button */}
+            <button
+              onClick={handleExchangeSwitch}
+              className="ml-4 px-4 sm:px-5 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 whitespace-nowrap"
+            >
+              Connect
+            </button>
           </div>
         </div>
 
