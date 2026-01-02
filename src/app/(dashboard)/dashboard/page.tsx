@@ -173,7 +173,7 @@ export default function DashboardPage() {
       const response = await exchangesService.getActiveConnection();
       const connection = response.data;
       setConnectionId(connection.connection_id);
-      setActiveConnection(connection);
+      setActiveConnection(connection as Connection);
       setConnectionType(connection.exchange?.type || null);
       return connection.connection_id;
     } catch (err: any) {

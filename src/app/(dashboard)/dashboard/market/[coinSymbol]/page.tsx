@@ -175,8 +175,8 @@ export default function MarketDetailPage() {
     <div className="space-y-6 pb-8">
       <CoinDetailHeader
         coinSymbol={displaySymbol || symbol}
-        coinData={connectionType === "crypto" ? coinData : undefined}
-        stockData={connectionType === "stocks" ? stockData : undefined}
+        coinData={connectionType === "crypto" ? (coinData ?? undefined) : undefined}
+        stockData={connectionType === "stocks" ? (stockData ?? undefined) : undefined}
         connectionType={connectionType}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -446,7 +446,7 @@ export default function MarketDetailPage() {
       {activeTab === "Info" && (
         <InfoTab 
           coinSymbol={symbol}
-          stockData={connectionType === "stocks" ? stockData : undefined}
+          stockData={connectionType === "stocks" ? (stockData ?? undefined) : undefined}
           connectionType={connectionType}
         />
       )}

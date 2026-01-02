@@ -97,6 +97,20 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
     );
   }
 
+  const formatNumber = (num: number) => {
+    if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+    if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+    if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
+    return `$${num.toFixed(2)}`;
+  };
+
+  const formatSupply = (num: number) => {
+    if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
+    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+    if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
+    return num.toFixed(2);
+  };
+
   // Stocks rendering
   if (connectionType === "stocks" && stockData) {
     const stockDescription = stockData.description || `${stockData.name} is a ${stockData.sector} company trading under the symbol ${stockData.symbol}.`;
@@ -168,20 +182,6 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
       </div>
     );
   }
-
-  const formatNumber = (num: number) => {
-    if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
-    if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
-    if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
-    return `$${num.toFixed(2)}`;
-  };
-
-  const formatSupply = (num: number) => {
-    if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
-    if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
-    if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
-    return num.toFixed(2);
-  };
 
   const marketData = coinData.market_data || {};
   const links = coinData.links || {};

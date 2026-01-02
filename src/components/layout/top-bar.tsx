@@ -470,8 +470,8 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
           ref={dropdownRef}
           className="fixed z-[100] w-48 sm:w-56 rounded-lg sm:rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-1.5 sm:p-2 shadow-2xl shadow-black/50 backdrop-blur"
           style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
+            top: `${dropdownPosition?.top ?? 0}px`,
+            left: `${dropdownPosition?.left ?? 0}px`,
             position: 'fixed',
           }}
         >
