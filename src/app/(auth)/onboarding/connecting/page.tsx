@@ -59,12 +59,15 @@ export default function ConnectingPage() {
             sessionStorage.setItem("quantivahq_stocks_connected", "true");
           }
 
-          // If account type is "both" and stocks is connected, navigate to crypto dashboard
-          if (savedAccountType === "both" && exchange === "ibkr") {
+          // Navigate to dashboard after successful connection
+          // For "both" account type with crypto, show success and let user choose next step
+          // For "both" with stocks, navigate to dashboard
+          // For crypto-only, navigate to dashboard directly
+          if (exchange === "ibkr" || savedAccountType === "crypto") {
             // Small delay before navigation to show success message
             setTimeout(() => {
               router.push("/dashboard");
-            }, 1000);
+            }, 2000);
           }
         } else {
           // Invalid API keys

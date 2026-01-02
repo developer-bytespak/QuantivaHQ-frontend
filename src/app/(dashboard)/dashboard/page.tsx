@@ -102,8 +102,13 @@ export default function DashboardPage() {
       setConnectionId(response.data.connection_id);
       return response.data.connection_id;
     } catch (err: any) {
-      // Silently handle 401 errors (not logged in) - this is expected
-      if (err?.status !== 401 && err?.statusCode !== 401) {
+      // Silently handle 401 (not logged in) and 404 (no connection) - both are expected
+      if (
+        err?.status !== 401 &&
+        err?.statusCode !== 401 &&
+        err?.status !== 404 &&
+        err?.statusCode !== 404
+      ) {
         console.error("Failed to fetch active connection:", err);
       }
       setError("No active connection found. Please connect your exchange account.");
@@ -259,8 +264,36 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
-      {/* Error Display */}
-      {error && (
+      {/* Exchange Account Connection Required */}
+      {error && error.includes("No active connection") && (
+        <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 p-4 sm:p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-orange-500/20 flex-shrink-0">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm sm:text-base font-semibold text-white mb-1">Connect Your Exchange Account</h3>
+              <p className="text-xs sm:text-sm text-slate-300 mb-4">
+                To start trading and accessing your portfolio, please connect your Binance or Bybit exchange account. You'll need to provide your API keys.
+              </p>
+              <button
+                onClick={() => router.push("/onboarding/crypto-exchange")}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#fc4f02] hover:bg-[#ff5f12] text-white font-medium text-sm transition-colors duration-200"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Connect Exchange Account
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Generic Error Display */}
+      {error && !error.includes("No active connection") && (
         <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-3 sm:p-4">
           <div className="flex items-start gap-2 sm:gap-3">
             <svg className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

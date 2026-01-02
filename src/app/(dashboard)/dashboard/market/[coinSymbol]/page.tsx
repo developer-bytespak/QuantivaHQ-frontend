@@ -84,7 +84,10 @@ export default function CoinDetailPage() {
           throw new Error("Failed to fetch coin data");
         }
       } catch (err: any) {
-        console.error("Failed to fetch coin data:", err);
+        // Silently handle 404 (no connection) - this is expected for users without exchange connection
+        if (err?.status !== 404 && err?.statusCode !== 404) {
+          console.error("Failed to fetch coin data:", err);
+        }
         setError(err.message || "Failed to load coin data");
       } finally {
         setIsLoading(false);
