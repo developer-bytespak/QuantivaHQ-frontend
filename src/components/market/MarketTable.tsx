@@ -195,14 +195,15 @@ export function MarketTable({ stocks, loading, error }: MarketTableProps) {
                         <div className="flex-shrink-0 w-6 h-6 rounded bg-white/5 flex items-center justify-center overflow-hidden">
                           <img
                             src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
-                            alt={stock.symbol}
+                            alt=""
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              // Fallback to text if image fails
+                              // Silently hide failed image and show fallback
                               e.currentTarget.style.display = 'none';
                               const fallback = e.currentTarget.nextElementSibling as HTMLElement;
                               if (fallback) fallback.style.display = 'flex';
                             }}
+                            loading="lazy"
                           />
                           <div className="hidden w-full h-full items-center justify-center text-[10px] font-bold text-slate-400">
                             {stock.symbol.charAt(0)}

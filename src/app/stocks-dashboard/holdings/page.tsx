@@ -2,7 +2,8 @@
 /// <reference types="react-dom" />
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { exchangesService, DashboardData, Position } from "@/lib/api/exchanges.service";
 
 interface Holding {
   symbol: string;
@@ -19,121 +20,6 @@ interface Holding {
   sector: string;
 }
 
-const holdingsData: Holding[] = [
-  {
-    symbol: "AAPL",
-    name: "Apple Inc.",
-    quantity: 150,
-    avgCost: 168.50,
-    currentPrice: 182.45,
-    marketValue: 27367,
-    pl: 2092,
-    plPercent: 8.20,
-    dayChange: 0.62,
-    weight: 11.0,
-    type: "Stocks",
-    sector: "Technology",
-  },
-  {
-    symbol: "MSFT",
-    name: "Microsoft Corporation",
-    quantity: 120,
-    avgCost: 195.30,
-    currentPrice: 203.64,
-    marketValue: 24437,
-    pl: 1000,
-    plPercent: 4.27,
-    dayChange: 0.45,
-    weight: 9.8,
-    type: "Stocks",
-    sector: "Technology",
-  },
-  {
-    symbol: "NVDA",
-    name: "NVIDIA Corporation",
-    quantity: 80,
-    avgCost: 245.60,
-    currentPrice: 254.86,
-    marketValue: 20389,
-    pl: 741,
-    plPercent: 3.77,
-    dayChange: 1.23,
-    weight: 8.2,
-    type: "Stocks",
-    sector: "Technology",
-  },
-  {
-    symbol: "GOOGL",
-    name: "Alphabet Inc.",
-    quantity: 140,
-    avgCost: 120.50,
-    currentPrice: 122.93,
-    marketValue: 17210,
-    pl: 340,
-    plPercent: 2.02,
-    dayChange: 0.28,
-    weight: 6.9,
-    type: "Stocks",
-    sector: "Technology",
-  },
-  {
-    symbol: "AMZN",
-    name: "Amazon.com Inc.",
-    quantity: 90,
-    avgCost: 148.20,
-    currentPrice: 150.93,
-    marketValue: 13584,
-    pl: 246,
-    plPercent: 1.84,
-    dayChange: 0.51,
-    weight: 5.5,
-    type: "Stocks",
-    sector: "Consumer",
-  },
-  {
-    symbol: "SPY",
-    name: "SPDR S&P 500 ETF Trust",
-    quantity: 200,
-    avgCost: 420.50,
-    currentPrice: 435.20,
-    marketValue: 87040,
-    pl: 2940,
-    plPercent: 3.49,
-    dayChange: 0.85,
-    weight: 35.0,
-    type: "ETFs",
-    sector: "Financials",
-  },
-  {
-    symbol: "QQQ",
-    name: "Invesco QQQ Trust",
-    quantity: 150,
-    avgCost: 380.30,
-    currentPrice: 392.45,
-    marketValue: 58868,
-    pl: 1823,
-    plPercent: 3.19,
-    dayChange: 0.92,
-    weight: 23.6,
-    type: "ETFs",
-    sector: "Technology",
-  },
-  {
-    symbol: "JNJ",
-    name: "Johnson & Johnson",
-    quantity: 100,
-    avgCost: 165.80,
-    currentPrice: 168.50,
-    marketValue: 16850,
-    pl: 270,
-    plPercent: 1.63,
-    dayChange: 0.35,
-    weight: 6.8,
-    type: "Stocks",
-    sector: "Healthcare",
-  },
-];
-
 const sectors = [
   { name: "Technology", percentage: 28.5, color: "bg-blue-500" },
   { name: "Healthcare", percentage: 18.2, color: "bg-green-500" },
@@ -141,14 +27,6 @@ const sectors = [
   { name: "Consumer", percentage: 12.3, color: "bg-purple-500" },
   { name: "Industrials", percentage: 9.8, color: "bg-red-500" },
   { name: "Others", percentage: 15.5, color: "bg-slate-400" },
-];
-
-const topHoldings = [
-  { symbol: "AAPL", percentage: 11.0, value: 27366 },
-  { symbol: "MSFT", percentage: 9.8, value: 24437 },
-  { symbol: "NVDA", percentage: 8.2, value: 20389 },
-  { symbol: "GOOGL", percentage: 6.9, value: 17210 },
-  { symbol: "AMZN", percentage: 5.5, value: 13584 },
 ];
 
 // Pie Chart Component for Sector Allocation
@@ -297,6 +175,87 @@ export default function HoldingsPage() {
   const [showOverlay, setShowOverlay] = useState(false);
   const [selectedHolding, setSelectedHolding] = useState<Holding | null>(null);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
+  
+  // State for fetching holdings from backend
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
+
+  // Fetch active connection
+  const fetchActiveConnection = useCallback(async () => {
+    try {
+      const response = await exchangesService.getActiveConnection();
+      setConnectionId(response.data.connection_id);
+      return response.data.connection_id;
+    } catch (err: any) {
+      if (err?.status !== 401 && err?.statusCode !== 401) {
+        console.error("Failed to fetch active connection:", err);
+      }
+      setError("No active connection found. Please connect your broker.");
+      setIsLoading(false);
+      return null;
+    }
+  }, []);
+
+  // Fetch dashboard data (includes positions)
+  const fetchDashboardData = useCallback(async (connId: string) => {
+    try {
+      setIsLoading(true);
+      const response = await exchangesService.getDashboard(connId);
+      setDashboardData(response.data);
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to fetch holdings:", err);
+      setError(err.message || "Failed to load holdings data.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    
+    const initialize = async () => {
+      hasInitialized.current = true;
+      const connId = await fetchActiveConnection();
+      if (connId) {
+        await fetchDashboardData(connId);
+      }
+    };
+    
+    initialize();
+  }, [fetchActiveConnection, fetchDashboardData]);
+
+  // Convert API positions to Holding format
+  const holdingsData: Holding[] = dashboardData?.positions?.map((pos: Position) => ({
+    symbol: pos.symbol,
+    name: pos.symbol, // API doesn't return full name, use symbol for now
+    quantity: pos.quantity,
+    avgCost: pos.entryPrice,
+    currentPrice: pos.currentPrice,
+    marketValue: pos.quantity * pos.currentPrice,
+    pl: pos.unrealizedPnl,
+    plPercent: pos.pnlPercent,
+    dayChange: 0, // API doesn't provide daily change, default to 0
+    weight: dashboardData?.portfolio?.totalValue 
+      ? ((pos.quantity * pos.currentPrice) / dashboardData.portfolio.totalValue) * 100 
+      : 0,
+    type: "Stocks" as const, // Default to Stocks, can be enhanced later
+    sector: "Unknown", // API doesn't provide sector, can be enhanced later
+  })) || [];
+
+  // Calculate top holdings
+  const topHoldings = holdingsData
+    .sort((a, b) => b.marketValue - a.marketValue)
+    .slice(0, 5)
+    .map(h => ({
+      symbol: h.symbol,
+      percentage: h.weight,
+      value: h.marketValue,
+    }));
 
   // Filter holdings based on selected filter
   const filteredHoldings = holdingsData.filter((holding) => {
@@ -390,8 +349,39 @@ export default function HoldingsPage() {
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#fc4f02] border-r-transparent"></div>
+            <p className="mt-4 text-sm text-slate-400">Loading your holdings...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !isLoading && (
+        <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-6 text-center">
+          <p className="text-red-400 font-medium">{error}</p>
+          <button
+            onClick={() => {
+              if (connectionId) fetchDashboardData(connectionId);
+            }}
+            className="mt-4 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2 text-sm font-semibold text-white"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       {/* Holdings Cards */}
-      {grouping === "Sector" && groupedHoldings ? (
+      {!isLoading && !error && holdingsData.length === 0 && (
+        <div className="rounded-xl bg-white/5 p-8 text-center">
+          <p className="text-slate-400">No holdings found. Start trading to see your positions here.</p>
+        </div>
+      )}
+
+      {!isLoading && !error && holdingsData.length > 0 && grouping === "Sector" && groupedHoldings ? (
         // Grouped by Sector
         <div className="space-y-8">
           {sectorNames.map((sector) => (
@@ -569,7 +559,8 @@ export default function HoldingsPage() {
       </div>
       )}
 
-      {/* Dashboard Widgets */}
+      {/* Dashboard Widgets - Only show if we have holdings */}
+      {!isLoading && !error && holdingsData.length > 0 && (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Sector Allocation Pie Chart */}
         <div className="rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
@@ -769,6 +760,7 @@ export default function HoldingsPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Holding Details Overlay */}
       {showOverlay && selectedHolding && (

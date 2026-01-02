@@ -213,6 +213,58 @@ export default function StocksDashboardPage() {
     enabled: activeTab === "market", // Only fetch when market tab is active
   });
 
+  // Fetch all stocks for market overview calculation (always enabled on dashboard)
+  const {
+    data: allStocks,
+    loading: allStocksLoading,
+  } = useStocksMarket({
+    limit: 500, // Fetch all stocks for sentiment calculation
+    autoRefresh: true, // Always auto-refresh on dashboard
+    refreshInterval: 5 * 60 * 1000, // 5 minutes
+    enabled: true, // Always fetch market overview data on dashboard
+  });
+
+  // Calculate market overview data
+  const marketOverview = useMemo(() => {
+    if (!allStocks || allStocks.length === 0) {
+      return {
+        sp500: { price: 0, change: 0 },
+        nasdaq: { price: 0, change: 0 },
+        dow: { price: 0, change: 0 },
+        vix: { value: 0, level: 'Low' as 'Low' | 'Moderate' | 'High' },
+        sentiment: { label: 'Neutral' as 'Bullish' | 'Neutral' | 'Bearish', percentage: 0 },
+      };
+    }
+
+    // Find major indices
+    const spy = allStocks.find(s => s.symbol === 'SPY');
+    const qqq = allStocks.find(s => s.symbol === 'QQQ');
+    const dia = allStocks.find(s => s.symbol === 'DIA');
+
+    // Calculate market sentiment (% of stocks with positive change)
+    const positiveStocks = allStocks.filter(s => s.changePercent24h > 0).length;
+    const sentimentPercentage = (positiveStocks / allStocks.length) * 100;
+    
+    let sentimentLabel: 'Bullish' | 'Neutral' | 'Bearish' = 'Neutral';
+    if (sentimentPercentage > 55) sentimentLabel = 'Bullish';
+    else if (sentimentPercentage < 45) sentimentLabel = 'Bearish';
+
+    // Estimate VIX level from market volatility (simplified)
+    const avgAbsChange = allStocks.reduce((sum, s) => sum + Math.abs(s.changePercent24h), 0) / allStocks.length;
+    let vixLevel: 'Low' | 'Moderate' | 'High' = 'Low';
+    let vixValue = avgAbsChange * 10; // Rough approximation
+    if (vixValue > 25) vixLevel = 'High';
+    else if (vixValue > 15) vixLevel = 'Moderate';
+
+    return {
+      sp500: { price: spy?.price || 0, change: spy?.changePercent24h || 0 },
+      nasdaq: { price: qqq?.price || 0, change: qqq?.changePercent24h || 0 },
+      dow: { price: dia?.price || 0, change: dia?.changePercent24h || 0 },
+      vix: { value: vixValue, level: vixLevel },
+      sentiment: { label: sentimentLabel, percentage: sentimentPercentage },
+    };
+  }, [allStocks]);
+
   // Holding data for the card on dashboard
   const dashboardHolding: Holding = {
     symbol: "AAPL",
@@ -504,38 +556,38 @@ export default function StocksDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[--color-border]">
-                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                      <td className="py-3 text-sm font-medium text-white">AAPL</td>
-                      <td className="py-3 text-sm text-slate-300">150</td>
-                      <td className="py-3 text-sm text-slate-300">$182.45</td>
-                      <td className="py-3 text-sm text-slate-300">$27,367.50</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+8.20%</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+0.62%</td>
-                    </tr>
-                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                      <td className="py-3 text-sm font-medium text-white">MSFT</td>
-                      <td className="py-3 text-sm text-slate-300">120</td>
-                      <td className="py-3 text-sm text-slate-300">$203.64</td>
-                      <td className="py-3 text-sm text-slate-300">$24,436.80</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+4.27%</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+0.45%</td>
-                    </tr>
-                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                      <td className="py-3 text-sm font-medium text-white">NVDA</td>
-                      <td className="py-3 text-sm text-slate-300">80</td>
-                      <td className="py-3 text-sm text-slate-300">$254.86</td>
-                      <td className="py-3 text-sm text-slate-300">$20,388.80</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+3.77%</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+1.23%</td>
-                    </tr>
-                    <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                      <td className="py-3 text-sm font-medium text-white">GOOGL</td>
-                      <td className="py-3 text-sm text-slate-300">140</td>
-                      <td className="py-3 text-sm text-slate-300">$122.93</td>
-                      <td className="py-3 text-sm text-slate-300">$17,210.20</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+2.02%</td>
-                      <td className="py-3 text-sm font-medium text-green-400">+0.28%</td>
-                    </tr>
+                    {isLoadingProfile ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-400">
+                          Loading holdings...
+                        </td>
+                      </tr>
+                    ) : profileError ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-400">
+                          {profileError}
+                        </td>
+                      </tr>
+                    ) : !dashboardData?.positions || dashboardData.positions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-400">
+                          No holdings found
+                        </td>
+                      </tr>
+                    ) : (
+                      dashboardData.positions.slice(0, 4).map((position) => (
+                        <tr key={position.symbol} className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                          <td className="py-3 text-sm font-medium text-white">{position.symbol}</td>
+                          <td className="py-3 text-sm text-slate-300">{position.quantity}</td>
+                          <td className="py-3 text-sm text-slate-300">{formatPrice(position.currentPrice)}</td>
+                          <td className="py-3 text-sm text-slate-300">{formatPrice(position.quantity * position.currentPrice)}</td>
+                          <td className={`py-3 text-sm font-medium ${getChangeColorClass(position.pnlPercent)}`}>
+                            {formatPercent(position.pnlPercent)}
+                          </td>
+                          <td className="py-3 text-sm font-medium text-slate-400">-</td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -711,49 +763,74 @@ export default function StocksDashboardPage() {
           {/* Market Data */}
           <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur">
             <h3 className="mb-4 text-sm font-semibold text-slate-400">Market Overview</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">S&P 500</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white">4,785.23</span>
-                  <span className="text-xs font-medium text-green-400">+0.42%</span>
-                </div>
+            {allStocksLoading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-6 rounded bg-white/5 animate-pulse" />
+                ))}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">NASDAQ</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white">14,892.45</span>
-                  <span className="text-xs font-medium text-green-400">+0.68%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">Dow</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white">37,241.87</span>
-                  <span className="text-xs font-medium text-green-400">+0.31%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-400">VIX</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-white">12.34</span>
-                  <div className="flex items-center gap-1">
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-400"></div>
-                    <span className="text-xs text-slate-300">Low</span>
-                  </div>
-                </div>
-              </div>
-              <div className="relative pt-2">
-                <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+            ) : (
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400">Sentiment</span>
-                  <div className="flex items-center gap-1">
-                    <div className="h-1.5 w-1.5 rounded-full bg-green-400"></div>
-                    <span className="text-xs font-semibold text-green-400">Bullish</span>
+                  <span className="text-xs text-slate-400">S&P 500 (SPY)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">{formatPrice(marketOverview.sp500.price)}</span>
+                    <span className={`text-xs font-medium ${getChangeColorClass(marketOverview.sp500.change)}`}>
+                      {formatPercent(marketOverview.sp500.change)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">NASDAQ (QQQ)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">{formatPrice(marketOverview.nasdaq.price)}</span>
+                    <span className={`text-xs font-medium ${getChangeColorClass(marketOverview.nasdaq.change)}`}>
+                      {formatPercent(marketOverview.nasdaq.change)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Dow (DIA)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">{formatPrice(marketOverview.dow.price)}</span>
+                    <span className={`text-xs font-medium ${getChangeColorClass(marketOverview.dow.change)}`}>
+                      {formatPercent(marketOverview.dow.change)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Volatility</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">{marketOverview.vix.value.toFixed(2)}</span>
+                    <div className="flex items-center gap-1">
+                      <div className={`h-1.5 w-1.5 rounded-full ${
+                        marketOverview.vix.level === 'Low' ? 'bg-green-400' :
+                        marketOverview.vix.level === 'Moderate' ? 'bg-yellow-400' : 'bg-red-400'
+                      }`}></div>
+                      <span className="text-xs text-slate-300">{marketOverview.vix.level}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="relative pt-2">
+                  <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-400">Market Sentiment</span>
+                    <div className="flex items-center gap-1">
+                      <div className={`h-1.5 w-1.5 rounded-full ${
+                        marketOverview.sentiment.label === 'Bullish' ? 'bg-green-400' :
+                        marketOverview.sentiment.label === 'Neutral' ? 'bg-yellow-400' : 'bg-red-400'
+                      }`}></div>
+                      <span className={`text-xs font-semibold ${
+                        marketOverview.sentiment.label === 'Bullish' ? 'text-green-400' :
+                        marketOverview.sentiment.label === 'Neutral' ? 'text-yellow-400' : 'text-red-400'
+                      }`}>
+                        {marketOverview.sentiment.label} ({marketOverview.sentiment.percentage.toFixed(0)}%)
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
