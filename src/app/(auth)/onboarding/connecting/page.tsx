@@ -59,36 +59,11 @@ export default function ConnectingPage() {
             sessionStorage.setItem("quantivahq_stocks_connected", "true");
           }
 
-          // Fetch authoritative active connection from backend so UI shows correct exchange name
-          try {
-            const active = await exchangesService.getActiveConnection();
-            if (active?.success && active.data?.exchange?.name) {
-              const name = active.data.exchange.name.toLowerCase();
-              if (name === 'binance' || name === 'bybit' || name === 'ibkr' || name === 'alpaca') {
-                setSelectedExchange(name as any);
-              }
-            }
-          } catch (err) {
-            console.warn('Failed to fetch active connection after verify:', err);
-          }
-
-          // If account type is "both" and stocks is connected, navigate to unified dashboard
-          if (savedAccountType === "both" && (exchange === "ibkr" || exchange === "alpaca")) {
-            // Small delay before navigation to show success message
-            setTimeout(() => {
-              router.push("/dashboard");
-            }, 1000);
-          } else if (savedAccountType === "stocks" && (exchange === "ibkr" || exchange === "alpaca")) {
-            // For stocks-only account, go to unified dashboard
-            setTimeout(() => {
-              router.push("/dashboard");
-            }, 1000);
-          } else if (savedAccountType === "crypto" && (exchange === "binance" || exchange === "bybit")) {
-            // For crypto-only account, go to unified dashboard
-            setTimeout(() => {
-              router.push("/dashboard");
-            }, 1000);
-          }
+          // Navigate to dashboard after successful connection for all account types
+          // Small delay before navigation to show success message
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 1000);
         } else {
           // Invalid API keys
           setErrorType("invalid_api_key");

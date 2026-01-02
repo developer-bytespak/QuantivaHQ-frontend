@@ -528,3 +528,85 @@ select option:hover {
 .smooth-scroll-horizontal::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(to right, rgba(252, 79, 2, 0.7), rgba(253, 163, 0, 0.7));
 }
+
+/* Date Input Styling */
+input[type="date"] {
+  color-scheme: dark;
+  position: relative;
+  accent-color: #fc4f02;
+  cursor: pointer;
+}
+
+input[type="date"]::placeholder {
+  color: #94a3b8;
+  opacity: 0.7;
+}
+
+/* Hide calendar picker icon but keep it functional */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  width: 100%;
+  cursor: pointer;
+  position: absolute;
+  right: 0;
+}
+
+/* Remove spinner buttons from date input */
+input[type="date"]::-webkit-outer-spin-button,
+input[type="date"]::-webkit-inner-spin-button {
+  display: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Text color for date input */
+input[type="date"] {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+/* Make placeholder text visible */
+input[type="date"]::-webkit-datetime-edit-text {
+  color: #ffffff;
+  padding: 2px 4px;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #ffffff;
+}
+
+/* Focus and active states */
+input[type="date"]:focus {
+  outline: none;
+}
+
+input[type="date"]::-webkit-datetime-edit {
+  color: #ffffff;
+}
+
+/* Make entire date input clickable to open calendar */
+input[type="date"]:hover {
+  cursor: pointer;
+}
+
+/* Custom scrollbar styling for dropdown */
+.scrollbar-show::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-show::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 4px;
+}
+
+.scrollbar-show::-webkit-scrollbar-thumb {
+  background: rgba(252, 79, 2, 0.4);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.scrollbar-show::-webkit-scrollbar-thumb:hover {
+  background: rgba(252, 79, 2, 0.7);
+}

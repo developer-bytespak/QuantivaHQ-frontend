@@ -125,8 +125,11 @@ export default function MarketDetailPage() {
           }
         }
       } catch (err: any) {
-        console.error("Failed to fetch data:", err);
-        setError(err.message || "Failed to load data");
+        // Silently handle 404 (no connection) - this is expected for users without exchange connection
+        if (err?.status !== 404 && err?.statusCode !== 404) {
+          console.error("Failed to fetch coin data:", err);
+        }
+        setError(err.message || "Failed to load coin data");
       } finally {
         setIsLoading(false);
       }
