@@ -163,6 +163,9 @@ export default function PaperTradingPage() {
 
   // --- Load testnet status on mount ---
   useEffect(() => {
+    // Only attempt to contact Binance testnet for crypto connections
+    if (connectionType !== "crypto") return;
+
     const loadStatus = async () => {
       try {
         const testnetStatus = await binanceTestnetService.getStatus();
@@ -172,7 +175,7 @@ export default function PaperTradingPage() {
       }
     };
     loadStatus();
-  }, []);
+  }, [connectionType]);
 
   // --- Page Visibility API: Pause polling when tab is hidden ---
   useEffect(() => {
@@ -299,6 +302,11 @@ export default function PaperTradingPage() {
   };
 
   const loadAccountData = async () => {
+    // Only load account data for crypto connections
+    if (connectionType !== "crypto") {
+      console.log("Skipping account data load: not a crypto connection");
+      return;
+    }
     // Rate limit protection
     if (isRateLimited) {
       console.log("⛔ API calls blocked - in rate limit cooldown period");
@@ -340,6 +348,9 @@ export default function PaperTradingPage() {
 
   // --- Fetch pre-built strategies ---
   useEffect(() => {
+    // Only load pre-built strategies for crypto connections
+    if (connectionType !== "crypto") return;
+
     let mounted = true;
     (async () => {
       try {
@@ -361,11 +372,13 @@ export default function PaperTradingPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [connectionType]);
 
   // --- Fetch signals for a strategy ---
   const fetchStrategySignals = async (strategyId: string) => {
     if (loadingSignals[strategyId]) return;
+    // Guard: only fetch crypto signals when connection is crypto
+    if (connectionType !== "crypto") return;
 
     setLoadingSignals((p) => ({ ...p, [strategyId]: true }));
     setSignalsError((p) => {
