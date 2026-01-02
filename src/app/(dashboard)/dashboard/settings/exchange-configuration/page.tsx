@@ -223,20 +223,20 @@ export default function ExchangeConfigurationPage() {
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedConnection(null)}
         >
-          <div
-            className="relative mx-4 w-full max-w-2xl rounded-lg sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
+            <div
+              className="relative mx-auto w-full max-w-2xl rounded-lg sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 shadow-2xl shadow-black/50 backdrop-blur animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header */}
-            <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
+            <div className="border-b border-[--color-border]/30 bg-gradient-to-br from-[--color-surface-alt] to-[--color-surface-alt]/90 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                 <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
                   <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <div>
-                  <h2 className="text-lg sm:text-2xl font-bold text-white">{selectedConnection.exchange_name}</h2>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-2xl font-bold text-white truncate">{selectedConnection.exchange_name}</h2>
                   {selectedConnection.verified && (
                     <span className="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30">
                       Verified
@@ -246,7 +246,7 @@ export default function ExchangeConfigurationPage() {
               </div>
               <button
                 onClick={() => setSelectedConnection(null)}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white self-start sm:self-auto"
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white self-start sm:self-auto flex-shrink-0"
                 aria-label="Close"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -256,7 +256,7 @@ export default function ExchangeConfigurationPage() {
             </div>
 
             {/* Content */}
-            <div className="space-y-4 sm:space-y-6">
+            <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
               {/* Status Details Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
                 <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
@@ -283,7 +283,7 @@ export default function ExchangeConfigurationPage() {
                   onClick={() => {
                     handleSelectConnection(selectedConnection);
                   }}
-                  className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
                 >
                   Update Credentials
                 </button>
@@ -292,7 +292,7 @@ export default function ExchangeConfigurationPage() {
                     setShowUpdateForm(false);
                     handleDeleteConnection(selectedConnection.connection_id);
                   }}
-                  className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm sm:text-base hover:bg-red-500/30 transition-all duration-200 font-medium"
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm sm:text-base hover:bg-red-500/30 transition-all duration-200 font-medium"
                 >
                   Delete Connection
                 </button>
@@ -325,24 +325,24 @@ export default function ExchangeConfigurationPage() {
           </h2>
           <p className="text-sm text-slate-400 mb-6">Toggle between Binance and Bybit to connect your preferred exchange</p>
           
-          <div className="flex items-center justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg p-4 sm:p-5">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex items-center gap-3">
                 {/* Binance Icon */}
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                   exchangeToggle === "binance" 
                     ? "bg-[#f7931a] text-white" 
                     : "bg-[#f7931a]/20 text-[#f7931a]"
                 }`}>
                   <span className="text-lg font-bold">B</span>
                 </div>
-                <span className="text-sm font-medium text-white">Binance</span>
+                <span className="text-sm sm:text-base font-medium text-white">Binance</span>
               </div>
 
               {/* Toggle Switch */}
               <button
                 onClick={handleExchangeSwitch}
-                className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 flex-shrink-0 ${
                   exchangeToggle === "bybit"
                     ? "bg-gradient-to-r from-[#f0b90b] to-[#ffc53d]"
                     : "bg-slate-700"
@@ -357,8 +357,8 @@ export default function ExchangeConfigurationPage() {
 
               {/* Bybit Icon */}
               <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-white">Bybit</span>
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                <span className="text-sm sm:text-base font-medium text-white">Bybit</span>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
                   exchangeToggle === "bybit" 
                     ? "bg-[#f0b90b] text-white" 
                     : "bg-[#f0b90b]/20 text-[#f0b90b]"
@@ -371,7 +371,7 @@ export default function ExchangeConfigurationPage() {
             {/* Connect Button */}
             <button
               onClick={handleExchangeSwitch}
-              className="ml-4 px-4 sm:px-5 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 whitespace-nowrap"
+              className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
             >
               Connect
             </button>
@@ -441,12 +441,12 @@ export default function ExchangeConfigurationPage() {
       {showUpdateForm && selectedConnection && mounted && typeof window !== "undefined" &&
         createPortal(
           <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-2xl overflow-hidden">
+            <div className="w-full max-w-md rounded-lg sm:rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               {/* Modal Header */}
-              <div className="border-b border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-5 sm:p-6 flex items-start justify-between">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-white">Update Credentials</h2>
-                  <p className="text-sm text-slate-400 mt-1">{selectedConnection.exchange_name}</p>
+              <div className="border-b border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-4 sm:p-6 flex items-start justify-between flex-shrink-0">
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-2xl font-bold text-white">Update Credentials</h2>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1 truncate">{selectedConnection.exchange_name}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -456,14 +456,14 @@ export default function ExchangeConfigurationPage() {
                   className="text-slate-400 hover:text-white transition-colors flex-shrink-0"
                   aria-label="Close"
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
               {/* Modal Body */}
-              <div className="p-5 sm:p-6 space-y-4 sm:space-y-5 max-h-[calc(100vh-200px)] overflow-y-auto">
+              <div className="overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1">
                 {/* Warning Box */}
                 <div className="bg-[#fc4f02]/10 border border-[#fc4f02]/30 rounded-lg p-3 sm:p-4">
                   <p className="text-[#fc4f02] text-xs sm:text-sm font-semibold flex items-center gap-2">
@@ -487,7 +487,7 @@ export default function ExchangeConfigurationPage() {
                       if (formErrors.api_key) setFormErrors({ ...formErrors, api_key: "" });
                     }}
                     placeholder="Enter new API key"
-                    className={`w-full px-4 py-3 rounded-lg bg-[--color-surface-alt] border ${
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${
                       formErrors.api_key ? "border-red-500/50" : "border-[--color-border]"
                     } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
                   />
@@ -509,7 +509,7 @@ export default function ExchangeConfigurationPage() {
                       if (formErrors.api_secret) setFormErrors({ ...formErrors, api_secret: "" });
                     }}
                     placeholder="Enter new API secret"
-                    className={`w-full px-4 py-3 rounded-lg bg-[--color-surface-alt] border ${
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${
                       formErrors.api_secret ? "border-red-500/50" : "border-[--color-border]"
                     } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
                   />
@@ -529,7 +529,7 @@ export default function ExchangeConfigurationPage() {
                       value={formData.passphrase}
                       onChange={(e) => setFormData({ ...formData, passphrase: e.target.value })}
                       placeholder="Bybit passphrase if required"
-                      className="w-full px-4 py-3 rounded-lg bg-[--color-surface-alt] border border-[--color-border] focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border border-[--color-border] focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0"
                     />
                   </div>
                 )}
@@ -548,14 +548,14 @@ export default function ExchangeConfigurationPage() {
                         if (formErrors.password) setFormErrors({ ...formErrors, password: "" });
                       }}
                       placeholder="Enter your password"
-                      className={`w-full px-4 py-3 pr-10 rounded-lg bg-[--color-surface-alt] border ${
+                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 rounded-lg bg-[--color-surface-alt] border ${
                         formErrors.password ? "border-red-500/50" : "border-[--color-border]"
                       } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors flex-shrink-0"
                       aria-label="Toggle password visibility"
                     >
                       {showPassword ? (
@@ -577,21 +577,21 @@ export default function ExchangeConfigurationPage() {
               </div>
 
               {/* Modal Footer */}
-              <div className="border-t border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-5 sm:p-6 flex gap-3">
+              <div className="border-t border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-4 sm:p-6 flex gap-3 flex-shrink-0">
                 <button
                   onClick={() => {
                     setShowUpdateForm(false);
                     setSelectedConnection(null);
                   }}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-3 rounded-lg border border-[--color-border] bg-[--color-surface] hover:bg-[--color-surface-alt] disabled:opacity-50 text-white text-sm font-medium transition-colors"
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg border border-[--color-border] bg-[--color-surface] hover:bg-[--color-surface-alt] disabled:opacity-50 text-white text-sm font-medium transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateConnection}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#FDA300] hover:shadow-lg hover:shadow-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all duration-200"
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#FDA300] hover:shadow-lg hover:shadow-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all duration-200"
                 >
                   {isSubmitting ? "Updating..." : "Update"}
                 </button>
