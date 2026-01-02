@@ -6,9 +6,22 @@ import { getCoinDetails } from "@/lib/api/coingecko.service";
 
 interface InfoTabProps {
   coinSymbol: string;
+  stockData?: {
+    symbol: string;
+    name: string;
+    sector: string;
+    price: number;
+    changePercent24h: number;
+    marketCap: number | null;
+    volume24h: number;
+    peRatio?: number;
+    dividendYield?: number;
+    description?: string;
+  };
+  connectionType: "crypto" | "stocks" | null;
 }
 
-export default function InfoTab({ coinSymbol }: InfoTabProps) {
+export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoTabProps) {
   const [coinData, setCoinData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +34,12 @@ export default function InfoTab({ coinSymbol }: InfoTabProps) {
 
   useEffect(() => {
     const fetchCoinInfo = async () => {
+      // Skip fetching for stocks
+      if (connectionType === "stocks") {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       try {
@@ -40,10 +59,10 @@ export default function InfoTab({ coinSymbol }: InfoTabProps) {
       }
     };
 
-    if (coinSymbol) {
+    if (coinSymbol && connectionType) {
       fetchCoinInfo();
     }
-  }, [coinSymbol]);
+  }, [coinSymbol, connectionType]);
 
   // Prevent body scroll when overlay is open
   useEffect(() => {
@@ -65,7 +84,7 @@ export default function InfoTab({ coinSymbol }: InfoTabProps) {
     );
   }
 
-  if (error || !coinData) {
+  if (error || (!coinData && connectionType === "crypto")) {
     return (
       <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent backdrop-blur border border-red-500/20 p-4">
         <div className="flex items-center gap-2">
@@ -91,6 +110,78 @@ export default function InfoTab({ coinSymbol }: InfoTabProps) {
     if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
     return num.toFixed(2);
   };
+
+  // Stocks rendering
+  if (connectionType === "stocks" && stockData) {
+    const stockDescription = stockData.description || `${stockData.name} is a ${stockData.sector} company trading under the symbol ${stockData.symbol}.`;
+    const isLongDescription = stockDescription.length > 500;
+    const displayDescription = stockDescription.substring(0, 500);
+
+    return (
+      <div className="space-y-6">
+        {/* Description */}
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">About {stockData.name}</h3>
+          </div>
+          <p className="text-sm text-slate-300 leading-relaxed">
+            {displayDescription}
+            {isLongDescription && "..."}
+          </p>
+        </div>
+
+        {/* Stock Info Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+            <h4 className="text-sm font-medium text-slate-400 mb-2">Sector</h4>
+            <p className="text-lg font-semibold text-white">{stockData.sector}</p>
+          </div>
+
+          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+            <h4 className="text-sm font-medium text-slate-400 mb-2">Market Cap</h4>
+            <p className="text-lg font-semibold text-white">
+              {stockData.marketCap ? formatNumber(stockData.marketCap) : "N/A"}
+            </p>
+          </div>
+
+          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+            <h4 className="text-sm font-medium text-slate-400 mb-2">24h Volume</h4>
+            <p className="text-lg font-semibold text-white">
+              {formatNumber(stockData.volume24h)}
+            </p>
+          </div>
+
+          {stockData.peRatio && (
+            <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+              <h4 className="text-sm font-medium text-slate-400 mb-2">P/E Ratio</h4>
+              <p className="text-lg font-semibold text-white">{stockData.peRatio.toFixed(2)}</p>
+            </div>
+          )}
+
+          {stockData.dividendYield && (
+            <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+              <h4 className="text-sm font-medium text-slate-400 mb-2">Dividend Yield</h4>
+              <p className="text-lg font-semibold text-white">{stockData.dividendYield.toFixed(2)}%</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Original crypto rendering continues below...
+  if (!coinData) {
+    return (
+      <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent backdrop-blur border border-red-500/20 p-4">
+        <div className="flex items-center gap-2">
+          <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-red-200">Failed to load coin information</p>
+        </div>
+      </div>
+    );
+  }
 
   const marketData = coinData.market_data || {};
   const links = coinData.links || {};

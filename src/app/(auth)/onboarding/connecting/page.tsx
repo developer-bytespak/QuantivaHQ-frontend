@@ -72,19 +72,19 @@ export default function ConnectingPage() {
             console.warn('Failed to fetch active connection after verify:', err);
           }
 
-          // If account type is "both" and stocks is connected, navigate to crypto dashboard
+          // If account type is "both" and stocks is connected, navigate to unified dashboard
           if (savedAccountType === "both" && (exchange === "ibkr" || exchange === "alpaca")) {
             // Small delay before navigation to show success message
             setTimeout(() => {
               router.push("/dashboard");
             }, 1000);
           } else if (savedAccountType === "stocks" && (exchange === "ibkr" || exchange === "alpaca")) {
-            // For stocks-only account, go to stocks dashboard
+            // For stocks-only account, go to unified dashboard
             setTimeout(() => {
-              router.push("/stocks-dashboard");
+              router.push("/dashboard");
             }, 1000);
           } else if (savedAccountType === "crypto" && (exchange === "binance" || exchange === "bybit")) {
-            // For crypto-only account, go to crypto dashboard
+            // For crypto-only account, go to unified dashboard
             setTimeout(() => {
               router.push("/dashboard");
             }, 1000);
@@ -224,18 +224,8 @@ export default function ConnectingPage() {
   };
 
   const handleGoToDashboard = () => {
-    // Determine which dashboard to route to based on account type and exchange
-    if (accountType === "crypto" || selectedExchange === "binance" || selectedExchange === "bybit") {
-      router.push("/dashboard");
-    } else if (accountType === "stocks" || selectedExchange === "ibkr" || selectedExchange === "alpaca") {
-      router.push("/stocks-dashboard");
-    } else if (accountType === "both") {
-      // For "both", default to main dashboard
-      router.push("/dashboard");
-    } else {
-      // Fallback
-      router.push("/dashboard");
-    }
+    // Unified dashboard adapts based on connection type
+    router.push("/dashboard");
   };
 
   const handleConnectStocksAccount = () => {

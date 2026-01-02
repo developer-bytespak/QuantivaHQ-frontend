@@ -8,10 +8,12 @@ import { getUserProfile } from "@/lib/api/user";
 import { useMobileNav } from "@/hooks/useMobileNav";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Crypto Dashboard",
+  "/dashboard": "Dashboard",
+  "/dashboard/market": "Market Overview",
   "/dashboard/top-trades": "Top Trades",
   "/dashboard/ai-insights": "AI Insights",
   "/dashboard/vc-pool": "VC Pool",
+  "/dashboard/holdings": "My Holdings",
   "/dashboard/profile": "Profile",
   "/dashboard/screener": "Market Screener",
   "/dashboard/settings": "Settings",
@@ -21,12 +23,6 @@ const pageTitles: Record<string, string> = {
   "/dashboard/settings/security": "Security",
   "/dashboard/settings/help-support": "Help and Support",
   "/dashboard/settings/terms": "Terms and Conditions",
-  "/stocks-dashboard": "Stocks Dashboard",
-  "/stocks-dashboard/top-trades": "Top Trades",
-  "/stocks-dashboard/ai-insights": "AI Insights",
-  "/stocks-dashboard/holdings": "My Holdings",
-  "/stocks-dashboard/trade-opportunities": "Trade Opportunities",
-  "/stocks-dashboard/profile": "Profile",
   "/ai/strategy-mode": "Strategy Mode",
   "/sentiment/news": "Live News",
   "/charts/advanced": "Advanced Charts",
@@ -446,11 +442,10 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
 
   // Show switcher only on the main dashboard pages (not sub-pages) when both accounts are connected
   const isCryptoDashboard = pathname === "/dashboard";
-  const isStocksDashboard = pathname === "/stocks-dashboard";
+  const isStocksDashboard = pathname === "/dashboard"; // Now unified
   
-  if ((!isCryptoDashboard && !isStocksDashboard) || !hasBothAccounts) {
-    return null;
-  }
+  // Dashboard switcher removed - unified dashboard adapts automatically
+  return null;
 
   return (
     <>
@@ -469,44 +464,18 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
         </svg>
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dashboard switcher removed - unified dashboard adapts automatically */}
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
           className="fixed z-[100] w-48 sm:w-56 rounded-lg sm:rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-1.5 sm:p-2 shadow-2xl shadow-black/50 backdrop-blur"
           style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
+            top: `${dropdownPosition?.top ?? 0}px`,
+            left: `${dropdownPosition?.left ?? 0}px`,
             position: 'fixed',
           }}
         >
-          {isCryptoDashboard ? (
-            <button
-              onClick={() => {
-                router.push("/stocks-dashboard");
-                setIsOpen(false);
-              }}
-              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
-            >
-              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Stocks Dashboard</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                router.push("/dashboard");
-                setIsOpen(false);
-              }}
-              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-gradient-to-r hover:from-[#fc4f02]/10 hover:to-[#fda300]/10 hover:border hover:border-[#fc4f02]/30 hover:shadow-sm"
-            >
-              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-slate-400 transition-colors group-hover:text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className="transition-colors group-hover:text-[#fc4f02] group-hover:font-semibold">Crypto Dashboard</span>
-            </button>
-          )}
+          {/* Removed stocks/crypto switcher - dashboard now unified */}
         </div>,
         document.body
       )}

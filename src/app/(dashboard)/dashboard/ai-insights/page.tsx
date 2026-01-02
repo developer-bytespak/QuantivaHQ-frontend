@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
+import { exchangesService } from "@/lib/api/exchanges.service";
+import { ComingSoon } from "@/components/common/coming-soon";
 
 // Extended news item with AI insights
 interface AIEnhancedNewsItem extends CryptoNewsItem {
@@ -383,6 +385,10 @@ function DataStreamParticles() {
 }
 
 export default function AIInsightsPage() {
+  // Connection type detection
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+
   const [selectedNews, setSelectedNews] = useState<AIEnhancedNewsItem | null>(null);
   const [allNewsItems, setAllNewsItems] = useState<AIEnhancedNewsItem[]>([]);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
@@ -393,8 +399,26 @@ export default function AIInsightsPage() {
   const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
   const [isInitializingML, setIsInitializingML] = useState(false);
 
+  // Check connection type on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await exchangesService.getActiveConnection();
+        setConnectionType(response.data?.exchange?.type || null);
+      } catch (error) {
+        console.error("Failed to check connection type:", error);
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
   // Fetch general crypto news (not specific to any coin)
   const fetchAllCryptoNews = useCallback(async () => {
+    // Only fetch if crypto connection
+    if (connectionType !== "crypto") return;
+    
     setIsLoadingNews(true);
     setNewsError(null);
     const startTime = Date.now();
@@ -457,7 +481,7 @@ export default function AIInsightsPage() {
       setIsLoadingNews(false);
       setLoadingStartTime(null);
     }
-  }, []); // Empty dependency array - only run once on mount
+  }, [connectionType]); // Depend on connectionType so function updates when connection changes
 
   // Fetch coin logos from CoinGecko CDN (no API calls needed)
   const fetchCoinLogos = useCallback(async () => {
@@ -500,10 +524,13 @@ export default function AIInsightsPage() {
   }, []);
 
   useEffect(() => {
-    fetchAllCryptoNews();
-    fetchCoinLogos();
+    // Only fetch for crypto connections
+    if (connectionType === "crypto") {
+      fetchAllCryptoNews();
+      fetchCoinLogos();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, [connectionType]); // Run when connection type is determined
 
   // Filter and sort news
   const filteredAndSortedNews = useMemo(() => {
@@ -590,6 +617,20 @@ export default function AIInsightsPage() {
     const diffDays = Math.floor(diffHours / 24);
     return `${diffDays}d ago`;
   };
+
+  // Show loading while checking connection
+  if (isCheckingConnection) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+      </div>
+    );
+  }
+
+  // Show coming soon for stocks
+  if (connectionType === "stocks") {
+    return <ComingSoon title="AI Insights" description="AI-powered insights and analysis for stocks are currently under development. This feature will provide intelligent market analysis, news sentiment, and predictions for your stock portfolio soon!" icon="insights" />;
+  }
 
   return (
     <div className="relative space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0 overflow-x-hidden w-full">

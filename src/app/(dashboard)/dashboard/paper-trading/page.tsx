@@ -5,6 +5,8 @@ import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals } from "@/lib/api/strategies";
+import { exchangesService } from "@/lib/api/exchanges.service";
+import { ComingSoon } from "@/components/common/coming-soon";
 import { BalanceOverview } from "./components/balance-overview";
 import { StrategyCard } from "./components/strategy-card";
 import { AutoTradeModal } from "./components/auto-trade-modal";
@@ -77,6 +79,10 @@ type TradeRecord = {
 };
 
 export default function PaperTradingPage() {
+  // Connection type detection
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+
   // WebSocket connection for real-time updates
   const [socketKey, setSocketKey] = useState(0);
   const realtimeData = useRealtimePaperTrading('default-user', socketKey);
@@ -90,6 +96,21 @@ export default function PaperTradingPage() {
   // Rate limit protection - global lock to prevent any API calls during cooldown
   const [isRateLimited, setIsRateLimited] = useState(false);
   
+  // Check connection type on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await exchangesService.getActiveConnection();
+        setConnectionType(response.data?.exchange?.type || null);
+      } catch (error) {
+        console.error("Failed to check connection type:", error);
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
   // Account data
   const [balance, setBalance] = useState(0);
   const [openOrdersCount, setOpenOrdersCount] = useState(0);
@@ -142,6 +163,9 @@ export default function PaperTradingPage() {
 
   // --- Load testnet status on mount ---
   useEffect(() => {
+    // Only attempt to contact Binance testnet for crypto connections
+    if (connectionType !== "crypto") return;
+
     const loadStatus = async () => {
       try {
         const testnetStatus = await binanceTestnetService.getStatus();
@@ -151,7 +175,7 @@ export default function PaperTradingPage() {
       }
     };
     loadStatus();
-  }, []);
+  }, [connectionType]);
 
   // --- Page Visibility API: Pause polling when tab is hidden ---
   useEffect(() => {
@@ -278,6 +302,11 @@ export default function PaperTradingPage() {
   };
 
   const loadAccountData = async () => {
+    // Only load account data for crypto connections
+    if (connectionType !== "crypto") {
+      console.log("Skipping account data load: not a crypto connection");
+      return;
+    }
     // Rate limit protection
     if (isRateLimited) {
       console.log("⛔ API calls blocked - in rate limit cooldown period");
@@ -319,6 +348,9 @@ export default function PaperTradingPage() {
 
   // --- Fetch pre-built strategies ---
   useEffect(() => {
+    // Only load pre-built strategies for crypto connections
+    if (connectionType !== "crypto") return;
+
     let mounted = true;
     (async () => {
       try {
@@ -340,11 +372,13 @@ export default function PaperTradingPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [connectionType]);
 
   // --- Fetch signals for a strategy ---
   const fetchStrategySignals = async (strategyId: string) => {
     if (loadingSignals[strategyId]) return;
+    // Guard: only fetch crypto signals when connection is crypto
+    if (connectionType !== "crypto") return;
 
     setLoadingSignals((p) => ({ ...p, [strategyId]: true }));
     setSignalsError((p) => {
@@ -569,6 +603,20 @@ export default function PaperTradingPage() {
         </div>
       </div>
     );
+  }
+
+  // Show loading while checking connection
+  if (isCheckingConnection) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+      </div>
+    );
+  }
+
+  // Show coming soon for stocks
+  if (connectionType === "stocks") {
+    return <ComingSoon title="Paper Trading" description="Practice your trading strategies with virtual money for stocks coming soon! This feature will allow you to test your stock trading strategies risk-free before using real capital." icon="paper" />;
   }
 
   return (
