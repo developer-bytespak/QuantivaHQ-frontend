@@ -6,6 +6,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight } from "@/lib/api/strategies";
+import { exchangesService } from "@/lib/api/exchanges.service";
+import { ComingSoon } from "@/components/common/coming-soon";
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -91,6 +93,10 @@ interface Trade {
 }
 
 export default function TopTradesPage() {
+  // Connection type detection
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+
   // --- Page state ---
   const [trendingTrades, setTrendingTrades] = useState<Trade[]>([]);
   const [loadingTrending, setLoadingTrending] = useState(true);
@@ -198,8 +204,26 @@ export default function TopTradesPage() {
     });
   };
 
+  // Check connection type on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await exchangesService.getActiveConnection();
+        setConnectionType(response.data?.exchange?.type || null);
+      } catch (error) {
+        console.error("Failed to check connection type:", error);
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
   // --- Fetch trending assets (DISCOVERY) ---
   useEffect(() => {
+    // Only fetch if crypto connection
+    if (connectionType !== "crypto") return;
+    
     let mounted = true;
     (async () => {
       try {
@@ -221,10 +245,13 @@ export default function TopTradesPage() {
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [connectionType]);
 
   // --- Fetch pre-built strategies ---
   useEffect(() => {
+    // Only load pre-built strategies for crypto users (pre-built strategies currently target crypto)
+    if (connectionType !== "crypto") return;
+
     let mounted = true;
     (async () => {
       try {
@@ -241,11 +268,13 @@ export default function TopTradesPage() {
       }
     })();
     return () => { mounted = false; };
-  }, []);
+  }, [connectionType]);
 
   // --- Fetch signals for a strategy with AI insights ---
   const fetchStrategySignals = async (strategyId: string) => {
     if (loadingSignals[strategyId]) return;
+    // Guard: only fetch crypto signals when connection is crypto
+    if (connectionType !== "crypto") return;
     
     setLoadingSignals((p) => ({ ...p, [strategyId]: true }));
     setSignalsError((p) => { const c = { ...p }; delete c[strategyId]; return c; });
@@ -350,6 +379,7 @@ export default function TopTradesPage() {
 
   // --- Fetch signals for all strategies when they're loaded ---
   useEffect(() => {
+    if (connectionType !== "crypto") return;
     if (preBuiltStrategies.length > 0) {
       preBuiltStrategies.forEach((strategy) => {
         if (!strategySignals[strategy.strategy_id] && !loadingSignals[strategy.strategy_id]) {
@@ -361,8 +391,9 @@ export default function TopTradesPage() {
 
   // --- Auto-refresh signals every 60 seconds ---
   useEffect(() => {
+    if (connectionType !== "crypto") return;
     if (preBuiltStrategies.length === 0) return;
-    
+
     const interval = setInterval(() => {
       preBuiltStrategies.forEach((strategy) => {
         fetchStrategySignals(strategy.strategy_id);
@@ -532,6 +563,20 @@ export default function TopTradesPage() {
     setSelectedTradeIndex(index);
     setShowTradeOverlay(true);
   };
+
+  // Show loading while checking connection
+  if (isCheckingConnection) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+      </div>
+    );
+  }
+
+  // Show coming soon for stocks
+  if (connectionType === "stocks") {
+    return <ComingSoon title="Trading Signals" description="Automated trading signals for stocks are currently under development. This feature will provide AI-powered buy/sell signals for stocks soon!" icon="trade" />;
+  }
 
   // --- UI Rendering (reuse existing layout and style) ---
   return (

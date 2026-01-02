@@ -3,19 +3,62 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { exchangesService } from "@/lib/api/exchanges.service";
+import { useStocksMarket } from "@/hooks/useStocksMarket";
+import { formatPrice, formatPercent, formatVolume, formatMarketCap } from "@/lib/utils/format";
 
 export default function MarketPage() {
   const router = useRouter();
+  
+  // Connection type detection
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  
+  // Crypto state
   const [coins, setCoins] = useState<CoinGeckoCoin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [timeSinceSync, setTimeSinceSync] = useState<string>("");
+  
+  // Stocks state
+  const {
+    data: stocks,
+    loading: stocksLoading,
+    error: stocksError,
+    timestamp: stocksTimestamp,
+    refresh: refreshStocks,
+  } = useStocksMarket({
+    limit: 500,
+    autoRefresh: connectionType === "stocks",
+    refreshInterval: 5 * 60 * 1000,
+    enabled: connectionType === "stocks",
+  });
+  
+  // Common state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const coinsPerPage = 50;
 
+  // Check connection type on mount
   useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await exchangesService.getActiveConnection();
+        setConnectionType(response.data?.exchange?.type || null);
+      } catch (error) {
+        console.error("Failed to check connection type:", error);
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
+  useEffect(() => {
+    // Only fetch crypto data if crypto connection
+    if (connectionType !== "crypto") return;
+    
     const fetchCoins = async () => {
       setIsLoading(true);
       setError(null);
@@ -49,7 +92,7 @@ export default function MarketPage() {
     const refreshInterval = setInterval(fetchCoins, 5 * 60 * 1000);
 
     return () => clearInterval(refreshInterval);
-  }, []);
+  }, [connectionType]); // Only fetch when connection type changes
 
   // Update "time since sync" display every second
   useEffect(() => {
@@ -124,6 +167,136 @@ export default function MarketPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Show loading while checking connection
+  if (isCheckingConnection) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+      </div>
+    );
+  }
+
+  // Render stocks market if stocks connection
+  if (connectionType === "stocks") {
+    const filteredStocks = stocks.filter((stock) =>
+      stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      stock.sector.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredStocks.length / coinsPerPage);
+    const startIndex = (currentPage - 1) * coinsPerPage;
+    const endIndex = startIndex + coinsPerPage;
+    const currentStocks = filteredStocks.slice(startIndex, endIndex);
+
+    return (
+      <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div>
+            <h1 className="text-base sm:text-xl md:text-2xl font-bold text-white">S&P 500 Market</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              {filteredStocks.length} stocks • Updated {stocksTimestamp ? new Date(stocksTimestamp).toLocaleTimeString() : "N/A"}
+            </p>
+          </div>
+          <button
+            onClick={() => router.back()}
+            className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by symbol, name, or sector..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+            />
+          </div>
+        </div>
+
+        {/* Loading/Error */}
+        {stocksLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+          </div>
+        )}
+        {stocksError && (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
+            <p className="text-sm text-red-300">{stocksError}</p>
+          </div>
+        )}
+
+        {/* Stocks Table */}
+        {!stocksLoading && !stocksError && (
+          <>
+            <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="border-b border-[--color-border]">
+                    <tr className="text-left">
+                      <th className="py-3 px-4 text-xs font-medium text-slate-400">#</th>
+                      <th className="py-3 px-4 text-xs font-medium text-slate-400">Stock</th>
+                      <th className="py-3 px-4 text-xs font-medium text-slate-400">Price</th>
+                      <th className="py-3 px-4 text-xs font-medium text-slate-400">24h %</th>
+                      <th className="py-3 px-4 text-xs font-medium text-slate-400 hidden md:table-cell">Market Cap</th>
+                      <th className="py-3 px-4 text-xs font-medium text-slate-400 hidden lg:table-cell">Volume (24h)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[--color-border]">
+                    {currentStocks.map((stock, index) => (
+                      <tr key={stock.symbol} className="group cursor-pointer hover:bg-slate-800/40 transition-colors" onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}>
+                        <td className="py-4 px-4 text-sm font-medium text-slate-400">{startIndex + index + 1}</td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-white">{stock.symbol}</p>
+                              <p className="text-xs text-slate-400">{stock.name}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-sm font-medium text-white">{formatPrice(stock.price)}</td>
+                        <td className={`py-4 px-4 text-sm font-medium ${stock.changePercent24h >= 0 ? "text-green-400" : "text-red-400"}`}>
+                          {formatPercent(stock.changePercent24h)}
+                        </td>
+                        <td className="py-4 px-4 text-sm text-slate-300 hidden md:table-cell">{formatMarketCap(stock.marketCap)}</td>
+                        <td className="py-4 px-4 text-sm text-slate-300 hidden lg:table-cell">{formatVolume(stock.volume24h)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4">
+                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#fc4f02]/50">
+                  Previous
+                </button>
+                <span className="text-sm text-slate-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#fc4f02]/50">
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Render crypto market if crypto connection (original code)
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0 scroll-smooth">
       {/* Header */}

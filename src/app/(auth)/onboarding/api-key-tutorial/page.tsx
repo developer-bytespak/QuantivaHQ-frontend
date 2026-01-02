@@ -73,12 +73,12 @@ function StepCard({ number, title, description, action, warning, diagram, tip, d
 
 export default function ApiKeyTutorialPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | "alpaca" | null>(null);
 
   useEffect(() => {
     // Get selected exchange from localStorage
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
-    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr") {
+    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr" || exchange === "alpaca") {
       setSelectedExchange(exchange);
     } else {
       // Default to Binance if not set
@@ -90,6 +90,7 @@ export default function ApiKeyTutorialPage() {
     let url = "https://www.binance.com/en/login";
     if (selectedExchange === "bybit") url = "https://www.bybit.com/login";
     if (selectedExchange === "ibkr") url = "https://www.interactivebrokers.com/sso/Login";
+    if (selectedExchange === "alpaca") url = "https://app.alpaca.markets/login";
 
     window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -139,6 +140,20 @@ export default function ApiKeyTutorialPage() {
       gradient: "from-[#ce2029] to-[#e63946]",
       apiManagementPath: "Settings > API Settings",
     },
+    alpaca: {
+      name: "Alpaca",
+      logo: (
+        <Image
+          src="/alpaca_logo.png"
+          alt="Alpaca"
+          width={64}
+          height={64}
+          className="h-16 w-16 object-contain"
+        />
+      ),
+      gradient: "from-[#fcba03] to-[#fda300]",
+      apiManagementPath: "Paper Trading > View API Keys",
+    },
   };
 
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
@@ -164,7 +179,7 @@ export default function ApiKeyTutorialPage() {
             <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           </button>
 
-          {selectedExchange === "ibkr" && (
+          {(selectedExchange === "ibkr" || selectedExchange === "alpaca") && (
             <button
               onClick={() => {
                 // Check if account type is "both" and crypto is already connected
@@ -175,13 +190,13 @@ export default function ApiKeyTutorialPage() {
                 if (accountType === "both" && cryptoConnected) {
                   // Set stocks connection flag since we're connecting stocks account
                   sessionStorage.setItem("quantivahq_stocks_connected", "true");
-                  // Navigate to crypto dashboard when coming from "both" flow
+                  // Navigate to unified dashboard
                   router.push("/dashboard");
                 } else {
                   // Set stocks connection flag for normal flow too
                   sessionStorage.setItem("quantivahq_stocks_connected", "true");
-                  // Navigate to stocks dashboard for normal flow
-                  router.push("/stocks-dashboard");
+                  // Navigate to unified dashboard
+                  router.push("/dashboard");
                 }
               }}
               className="group relative overflow-hidden rounded-lg border border-slate-600 bg-slate-800/50 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-slate-700/50 hover:scale-[1.02]"

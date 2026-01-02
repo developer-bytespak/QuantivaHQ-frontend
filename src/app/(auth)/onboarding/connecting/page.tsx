@@ -15,7 +15,7 @@ type ErrorType =
 
 export default function ConnectingPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | "alpaca" | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "success" | "error">("connecting");
   const [errorType, setErrorType] = useState<ErrorType>(null);
   const [accountType, setAccountType] = useState<"crypto" | "stocks" | "both" | null>(null);
@@ -23,8 +23,8 @@ export default function ConnectingPage() {
   useEffect(() => {
     // Get selected exchange from localStorage
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
-    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr") {
-      setSelectedExchange(exchange);
+    if (exchange === "binance" || exchange === "bybit" || exchange === "ibkr" || exchange === "alpaca") {
+      setSelectedExchange(exchange as any);
     } else {
       setSelectedExchange("binance");
     }
@@ -55,20 +55,15 @@ export default function ConnectingPage() {
           // These are just UI flags, not sensitive data - connection status is in backend
           if (exchange === "binance" || exchange === "bybit") {
             sessionStorage.setItem("quantivahq_crypto_connected", "true");
-          } else if (exchange === "ibkr") {
+          } else if (exchange === "ibkr" || exchange === "alpaca") {
             sessionStorage.setItem("quantivahq_stocks_connected", "true");
           }
 
-          // Navigate to dashboard after successful connection
-          // For "both" account type with crypto, show success and let user choose next step
-          // For "both" with stocks, navigate to dashboard
-          // For crypto-only, navigate to dashboard directly
-          if (exchange === "ibkr" || savedAccountType === "crypto") {
-            // Small delay before navigation to show success message
-            setTimeout(() => {
-              router.push("/dashboard");
-            }, 2000);
-          }
+          // Navigate to dashboard after successful connection for all account types
+          // Small delay before navigation to show success message
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 1000);
         } else {
           // Invalid API keys
           setErrorType("invalid_api_key");
@@ -142,6 +137,20 @@ export default function ConnectingPage() {
         </div>
       ),
     },
+    alpaca: {
+      name: "Alpaca",
+      logo: (
+        <div className="flex h-20 w-20 items-center justify-center p-2">
+          <Image
+            src="/alpaca_logo.png"
+            alt="Alpaca"
+            width={64}
+            height={64}
+            className="h-full w-full object-contain"
+          />
+        </div>
+      ),
+    },
   };
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
   const exchangeName = selectedExchange ? exchangeInfo[selectedExchange].name : "Binance";
@@ -190,6 +199,7 @@ export default function ConnectingPage() {
   };
 
   const handleGoToDashboard = () => {
+    // Unified dashboard adapts based on connection type
     router.push("/dashboard");
   };
 

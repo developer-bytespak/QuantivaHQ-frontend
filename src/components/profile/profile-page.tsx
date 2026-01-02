@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { authService } from "@/lib/auth/auth.service";
 import { getTrendingAssets, getCoinGeckoLogoUrl } from "@/lib/api/trending-assets.service";
+import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
 
 interface Coin {
   id: string;
@@ -46,103 +47,86 @@ export function ProfilePage() {
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
   const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [holdingValue, setHoldingValue] = useState<number>(2509.75);
-  const [investedValue, setInvestedValue] = useState<number>(1618.75);
-  const [availableUSD, setAvailableUSD] = useState<number>(1589);
-  const [portfolioChange, setPortfolioChange] = useState<number>(9.77);
   const [coinLogos, setCoinLogos] = useState<Record<string, string>>({});
+  
+  // Dashboard data state
+  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
-  // Mock data - replace with actual API calls
-  const [coins, setCoins] = useState<Coin[]>([
-    {
-      id: "1",
-      name: "Ethereum",
-      symbol: "ETH",
-      amount: 0.0004586,
-      value: 1085.18,
-      change: -21.0,
-      trend: "down",
-      icon: "🔷",
-    },
-    {
-      id: "2",
-      name: "Cardano",
-      symbol: "ADA",
-      amount: 56.89,
-      value: 886.127,
-      change: 16.31,
-      trend: "up",
-      icon: "🔵",
-    },
-    {
-      id: "3",
-      name: "TRON",
-      symbol: "TRX",
-      amount: 10.589,
-      value: 50.529,
-      change: -16.58,
-      trend: "down",
-      icon: "🔴",
-    },
-    {
-      id: "4",
-      name: "Dogecoin",
-      symbol: "DOGE",
-      amount: 5.485,
-      value: 589.39,
-      change: 120.0,
-      trend: "up",
-      icon: "🟡",
-    },
-  ]);
+  // Fetch active connection
+  const fetchActiveConnection = useCallback(async () => {
+    try {
+      const response = await exchangesService.getActiveConnection();
+      setConnectionId(response.data.connection_id);
+      return response.data.connection_id;
+    } catch (err: any) {
+      if (err?.status !== 401 && err?.statusCode !== 401) {
+        console.error("Failed to fetch active connection:", err);
+      }
+      setError("No active connection found. Please connect your broker.");
+      setIsLoading(false);
+      return null;
+    }
+  }, []);
 
-  const [stocks, setStocks] = useState<Stock[]>([
-    {
-      id: "1",
-      name: "Apple Inc.",
-      symbol: "AAPL",
-      shares: 10,
-      value: 1850.50,
-      change: 5.23,
-      trend: "up",
-      icon: "🍎",
-    },
-    {
-      id: "2",
-      name: "Microsoft Corp.",
-      symbol: "MSFT",
-      shares: 5,
-      value: 1825.75,
-      change: -2.15,
-      trend: "down",
-      icon: "🪟",
-    },
-    {
-      id: "3",
-      name: "Tesla Inc.",
-      symbol: "TSLA",
-      shares: 15,
-      value: 3450.00,
-      change: 12.45,
-      trend: "up",
-      icon: "⚡",
-    },
-    {
-      id: "4",
-      name: "Amazon.com Inc.",
-      symbol: "AMZN",
-      shares: 8,
-      value: 1420.80,
-      change: -3.67,
-      trend: "down",
-      icon: "📦",
-    },
-  ]);
+  // Fetch dashboard data (includes positions)
+  const fetchDashboardData = useCallback(async (connId: string) => {
+    try {
+      setIsLoading(true);
+      const response = await exchangesService.getDashboard(connId);
+      setDashboardData(response.data);
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to fetch dashboard data:", err);
+      setError(err.message || "Failed to load portfolio data.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Convert positions to Coin/Stock format
+  const coins: Coin[] = dashboardData?.positions
+    ?.filter(pos => pos.symbol.includes('USD') || ['BTC', 'ETH', 'DOGE', 'ADA', 'TRX'].includes(pos.symbol))
+    .map((pos, idx) => ({
+      id: String(idx + 1),
+      name: pos.symbol,
+      symbol: pos.symbol,
+      amount: pos.quantity,
+      value: pos.quantity * pos.currentPrice,
+      change: pos.pnlPercent,
+      trend: pos.pnlPercent >= 0 ? "up" as const : "down" as const,
+      icon: "🪙",
+    })) || [];
+
+  const stocks: Stock[] = dashboardData?.positions
+    ?.filter(pos => !pos.symbol.includes('USD') && !['BTC', 'ETH', 'DOGE', 'ADA', 'TRX'].includes(pos.symbol))
+    .map((pos, idx) => ({
+      id: String(idx + 1),
+      name: pos.symbol,
+      symbol: pos.symbol,
+      shares: pos.quantity,
+      value: pos.quantity * pos.currentPrice,
+      change: pos.pnlPercent,
+      trend: pos.pnlPercent >= 0 ? "up" as const : "down" as const,
+      icon: "📈",
+    })) || [];
+
+  // Calculate portfolio metrics
+  const holdingValue = dashboardData?.portfolio?.totalValue || 0;
+  const investedValue = dashboardData?.portfolio?.totalCost || 0;
+  const availableUSD = dashboardData?.balance?.assets?.find(a => a.symbol === 'USD')?.free 
+    ? parseFloat(dashboardData.balance.assets.find(a => a.symbol === 'USD')!.free) 
+    : 0;
+  const portfolioChange = dashboardData?.portfolio?.pnlPercent || 0;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Load user data
   useEffect(() => {
     if (!mounted) return;
     
@@ -168,6 +152,21 @@ export function ProfilePage() {
 
     loadUserData();
   }, [mounted]);
+
+  // Fetch dashboard data
+  useEffect(() => {
+    if (!mounted || hasInitialized.current) return;
+    
+    const initialize = async () => {
+      hasInitialized.current = true;
+      const connId = await fetchActiveConnection();
+      if (connId) {
+        await fetchDashboardData(connId);
+      }
+    };
+    
+    initialize();
+  }, [mounted, fetchActiveConnection, fetchDashboardData]);
 
   // Fetch coin data from backend database (no CoinGecko API rate limits)
   useEffect(() => {
@@ -317,8 +316,19 @@ export function ProfilePage() {
         {/* Your Coins Section */}
         <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-lg sm:rounded-2xl p-4 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Your Coins</h2>
-          <div className="space-y-3 sm:space-y-4">
-            {coins.map((coin) => (
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-16 rounded-lg bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-slate-400">{error}</div>
+          ) : coins.length === 0 ? (
+            <div className="text-center py-8 text-slate-400">No crypto positions found</div>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {coins.map((coin) => (
               <div
                 key={coin.id}
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
@@ -366,13 +376,25 @@ export function ProfilePage() {
               </div>
             ))}
           </div>
+          )}
         </div>
 
         {/* Your Stocks Section */}
         <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-lg sm:rounded-2xl p-4 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
           <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Your Stocks</h2>
-          <div className="space-y-3 sm:space-y-4">
-            {stocks.map((stock) => (
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-16 rounded-lg bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-slate-400">{error}</div>
+          ) : stocks.length === 0 ? (
+            <div className="text-center py-8 text-slate-400">No stock positions found</div>
+          ) : (
+            <div className="space-y-3 sm:space-y-4">
+              {stocks.map((stock) => (
               <div
                 key={stock.id}
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
@@ -407,6 +429,7 @@ export function ProfilePage() {
               </div>
             ))}
           </div>
+          )}
         </div>
       </div>
     </div>

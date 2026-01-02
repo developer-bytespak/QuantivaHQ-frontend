@@ -124,7 +124,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
             <div className="space-y-1">
               {section.items.map((item) => {
                 let isActive = false;
-                if (item.href === "/dashboard" || item.href === "/stocks-dashboard") {
+                if (item.href === "/dashboard") {
                   isActive = pathname === item.href;
                 } else {
                   isActive = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
@@ -197,7 +197,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                   <div className="space-y-1">
                     {section.items.map((item) => {
                       let isActive = false;
-                      if (item.href === "/dashboard" || item.href === "/stocks-dashboard") {
+                      if (item.href === "/dashboard") {
                         isActive = pathname === item.href;
                       } else {
                         isActive = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);

@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
+import { exchangesService, DashboardData, Connection } from "@/lib/api/exchanges.service";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 import { getCryptoNews, getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
+import { useStocksMarket } from "@/hooks/useStocksMarket";
+import { MarketTable } from "@/components/market/MarketTable";
+import {
+  formatMarketCap,
+  formatPrice,
+  formatPercent,
+  formatVolume,
+  getChangeColorClass,
+} from "@/lib/utils/format";
 
 interface Activity {
   id: number;
@@ -33,17 +42,80 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
-  // Store connection ID in component state (not localStorage)
+  // Store connection ID and type in component state
   const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+  const [activeConnection, setActiveConnection] = useState<Connection | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Ref to track if initialization has happened (prevents duplicate calls)
   const hasInitialized = useRef(false);
   
-  // Market data state
+  // Market data state - different sources based on type
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
   const [isLoadingMarket, setIsLoadingMarket] = useState(false);
   const [marketError, setMarketError] = useState<string | null>(null);
+
+  // Stocks market data (only for stocks type)
+  const {
+    data: stocksMarketData,
+    loading: stocksMarketLoading,
+    error: stocksMarketError,
+  } = useStocksMarket({
+    limit: 5,
+    autoRefresh: activeTab === "market" && connectionType === "stocks",
+    refreshInterval: 5 * 60 * 1000,
+    enabled: connectionType === "stocks" && activeTab === "market",
+  });
+
+  // All stocks for market overview (only for stocks)
+  const {
+    data: allStocks,
+    loading: allStocksLoading,
+  } = useStocksMarket({
+    limit: 500,
+    autoRefresh: connectionType === "stocks",
+    refreshInterval: 5 * 60 * 1000,
+    enabled: connectionType === "stocks",
+  });
+
+  // Calculate market overview for stocks
+  const marketOverview = useMemo(() => {
+    if (connectionType !== "stocks" || !allStocks || allStocks.length === 0) {
+      return {
+        sp500: { price: 0, change: 0 },
+        nasdaq: { price: 0, change: 0 },
+        dow: { price: 0, change: 0 },
+        vix: { value: 0, level: 'Low' as 'Low' | 'Moderate' | 'High' },
+        sentiment: { label: 'Neutral' as 'Bullish' | 'Neutral' | 'Bearish', percentage: 0 },
+      };
+    }
+
+    const spy = allStocks.find(s => s.symbol === 'SPY');
+    const qqq = allStocks.find(s => s.symbol === 'QQQ');
+    const dia = allStocks.find(s => s.symbol === 'DIA');
+
+    const positiveStocks = allStocks.filter(s => s.changePercent24h > 0).length;
+    const sentimentPercentage = (positiveStocks / allStocks.length) * 100;
+    
+    let sentimentLabel: 'Bullish' | 'Neutral' | 'Bearish' = 'Neutral';
+    if (sentimentPercentage > 55) sentimentLabel = 'Bullish';
+    else if (sentimentPercentage < 45) sentimentLabel = 'Bearish';
+
+    const avgAbsChange = allStocks.reduce((sum, s) => sum + Math.abs(s.changePercent24h), 0) / allStocks.length;
+    let vixLevel: 'Low' | 'Moderate' | 'High' = 'Low';
+    let vixValue = avgAbsChange * 10;
+    if (vixValue > 25) vixLevel = 'High';
+    else if (vixValue > 15) vixLevel = 'Moderate';
+
+    return {
+      sp500: { price: spy?.price || 0, change: spy?.changePercent24h || 0 },
+      nasdaq: { price: qqq?.price || 0, change: qqq?.changePercent24h || 0 },
+      dow: { price: dia?.price || 0, change: dia?.changePercent24h || 0 },
+      vix: { value: vixValue, level: vixLevel },
+      sentiment: { label: sentimentLabel, percentage: sentimentPercentage },
+    };
+  }, [connectionType, allStocks]);
 
   // News data state
   const [newsData, setNewsData] = useState<{ total_count: number; news_items: Array<CryptoNewsItem & { symbol: string }>; timestamp: string } | null>(null);
@@ -99,8 +171,11 @@ export default function DashboardPage() {
   const fetchActiveConnection = useCallback(async () => {
     try {
       const response = await exchangesService.getActiveConnection();
-      setConnectionId(response.data.connection_id);
-      return response.data.connection_id;
+      const connection = response.data;
+      setConnectionId(connection.connection_id);
+      setActiveConnection(connection as Connection);
+      setConnectionType(connection.exchange?.type || null);
+      return connection.connection_id;
     } catch (err: any) {
       // Silently handle 401 (not logged in) and 404 (no connection) - both are expected
       if (
@@ -228,10 +303,11 @@ export default function DashboardPage() {
 
   // Fetch market data when market tab is selected
   useEffect(() => {
-    if (activeTab === "market") {
+    // Only fetch crypto market data for crypto connections
+    if (activeTab === "market" && connectionType === "crypto") {
       fetchMarketData();
     }
-  }, [activeTab, fetchMarketData]);
+  }, [activeTab, connectionType, fetchMarketData]);
 
   // Fetch crypto news with sentiment (all coins)
   const fetchCryptoNews = useCallback(async (limit: number = 30) => {
@@ -248,19 +324,23 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Fetch news on mount
+  // Fetch news on mount (only for crypto)
   useEffect(() => {
-    fetchCryptoNews(30);
-  }, [fetchCryptoNews]);
+    if (connectionType === "crypto") {
+      fetchCryptoNews(30);
+    }
+  }, [connectionType, fetchCryptoNews]);
 
-  // Auto-refresh news every 5 minutes
+  // Auto-refresh news every 5 minutes (only for crypto)
   useEffect(() => {
+    if (connectionType !== "crypto") return;
+    
     const refreshInterval = setInterval(() => {
       fetchCryptoNews(30);
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(refreshInterval);
-  }, [fetchCryptoNews]);
+  }, [connectionType, fetchCryptoNews]);
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
@@ -479,99 +559,186 @@ export default function DashboardPage() {
               </div>
               ) : (
                 <div className="space-y-4">
-                  {isLoadingMarket ? (
-                    <div className="py-8 text-center">
-                      <div className="flex items-center justify-center">
-                        <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                  {/* Conditional rendering based on connection type */}
+                  {connectionType === "stocks" ? (
+                    /* Stocks Market Data */
+                    stocksMarketLoading ? (
+                      <div className="py-8 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                        </div>
                       </div>
-                    </div>
-                  ) : marketError ? (
-                    <div className="py-8 text-center space-y-3">
-                      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
-                        <p className="text-sm text-red-300 mb-2">{marketError}</p>
-                        <button
-                          onClick={() => fetchMarketData()}
-                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
-                        >
-                          Retry
-                        </button>
+                    ) : stocksMarketError ? (
+                      <div className="py-8 text-center space-y-3">
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+                          <p className="text-sm text-red-300 mb-2">{stocksMarketError}</p>
+                          <button
+                            onClick={() => window.location.reload()}
+                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                          >
+                            Retry
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : marketData.length > 0 ? (
-                    <>
-                      <div className="sm:w-full sm:-ml-6 overflow-x-auto sm:overflow-x-visible -mx-4 sm:mx-0 px-4 sm:px-0">
-                        <table className="w-full table-auto min-w-[600px] sm:min-w-0">
-                          <colgroup>
-                            <col style={{ width: '8%' }} />
-                            <col style={{ width: '22%' }} />
-                            <col style={{ width: '18%' }} />
-                            <col style={{ width: '18%' }} />
-                            <col style={{ width: '17%' }} />
-                            <col style={{ width: '17%' }} />
-                          </colgroup>
-                          <thead className="divide-y divide-[--color-border]">
-                            <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                              <th className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-white">Rank</th>
-                              <th className="py-3 pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
-                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">price</th>
-                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">24h change</th>
-                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">Market cap</th>
-                              <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden md:table-cell">volume (24h)</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[--color-border]">
-                            {marketData.map((coin, index) => (
-                              <tr
-                                key={coin.id}
-                                onClick={() => router.push(`/dashboard/market/${coin.symbol.toUpperCase()}`)}
-                                className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
-                              >
-                                <td className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap">
-                                  {index + 1}
-                                </td>
-                                <td className="py-3 pr-2 pl-0 text-left">
-                                  <div className="flex items-center justify-start gap-2 sm:gap-3">
-                                    <img src={coin.image} alt={coin.name} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
-                                    <div className="text-left min-w-0">
-                                      <p className="text-xs sm:text-sm font-medium text-white truncate">{coin.name}</p>
-                                      <p className="text-[10px] sm:text-xs text-slate-400 uppercase">{coin.symbol}</p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
-                                <td className={`py-3 px-2 text-left text-xs sm:text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  {formatPercent(coin.price_change_percentage_24h)}
-                                </td>
-                                <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell">{formatLargeNumber(coin.market_cap)}</td>
-                                <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell">{formatLargeNumber(coin.total_volume)}</td>
+                    ) : stocksMarketData && stocksMarketData.length > 0 ? (
+                      <>
+                        <div className="sm:w-full sm:-ml-6 overflow-x-auto sm:overflow-x-visible -mx-4 sm:mx-0 px-4 sm:px-0">
+                          <table className="w-full table-auto min-w-[600px] sm:min-w-0">
+                            <colgroup>
+                              <col style={{ width: '8%' }} />
+                              <col style={{ width: '22%' }} />
+                              <col style={{ width: '18%' }} />
+                              <col style={{ width: '18%' }} />
+                              <col style={{ width: '17%' }} />
+                              <col style={{ width: '17%' }} />
+                            </colgroup>
+                            <thead className="divide-y divide-[--color-border]">
+                              <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors">
+                                <th className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-white">Rank</th>
+                                <th className="py-3 pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Stock</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">Price</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">24h Change</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">Market Cap</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden md:table-cell">Volume (24h)</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                            </thead>
+                            <tbody className="divide-y divide-[--color-border]">
+                              {stocksMarketData.slice(0, 5).map((stock, index) => (
+                                <tr
+                                  key={stock.symbol}
+                                  onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}
+                                  className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors"
+                                >
+                                  <td className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-slate-300">{index + 1}</td>
+                                  <td className="py-3 pr-2 pl-0 text-left">
+                                    <div className="flex items-center gap-2 sm:gap-3">
+                                      <div className="text-left min-w-0">
+                                        <p className="text-xs sm:text-sm font-medium text-white">{stock.symbol}</p>
+                                        <p className="text-[10px] sm:text-xs text-slate-400 truncate">{stock.name}</p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">${stock.price?.toFixed(2) || '0.00'}</td>
+                                  <td className={`py-3 px-2 text-left text-xs sm:text-sm font-medium ${stock.changePercent24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {stock.changePercent24h?.toFixed(2) || '0.00'}%
+                                  </td>
+                                  <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 hidden sm:table-cell">{formatLargeNumber(stock.marketCap || 0)}</td>
+                                  <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 hidden md:table-cell">{formatLargeNumber(stock.volume24h || 0)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="pt-2 sm:pt-4 text-center">
+                          <button
+                            onClick={() => router.push("/dashboard/market")}
+                            className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105"
+                          >
+                            View More
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="py-6 sm:py-8 text-center">
+                        <p className="text-xs sm:text-sm text-slate-400">No stocks market data available</p>
                       </div>
-                      <div className="pt-2 sm:pt-4 text-center">
-                        <button
-                          onClick={() => router.push("/dashboard/market")}
-                          className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
-                        >
-                          View More
-                        </button>
-                      </div>
-                    </>
+                    )
                   ) : (
-                    <div className="py-6 sm:py-8 text-center space-y-3">
-                      <p className="text-xs sm:text-sm text-slate-400">
-                        {marketError || "No market data available"}
-                      </p>
-                      {marketError && (
-                        <button
-                          onClick={() => fetchMarketData()}
-                          className="px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-xs sm:text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
-                        >
-                          Retry
-                        </button>
-                      )}
-                    </div>
+                    /* Crypto Market Data */
+                    isLoadingMarket ? (
+                      <div className="py-8 text-center">
+                        <div className="flex items-center justify-center">
+                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                        </div>
+                      </div>
+                    ) : marketError ? (
+                      <div className="py-8 text-center space-y-3">
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+                          <p className="text-sm text-red-300 mb-2">{marketError}</p>
+                          <button
+                            onClick={() => fetchMarketData()}
+                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </div>
+                    ) : marketData.length > 0 ? (
+                      <>
+                        <div className="sm:w-full sm:-ml-6 overflow-x-auto sm:overflow-x-visible -mx-4 sm:mx-0 px-4 sm:px-0">
+                          <table className="w-full table-auto min-w-[600px] sm:min-w-0">
+                            <colgroup>
+                              <col style={{ width: '8%' }} />
+                              <col style={{ width: '22%' }} />
+                              <col style={{ width: '18%' }} />
+                              <col style={{ width: '18%' }} />
+                              <col style={{ width: '17%' }} />
+                              <col style={{ width: '17%' }} />
+                            </colgroup>
+                            <thead className="divide-y divide-[--color-border]">
+                              <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                                <th className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-white">Rank</th>
+                                <th className="py-3 pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">price</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">24h change</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">Market cap</th>
+                                <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white hidden md:table-cell">volume (24h)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[--color-border]">
+                              {marketData.map((coin, index) => (
+                                <tr
+                                  key={coin.id}
+                                  onClick={() => router.push(`/dashboard/market/${coin.symbol.toUpperCase()}`)}
+                                  className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                                >
+                                  <td className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap">
+                                    {index + 1}
+                                  </td>
+                                  <td className="py-3 pr-2 pl-0 text-left">
+                                    <div className="flex items-center justify-start gap-2 sm:gap-3">
+                                      <img src={coin.image} alt={coin.name} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
+                                      <div className="text-left min-w-0">
+                                        <p className="text-xs sm:text-sm font-medium text-white truncate">{coin.name}</p>
+                                        <p className="text-[10px] sm:text-xs text-slate-400 uppercase">{coin.symbol}</p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
+                                  <td className={`py-3 px-2 text-left text-xs sm:text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                    {formatPercent(coin.price_change_percentage_24h)}
+                                  </td>
+                                  <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell">{formatLargeNumber(coin.market_cap)}</td>
+                                  <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell">{formatLargeNumber(coin.total_volume)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="pt-2 sm:pt-4 text-center">
+                          <button
+                            onClick={() => router.push("/dashboard/market")}
+                            className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                          >
+                            View More
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="py-6 sm:py-8 text-center space-y-3">
+                        <p className="text-xs sm:text-sm text-slate-400">
+                          {marketError || "No market data available"}
+                        </p>
+                        {marketError && (
+                          <button
+                            onClick={() => fetchMarketData()}
+                            className="px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-xs sm:text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                          >
+                            Retry
+                          </button>
+                        )}
+                      </div>
+                    )
                   )}
                 </div>
               )}
@@ -586,17 +753,30 @@ export default function DashboardPage() {
             {/* Trade Header - Outside Box */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <h2 className="text-base sm:text-lg font-semibold text-white">Trade</h2>
-              <button
-                onClick={() => router.push("/dashboard/top-trades")}
-                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
-              >
-                View All Trades
-              </button>
+              {connectionType === "crypto" && (
+                <button
+                  onClick={() => router.push("/dashboard/top-trades")}
+                  className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
+                >
+                  View All Trades
+                </button>
+              )}
             </div>
 
-            {/* Trade Cards */}
-            <div className="space-y-2 sm:space-y-3">
-              {trades.map((trade, index) => (
+            {/* Trade Cards - Only for Crypto */}
+            {connectionType === "stocks" ? (
+              <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-white">Coming Soon</h3>
+                  <p className="text-sm text-slate-400 max-w-md">Automated trading signals for stocks are currently under development. Stay tuned!</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 sm:space-y-3">
+                {trades.map((trade, index) => (
                  <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
                   {/* Top Trade Opportunity */}
                   <div className="space-y-3 sm:space-y-4">
@@ -660,7 +840,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* AI Insights Section */}
@@ -668,16 +849,29 @@ export default function DashboardPage() {
             {/* AI Insights Header - Outside Box */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
               <h2 className="text-base sm:text-lg font-semibold text-white">AI Insights</h2>
-              <button
-                onClick={() => router.push("/dashboard/ai-insights")}
-                className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
-              >
-                View All AI Insights
-              </button>
+              {connectionType === "crypto" && (
+                <button
+                  onClick={() => router.push("/dashboard/ai-insights")}
+                  className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
+                >
+                  View All AI Insights
+                </button>
+              )}
             </div>
 
-            {/* AI Insights News Cards */}
-            <div className="space-y-2 sm:space-y-3">
+            {/* AI Insights News Cards - Only for Crypto */}
+            {connectionType === "stocks" ? (
+              <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <h3 className="text-lg font-semibold text-white">Coming Soon</h3>
+                  <p className="text-sm text-slate-400 max-w-md">AI-powered insights for stocks are currently under development. Stay tuned!</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 sm:space-y-3">
               
               {isLoadingNews ? (
                 <div className="flex items-center justify-center py-6 sm:py-8">
@@ -742,7 +936,8 @@ export default function DashboardPage() {
                   <p className="text-xs sm:text-sm">No news available</p>
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -83,13 +83,8 @@ export function HomepageHeader() {
     try {
       await authService.getCurrentUser();
       
-      // User has active session, proceed with redirect
-      // Use sessionStorage for UI state flags (cleared on browser close, more secure)
-      if (accountType === "stocks" || (accountType === "both" && sessionStorage.getItem("quantivahq_stocks_connected") === "true")) {
-        router.push("/stocks-dashboard");
-      } else {
-        router.push("/dashboard");
-      }
+      // User has active session, redirect to unified dashboard
+      router.push("/dashboard");
     } catch (error: any) {
       // No active session, redirect to login
       router.push("/onboarding/sign-up?tab=login");
