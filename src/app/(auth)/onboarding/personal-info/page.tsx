@@ -56,6 +56,7 @@ export default function PersonalInfoPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingInfo, setIsCheckingInfo] = useState(true);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   
   const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
   const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -339,6 +340,15 @@ export default function PersonalInfoPage() {
                     <span>Date of Birth</span>
                     <span className="text-red-400">*</span>
                   </label>
+                  <style>{`
+                    #dateOfBirth {
+                      color-scheme: dark;
+                    }
+                    
+                    #dateOfBirth::placeholder {
+                      color: #94a3b8;
+                    }
+                  `}</style>
                   <input
                     id="dateOfBirth"
                     type="date"
@@ -346,13 +356,41 @@ export default function PersonalInfoPage() {
                     onChange={(e) => {
                       setDateOfBirth(e.target.value);
                       setErrors({ ...errors, dateOfBirth: "" });
+                      // Close calendar after selecting a date
+                      setIsCalendarOpen(false);
+                    }}
+                    onClick={(e) => {
+                      // Toggle calendar on click
+                      const input = e.target as HTMLInputElement;
+                      if (isCalendarOpen) {
+                        // Close if already open
+                        input.blur();
+                        setIsCalendarOpen(false);
+                      } else {
+                        // Open if closed
+                        if (input.showPicker) {
+                          input.showPicker();
+                          setIsCalendarOpen(true);
+                        }
+                      }
+                    }}
+                    onBlur={() => {
+                      setIsCalendarOpen(false);
+                    }}
+                    onKeyDown={(e) => {
+                      // Close picker on Escape key
+                      if (e.key === 'Escape') {
+                        (e.target as HTMLInputElement).blur();
+                        setIsCalendarOpen(false);
+                      }
                     }}
                     max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
+                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-400 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 cursor-pointer ${
                       errors.dateOfBirth
                         ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                         : "border-[--color-border]"
                     }`}
+                    placeholder="dd----yyyy"
                     required
                   />
                   {errors.dateOfBirth && (
