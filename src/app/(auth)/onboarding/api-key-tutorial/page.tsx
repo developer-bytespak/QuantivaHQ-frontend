@@ -190,13 +190,13 @@ export default function ApiKeyTutorialPage() {
                 if (accountType === "both" && cryptoConnected) {
                   // Set stocks connection flag since we're connecting stocks account
                   sessionStorage.setItem("quantivahq_stocks_connected", "true");
-                  // Navigate to crypto dashboard when coming from "both" flow
+                  // Navigate to unified dashboard
                   router.push("/dashboard");
                 } else {
                   // Set stocks connection flag for normal flow too
                   sessionStorage.setItem("quantivahq_stocks_connected", "true");
-                  // Navigate to stocks dashboard for normal flow
-                  router.push("/stocks-dashboard");
+                  // Navigate to unified dashboard
+                  router.push("/dashboard");
                 }
               }}
               className="group relative overflow-hidden rounded-lg border border-slate-600 bg-slate-800/50 px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-slate-700/50 hover:scale-[1.02]"

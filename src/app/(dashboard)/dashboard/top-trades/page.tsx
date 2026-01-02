@@ -6,6 +6,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight } from "@/lib/api/strategies";
+import { exchangesService } from "@/lib/api/exchanges.service";
+import { ComingSoon } from "@/components/common/coming-soon";
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -91,6 +93,10 @@ interface Trade {
 }
 
 export default function TopTradesPage() {
+  // Connection type detection
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+
   // --- Page state ---
   const [trendingTrades, setTrendingTrades] = useState<Trade[]>([]);
   const [loadingTrending, setLoadingTrending] = useState(true);
@@ -198,8 +204,26 @@ export default function TopTradesPage() {
     });
   };
 
+  // Check connection type on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await exchangesService.getActiveConnection();
+        setConnectionType(response.data?.exchange?.type || null);
+      } catch (error) {
+        console.error("Failed to check connection type:", error);
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
   // --- Fetch trending assets (DISCOVERY) ---
   useEffect(() => {
+    // Only fetch if crypto connection
+    if (connectionType !== "crypto") return;
+    
     let mounted = true;
     (async () => {
       try {
@@ -532,6 +556,20 @@ export default function TopTradesPage() {
     setSelectedTradeIndex(index);
     setShowTradeOverlay(true);
   };
+
+  // Show loading while checking connection
+  if (isCheckingConnection) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+      </div>
+    );
+  }
+
+  // Show coming soon for stocks
+  if (connectionType === "stocks") {
+    return <ComingSoon title="Trading Signals" description="Automated trading signals for stocks are currently under development. This feature will provide AI-powered buy/sell signals for stocks soon!" icon="trade" />;
+  }
 
   // --- UI Rendering (reuse existing layout and style) ---
   return (

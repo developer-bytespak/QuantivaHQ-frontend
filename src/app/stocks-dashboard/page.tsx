@@ -337,7 +337,7 @@ export default function StocksDashboardPage() {
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Holdings</h2>
                 <button
-                  onClick={() => router.push("/stocks-dashboard/holdings")}
+                  onClick={() => router.push("/dashboard/holdings")}
                   className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
                 >
                   View All Holdings
@@ -604,7 +604,7 @@ export default function StocksDashboardPage() {
                 {marketStocks.length > 0 && (
                   <div className="pt-4 text-center">
                     <button
-                      onClick={() => router.push("/stocks-dashboard/market")}
+                      onClick={() => router.push("/dashboard/market")}
                       className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
                     >
                       View More
@@ -624,7 +624,7 @@ export default function StocksDashboardPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Trades</h2>
               <button
-                onClick={() => router.push("/stocks-dashboard/top-trades")}
+                onClick={() => router.push("/dashboard/top-trades")}
                 className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
               >
                 View All Trades
@@ -710,7 +710,7 @@ export default function StocksDashboardPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">AI Insights</h2>
               <button
-                onClick={() => router.push("/stocks-dashboard/ai-insights")}
+                onClick={() => router.push("/dashboard/ai-insights")}
                 className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
               >
                 View All AI Insights
@@ -735,7 +735,7 @@ export default function StocksDashboardPage() {
               ].map((news) => (
                 <div
                   key={news.id}
-                  onClick={() => router.push("/stocks-dashboard/ai-insights")}
+                  onClick={() => router.push("/dashboard/ai-insights")}
                   className="cursor-pointer rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 backdrop-blur transition-all duration-300 hover:scale-[1.02]"
                 >
                   <div className="mb-4 flex items-center justify-between">

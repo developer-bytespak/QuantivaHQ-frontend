@@ -130,7 +130,7 @@ export default function StocksMarketPage() {
                       <tr
                         key={stock.symbol}
                         className="group cursor-pointer hover:bg-slate-800/40 transition-colors"
-                        onClick={() => router.push(`/stocks-dashboard/market/${stock.symbol}`)}
+                        onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}
                       >
                         <td className="py-4 px-2 text-sm font-medium text-slate-400">
                           {startIndex + index + 1}

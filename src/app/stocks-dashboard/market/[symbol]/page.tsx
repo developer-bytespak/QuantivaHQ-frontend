@@ -231,7 +231,7 @@ export default function StockDetailPage() {
           </div>
 
           {bars.length > 0 ? (
-            <StockPriceChart data={bars} />
+            <StockPriceChart bars={bars} />
           ) : (
             <div className="h-96 flex items-center justify-center text-gray-400">
               No chart data available

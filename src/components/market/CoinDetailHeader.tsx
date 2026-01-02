@@ -4,10 +4,18 @@ import { useState } from "react";
 
 interface CoinDetailHeaderProps {
   coinSymbol: string;
-  coinData: {
+  coinData?: {
     currentPrice: number;
     changePercent24h: number;
+    tradingPair?: string;
   };
+  stockData?: {
+    symbol: string;
+    name: string;
+    price: number;
+    changePercent24h: number;
+  };
+  connectionType: "crypto" | "stocks" | null;
   activeTab: "Price" | "Info" | "Trading Data";
   onTabChange: (tab: "Price" | "Info" | "Trading Data") => void;
   onBack: () => void;
@@ -16,6 +24,8 @@ interface CoinDetailHeaderProps {
 export default function CoinDetailHeader({
   coinSymbol,
   coinData,
+  stockData,
+  connectionType,
   activeTab,
   onTabChange,
   onBack,
@@ -52,7 +62,12 @@ export default function CoinDetailHeader({
             </svg>
           </button>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-white">{coinSymbol}/USDT</h1>
+            <h1 className="text-xl font-bold text-white">
+              {connectionType === "stocks" 
+                ? `${stockData?.symbol || coinSymbol} Stock`
+                : `${coinSymbol}/USDT`
+              }
+            </h1>
             <button className="text-slate-400 hover:text-white">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path

@@ -13,8 +13,7 @@ export type FlowRoute =
   | "/onboarding/proof-upload"
   | "/onboarding/verification-status"
   | "/onboarding/account-type"
-  | "/dashboard"
-  | "/stocks-dashboard";
+  | "/dashboard";
 
 export interface FlowCheckResult {
   route: FlowRoute;
@@ -161,18 +160,11 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     }
 
     // All checks passed - user is fully onboarded
-    // Route to appropriate dashboard based on exchange type
-    if (exchangeType === "stocks") {
-      return {
-        route: "/stocks-dashboard",
-        reason: "User is fully onboarded with stocks exchange connected",
-      };
-    } else {
-      return {
-        route: "/dashboard",
-        reason: "User is fully onboarded with crypto exchange connected",
-      };
-    }
+    // Route to unified dashboard (adapts based on connection type)
+    return {
+      route: "/dashboard",
+      reason: `User is fully onboarded with ${exchangeType || 'crypto'} exchange connected`,
+    };
   } catch (error: any) {
     // If checks fail, default to proof-upload (KYC start)
     console.error("[FlowRouter] Could not verify user status:", error);

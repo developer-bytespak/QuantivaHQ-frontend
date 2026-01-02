@@ -14,12 +14,8 @@ export function Logo({ collapsed = false }: LogoProps) {
   const pathname = usePathname();
 
   const handleClick = () => {
-    // Navigate to the appropriate dashboard based on current path
-    if (pathname?.startsWith("/stocks-dashboard")) {
-      router.push("/stocks-dashboard");
-    } else {
-      router.push("/dashboard");
-    }
+    // Navigate to unified dashboard
+    router.push("/dashboard");
   };
 
   return (

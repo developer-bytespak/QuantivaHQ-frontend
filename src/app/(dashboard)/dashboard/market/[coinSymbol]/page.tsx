@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import CoinDetailHeader from "@/components/market/CoinDetailHeader";
 import CoinPriceChart from "@/components/market/CoinPriceChart";
+import StockPriceChart from "@/components/market/StockPriceChart";
 import TradingPanel from "@/components/market/TradingPanel";
 import InfoTab from "@/components/market/InfoTab";
 import TradingDataTab from "@/components/market/TradingDataTab";
@@ -31,15 +32,34 @@ interface CoinDetailData {
   }>;
 }
 
-export default function CoinDetailPage() {
+interface StockDetailData {
+  symbol: string;
+  name: string;
+  sector: string;
+  price: number;
+  change24h: number;
+  changePercent24h: number;
+  marketCap: number | null;
+  volume24h: number;
+  high52Week?: number;
+  low52Week?: number;
+  peRatio?: number;
+  dividendYield?: number;
+  marketCapFormatted?: string;
+  description?: string;
+}
+
+export default function MarketDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const coinSymbol = params.coinSymbol as string;
+  const symbol = params.coinSymbol as string;
 
   const [coinData, setCoinData] = useState<CoinDetailData | null>(null);
+  const [stockData, setStockData] = useState<StockDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
   const [activeTab, setActiveTab] = useState<"Price" | "Info" | "Trading Data">("Price");
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1D");
   const [selectedInterval, setSelectedInterval] = useState<string>("1d");
@@ -68,33 +88,54 @@ export default function CoinDetailPage() {
 
         const activeConnection = connectionResponse.data;
         setConnectionId(activeConnection.connection_id);
+        setConnectionType(activeConnection.exchange?.type || "crypto");
 
-        // Map coin symbol to trading pair (e.g., "BTC" -> "BTCUSDT")
-        const tradingPair = `${coinSymbol.toUpperCase()}USDT`;
-
-        // Fetch coin detail data
-        const response = await exchangesService.getCoinDetail(
-          activeConnection.connection_id,
-          tradingPair
-        );
-
-        if (response.success && response.data) {
-          setCoinData(response.data as CoinDetailData);
+        if (activeConnection.exchange?.type === "stocks") {
+          // Fetch stock detail data
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+          const response = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
+          
+          if (!response.ok) {
+            throw new Error(`Failed to fetch stock data: ${response.status} ${response.statusText}`);
+          }
+          
+          const result = await response.json();
+          // Handle both wrapped and unwrapped responses
+          const stockInfo = result.success ? result.data : result;
+          if (stockInfo && stockInfo.symbol) {
+            setStockData(stockInfo as StockDetailData);
+          } else {
+            console.error("Stock API response:", result);
+            throw new Error("Invalid stock data received");
+          }
         } else {
-          throw new Error("Failed to fetch coin data");
+          // Crypto logic
+          const tradingPair = `${symbol.toUpperCase()}USDT`;
+          
+          // Fetch coin detail data
+          const response = await exchangesService.getCoinDetail(
+            activeConnection.connection_id,
+            tradingPair
+          );
+
+          if (response.success && response.data) {
+            setCoinData(response.data as CoinDetailData);
+          } else {
+            throw new Error("Failed to fetch coin data");
+          }
         }
       } catch (err: any) {
-        console.error("Failed to fetch coin data:", err);
-        setError(err.message || "Failed to load coin data");
+        console.error("Failed to fetch data:", err);
+        setError(err.message || "Failed to load data");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (coinSymbol) {
+    if (symbol) {
       fetchData();
     }
-  }, [coinSymbol]);
+  }, [symbol]);
 
   const handleTimeframeChange = (timeframe: string) => {
     setSelectedTimeframe(timeframe);
@@ -110,11 +151,11 @@ export default function CoinDetailPage() {
     );
   }
 
-  if (error || !coinData) {
+  if (error || (!coinData && !stockData)) {
     return (
       <div className="p-6">
         <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-4">
-          <p className="text-sm text-red-200">{error || "Failed to load coin data"}</p>
+          <p className="text-sm text-red-200">{error || "Failed to load data"}</p>
           <button
             onClick={() => router.back()}
             className="mt-4 rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50"
@@ -126,11 +167,17 @@ export default function CoinDetailPage() {
     );
   }
 
+  const displayData = connectionType === "stocks" ? stockData : coinData;
+  const displaySymbol = connectionType === "stocks" ? stockData?.symbol : coinData?.symbol;
+  const displayName = connectionType === "stocks" ? stockData?.name : coinData?.tradingPair;
+
   return (
     <div className="space-y-6 pb-8">
       <CoinDetailHeader
-        coinSymbol={coinSymbol}
-        coinData={coinData}
+        coinSymbol={displaySymbol || symbol}
+        coinData={connectionType === "crypto" ? coinData : undefined}
+        stockData={connectionType === "stocks" ? stockData : undefined}
+        connectionType={connectionType}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onBack={() => router.back()}
@@ -150,11 +197,14 @@ export default function CoinDetailPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] flex items-center justify-center shadow-lg shadow-[#fc4f02]/30">
-                      <span className="text-white font-bold text-sm">{coinSymbol.toUpperCase().slice(0, 2)}</span>
+                      <span className="text-white font-bold text-sm">{(displaySymbol || symbol).toUpperCase().slice(0, 2)}</span>
                     </div>
                     <div>
                       <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wider">
-                        {coinSymbol.toUpperCase()}/USDT
+                        {connectionType === "stocks" 
+                          ? `${(displaySymbol || symbol).toUpperCase()} Stock`
+                          : `${(displaySymbol || symbol).toUpperCase()}/USDT`
+                        }
                       </h2>
                       <p className="text-xs text-slate-500 mt-0.5">Current Price</p>
                     </div>
@@ -162,19 +212,25 @@ export default function CoinDetailPage() {
                   
                   <div className="mt-4">
                     <p className="text-4xl sm:text-5xl font-bold text-white mb-2 tracking-tight">
-                      ${coinData.currentPrice.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 6,
-                      })}
+                      ${connectionType === "stocks" 
+                        ? (stockData?.price || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : (coinData?.currentPrice || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 6,
+                          })
+                      }
                     </p>
                     <div className="flex items-center gap-4 mt-3">
                       <div className="flex items-center gap-2">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                          coinData.changePercent24h >= 0 
+                          (connectionType === "stocks" ? (stockData?.changePercent24h || 0) : (coinData?.changePercent24h || 0)) >= 0 
                             ? "bg-green-500/20 text-green-400" 
                             : "bg-red-500/20 text-red-400"
                         }`}>
-                          {coinData.changePercent24h >= 0 ? (
+                          {(connectionType === "stocks" ? (stockData?.changePercent24h || 0) : (coinData?.changePercent24h || 0)) >= 0 ? (
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                             </svg>
@@ -183,14 +239,14 @@ export default function CoinDetailPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                             </svg>
                           )}
-                          {coinData.changePercent24h >= 0 ? "+" : ""}
-                          {coinData.changePercent24h.toFixed(2)}%
+                          {(connectionType === "stocks" ? (stockData?.changePercent24h || 0) : (coinData?.changePercent24h || 0)) >= 0 ? "+" : ""}
+                          {(connectionType === "stocks" ? (stockData?.changePercent24h || 0) : (coinData?.changePercent24h || 0)).toFixed(2)}%
                         </span>
                         <span className="text-xs text-slate-500">24h</span>
                       </div>
                       <div className="text-xs text-slate-500">
-                        ${coinData.change24h >= 0 ? "+" : ""}
-                        {coinData.change24h.toLocaleString("en-US", {
+                        ${(connectionType === "stocks" ? (stockData?.change24h || 0) : (coinData?.change24h || 0)) >= 0 ? "+" : ""}
+                        {(connectionType === "stocks" ? (stockData?.change24h || 0) : (coinData?.change24h || 0)).toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 6,
                         })}
@@ -209,10 +265,16 @@ export default function CoinDetailPage() {
                       <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">24h High</p>
                     </div>
                     <p className="text-lg font-bold text-white">
-                      ${coinData.high24h.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 6,
-                      })}
+                      ${connectionType === "stocks" 
+                        ? (stockData?.high52Week || stockData?.price || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : (coinData?.high24h || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 6,
+                          })
+                      }
                     </p>
                   </div>
                   
@@ -224,10 +286,16 @@ export default function CoinDetailPage() {
                       <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">24h Low</p>
                     </div>
                     <p className="text-lg font-bold text-white">
-                      ${coinData.low24h.toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 6,
-                      })}
+                      ${connectionType === "stocks" 
+                        ? (stockData?.low52Week || stockData?.price || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })
+                        : (coinData?.low24h || 0).toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 6,
+                          })
+                      }
                     </p>
                   </div>
                 </div>
@@ -238,10 +306,10 @@ export default function CoinDetailPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-500">Inverse Price</p>
                   <p className="text-sm font-mono text-slate-300">
-                    {coinData.currentPrice > 0
+                    {coinData?.currentPrice && coinData.currentPrice > 0
                       ? (1 / coinData.currentPrice).toFixed(8)
                       : "0"}{" "}
-                    <span className="text-slate-500">{coinSymbol.toUpperCase()}</span>
+                    <span className="text-slate-500">{symbol.toUpperCase()}</span>
                   </p>
                 </div>
               </div>
@@ -266,13 +334,21 @@ export default function CoinDetailPage() {
           </div>
 
           {/* Chart */}
-          {connectionId && (
-            <CoinPriceChart
-              connectionId={connectionId}
-              symbol={coinData.tradingPair}
+          {connectionType === "stocks" ? (
+            <StockPriceChart
+              symbol={symbol.toUpperCase()}
               interval={selectedInterval}
               timeframe={selectedTimeframe}
             />
+          ) : (
+            connectionId && coinData && (
+              <CoinPriceChart
+                connectionId={connectionId}
+                symbol={coinData.tradingPair}
+                interval={selectedInterval}
+                timeframe={selectedTimeframe}
+              />
+            )
           )}
 
           {/* Enhanced Market Data Summary */}
@@ -289,7 +365,10 @@ export default function CoinDetailPage() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Market Cap</p>
                 </div>
                 <p className="text-2xl font-bold text-white">
-                  ${coinData.volume24h > 0 ? (coinData.volume24h * 10).toFixed(1) + "B" : "N/A"}
+                  {connectionType === "stocks" 
+                    ? `$${(stockData?.marketCap ? (stockData.marketCap / 1e9).toFixed(1) + "B" : "N/A")}`
+                    : `$${(coinData?.volume24h && coinData.volume24h > 0 ? (coinData.volume24h * 10).toFixed(1) + "B" : "N/A")}`
+                  }
                 </p>
               </div>
             </div>
@@ -306,7 +385,10 @@ export default function CoinDetailPage() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">24h Volume</p>
                 </div>
                 <p className="text-2xl font-bold text-white">
-                  ${coinData.volume24h > 0 ? (coinData.volume24h / 1e9).toFixed(3) + "B" : "N/A"}
+                  ${connectionType === "stocks" 
+                    ? (stockData?.volume24h ? (stockData.volume24h / 1e9).toFixed(3) + "B" : "N/A")
+                    : (coinData?.volume24h && coinData.volume24h > 0 ? (coinData.volume24h / 1e9).toFixed(3) + "B" : "N/A")
+                  }
                 </p>
               </div>
             </div>
@@ -338,13 +420,22 @@ export default function CoinDetailPage() {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">24h Range</p>
                 </div>
                 <p className="text-sm font-semibold text-white">
-                  ${coinData.low24h.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 4,
-                  })} - ${coinData.high24h.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 4,
-                  })}
+                  {connectionType === "stocks" 
+                    ? `$${(stockData?.low52Week || 0).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })} - $${(stockData?.high52Week || 0).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`
+                    : `$${(coinData?.low24h || 0).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 4,
+                      })} - $${(coinData?.high24h || 0).toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 4,
+                      })}`
+                  }
                 </p>
               </div>
             </div>
@@ -352,10 +443,28 @@ export default function CoinDetailPage() {
         </>
       )}
 
-      {activeTab === "Info" && <InfoTab coinSymbol={coinSymbol} />}
+      {activeTab === "Info" && (
+        <InfoTab 
+          coinSymbol={symbol}
+          stockData={connectionType === "stocks" ? stockData : undefined}
+          connectionType={connectionType}
+        />
+      )}
 
-      {activeTab === "Trading Data" && connectionId && coinData && (
+      {activeTab === "Trading Data" && connectionType === "crypto" && connectionId && coinData && (
         <TradingDataTab connectionId={connectionId} symbol={coinData.tradingPair} />
+      )}
+
+      {activeTab === "Trading Data" && connectionType === "stocks" && (
+        <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+          <div className="flex flex-col items-center gap-3">
+            <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-white">Coming Soon</h3>
+            <p className="text-sm text-slate-400 max-w-md">Trading data for stocks is currently under development. Stay tuned!</p>
+          </div>
+        </div>
       )}
 
       {/* Trading Panel - Show on Price tab */}
@@ -363,7 +472,7 @@ export default function CoinDetailPage() {
         <TradingPanel
           connectionId={connectionId}
           symbol={coinData.tradingPair}
-          baseSymbol={coinSymbol.toUpperCase()}
+          baseSymbol={symbol.toUpperCase()}
           currentPrice={coinData.currentPrice}
           availableBalance={coinData.availableBalance}
           quoteCurrency={coinData.quoteCurrency}

@@ -19,24 +19,15 @@ export const DASHBOARD_NAV: NavSection[] = [
       { label: "Top trades", href: "/dashboard/top-trades" },
       { label: "AI insights", href: "/dashboard/ai-insights" },
       { label: "VC pool", href: "/dashboard/vc-pool" },
+      { label: "Holdings", href: "/dashboard/holdings" },
       { label: "Paper Trading", href: "/dashboard/paper-trading" },
       { label: "Profile", href: "/dashboard/profile" },
     ],
   },
 ];
 
-export const STOCKS_DASHBOARD_NAV: NavSection[] = [
-  {
-    title: "Main",
-    items: [
-      { label: "Dashboard", href: "/stocks-dashboard" },
-      { label: "Top trades", href: "/stocks-dashboard/top-trades" },
-      { label: "AI insights", href: "/stocks-dashboard/ai-insights" },
-      { label: "Holdings", href: "/stocks-dashboard/holdings" },
-      { label: "Profile", href: "/stocks-dashboard/profile" },
-    ],
-  },
-];
+// Legacy export for backward compatibility - now points to unified dashboard
+export const STOCKS_DASHBOARD_NAV: NavSection[] = DASHBOARD_NAV;
 
 export const AUTH_STEPS: NavItem[] = [
   { label: "Splash", href: `${onboardingBase}/splash` },
