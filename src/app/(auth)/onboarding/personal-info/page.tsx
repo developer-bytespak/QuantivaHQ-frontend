@@ -15,37 +15,6 @@ interface Country {
   region: string;
 }
 
-const COUNTRIES: Country[] = [
-  { code: "US", name: "United States", supported: true, region: "North America" },
-  { code: "CA", name: "Canada", supported: true, region: "North America" },
-  { code: "GB", name: "United Kingdom", supported: true, region: "Europe" },
-  { code: "DE", name: "Germany", supported: true, region: "Europe" },
-  { code: "FR", name: "France", supported: true, region: "Europe" },
-  { code: "IT", name: "Italy", supported: true, region: "Europe" },
-  { code: "ES", name: "Spain", supported: true, region: "Europe" },
-  { code: "NL", name: "Netherlands", supported: true, region: "Europe" },
-  { code: "BE", name: "Belgium", supported: true, region: "Europe" },
-  { code: "CH", name: "Switzerland", supported: true, region: "Europe" },
-  { code: "AT", name: "Austria", supported: true, region: "Europe" },
-  { code: "SE", name: "Sweden", supported: true, region: "Europe" },
-  { code: "NO", name: "Norway", supported: true, region: "Europe" },
-  { code: "DK", name: "Denmark", supported: true, region: "Europe" },
-  { code: "FI", name: "Finland", supported: true, region: "Europe" },
-  { code: "AU", name: "Australia", supported: true, region: "Oceania" },
-  { code: "NZ", name: "New Zealand", supported: true, region: "Oceania" },
-  { code: "SG", name: "Singapore", supported: true, region: "Asia" },
-  { code: "JP", name: "Japan", supported: true, region: "Asia" },
-  { code: "HK", name: "Hong Kong", supported: true, region: "Asia" },
-  { code: "AE", name: "United Arab Emirates", supported: true, region: "Middle East" },
-  { code: "SA", name: "Saudi Arabia", supported: false, region: "Middle East" },
-  { code: "BR", name: "Brazil", supported: false, region: "South America" },
-  { code: "MX", name: "Mexico", supported: false, region: "North America" },
-  { code: "IN", name: "India", supported: false, region: "Asia" },
-  { code: "CN", name: "China", supported: false, region: "Asia" },
-  { code: "RU", name: "Russia", supported: false, region: "Europe" },
-  { code: "KR", name: "South Korea", supported: false, region: "Asia" },
-];
-
 export default function PersonalInfoPage() {
   const router = useRouter();
   const [fullLegalName, setFullLegalName] = useState("");
@@ -57,6 +26,8 @@ export default function PersonalInfoPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingInfo, setIsCheckingInfo] = useState(true);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   
   const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
   const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -87,6 +58,77 @@ export default function PersonalInfoPage() {
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Fetch all countries from REST Countries API
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        setIsLoadingCountries(true);
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,region');
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('API Response:', data);
+        
+        if (!Array.isArray(data)) {
+          throw new Error('Invalid response format');
+        }
+        
+        // Transform the API response to our Country interface
+        const transformedCountries: Country[] = data
+          .map((country: any) => {
+            const name = country.name?.common || country.name?.official || '';
+            const code = country.cca2 || '';
+            return {
+              code,
+              name,
+              supported: true,
+              region: country.region || 'Unknown',
+            };
+          })
+          .filter((country: Country) => country.code && country.name)
+          .sort((a: Country, b: Country) => a.name.localeCompare(b.name));
+        
+        console.log('Transformed countries count:', transformedCountries.length);
+        console.log('First 5 countries:', transformedCountries.slice(0, 5));
+        
+        setCountries(transformedCountries);
+      } catch (error) {
+        console.error('Failed to fetch countries:', error);
+        // Fallback to hardcoded list if API fails
+        const fallbackCountries: Country[] = [
+          { code: "US", name: "United States", supported: true, region: "Americas" },
+          { code: "CA", name: "Canada", supported: true, region: "Americas" },
+          { code: "GB", name: "United Kingdom", supported: true, region: "Europe" },
+          { code: "DE", name: "Germany", supported: true, region: "Europe" },
+          { code: "FR", name: "France", supported: true, region: "Europe" },
+          { code: "IT", name: "Italy", supported: true, region: "Europe" },
+          { code: "ES", name: "Spain", supported: true, region: "Europe" },
+          { code: "AU", name: "Australia", supported: true, region: "Oceania" },
+          { code: "JP", name: "Japan", supported: true, region: "Asia" },
+          { code: "IN", name: "India", supported: true, region: "Asia" },
+          { code: "BR", name: "Brazil", supported: true, region: "Americas" },
+          { code: "MX", name: "Mexico", supported: true, region: "Americas" },
+          { code: "ZA", name: "South Africa", supported: true, region: "Africa" },
+          { code: "NG", name: "Nigeria", supported: true, region: "Africa" },
+          { code: "SG", name: "Singapore", supported: true, region: "Asia" },
+          { code: "NZ", name: "New Zealand", supported: true, region: "Oceania" },
+          { code: "CH", name: "Switzerland", supported: true, region: "Europe" },
+          { code: "SE", name: "Sweden", supported: true, region: "Europe" },
+          { code: "AE", name: "United Arab Emirates", supported: true, region: "Asia" },
+          { code: "HK", name: "Hong Kong", supported: true, region: "Asia" },
+        ];
+        setCountries(fallbackCountries);
+      } finally {
+        setIsLoadingCountries(false);
+      }
+    };
+
+    fetchCountries();
   }, []);
 
   useEffect(() => {
@@ -185,7 +227,12 @@ export default function PersonalInfoPage() {
   }, [isNationalityDropdownOpen]);
 
   const handleCountrySelect = (countryCode: string) => {
-    setNationality(countryCode);
+    // Find the country name by code
+    const selectedCountry = countries.find(c => c.code === countryCode);
+    // Store the country name instead of code for consistency
+    if (selectedCountry) {
+      setNationality(selectedCountry.name);
+    }
     setIsNationalityDropdownOpen(false);
     setErrors({});
   };
@@ -245,7 +292,7 @@ export default function PersonalInfoPage() {
     }
   };
 
-  const nationalityData = nationality ? COUNTRIES.find((c) => c.code === nationality) : null;
+  const nationalityData = nationality ? countries.find((c) => c.name === nationality) : null;
 
   // Show loading state while checking if personal info exists
   if (isCheckingInfo) {
@@ -470,21 +517,37 @@ export default function PersonalInfoPage() {
                           width: `${nationalityDropdownPosition.width}px`
                         }}
                       >
-                        <div className="overflow-y-auto bg-[#0f172a]" style={{ maxHeight: "180px" }}>
-                          {COUNTRIES.map((country) => (
-                            <button
-                              key={country.code}
-                              type="button"
-                              onClick={() => handleCountrySelect(country.code)}
-                              className={`w-full text-left px-4 py-3 text-sm transition-colors duration-150 ${
-                                nationality === country.code
-                                  ? "bg-[#1e293b] text-white"
-                                  : "text-white hover:bg-[#1e293b] bg-[#0f172a]"
-                              }`}
-                            >
-                              {country.name}
-                            </button>
-                          ))}
+                        <div 
+                          className="overflow-y-auto bg-[#0f172a] scrollbar-show"
+                          style={{ 
+                            maxHeight: "240px", // Shows exactly 5 items (48px each)
+                            scrollBehavior: "smooth"
+                          }}
+                        >
+                          {isLoadingCountries ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-[#fc4f02]"></div>
+                            </div>
+                          ) : countries.length > 0 ? (
+                            countries.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                onClick={() => handleCountrySelect(country.code)}
+                                className={`w-full text-left px-4 py-3 text-sm transition-colors duration-150 ${
+                                  nationality === country.code
+                                    ? "bg-[#1e293b] text-white"
+                                    : "text-white hover:bg-[#1e293b] bg-[#0f172a]"
+                                }`}
+                              >
+                                {country.name}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-8 text-center text-sm text-slate-400">
+                              No countries available
+                            </div>
+                          )}
                         </div>
                       </div>,
                       document.body
