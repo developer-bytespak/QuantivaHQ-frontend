@@ -119,7 +119,7 @@ export default function StocksMarketPage() {
                       <th className="py-3 px-2 text-left text-sm font-medium text-white">#</th>
                       <th className="py-3 px-2 text-left text-sm font-medium text-white">Name</th>
                       <th className="py-3 px-2 text-left text-sm font-medium text-white">Price</th>
-                      <th className="py-3 px-2 text-left text-sm font-medium text-white">24h %</th>
+                      <th className="py-3 px-2 text-left text-sm font-medium text-white">24h Change</th>
                       <th className="py-3 px-2 text-left text-sm font-medium text-white hidden sm:table-cell">Sector</th>
                       <th className="py-3 px-2 text-left text-sm font-medium text-white hidden md:table-cell">Market Cap</th>
                       <th className="py-3 px-2 text-left text-sm font-medium text-white hidden lg:table-cell">Volume (24h)</th>
@@ -147,7 +147,10 @@ export default function StocksMarketPage() {
                           {formatPrice(stock.price)}
                         </td>
                         <td className={`py-4 px-2 text-sm font-medium ${stock.changePercent24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {formatPercent(stock.changePercent24h)}
+                          <div className="flex flex-col">
+                            <span>{stock.changePercent24h >= 0 ? '+' : ''}{formatPrice(stock.change24h)}</span>
+                            <span className="text-xs">({formatPercent(stock.changePercent24h)})</span>
+                          </div>
                         </td>
                         <td className="py-4 px-2 text-sm text-slate-300 hidden sm:table-cell">
                           {stock.sector}

@@ -126,7 +126,7 @@ export function MarketTable({ stocks, loading, error }: MarketTableProps) {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[--color-border]">
-                <th className="pb-3 text-left">
+                <th className="pb-3 pl-2 text-left">
                   <button
                     onClick={() => handleSort("symbol")}
                     className="flex items-center gap-1 text-xs font-medium uppercase text-slate-400 hover:text-white transition-colors"
@@ -189,27 +189,46 @@ export function MarketTable({ stocks, loading, error }: MarketTableProps) {
                     key={stock.symbol}
                     className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                   >
-                    <td className="py-3">
-                      <div>
-                        <p className="text-sm font-medium text-white">{stock.symbol}</p>
-                        <p className="text-xs text-slate-500">{stock.sector}</p>
+                    <td className="py-2 pl-2">
+                      <div className="flex items-center gap-2">
+                        {/* Stock Logo */}
+                        <div className="flex-shrink-0 w-6 h-6 rounded bg-white/5 flex items-center justify-center overflow-hidden">
+                          <img
+                            src={`https://logo.clearbit.com/${stock.symbol.toLowerCase()}.com`}
+                            alt={stock.symbol}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // Fallback to text if image fails
+                              e.currentTarget.style.display = 'none';
+                              const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'flex';
+                            }}
+                          />
+                          <div className="hidden w-full h-full items-center justify-center text-[10px] font-bold text-slate-400">
+                            {stock.symbol.charAt(0)}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">{stock.symbol}</p>
+                          <p className="text-xs text-slate-500">{stock.sector}</p>
+                        </div>
                       </div>
                     </td>
-                    <td className="py-3">
+                    <td className="py-2">
                       <p className="text-sm text-slate-300 max-w-[200px] truncate">{stock.name}</p>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-2 text-right">
                       <p className="text-sm text-slate-300">{formatPrice(stock.price)}</p>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-2 text-right">
                       <p className={`text-sm font-medium ${getChangeColorClass(stock.changePercent24h)}`}>
                         {formatPercent(stock.changePercent24h)}
                       </p>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-2 text-right">
                       <p className="text-sm text-slate-300">{formatMarketCap(stock.marketCap)}</p>
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-2 text-right">
                       <p className="text-sm text-slate-300">{formatVolume(stock.volume24h)}</p>
                     </td>
                   </tr>

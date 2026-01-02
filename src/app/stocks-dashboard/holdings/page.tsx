@@ -410,13 +410,13 @@ export default function HoldingsPage() {
                       setSelectedHolding(holding);
                       setShowOverlay(true);
                     }}
-                    className="group relative rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] cursor-pointer transition-all duration-300 hover:scale-[1.02] "
+                    className="group relative rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-5 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] cursor-pointer transition-all duration-300 hover:scale-[1.02] "
                   >
                     <div className="flex flex-col h-full justify-between">
                       {/* Header Section */}
-                      <div className="flex items-start justify-between mb-6">
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-lg font-bold text-white shadow-lg shadow-blue-500/20">
+                      <div className="flex items-start justify-between mb-5">
+                        <div className="flex items-center gap-2 flex-1">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-base font-bold text-white shadow-lg shadow-blue-500/20">
                             {holding.symbol[0]}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -495,13 +495,13 @@ export default function HoldingsPage() {
               setSelectedHolding(holding);
               setShowOverlay(true);
             }}
-            className="group relative rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] cursor-pointer transition-all duration-300 hover:scale-[1.02] "
+            className="group relative rounded-2xl  bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-5 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] cursor-pointer transition-all duration-300 hover:scale-[1.02] "
           >
             <div className="flex flex-col h-full justify-between">
               {/* Header Section */}
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-lg font-bold text-white shadow-lg shadow-blue-500/20">
+              <div className="flex items-start justify-between mb-5">
+                <div className="flex items-center gap-2 flex-1">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/30 to-blue-600/20 text-base font-bold text-white shadow-lg shadow-blue-500/20">
                     {holding.symbol[0]}
                   </div>
                   <div className="flex-1 min-w-0">
