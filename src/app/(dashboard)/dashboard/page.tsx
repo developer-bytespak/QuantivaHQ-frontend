@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData, Connection } from "@/lib/api/exchanges.service";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
-import { getCryptoNews, getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
+import { getCryptoNews, getGeneralCryptoNews, getGeneralStockNews, CryptoNewsResponse, CryptoNewsItem, StockNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
 import { useStocksMarket } from "@/hooks/useStocksMarket";
 import { MarketTable } from "@/components/market/MarketTable";
@@ -117,8 +117,8 @@ export default function DashboardPage() {
     };
   }, [connectionType, allStocks]);
 
-  // News data state
-  const [newsData, setNewsData] = useState<{ total_count: number; news_items: Array<CryptoNewsItem & { symbol: string }>; timestamp: string } | null>(null);
+  // News data state - supports both crypto and stock news
+  const [newsData, setNewsData] = useState<{ total_count: number; news_items: Array<(CryptoNewsItem | StockNewsItem) & { symbol: string }>; timestamp: string } | null>(null);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
 
@@ -309,38 +309,43 @@ export default function DashboardPage() {
     }
   }, [activeTab, connectionType, fetchMarketData]);
 
-  // Fetch crypto news with sentiment (all coins)
-  const fetchCryptoNews = useCallback(async (limit: number = 30) => {
+  // Fetch news with sentiment (crypto or stocks based on connection type)
+  const fetchNews = useCallback(async (limit: number = 30) => {
     setIsLoadingNews(true);
     setNewsError(null);
     try {
-      const data = await getGeneralCryptoNews(limit);
-      setNewsData(data);
+      if (connectionType === "crypto") {
+        const data = await getGeneralCryptoNews(limit);
+        setNewsData(data);
+      } else if (connectionType === "stocks") {
+        const data = await getGeneralStockNews(limit);
+        setNewsData(data);
+      }
     } catch (error: any) {
-      console.error("Failed to fetch crypto news:", error);
+      console.error(`Failed to fetch ${connectionType} news:`, error);
       setNewsError(error.message || "Failed to load news");
     } finally {
       setIsLoadingNews(false);
     }
-  }, []);
+  }, [connectionType]);
 
-  // Fetch news on mount (only for crypto)
+  // Fetch news on mount (for both crypto and stocks)
   useEffect(() => {
-    if (connectionType === "crypto") {
-      fetchCryptoNews(30);
+    if (connectionType === "crypto" || connectionType === "stocks") {
+      fetchNews(30);
     }
-  }, [connectionType, fetchCryptoNews]);
+  }, [connectionType, fetchNews]);
 
-  // Auto-refresh news every 5 minutes (only for crypto)
+  // Auto-refresh news every 5 minutes
   useEffect(() => {
-    if (connectionType !== "crypto") return;
+    if (!connectionType) return;
     
     const refreshInterval = setInterval(() => {
-      fetchCryptoNews(30);
+      fetchNews(30);
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(refreshInterval);
-  }, [connectionType, fetchCryptoNews]);
+  }, [connectionType, fetchNews]);
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
@@ -859,20 +864,8 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* AI Insights News Cards - Only for Crypto */}
-            {connectionType === "stocks" ? (
-              <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <h3 className="text-lg font-semibold text-white">Coming Soon</h3>
-                  <p className="text-sm text-slate-400 max-w-md">AI-powered insights for stocks are currently under development. Stay tuned!</p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2 sm:space-y-3">
-              
+            {/* AI Insights News Cards - For both Crypto and Stocks */}
+            <div className="space-y-2 sm:space-y-3">
               {isLoadingNews ? (
                 <div className="flex items-center justify-center py-6 sm:py-8">
                   <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -936,8 +929,7 @@ export default function DashboardPage() {
                   <p className="text-xs sm:text-sm">No news available</p>
                 </div>
               )}
-              </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
