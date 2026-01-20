@@ -2,15 +2,27 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
-import { getGeneralCryptoNews, CryptoNewsResponse, CryptoNewsItem } from "@/lib/api/news.service";
+import { getGeneralCryptoNews, getGeneralStockNews, CryptoNewsResponse, CryptoNewsItem, StockNewsItem } from "@/lib/api/news.service";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import { ComingSoon } from "@/components/common/coming-soon";
 
-// Extended news item with AI insights
+// Extended news item with AI insights (for both crypto and stocks)
 interface AIEnhancedNewsItem extends CryptoNewsItem {
   symbol: string;
   aiSummary?: string;
   impactScore?: number; // 0-100
+  impactLevel?: "Low" | "Medium" | "High";
+  marketMood?: "Bullish" | "Bearish" | "Neutral";
+  riskRating?: "Low" | "Medium" | "High";
+  trendDirection?: "up" | "down" | "neutral";
+  sparklineData?: number[];
+}
+
+// Extended stock news item with AI insights
+interface AIEnhancedStockNewsItem extends StockNewsItem {
+  symbol: string;
+  aiSummary?: string;
+  impactScore?: number;
   impactLevel?: "Low" | "Medium" | "High";
   marketMood?: "Bullish" | "Bearish" | "Neutral";
   riskRating?: "Low" | "Medium" | "High";
@@ -49,6 +61,23 @@ const COIN_COLORS: Record<string, { bg: string; glow: string; text: string }> = 
   AVAX: { bg: "bg-red-500/20", glow: "shadow-red-500/30", text: "text-red-400" },
 };
 
+// Popular stocks for background
+const POPULAR_STOCKS = ["AAPL", "TSLA", "GOOGL", "AMZN", "MSFT", "NVDA", "META", "AMD", "NFLX", "DIS"];
+
+// Stock colors with glow (using company brand-inspired colors)
+const STOCK_COLORS: Record<string, { bg: string; glow: string; text: string }> = {
+  AAPL: { bg: "bg-slate-400/20", glow: "shadow-slate-400/30", text: "text-slate-300" },
+  TSLA: { bg: "bg-red-500/20", glow: "shadow-red-500/30", text: "text-red-400" },
+  GOOGL: { bg: "bg-blue-500/20", glow: "shadow-blue-500/30", text: "text-blue-400" },
+  AMZN: { bg: "bg-orange-500/20", glow: "shadow-orange-500/30", text: "text-orange-400" },
+  MSFT: { bg: "bg-cyan-500/20", glow: "shadow-cyan-500/30", text: "text-cyan-400" },
+  NVDA: { bg: "bg-green-500/20", glow: "shadow-green-500/30", text: "text-green-400" },
+  META: { bg: "bg-blue-600/20", glow: "shadow-blue-600/30", text: "text-blue-400" },
+  AMD: { bg: "bg-red-600/20", glow: "shadow-red-600/30", text: "text-red-400" },
+  NFLX: { bg: "bg-red-500/20", glow: "shadow-red-500/30", text: "text-red-400" },
+  DIS: { bg: "bg-indigo-500/20", glow: "shadow-indigo-500/30", text: "text-indigo-400" },
+};
+
 // Generate AI-enhanced data from news item
 function enhanceNewsWithAI(news: CryptoNewsItem, symbol: string): AIEnhancedNewsItem {
   // Determine market mood from sentiment
@@ -85,6 +114,62 @@ function enhanceNewsWithAI(news: CryptoNewsItem, symbol: string): AIEnhancedNews
   } ${symbol} by ${Math.abs(news.sentiment.score * 10).toFixed(1)}-${(Math.abs(news.sentiment.score * 10) + 5).toFixed(1)}% within 24 hours.`;
 
   // Generate sparkline data (simulated price movement)
+  const sparklineData = Array.from({ length: 20 }, (_, i) => {
+    const base = 50;
+    const trend = news.sentiment.score * 20;
+    const volatility = (Math.random() - 0.5) * 10;
+    return Math.max(0, Math.min(100, base + trend + (i * trend / 20) + volatility));
+  });
+
+  return {
+    ...news,
+    symbol,
+    aiSummary,
+    impactScore,
+    impactLevel,
+    marketMood,
+    riskRating,
+    trendDirection,
+    sparklineData,
+  };
+}
+
+// Generate AI-enhanced data from stock news item
+function enhanceStockNewsWithAI(news: StockNewsItem, symbol: string): AIEnhancedStockNewsItem {
+  // Determine market mood from sentiment
+  const marketMood: "Bullish" | "Bearish" | "Neutral" = 
+    news.sentiment.label === "positive" ? "Bullish" :
+    news.sentiment.label === "negative" ? "Bearish" : "Neutral";
+
+  // Calculate impact score based on sentiment and confidence
+  const impactScore = Math.round(
+    (Math.abs(news.sentiment.score) * 50) + (news.sentiment.confidence * 50)
+  );
+
+  // Determine impact level
+  const impactLevel: "Low" | "Medium" | "High" = 
+    impactScore >= 75 ? "High" : impactScore >= 50 ? "Medium" : "Low";
+
+  // Determine risk rating
+  const riskRating: "Low" | "Medium" | "High" = 
+    news.sentiment.confidence > 0.7 ? "Low" : 
+    news.sentiment.confidence > 0.4 ? "Medium" : "High";
+
+  // Determine trend direction
+  const trendDirection: "up" | "down" | "neutral" = 
+    news.sentiment.score > 0.1 ? "up" : 
+    news.sentiment.score < -0.1 ? "down" : "neutral";
+
+  // Generate AI summary for stocks
+  const aiSummary = `This ${news.sentiment.label === "positive" ? "positive" : news.sentiment.label === "negative" ? "negative" : "neutral"} news indicates ${
+    marketMood === "Bullish" ? "increased investor confidence" :
+    marketMood === "Bearish" ? "potential market concerns" :
+    "neutral market sentiment"
+  } for ${symbol}. Based on sentiment analysis, the stock may ${
+    marketMood === "Bullish" ? "see upward movement" : marketMood === "Bearish" ? "face downward pressure" : "remain stable"
+  } in the short term.`;
+
+  // Generate sparkline data
   const sparklineData = Array.from({ length: 20 }, (_, i) => {
     const base = 50;
     const trend = news.sentiment.score * 20;
@@ -161,6 +246,63 @@ function CoinLogo({
         priority={false}
       />
     </div>
+  );
+}
+
+// Stock Logo Component (text-based with company colors)
+function StockLogo({ 
+  symbol, 
+  size = "md" 
+}: { 
+  symbol: string; 
+  size?: "sm" | "md" | "lg";
+}) {
+  const colors = STOCK_COLORS[symbol] || { bg: "bg-slate-500/20", glow: "shadow-slate-500/30", text: "text-slate-300" };
+  const sizeClasses = {
+    sm: "w-8 h-8 text-xs",
+    md: "w-10 h-10 text-sm",
+    lg: "w-12 h-12 text-base",
+  };
+
+  return (
+    <div
+      className={`${sizeClasses[size]} ${colors.bg} rounded-full flex items-center justify-center font-bold ${colors.text} border-2 ${colors.text}/30 shadow-lg ${colors.glow}`}
+      title={symbol}
+    >
+      {symbol.slice(0, 3)}
+    </div>
+  );
+}
+
+// Floating stock symbols component (background)
+function FloatingStockSymbols({ stocks }: { stocks: string[] }) {
+  return (
+    <>
+      {stocks.map((stock, index) => {
+        const delay = index * 0.3;
+        const duration = 8 + Math.random() * 4;
+        const startX = 10 + Math.random() * 80;
+        const startY = 10 + Math.random() * 80;
+        
+        return (
+          <div
+            key={stock}
+            className="absolute text-slate-600/10 text-5xl md:text-6xl font-bold select-none"
+            style={{
+              left: `${startX}%`,
+              top: `${startY}%`,
+              animationName: 'float-gentle',
+              animationDuration: `${duration}s`,
+              animationTimingFunction: 'ease-in-out',
+              animationIterationCount: 'infinite',
+              animationDelay: `${delay}s`,
+            }}
+          >
+            {stock}
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -389,8 +531,9 @@ export default function AIInsightsPage() {
   const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
 
-  const [selectedNews, setSelectedNews] = useState<AIEnhancedNewsItem | null>(null);
+  const [selectedNews, setSelectedNews] = useState<AIEnhancedNewsItem | AIEnhancedStockNewsItem | null>(null);
   const [allNewsItems, setAllNewsItems] = useState<AIEnhancedNewsItem[]>([]);
+  const [allStockNewsItems, setAllStockNewsItems] = useState<AIEnhancedStockNewsItem[]>([]);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
   const [newsError, setNewsError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>("trending");
@@ -483,6 +626,69 @@ export default function AIInsightsPage() {
     }
   }, [connectionType]); // Depend on connectionType so function updates when connection changes
 
+  // Fetch all stock news
+  const fetchAllStockNews = useCallback(async () => {
+    // Only fetch if stocks connection
+    if (connectionType !== "stocks") return;
+    
+    setIsLoadingNews(true);
+    setNewsError(null);
+    const startTime = Date.now();
+    setLoadingStartTime(startTime);
+    setIsInitializingML(false);
+    
+    // Show ML initialization message after 30 seconds
+    const mlInitTimeout = setTimeout(() => {
+      setIsInitializingML(true);
+    }, 30000);
+    
+    try {
+      console.log("Fetching general stock news...");
+      const data = await getGeneralStockNews(30);
+      
+      clearTimeout(mlInitTimeout);
+      setIsInitializingML(false);
+      
+      // Enhance news with AI insights
+      const enhancedNews = data.news_items.map((item: any) => {
+        const symbol = item.symbol || "STOCK";
+        return enhanceStockNewsWithAI(item, symbol);
+      });
+      
+      // Sort by date (most recent first)
+      const sortedNews = enhancedNews.sort((a, b) => {
+        const dateA = a.published_at ? new Date(a.published_at).getTime() : 0;
+        const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      setAllStockNewsItems(sortedNews);
+      
+      if (sortedNews.length === 0) {
+        setNewsError("No stock news available. The system may still be fetching news from StockNewsAPI. Please refresh in a moment.");
+      } else {
+        console.log(`Loaded ${sortedNews.length} general stock news items`);
+      }
+    } catch (error: any) {
+      clearTimeout(mlInitTimeout);
+      setIsInitializingML(false);
+      console.error("Failed to fetch general stock news:", error);
+      
+      const elapsed = Math.round((Date.now() - startTime) / 1000 / 60);
+      if (error.message?.includes('timeout') || error.message?.includes('FinBERT')) {
+        setNewsError(
+          `Sentiment analysis model is initializing (${elapsed} minute${elapsed !== 1 ? 's' : ''} elapsed). ` +
+          `Please wait a few more minutes and refresh the page.`
+        );
+      } else {
+        setNewsError(error.message || "Failed to load stock news. Please try again later.");
+      }
+    } finally {
+      setIsLoadingNews(false);
+      setLoadingStartTime(null);
+    }
+  }, [connectionType]);
+
   // Fetch coin logos from CoinGecko CDN (no API calls needed)
   const fetchCoinLogos = useCallback(async () => {
     // CoinGecko image CDN URLs (direct access, no API needed, no rate limits)
@@ -524,17 +730,21 @@ export default function AIInsightsPage() {
   }, []);
 
   useEffect(() => {
-    // Only fetch for crypto connections
+    // Fetch data based on connection type
     if (connectionType === "crypto") {
       fetchAllCryptoNews();
       fetchCoinLogos();
+    } else if (connectionType === "stocks") {
+      fetchAllStockNews();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionType]); // Run when connection type is determined
 
-  // Filter and sort news
+  // Filter and sort news (works for both crypto and stocks)
   const filteredAndSortedNews = useMemo(() => {
-    let filtered = [...allNewsItems];
+    // Use the appropriate news items based on connection type
+    const sourceItems = connectionType === "stocks" ? allStockNewsItems : allNewsItems;
+    let filtered = [...sourceItems];
 
     // Apply filters
     if (activeFilter === "bullish") {
@@ -555,7 +765,7 @@ export default function AIInsightsPage() {
         const dateB = b.published_at ? new Date(b.published_at).getTime() : 0;
         return dateB - dateA;
       });
-    } else if (sortBy === "coin-based") {
+    } else if (sortBy === "coin-based" || sortBy === "stock-based") {
       filtered.sort((a, b) => a.symbol.localeCompare(b.symbol));
     } else if (sortBy === "sentiment-level") {
       filtered.sort((a, b) => {
@@ -565,9 +775,9 @@ export default function AIInsightsPage() {
     }
 
     return filtered;
-  }, [allNewsItems, activeFilter, sortBy]);
+  }, [allNewsItems, allStockNewsItems, activeFilter, sortBy, connectionType]);
 
-  const handleNewsClick = (news: AIEnhancedNewsItem) => {
+  const handleNewsClick = (news: AIEnhancedNewsItem | AIEnhancedStockNewsItem) => {
     setSelectedNews(news);
   };
 
@@ -627,11 +837,7 @@ export default function AIInsightsPage() {
     );
   }
 
-  // Show coming soon for stocks
-  if (connectionType === "stocks") {
-    return <ComingSoon title="AI Insights" description="AI-powered insights and analysis for stocks are currently under development. This feature will provide intelligent market analysis, news sentiment, and predictions for your stock portfolio soon!" icon="insights" />;
-  }
-
+  // Unified return for both crypto and stocks
   return (
     <div className="relative space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0 overflow-x-hidden w-full">
       {/* Interactive Background */}
@@ -639,7 +845,11 @@ export default function AIInsightsPage() {
         <div className="absolute top-1/4 left-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[#fda300]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
         <div className="absolute top-1/2 right-1/3 h-48 sm:h-64 w-48 sm:w-64 rounded-full bg-[#fc4f02]/3 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
-        <FloatingCoinSymbols coins={POPULAR_COINS} />
+        {connectionType === "stocks" ? (
+          <FloatingStockSymbols stocks={POPULAR_STOCKS} />
+        ) : (
+          <FloatingCoinSymbols coins={POPULAR_COINS} />
+        )}
         <AnimatedConnectionLines />
         <DataStreamParticles />
       </div>
@@ -649,7 +859,9 @@ export default function AIInsightsPage() {
       {/* Page Header */}
         <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
         <div>
-            <p className="text-xs sm:text-sm text-slate-400 mb-1 sm:mb-2">AI-powered market news and analysis</p>
+            <p className="text-xs sm:text-sm text-slate-400 mb-1 sm:mb-2">
+              AI-powered {connectionType === "stocks" ? "stock" : "crypto"} market news and analysis
+            </p>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Insights</h1>
         </div>
 
@@ -665,7 +877,9 @@ export default function AIInsightsPage() {
               className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 w-full sm:w-auto"
             >
               <option value="most-recent">Most recent</option>
-              <option value="coin-based">Coin-based</option>
+              <option value={connectionType === "stocks" ? "stock-based" : "coin-based"}>
+                {connectionType === "stocks" ? "Stock-based" : "Coin-based"}
+              </option>
               <option value="sentiment-level">Sentiment level</option>
             </select>
         </div>
@@ -712,8 +926,12 @@ export default function AIInsightsPage() {
                     {news.title}
                   </h2>
                   <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                    {/* Coin Logo */}
-                    <CoinLogo symbol={news.symbol} size="md" logoUrl={coinLogos[news.symbol]} />
+                    {/* Asset Logo - Coin for crypto, Stock badge for stocks */}
+                    {connectionType === "stocks" ? (
+                      <StockLogo symbol={news.symbol} size="md" />
+                    ) : (
+                      <CoinLogo symbol={news.symbol} size="md" logoUrl={coinLogos[news.symbol]} />
+                    )}
                     
                     {/* Trend Graph */}
                     {news.trendDirection && (
@@ -824,10 +1042,14 @@ export default function AIInsightsPage() {
                 </button>
               </div>
 
-              {/* Coin Info Card */}
+              {/* Asset Info Card */}
               <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
                 <div className="flex items-center gap-2 sm:gap-4">
-                  <CoinLogo symbol={selectedNews.symbol} size="lg" logoUrl={coinLogos[selectedNews.symbol]} />
+                  {connectionType === "stocks" ? (
+                    <StockLogo symbol={selectedNews.symbol} size="lg" />
+                  ) : (
+                    <CoinLogo symbol={selectedNews.symbol} size="lg" logoUrl={coinLogos[selectedNews.symbol]} />
+                  )}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-base sm:text-xl font-bold text-white truncate mb-0.5 sm:mb-1">{selectedNews.symbol}</h3>
                     <div className="flex items-center gap-1 sm:gap-2 flex-wrap text-xs">
