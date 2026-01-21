@@ -348,8 +348,8 @@ export default function PaperTradingPage() {
 
   // --- Fetch pre-built strategies ---
   useEffect(() => {
-    // Only load pre-built strategies for crypto connections
-    if (connectionType !== "crypto") return;
+    // Load strategies for both crypto and stocks connections
+    if (connectionType !== "crypto" && connectionType !== "stocks") return;
 
     let mounted = true;
     (async () => {
@@ -361,7 +361,18 @@ export default function PaperTradingPage() {
         });
         if (!mounted) return;
         const adminOnly = (data || []).filter((s) => s?.type === "admin");
-        setPreBuiltStrategies(adminOnly.slice(0, 4));
+        
+        // Filter strategies based on connection type
+        let filteredStrategies: Strategy[];
+        if (connectionType === "stocks") {
+          // For stocks, only show strategies with "(Stocks)" in the name
+          filteredStrategies = adminOnly.filter((s) => s?.name?.includes("(Stocks)"));
+        } else {
+          // For crypto, show strategies WITHOUT "(Stocks)" in the name
+          filteredStrategies = adminOnly.filter((s) => !s?.name?.includes("(Stocks)")).slice(0, 4);
+        }
+        
+        setPreBuiltStrategies(filteredStrategies);
       } catch (err: any) {
         console.error("Failed to load pre-built strategies:", err);
         setPreBuiltError(err?.message || String(err));
@@ -377,8 +388,8 @@ export default function PaperTradingPage() {
   // --- Fetch signals for a strategy ---
   const fetchStrategySignals = async (strategyId: string) => {
     if (loadingSignals[strategyId]) return;
-    // Guard: only fetch crypto signals when connection is crypto
-    if (connectionType !== "crypto") return;
+    // Guard: only fetch signals when connection is crypto or stocks
+    if (connectionType !== "crypto" && connectionType !== "stocks") return;
 
     setLoadingSignals((p) => ({ ...p, [strategyId]: true }));
     setSignalsError((p) => {
@@ -448,10 +459,20 @@ export default function PaperTradingPage() {
 
     return signals.map((signal, idx) => {
       const asset = signal.asset || {};
-      // Get clean symbol without USDT
+      // Get clean symbol - handle both crypto (with USDT suffix) and stocks
       const rawSymbol = asset.symbol || asset.asset_id || signal.asset_id || "Unknown";
-      const cleanSymbol = rawSymbol.replace(/USDT$/i, '').trim();
-      const pair = `${cleanSymbol} / USDT`;
+      const isStock = connectionType === "stocks" || asset.asset_type === "stock";
+      
+      // For crypto: remove USDT suffix. For stocks: use as-is
+      const cleanSymbol = isStock 
+        ? rawSymbol.trim() 
+        : rawSymbol.replace(/USDT$/i, '').trim();
+      
+      // Format pair based on asset type
+      const pair = isStock 
+        ? `${cleanSymbol} / USD` 
+        : `${cleanSymbol} / USDT`;
+      
       const score = Number(signal.final_score ?? 0);
       const confidence: Trade["confidence"] =
         score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
@@ -614,23 +635,20 @@ export default function PaperTradingPage() {
     );
   }
 
-  // Show coming soon for stocks
-  if (connectionType === "stocks") {
-    return <ComingSoon title="Paper Trading" description="Practice your trading strategies with virtual money for stocks coming soon! This feature will allow you to test your stock trading strategies risk-free before using real capital." icon="paper" />;
-  }
+  // Stocks connection - show stock strategies (no paper trading yet, but show strategies and signals)
+  const isStocksConnection = connectionType === "stocks";
 
   return (
     <div className="space-y-3 sm:space-y-6 pb-8 p-4 sm:p-0">
 
-      
-      {/* WebSocket Connection Status */}
-      {realtimeData.reconnecting && (
+      {/* WebSocket Connection Status - Only for crypto */}
+      {!isStocksConnection && realtimeData.reconnecting && (
         <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
           <span className="text-sm text-yellow-300">Reconnecting to live data stream...</span>
         </div>
       )}
-      {realtimeData.binanceStatus?.state === 'RATE_LIMITED' && (
+      {!isStocksConnection && realtimeData.binanceStatus?.state === 'RATE_LIMITED' && (
         <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3 flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-yellow-500 animate-pulse" />
           <span className="text-sm text-yellow-300">
@@ -639,59 +657,82 @@ export default function PaperTradingPage() {
         </div>
       )}
 
-      {realtimeData.connected && realtimeData.binanceStatus?.state === 'CONNECTED' && (
+      {!isStocksConnection && realtimeData.connected && realtimeData.binanceStatus?.state === 'CONNECTED' && (
         <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-2 flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-green-500" />
           <span className="text-xs text-green-300">Live data stream active - no API polling</span>
         </div>
       )}
 
+      {/* Stocks Info Banner */}
+      {isStocksConnection && (
+        <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-3 flex items-center gap-2">
+          <div className="h-2 w-2 rounded-full bg-blue-500" />
+          <span className="text-sm text-blue-300">
+            Stock Strategies - Paper trading with Alpaca coming soon. View AI-powered signals for your stock portfolio.
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold text-white">Paper Trading Strategies</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-white">
+            {isStocksConnection ? "Stock Trading Strategies" : "Paper Trading Strategies"}
+          </h1>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
-            Execute trades on Binance testnet using AI-powered strategy signals
+            {isStocksConnection 
+              ? "AI-powered trading signals for stocks based on sentiment, fundamentals, and market analysis"
+              : "Execute trades on Binance testnet using AI-powered strategy signals"
+            }
           </p>
         </div>
 
-        {/* Buttons */}
+        {/* Buttons - Hide some for stocks */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white w-full sm:w-auto`}
-          >
-            Create Strategy
-          </button>
-          <button
-            onClick={() => setShowOrdersPanel(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-800 to-blue-700 px-4 py-2 text-sm font-medium text-blue-200 hover:from-blue-700 hover:to-blue-600 transition-all border border-blue-600/50"
-            title="View all orders"
-          >
-            <span>Orders</span>
-            <span className="text-xs bg-gradient-to-r from-blue-500 to-blue-400 text-white px-2 py-0.5 rounded-full font-bold">
-              {openOrdersCount}
-            </span>
-          </button>
-          <button
-            onClick={() => setShowLeaderboard(true)}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 w-full sm:w-auto"
-            title="Open session leaderboard"
-          >
-            <span>Leaderboard</span>
-            <span className="text-xs bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white px-2 py-0.5 rounded-full font-bold">
-              {tradeRecords.length}
-            </span>
-          </button>
+          {!isStocksConnection && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white w-full sm:w-auto`}
+            >
+              Create Strategy
+            </button>
+          )}
+          {!isStocksConnection && (
+            <button
+              onClick={() => setShowOrdersPanel(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-800 to-blue-700 px-4 py-2 text-sm font-medium text-blue-200 hover:from-blue-700 hover:to-blue-600 transition-all border border-blue-600/50"
+              title="View all orders"
+            >
+              <span>Orders</span>
+              <span className="text-xs bg-gradient-to-r from-blue-500 to-blue-400 text-white px-2 py-0.5 rounded-full font-bold">
+                {openOrdersCount}
+              </span>
+            </button>
+          )}
+          {!isStocksConnection && (
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 w-full sm:w-auto"
+              title="Open session leaderboard"
+            >
+              <span>Leaderboard</span>
+              <span className="text-xs bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white px-2 py-0.5 rounded-full font-bold">
+                {tradeRecords.length}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Balance Overview */}
-      <BalanceOverview
-        balance={balance}
-        openOrdersCount={openOrdersCount}
-        loading={loadingBalance}
-      />
+      {/* Balance Overview - Only for crypto */}
+      {!isStocksConnection && (
+        <BalanceOverview
+          balance={balance}
+          openOrdersCount={openOrdersCount}
+          loading={loadingBalance}
+        />
+      )}
 
       {/* Strategy Tabs */}
       {loadingPreBuilt ? (
@@ -788,9 +829,10 @@ export default function PaperTradingPage() {
                   key={trade.id}
                   signal={trade}
                   index={index}
-                  onAutoTrade={() => handleAutoTrade(trade)}
-                  onManualTrade={() => handleManualTrade(trade)}
+                  onAutoTrade={isStocksConnection ? undefined : () => handleAutoTrade(trade)}
+                  onManualTrade={isStocksConnection ? undefined : () => handleManualTrade(trade)}
                   onViewDetails={() => handleViewTrade(index)}
+                  hideTradeButtons={isStocksConnection}
                 />
               ))}
             </div>
@@ -821,7 +863,7 @@ export default function PaperTradingPage() {
           <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 text-center backdrop-blur">
             <p className="text-xs sm:text-sm text-slate-400">
               {currentStrategy
-                ? `No signals available for ${currentStrategy.name}. Signals are generated every 10 minutes.`
+                ? `No signals available for ${currentStrategy.name}. ${isStocksConnection ? 'Stock signals are generated every 10 minutes during market hours.' : 'Signals are generated every 10 minutes.'}`
                 : "No signals found for the selected time period"}
             </p>
           </div>
@@ -925,8 +967,8 @@ export default function PaperTradingPage() {
         </div>
       )}
 
-      {/* Leaderboard panel */}
-      {showLeaderboard && (
+      {/* Leaderboard panel - Only for crypto */}
+      {!isStocksConnection && showLeaderboard && (
         <TradeLeaderboard
           trades={tradeRecords}
           onClose={() => setShowLeaderboard(false)}
@@ -934,8 +976,8 @@ export default function PaperTradingPage() {
         />
       )}
 
-      {/* Create Custom Strategy Modal */}
-      {showCreateModal && (
+      {/* Create Custom Strategy Modal - Only for crypto */}
+      {!isStocksConnection && showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-xl bg-[--color-surface] p-6 text-slate-100 ring-1 ring-white/5 shadow-lg">
             <div className="flex items-center justify-between">
@@ -1045,8 +1087,8 @@ export default function PaperTradingPage() {
         </div>
       )}
 
-      {/* Orders Panel (ephemeral, frontend-only) */}
-      {showOrdersPanel && (
+      {/* Orders Panel (ephemeral, frontend-only) - Only for crypto */}
+      {!isStocksConnection && showOrdersPanel && (
         <OrdersPanel
           onClose={() => setShowOrdersPanel(false)}
           refreshTrigger={ordersRefreshKey}
