@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
+import { alpacaPaperTradingService, type AlpacaPosition, type AlpacaOrder, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
@@ -170,10 +171,16 @@ export default function PaperTradingPage() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isGeneratingSignals, setIsGeneratingSignals] = useState(false);
 
-  // Stock paper trading state (placeholder for Alpaca integration)
-  const [stockPaperBalance, setStockPaperBalance] = useState(100000); // $100,000 starting balance
+  // Stock paper trading state (Alpaca integration)
+  const [stockPaperBalance, setStockPaperBalance] = useState(0);
   const [stockOpenOrders, setStockOpenOrders] = useState(0);
+  const [stockPositions, setStockPositions] = useState<AlpacaPosition[]>([]);
+  const [stockOrders, setStockOrders] = useState<AlpacaOrder[]>([]);
   const [stockTradeRecords, setStockTradeRecords] = useState<TradeRecord[]>([]);
+  const [alpacaConnected, setAlpacaConnected] = useState(false);
+  const [alpacaMarketOpen, setAlpacaMarketOpen] = useState(false);
+  const [loadingAlpaca, setLoadingAlpaca] = useState(false);
+  const [alpacaError, setAlpacaError] = useState<string | null>(null);
 
   // --- Load testnet status on mount ---
   useEffect(() => {
@@ -189,6 +196,80 @@ export default function PaperTradingPage() {
       }
     };
     loadStatus();
+  }, [connectionType]);
+
+  // --- Load Alpaca paper trading data for stocks connections ---
+  const loadAlpacaData = async () => {
+    if (connectionType !== "stocks") return;
+    
+    setLoadingAlpaca(true);
+    setAlpacaError(null);
+    
+    console.log("📡 Calling Alpaca Paper Trading API...");
+    
+    try {
+      const dashboard = await alpacaPaperTradingService.getDashboard();
+      
+      console.log("📊 Raw Alpaca dashboard response:", dashboard);
+      
+      // Update balance (portfolio value)
+      setStockPaperBalance(dashboard.balance.portfolioValue || dashboard.balance.equity);
+      
+      // Update positions
+      setStockPositions(dashboard.positions);
+      
+      // Update orders
+      setStockOrders([...dashboard.openOrders, ...dashboard.recentOrders]);
+      setStockOpenOrders(dashboard.openOrders.length);
+      
+      // Update market status
+      setAlpacaMarketOpen(dashboard.clock.isOpen);
+      setAlpacaConnected(true);
+      
+      // Convert recent filled orders to trade records for leaderboard
+      const filledOrders = dashboard.recentOrders.filter(o => o.status === 'filled');
+      const records: TradeRecord[] = filledOrders.map(order => ({
+        id: order.id,
+        timestamp: new Date(order.filled_at || order.updated_at).getTime(),
+        symbol: order.symbol,
+        type: order.side.toUpperCase() as "BUY" | "SELL",
+        entryPrice: order.filled_avg_price || '0',
+        profitValue: 0, // Would need position data to calculate actual P/L
+        strategyName: 'Alpaca Paper Trade',
+      }));
+      setStockTradeRecords(records);
+      
+      console.log("✅ Alpaca paper trading data loaded (FROM API):", {
+        balance: dashboard.balance.portfolioValue,
+        cash: dashboard.balance.cash,
+        buyingPower: dashboard.balance.buyingPower,
+        positions: dashboard.positions.length,
+        openOrders: dashboard.openOrders.length,
+        marketOpen: dashboard.clock.isOpen,
+        accountId: dashboard.account?.id,
+      });
+    } catch (err: any) {
+      console.error("❌ Failed to load Alpaca data:", err);
+      setAlpacaError(err?.message || "Failed to connect to Alpaca");
+      setAlpacaConnected(false);
+      
+      // Fall back to default values if Alpaca is not configured
+      console.log("⚠️ Using FALLBACK values (not connected to Alpaca)");
+      setStockPaperBalance(100000);
+      setStockOpenOrders(0);
+    } finally {
+      setLoadingAlpaca(false);
+    }
+  };
+
+  useEffect(() => {
+    if (connectionType === "stocks") {
+      loadAlpacaData();
+      
+      // Refresh Alpaca data every 30 seconds
+      const interval = setInterval(loadAlpacaData, 30000);
+      return () => clearInterval(interval);
+    }
   }, [connectionType]);
 
   // --- Page Visibility API: Pause polling when tab is hidden ---
@@ -967,8 +1048,11 @@ export default function PaperTradingPage() {
       <BalanceOverview
         balance={isStocksConnection ? stockPaperBalance : balance}
         openOrdersCount={isStocksConnection ? stockOpenOrders : openOrdersCount}
-        loading={isStocksConnection ? false : loadingBalance}
+        loading={isStocksConnection ? loadingAlpaca : loadingBalance}
         isStockMode={isStocksConnection}
+        alpacaConnected={alpacaConnected}
+        marketOpen={alpacaMarketOpen}
+        positionsCount={stockPositions.length}
       />
 
       {/* Strategy Tabs */}
