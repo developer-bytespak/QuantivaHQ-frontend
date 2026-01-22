@@ -264,19 +264,39 @@ export default function TopTradesPage() {
       if (result.success) {
         // Refresh market data after seeding
         await fetchStockMarketData();
-        // Also trigger signal generation
+        // Trigger signal generation - fire and forget (don't await)
+        // This prevents the request from being cancelled on page refresh
         setIsGeneratingSignals(true);
-        await triggerStockSignals();
-        // Refresh strategies signals
-        preBuiltStrategies.forEach((strategy) => {
-          fetchStrategySignals(strategy.strategy_id);
-        });
+        triggerStockSignals()
+          .then((res) => console.log("Signal generation:", res.message))
+          .catch((err) => console.warn("Signal trigger request cancelled (signals still generating):", err.message));
+        
+        // Signals generate in background - refresh at intervals
+        // The backend continues processing even if this page refreshes
+        setTimeout(() => {
+          preBuiltStrategies.forEach((strategy) => {
+            fetchStrategySignals(strategy.strategy_id);
+          });
+        }, 5000);
+        
+        setTimeout(() => {
+          preBuiltStrategies.forEach((strategy) => {
+            fetchStrategySignals(strategy.strategy_id);
+          });
+          setIsGeneratingSignals(false);
+        }, 30000);
+        
+        setTimeout(() => {
+          preBuiltStrategies.forEach((strategy) => {
+            fetchStrategySignals(strategy.strategy_id);
+          });
+        }, 60000);
       }
     } catch (err) {
       console.error("Failed to seed stocks:", err);
+      setIsGeneratingSignals(false);
     } finally {
       setIsSeeding(false);
-      setIsGeneratingSignals(false);
     }
   };
 
@@ -299,11 +319,18 @@ export default function TopTradesPage() {
       try {
         setLoadingTrending(true);
         
-        // For stocks, use the dedicated stocks API
+        // For stocks, use the dedicated stocks API (skip crypto trending-assets endpoint)
         if (connectionType === "stocks") {
           await fetchStockMarketData();
+          // Don't fetch crypto trending assets for stock accounts
+          if (mounted) {
+            setTrendingTrades([]);
+            setLoadingTrending(false);
+          }
+          return;
         }
         
+        // For crypto connections only, fetch crypto trending assets
         const data = await apiRequest<never, any[]>({ path: "/strategies/trending-assets?limit=20&realtime=true", method: "GET" });
         if (!mounted) return;
         if (!data || !Array.isArray(data) || data.length === 0) {
@@ -311,7 +338,7 @@ export default function TopTradesPage() {
           setLoadingTrending(false);
           return;
         }
-        const mapped = mapBackendToTrades(data, isStocksConnection);
+        const mapped = mapBackendToTrades(data, false);
         setTrendingTrades(mapped);
       } catch (err) {
         console.error("Failed to load trending assets:", err);
@@ -413,6 +440,9 @@ export default function TopTradesPage() {
           volume24h: asset.volume_24h,
         },
         hasAiInsight: asset.hasAiInsight,
+        // Include timestamp for time filtering (cast to any for dynamic fields)
+        timestamp: (asset.signal as any)?.timestamp || (asset as any).poll_timestamp,
+        poll_timestamp: (asset as any).poll_timestamp,
       }));
       
       setStrategySignals((p) => ({ ...p, [strategyId]: signals }));
