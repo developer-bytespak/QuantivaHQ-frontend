@@ -203,7 +203,7 @@ export function StrategyCard({
                   : 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] shadow-[#fc4f02]/30 hover:shadow-[#fc4f02]/40'
               }`}
             >
-              {isStockMode ? 'Paper Trade' : 'Auto Trade'}
+              {isStockMode ? '🤖 Auto Trade' : 'Auto Trade'}
             </button>
           )}
           {!hideTradeButtons && onManualTrade && (
@@ -211,7 +211,7 @@ export function StrategyCard({
               onClick={onManualTrade}
               className="flex-1 rounded-xl bg-slate-700/50 px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:bg-slate-700 hover:text-white"
             >
-              {isStockMode ? 'Quick Trade' : 'Manual'}
+              {isStockMode ? '✋ Manual' : 'Manual'}
             </button>
           )}
           <button

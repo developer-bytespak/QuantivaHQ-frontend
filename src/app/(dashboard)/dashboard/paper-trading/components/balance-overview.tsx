@@ -12,6 +12,7 @@ interface BalanceOverviewProps {
   dailyChange?: number;
   dailyChangePercent?: number;
   positionsCount?: number;
+  portfolioValue?: number;
 }
 
 export function BalanceOverview({ 
@@ -24,6 +25,7 @@ export function BalanceOverview({
   dailyChange = 0,
   dailyChangePercent = 0,
   positionsCount = 0,
+  portfolioValue = 0,
 }: BalanceOverviewProps) {
   const isPositiveChange = dailyChange >= 0;
   
@@ -32,13 +34,18 @@ export function BalanceOverview({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
         <div>
           <p className="text-xs sm:text-sm text-slate-400 mb-1">
-            {isStockMode ? 'Portfolio Value' : 'Testnet Balance'}
+            {isStockMode ? 'Cash Balance' : 'Testnet Balance'}
           </p>
           {loading ? (
             <div className="h-7 sm:h-8 w-32 animate-pulse rounded bg-slate-700/50" />
           ) : (
             <div>
               <p className="text-2xl sm:text-3xl font-bold text-white">{formatCurrency(balance)}</p>
+              {isStockMode && alpacaConnected && (
+                <p className="text-xs sm:text-sm mt-1 text-slate-400">
+                  Portfolio Value: {formatCurrency(portfolioValue)}
+                </p>
+              )}
               {isStockMode && alpacaConnected && dailyChange !== 0 && (
                 <p className={`text-xs sm:text-sm mt-1 ${isPositiveChange ? 'text-green-400' : 'text-red-400'}`}>
                   {isPositiveChange ? '+' : ''}{formatCurrency(dailyChange)} ({isPositiveChange ? '+' : ''}{dailyChangePercent.toFixed(2)}%) today

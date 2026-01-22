@@ -12,6 +12,9 @@ import { BalanceOverview } from "./components/balance-overview";
 import { StrategyCard } from "./components/strategy-card";
 import { AutoTradeModal } from "./components/auto-trade-modal";
 import { ManualTradeModal } from "./components/manual-trade-modal";
+import { StockAutoTradeModal } from "./components/stock-auto-trade-modal";
+import { StockManualTradeModal } from "./components/stock-manual-trade-modal";
+import { StockOrdersPanel } from "./components/stock-orders-panel";
 import TradeLeaderboard from "./components/trade-leaderboard";
 import { OrdersPanel } from "./components/orders-panel";
 import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
@@ -173,6 +176,7 @@ export default function PaperTradingPage() {
 
   // Stock paper trading state (Alpaca integration)
   const [stockPaperBalance, setStockPaperBalance] = useState(0);
+  const [stockPortfolioValue, setStockPortfolioValue] = useState(0);
   const [stockOpenOrders, setStockOpenOrders] = useState(0);
   const [stockPositions, setStockPositions] = useState<AlpacaPosition[]>([]);
   const [stockOrders, setStockOrders] = useState<AlpacaOrder[]>([]);
@@ -212,22 +216,23 @@ export default function PaperTradingPage() {
       
       console.log("📊 Raw Alpaca dashboard response:", dashboard);
       
-      // Update balance (portfolio value)
-      setStockPaperBalance(dashboard.balance.portfolioValue || dashboard.balance.equity);
+      // Update balance (use CASH instead of buying power - buying power includes margin/leverage)
+      setStockPaperBalance(dashboard.balance?.cash || 0);
+      setStockPortfolioValue(dashboard.balance?.portfolioValue || 0);
       
       // Update positions
-      setStockPositions(dashboard.positions);
+      setStockPositions(dashboard.positions || []);
       
       // Update orders
-      setStockOrders([...dashboard.openOrders, ...dashboard.recentOrders]);
-      setStockOpenOrders(dashboard.openOrders.length);
+      setStockOrders([...(dashboard.openOrders || []), ...(dashboard.recentOrders || [])]);
+      setStockOpenOrders(dashboard.openOrders?.length || 0);
       
       // Update market status
-      setAlpacaMarketOpen(dashboard.clock.isOpen);
+      setAlpacaMarketOpen(dashboard.clock?.isOpen || false);
       setAlpacaConnected(true);
       
       // Convert recent filled orders to trade records for leaderboard
-      const filledOrders = dashboard.recentOrders.filter(o => o.status === 'filled');
+      const filledOrders = (dashboard.recentOrders || []).filter(o => o.status === 'filled');
       const records: TradeRecord[] = filledOrders.map(order => ({
         id: order.id,
         timestamp: new Date(order.filled_at || order.updated_at).getTime(),
@@ -240,13 +245,25 @@ export default function PaperTradingPage() {
       setStockTradeRecords(records);
       
       console.log("✅ Alpaca paper trading data loaded (FROM API):", {
-        balance: dashboard.balance.portfolioValue,
-        cash: dashboard.balance.cash,
-        buyingPower: dashboard.balance.buyingPower,
-        positions: dashboard.positions.length,
-        openOrders: dashboard.openOrders.length,
-        marketOpen: dashboard.clock.isOpen,
-        accountId: dashboard.account?.id,
+        cash: dashboard.balance?.cash || 0,
+        buyingPower: dashboard.balance?.buyingPower || 0,
+        portfolioValue: dashboard.balance?.portfolioValue || 0,
+        equity: dashboard.balance?.equity || 0,
+        positions: dashboard.positions?.length || 0,
+        openOrders: dashboard.openOrders?.length || 0,
+        marketOpen: dashboard.clock?.isOpen || false,
+        accountMultiplier: dashboard.account?.multiplier || 1,
+      });
+      
+      console.log("💰 Balance Breakdown:", {
+        "💵 Cash (shown in UI)": `$${dashboard.balance.cash?.toLocaleString() || '0'}`,
+        "📊 Buying Power (includes margin)": `$${dashboard.balance.buyingPower?.toLocaleString() || '0'}`,
+        "📈 Portfolio Value": `$${dashboard.balance.portfolioValue?.toLocaleString() || '0'}`,
+        "🔢 Margin Multiplier": `${dashboard.account?.multiplier || 1}x`,
+        "📦 Long Positions": `$${dashboard.balance.longMarketValue?.toLocaleString() || '0'}`,
+        "⚠️ Note": dashboard.clock?.isOpen 
+          ? "Market OPEN - Orders execute immediately"
+          : "Market CLOSED - Orders queued for next open",
       });
     } catch (err: any) {
       console.error("❌ Failed to load Alpaca data:", err);
@@ -845,23 +862,38 @@ export default function PaperTradingPage() {
     setOrdersRefreshKey((k) => k + 1);
   };
   
-  // Handler for simulated stock paper trade (placeholder until Alpaca integration)
-  const handleStockPaperTrade = (signal: any) => {
-    // For now, just add to leaderboard and show success
-    // Later this will call Alpaca paper trading API
-    addTradeRecordFromSignal(signal);
-    setSuccessMessage(`Paper trade recorded: ${signal.type} ${signal.symbol || signal.pair}`);
+  // Handlers for stock paper trading via Alpaca
+  const handleStockAutoTrade = (signal: any) => {
+    setSelectedSignal(signal);
+    setShowAutoTradeModal(true);
+  };
+
+  const handleStockManualTrade = (signal: any) => {
+    setSelectedSignal(signal);
+    setShowManualTradeModal(true);
+  };
+
+  const handleStockTradeSuccess = (result?: any) => {
+    // Record the trade in leaderboard
+    if (result?.signal) {
+      addTradeRecordFromSignal(result.signal);
+    }
+    setSuccessMessage("Trade executed successfully via Alpaca!");
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
     
-    // Simulate balance/order changes
-    const tradeValue = Number(signal.entryPrice || signal.entry || 100) * 10;
-    if (signal.type === 'BUY') {
-      setStockPaperBalance((prev) => Math.max(0, prev - tradeValue));
-    } else {
-      setStockPaperBalance((prev) => prev + tradeValue);
-    }
-    setStockOpenOrders((prev) => prev + 1);
+    // Refresh Alpaca data immediately
+    console.log("🔄 Refreshing Alpaca data after trade...");
+    loadAlpacaData();
+    
+    // Also refresh after 2 seconds to catch any delayed updates
+    setTimeout(() => {
+      console.log("🔄 Secondary refresh to ensure balance is updated...");
+      loadAlpacaData();
+    }, 2000);
+    
+    // Trigger OrdersPanel refresh
+    setOrdersRefreshKey((k) => k + 1);
   };
 
   // --- Error state ---
@@ -988,9 +1020,19 @@ export default function PaperTradingPage() {
               )}
             </div>
           )}
-          <p className="mt-2 text-xs text-slate-400">
-            Paper trading with Alpaca coming soon. Currently viewing AI-powered signals for your stock portfolio.
-          </p>
+          <div className="mt-2 space-y-1">
+            <p className="text-xs text-slate-400">
+              {alpacaConnected 
+                ? "✅ Connected to Alpaca Paper Trading API. Execute trades with real market simulation." 
+                : "⚠️ Alpaca not connected. Configure ALPACA_PAPER_API_KEY and ALPACA_PAPER_SECRET_KEY to enable paper trading."
+              }
+            </p>
+            {alpacaConnected && !alpacaMarketOpen && (
+              <p className="text-xs text-yellow-400 font-medium">
+                ⏰ Market is currently closed. Orders will be queued and execute when market opens at 9:30 AM ET.
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -1053,6 +1095,9 @@ export default function PaperTradingPage() {
         alpacaConnected={alpacaConnected}
         marketOpen={alpacaMarketOpen}
         positionsCount={stockPositions.length}
+        dailyChange={0}
+        dailyChangePercent={0}
+        portfolioValue={stockPortfolioValue}
       />
 
       {/* Strategy Tabs */}
@@ -1147,15 +1192,15 @@ export default function PaperTradingPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
               {paginatedTrades.map((trade, index) => (
                 <StrategyCard
-                  key={trade.id}
-                  signal={trade}
-                  index={index}
-                  onAutoTrade={isStocksConnection ? () => handleStockPaperTrade(trade) : () => handleAutoTrade(trade)}
-                  onManualTrade={isStocksConnection ? () => handleStockPaperTrade(trade) : () => handleManualTrade(trade)}
-                  onViewDetails={() => handleViewTrade(index)}
-                  hideTradeButtons={false}
-                  isStockMode={isStocksConnection}
-                />
+                                  key={trade.id}
+                                  signal={trade}
+                                  index={index}
+                                  onAutoTrade={isStocksConnection ? () => handleStockAutoTrade(trade) : () => handleAutoTrade(trade)}
+                                  onManualTrade={isStocksConnection ? () => handleStockManualTrade(trade) : () => handleManualTrade(trade)}
+                                  onViewDetails={() => handleViewTrade(index)}
+                                  hideTradeButtons={false}
+                                  isStockMode={isStocksConnection}
+                                />
               ))}
             </div>
 
@@ -1263,23 +1308,43 @@ export default function PaperTradingPage() {
         </div>
       )}
 
-      {/* Modals */}
+      {/* Modals - Stock mode uses Alpaca modals, Crypto mode uses Binance modals */}
       {showAutoTradeModal && selectedSignal && (
-        <AutoTradeModal
-          signal={selectedSignal}
-          balance={balance}
-          onClose={() => setShowAutoTradeModal(false)}
-          onSuccess={handleTradeSuccess}
-        />
+        isStocksConnection ? (
+          <StockAutoTradeModal
+            signal={selectedSignal}
+            balance={stockPaperBalance}
+            onClose={() => setShowAutoTradeModal(false)}
+            onSuccess={handleStockTradeSuccess}
+            marketOpen={alpacaMarketOpen}
+          />
+        ) : (
+          <AutoTradeModal
+            signal={selectedSignal}
+            balance={balance}
+            onClose={() => setShowAutoTradeModal(false)}
+            onSuccess={handleTradeSuccess}
+          />
+        )
       )}
 
       {showManualTradeModal && selectedSignal && (
-        <ManualTradeModal
-          signal={selectedSignal}
-          balance={balance}
-          onClose={() => setShowManualTradeModal(false)}
-          onSuccess={handleTradeSuccess}
-        />
+        isStocksConnection ? (
+          <StockManualTradeModal
+            signal={selectedSignal}
+            balance={stockPaperBalance}
+            onClose={() => setShowManualTradeModal(false)}
+            onSuccess={handleStockTradeSuccess}
+            marketOpen={alpacaMarketOpen}
+          />
+        ) : (
+          <ManualTradeModal
+            signal={selectedSignal}
+            balance={balance}
+            onClose={() => setShowManualTradeModal(false)}
+            onSuccess={handleTradeSuccess}
+          />
+        )
       )}
 
       {/* Success Toast */}
@@ -1409,59 +1474,14 @@ export default function PaperTradingPage() {
         </div>
       )}
 
-      {/* Orders Panel - Crypto uses real Binance testnet, Stocks shows placeholder */}
+      {/* Orders Panel - Crypto uses Binance testnet, Stocks uses Alpaca paper trading */}
       {showOrdersPanel && (
         isStocksConnection ? (
-          // Stock Orders Panel - Placeholder for Alpaca integration
-          <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowOrdersPanel(false)}>
-            <div className="relative w-full max-w-2xl max-h-[90vh] rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg sm:text-xl font-bold text-white">Stock Orders</h2>
-                <button onClick={() => setShowOrdersPanel(false)} className="rounded-lg p-1.5 sm:p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white" aria-label="Close">
-                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              </div>
-              
-              {/* Placeholder orders for stocks */}
-              <div className="space-y-3">
-                <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-4 text-center">
-                  <div className="text-blue-300 text-sm mb-2">🚀 Alpaca Paper Trading Coming Soon</div>
-                  <p className="text-xs text-slate-400">
-                    Stock paper trading with Alpaca will be integrated here. You'll be able to place and manage paper trades just like the crypto testnet.
-                  </p>
-                </div>
-                
-                {/* Sample order structure (placeholder) */}
-                <div className="text-xs text-slate-500 mb-2">Sample Order Format:</div>
-                <div className="rounded-lg bg-white/5 p-3 border border-slate-700/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-white">AAPL / USD</span>
-                    <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">BUY</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="text-slate-500">Qty:</span>
-                      <span className="text-slate-300 ml-1">10</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Price:</span>
-                      <span className="text-slate-300 ml-1">$185.50</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500">Status:</span>
-                      <span className="text-yellow-400 ml-1">Pending</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <p className="text-xs text-slate-500 text-center mt-4">
-                  No active orders yet. Place a trade from the signals above.
-                </p>
-              </div>
-            </div>
-          </div>
+          <StockOrdersPanel
+            onClose={() => setShowOrdersPanel(false)}
+            refreshTrigger={ordersRefreshKey}
+          />
         ) : (
-          // Crypto Orders Panel - Real Binance testnet
           <OrdersPanel
             onClose={() => setShowOrdersPanel(false)}
             refreshTrigger={ordersRefreshKey}
