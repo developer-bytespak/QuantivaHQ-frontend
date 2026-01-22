@@ -320,16 +320,17 @@ export async function seedPopularStocks(): Promise<{
 }
 
 /**
- * Trigger stock signals generation (admin use)
+ * Trigger stock signals generation (runs in background)
+ * Returns immediately - signals will appear within 1-2 minutes
  */
 export async function triggerStockSignals(): Promise<{
   message: string;
-  processed: number;
-  errors: number;
+  status: string;
 }> {
   return apiRequest<unknown, any>({
     path: '/strategies/trigger-stock-signals',
     method: 'POST',
+    timeout: 60000, // 60 second timeout (though it returns immediately now)
   });
 }
 
