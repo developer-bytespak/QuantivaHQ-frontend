@@ -54,7 +54,6 @@ export function StockAutoTradeModal({
   const [error, setError] = useState<string | null>(null);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [loadingPrice, setLoadingPrice] = useState(true);
-  const [orderPreview, setOrderPreview] = useState<any>(null);
 
   // Extract symbol from signal
   const symbol = signal.symbol || signal.assetId || signal.pair?.replace(/\s*\/.*$/, '').trim() || '';
@@ -107,27 +106,6 @@ export function StockAutoTradeModal({
   const potentialGainAmount = totalCost * takeProfitPercent / 100;
   const riskRewardRatio = maxLossAmount > 0 ? (potentialGainAmount / maxLossAmount).toFixed(2) : "N/A";
 
-  // Generate order preview when parameters change
-  useEffect(() => {
-    if (quantity > 0 && currentPrice > 0) {
-      const preview: any = {
-        symbol,
-        side,
-        type: "market",
-        qty: quantity,
-        time_in_force: timeInForce,
-        extended_hours: extendedHours,
-      };
-
-      if (orderClass === "bracket") {
-        preview.order_class = "bracket";
-        preview.take_profit = { limit_price: parseFloat(takeProfitPrice.toFixed(2)) };
-        preview.stop_loss = { stop_price: parseFloat(stopLossPrice.toFixed(2)) };
-      }
-
-      setOrderPreview(preview);
-    }
-  }, [symbol, side, quantity, currentPrice, orderClass, timeInForce, extendedHours, takeProfitPrice, stopLossPrice]);
 
   const handleExecute = async () => {
     try {
@@ -413,16 +391,6 @@ export function StockAutoTradeModal({
               <span className="font-semibold text-cyan-400">1:{riskRewardRatio}</span>
             </div>
           </div>
-
-          {/* Order Details JSON Preview */}
-          {orderPreview && (
-            <div className="mt-4 rounded-lg bg-slate-900/80 p-3">
-              <p className="text-xs text-slate-500 mb-2">API Request Preview:</p>
-              <pre className="text-xs text-slate-300 overflow-x-auto">
-                {JSON.stringify(orderPreview, null, 2)}
-              </pre>
-            </div>
-          )}
         </div>
 
         {/* Error Message */}

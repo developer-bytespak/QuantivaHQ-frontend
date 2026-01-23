@@ -193,6 +193,8 @@ export default function PaperTradingPage() {
   // Stock paper trading state (Alpaca integration)
   const [stockPaperBalance, setStockPaperBalance] = useState(0);
   const [stockPortfolioValue, setStockPortfolioValue] = useState(0);
+  const [stockDailyChange, setStockDailyChange] = useState(0);
+  const [stockDailyChangePercent, setStockDailyChangePercent] = useState(0);
   const [stockOpenOrders, setStockOpenOrders] = useState(0);
   const [stockPositions, setStockPositions] = useState<AlpacaPosition[]>([]);
   const [stockOrders, setStockOrders] = useState<AlpacaOrder[]>([]);
@@ -235,6 +237,9 @@ export default function PaperTradingPage() {
       // Update balance (use CASH instead of buying power - buying power includes margin/leverage)
       setStockPaperBalance(dashboard.balance?.cash || 0);
       setStockPortfolioValue(dashboard.balance?.portfolioValue || 0);
+      // Store daily change for leaderboard
+      setStockDailyChange(dashboard.balance?.dailyChange || 0);
+      setStockDailyChangePercent(dashboard.balance?.dailyChangePercent || 0);
       
       // Update positions
       setStockPositions(dashboard.positions || []);
@@ -1376,6 +1381,21 @@ export default function PaperTradingPage() {
           trades={isStocksConnection ? stockTradeRecords : tradeRecords}
           onClose={() => setShowLeaderboard(false)}
           onClear={() => isStocksConnection ? setStockTradeRecords([]) : setTradeRecords([])}
+          portfolioMetrics={isStocksConnection ? {
+            portfolioValue: stockPortfolioValue,
+            dailyChange: stockDailyChange,
+            dailyChangePercent: stockDailyChangePercent,
+            cash: stockPaperBalance,
+            positions: stockPositions.map(pos => ({
+              symbol: pos.symbol,
+              qty: pos.qty?.toString() || '0',
+              market_value: pos.market_value?.toString() || '0',
+              unrealized_pl: pos.unrealized_pl?.toString() || '0',
+              unrealized_plpc: pos.unrealized_plpc?.toString() || '0',
+              avg_entry_price: pos.avg_entry_price?.toString() || '0',
+              current_price: pos.current_price?.toString() || '0',
+            })),
+          } : undefined}
         />
       )}
 
