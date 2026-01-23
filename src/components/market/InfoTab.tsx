@@ -11,11 +11,20 @@ interface InfoTabProps {
     name: string;
     sector: string;
     price: number;
+    change24h: number;
     changePercent24h: number;
     marketCap: number | null;
     volume24h: number;
+    high24h?: number;
+    low24h?: number;
+    high52Week?: number;
+    low52Week?: number;
+    prevClose?: number;
+    open?: number;
     peRatio?: number;
+    eps?: number;
     dividendYield?: number;
+    avgVolume?: number;
     description?: string;
   };
   connectionType: "crypto" | "stocks" | null;
@@ -113,9 +122,14 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
 
   // Stocks rendering
   if (connectionType === "stocks" && stockData) {
-    const stockDescription = stockData.description || `${stockData.name} is a ${stockData.sector} company trading under the symbol ${stockData.symbol}.`;
+    const stockDescription = stockData.description || `${stockData.name} is a ${stockData.sector} company trading under the symbol ${stockData.symbol}. Track real-time price movements, trading volume, and key market statistics.`;
     const isLongDescription = stockDescription.length > 500;
     const displayDescription = stockDescription.substring(0, 500);
+
+    // Calculate price change from open if available
+    const changeFromOpen = stockData.open && stockData.price 
+      ? ((stockData.price - stockData.open) / stockData.open * 100) 
+      : null;
 
     return (
       <div className="space-y-6">
@@ -123,6 +137,9 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
         <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">About {stockData.name}</h3>
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-[#fda300] border border-[#fc4f02]/30">
+              {stockData.sector}
+            </span>
           </div>
           <p className="text-sm text-slate-300 leading-relaxed">
             {displayDescription}
@@ -130,38 +147,228 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
           </p>
         </div>
 
-        {/* Stock Info Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
-            <h4 className="text-sm font-medium text-slate-400 mb-2">Sector</h4>
-            <p className="text-lg font-semibold text-white">{stockData.sector}</p>
+        {/* Market Statistics */}
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+          <h3 className="text-lg font-semibold text-white mb-6">Market Statistics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Market Cap</p>
+              <p className="text-lg font-semibold text-white">
+                {stockData.marketCap ? formatNumber(stockData.marketCap) : "N/A"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">24h Volume</p>
+              <p className="text-lg font-semibold text-white">
+                {formatNumber(stockData.volume24h)}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Sector</p>
+              <p className="text-lg font-semibold text-white">{stockData.sector}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Today's Open</p>
+              <p className="text-lg font-semibold text-white">
+                {stockData.open ? `$${stockData.open.toFixed(2)}` : "N/A"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Previous Close</p>
+              <p className="text-lg font-semibold text-white">
+                {stockData.prevClose ? `$${stockData.prevClose.toFixed(2)}` : "N/A"}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Day Range</p>
+              <p className="text-lg font-semibold text-white">
+                {stockData.low24h && stockData.high24h 
+                  ? `$${stockData.low24h.toFixed(2)} - $${stockData.high24h.toFixed(2)}`
+                  : "N/A"}
+              </p>
+            </div>
+            {stockData.high52Week && stockData.low52Week && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">52-Week Range</p>
+                <p className="text-lg font-semibold text-white">
+                  ${stockData.low52Week.toFixed(2)} - ${stockData.high52Week.toFixed(2)}
+                </p>
+              </div>
+            )}
+            {stockData.peRatio && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">P/E Ratio</p>
+                <p className="text-lg font-semibold text-white">{stockData.peRatio.toFixed(2)}</p>
+              </div>
+            )}
+            {stockData.eps && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">EPS</p>
+                <p className="text-lg font-semibold text-white">${stockData.eps.toFixed(2)}</p>
+              </div>
+            )}
           </div>
+        </div>
 
+        {/* Price Performance */}
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+          <h3 className="text-lg font-semibold text-white mb-6">Price Performance</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {changeFromOpen !== null && (
+              <div 
+                className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-105 hover:shadow-lg ${
+                  changeFromOpen >= 0 ? "hover:shadow-green-500/20" : "hover:shadow-red-500/20"
+                }`}
+              >
+                <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full opacity-10 ${
+                  changeFromOpen >= 0 ? "bg-gradient-to-br from-green-500/20 to-transparent" : "bg-gradient-to-br from-red-500/20 to-transparent"
+                }`}></div>
+                <div className="relative space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg">📈</span>
+                    <div className={`p-1.5 rounded-lg ${changeFromOpen >= 0 ? "bg-green-500/20" : "bg-red-500/20"}`}>
+                      {changeFromOpen >= 0 ? (
+                        <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">From Open</p>
+                    <p className={`text-2xl font-bold ${changeFromOpen >= 0 ? "text-green-400" : "text-red-400"}`}>
+                      {changeFromOpen >= 0 ? "+" : ""}{changeFromOpen.toFixed(2)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div 
+              className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-105 hover:shadow-lg ${
+                stockData.changePercent24h >= 0 ? "hover:shadow-green-500/20" : "hover:shadow-red-500/20"
+              }`}
+            >
+              <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full opacity-10 ${
+                stockData.changePercent24h >= 0 ? "bg-gradient-to-br from-green-500/20 to-transparent" : "bg-gradient-to-br from-red-500/20 to-transparent"
+              }`}></div>
+              <div className="relative space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg">📊</span>
+                  <div className={`p-1.5 rounded-lg ${stockData.changePercent24h >= 0 ? "bg-green-500/20" : "bg-red-500/20"}`}>
+                    {stockData.changePercent24h >= 0 ? (
+                      <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">24h Change</p>
+                  <p className={`text-2xl font-bold ${stockData.changePercent24h >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {stockData.changePercent24h >= 0 ? "+" : ""}{stockData.changePercent24h.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div 
+              className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-105 hover:shadow-lg ${
+                (stockData.change24h || 0) >= 0 ? "hover:shadow-green-500/20" : "hover:shadow-red-500/20"
+              }`}
+            >
+              <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full opacity-10 ${
+                (stockData.change24h || 0) >= 0 ? "bg-gradient-to-br from-green-500/20 to-transparent" : "bg-gradient-to-br from-red-500/20 to-transparent"
+              }`}></div>
+              <div className="relative space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg">💵</span>
+                  <div className={`p-1.5 rounded-lg ${(stockData.change24h || 0) >= 0 ? "bg-green-500/20" : "bg-red-500/20"}`}>
+                    {(stockData.change24h || 0) >= 0 ? (
+                      <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">24h $ Change</p>
+                  <p className={`text-2xl font-bold ${(stockData.change24h || 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {(stockData.change24h || 0) >= 0 ? "+" : ""}${(stockData.change24h || 0).toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
-            <h4 className="text-sm font-medium text-slate-400 mb-2">Market Cap</h4>
-            <p className="text-lg font-semibold text-white">
-              {stockData.marketCap ? formatNumber(stockData.marketCap) : "N/A"}
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 rounded-lg bg-green-500/20">
+                <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <h4 className="text-xs font-medium text-slate-400">Day High</h4>
+            </div>
+            <p className="text-xl font-bold text-white">
+              {stockData.high24h ? `$${stockData.high24h.toFixed(2)}` : "N/A"}
             </p>
           </div>
 
           <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
-            <h4 className="text-sm font-medium text-slate-400 mb-2">24h Volume</h4>
-            <p className="text-lg font-semibold text-white">
-              {formatNumber(stockData.volume24h)}
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-1.5 rounded-lg bg-red-500/20">
+                <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
+                </svg>
+              </div>
+              <h4 className="text-xs font-medium text-slate-400">Day Low</h4>
+            </div>
+            <p className="text-xl font-bold text-white">
+              {stockData.low24h ? `$${stockData.low24h.toFixed(2)}` : "N/A"}
             </p>
           </div>
 
           {stockData.peRatio && (
             <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
-              <h4 className="text-sm font-medium text-slate-400 mb-2">P/E Ratio</h4>
-              <p className="text-lg font-semibold text-white">{stockData.peRatio.toFixed(2)}</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-blue-500/20">
+                  <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h4 className="text-xs font-medium text-slate-400">P/E Ratio</h4>
+              </div>
+              <p className="text-xl font-bold text-white">{stockData.peRatio.toFixed(2)}</p>
             </div>
           )}
 
           {stockData.dividendYield && (
             <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
-              <h4 className="text-sm font-medium text-slate-400 mb-2">Dividend Yield</h4>
-              <p className="text-lg font-semibold text-white">{stockData.dividendYield.toFixed(2)}%</p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-purple-500/20">
+                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="text-xs font-medium text-slate-400">Dividend Yield</h4>
+              </div>
+              <p className="text-xl font-bold text-white">{stockData.dividendYield.toFixed(2)}%</p>
             </div>
           )}
         </div>
