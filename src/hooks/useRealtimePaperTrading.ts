@@ -43,7 +43,7 @@ interface UseRealtimePaperTrading {
   error: string | null;
 }
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 2000;
 
