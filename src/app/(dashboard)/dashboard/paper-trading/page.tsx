@@ -103,17 +103,33 @@ export default function PaperTradingPage() {
   
   // Check connection type on mount
   useEffect(() => {
+    let isMounted = true;
+    
     const checkConnection = async () => {
       try {
         const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
-      } catch (error) {
+        if (isMounted) {
+          setConnectionType(response.data?.exchange?.type || null);
+        }
+      } catch (error: any) {
+        // Don't redirect on error - just log and allow page to render
         console.error("Failed to check connection type:", error);
+        // Set connection type to null so page can still render
+        if (isMounted) {
+          setConnectionType(null);
+        }
       } finally {
-        setIsCheckingConnection(false);
+        if (isMounted) {
+          setIsCheckingConnection(false);
+        }
       }
     };
+    
     checkConnection();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Account data

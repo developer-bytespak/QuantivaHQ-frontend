@@ -191,10 +191,33 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
 /**
  * Navigate to the next route in the flow
  * This is a convenience function that can be used with Next.js router
+ * If a return path is stored (from AuthGuard redirect), it will be used instead
  */
 export async function navigateToNextRoute(
   router: { push: (path: string) => void }
 ): Promise<void> {
+  // Check if there's a stored return path (from AuthGuard redirect)
+  // This happens when user was on a protected page, got redirected to login, and now is authenticated
+  if (typeof window !== "undefined") {
+    const returnTo = sessionStorage.getItem('quantivahq_return_to');
+    if (returnTo) {
+      try {
+        const decodedPath = decodeURIComponent(returnTo);
+        // Only use return path if it's a valid dashboard route
+        if (decodedPath.startsWith('/dashboard')) {
+          console.log(`Flow router: Returning to stored path → ${decodedPath}`);
+          sessionStorage.removeItem('quantivahq_return_to'); // Clear after use
+          router.push(decodedPath);
+          return;
+        }
+      } catch (e) {
+        console.warn('Failed to decode return path:', e);
+        sessionStorage.removeItem('quantivahq_return_to');
+      }
+    }
+  }
+
+  // No stored return path, use normal flow logic
   const result = await determineNextRoute();
   console.log(`Flow router: ${result.reason} → ${result.route}`);
   router.push(result.route);
