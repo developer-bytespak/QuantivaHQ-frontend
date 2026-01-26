@@ -45,9 +45,11 @@ export default function MarketPage() {
     const checkConnection = async () => {
       try {
         const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
+        setConnectionType(response.data?.exchange?.type || "crypto"); // Default to crypto if no connection
       } catch (error) {
         console.error("Failed to check connection type:", error);
+        // Default to crypto if no active connection found
+        setConnectionType("crypto");
       } finally {
         setIsCheckingConnection(false);
       }
@@ -56,7 +58,9 @@ export default function MarketPage() {
   }, []);
 
   useEffect(() => {
-    // Only fetch crypto data if crypto connection
+    // Fetch crypto data by default (for market overview page)
+    // This will trigger when connectionType is set or if it's already "crypto"
+    if (!connectionType) return; // Only skip if still checking
     if (connectionType !== "crypto") return;
     
     const fetchCoins = async () => {
