@@ -245,7 +245,9 @@ export default function TopTradesPage() {
     
     setLoadingMarketData(true);
     try {
-      const response = await getStocksForTopTrades(20);
+      // Fetch all stocks from market page (500 limit to match market page)
+      // Explicitly pass 500 to ensure all stocks are fetched
+      const response = await getStocksForTopTrades(500);
       setStockMarketData(response.stocks);
       setMarketDataSource(response.source);
       setLastMarketDataUpdate(new Date(response.updated_at));
@@ -394,9 +396,12 @@ export default function TopTradesPage() {
     setSignalsError((p) => { const c = { ...p }; delete c[strategyId]; return c; });
 
     try {
-      // Use new AI insights endpoint that returns top 2 with insights
-      const response = await getTrendingAssetsWithInsights(strategyId, 10);
+      // Use new AI insights endpoint - pass limit 500 to match market page
+      // This matches the market page which shows all available stocks
+      console.log(`[TopTrades] Fetching signals for strategy ${strategyId} with limit 500`);
+      const response = await getTrendingAssetsWithInsights(strategyId, 500);
       const assets = response.assets || [];
+      console.log(`[TopTrades] Received ${assets.length} assets from API for strategy ${strategyId}`);
       
       // Store AI insights separately with timestamps
       const insights: Record<string, { text: string; timestamp: number }> = {};
@@ -410,40 +415,61 @@ export default function TopTradesPage() {
       });
       setAiInsights((p) => ({ ...p, [strategyId]: insights }));
       
+      // Get strategy to access stop_loss_value and take_profit_value
+      const strategy = preBuiltStrategies.find(s => s.strategy_id === strategyId);
+      
       // Map assets to signals format for compatibility with existing code
-      const signals = assets.map(asset => ({
-        signal_id: asset.signal?.signal_id || asset.asset_id,
-        strategy_id: strategyId,
-        asset_id: asset.asset_id,
-        asset: {
+      const signals = assets.map((asset, idx) => {
+        // Debug log to see what we're getting (only for first asset)
+        if (idx === 0) {
+          console.log('[TopTrades] Sample asset:', {
+            symbol: asset.symbol,
+            hasSignal: !!asset.signal,
+            signal: asset.signal,
+            trend_score: asset.trend_score,
+            strategy_stop_loss: strategy?.stop_loss_value,
+            strategy_take_profit: strategy?.take_profit_value,
+          });
+        }
+        
+        return {
+          signal_id: asset.signal?.signal_id || asset.asset_id,
+          strategy_id: strategyId,
           asset_id: asset.asset_id,
-          symbol: asset.symbol,
-          display_name: asset.display_name,
-          asset_type: asset.asset_type, // Include asset type for stock detection
-        },
-        action: asset.signal?.action || 'HOLD',
-        confidence: asset.signal?.confidence || 0,
-        final_score: asset.signal?.final_score || 0,
-        entry_price: asset.signal?.entry_price,
-        stop_loss_price: asset.signal?.stop_loss,
-        take_profit_price: asset.signal?.take_profit_1,
-        stop_loss: asset.signal?.stop_loss_pct, // Percentage from strategy
-        take_profit: asset.signal?.take_profit_pct, // Percentage from strategy
-        details: asset.signal ? [{
-          entry_price: asset.signal.entry_price,
-          stop_loss: asset.signal.stop_loss,
-          take_profit_1: asset.signal.take_profit_1,
-        }] : [],
-        realtime_data: {
-          price: asset.price_usd,
-          priceChangePercent: asset.price_change_24h,
-          volume24h: asset.volume_24h,
-        },
-        hasAiInsight: asset.hasAiInsight,
-        // Include timestamp for time filtering (cast to any for dynamic fields)
-        timestamp: (asset.signal as any)?.timestamp || (asset as any).poll_timestamp,
-        poll_timestamp: (asset as any).poll_timestamp,
-      }));
+          asset: {
+            asset_id: asset.asset_id,
+            symbol: asset.symbol,
+            display_name: asset.display_name,
+            asset_type: asset.asset_type, // Include asset type for stock detection
+            trend_score: asset.trend_score, // Include trend_score from asset
+          },
+          action: asset.signal?.action || 'HOLD',
+          confidence: asset.signal?.confidence || 0,
+          final_score: asset.signal?.final_score || 0,
+          entry_price: asset.signal?.entry_price,
+          stop_loss_price: asset.signal?.stop_loss,
+          take_profit_price: asset.signal?.take_profit_1,
+          stop_loss: asset.signal?.stop_loss_pct ?? strategy?.stop_loss_value ?? null, // Percentage from signal or strategy
+          take_profit: asset.signal?.take_profit_pct ?? strategy?.take_profit_value ?? null, // Percentage from signal or strategy
+          stop_loss_pct: asset.signal?.stop_loss_pct ?? strategy?.stop_loss_value ?? null, // Also include as stop_loss_pct for mapSignalsToTrades
+          take_profit_pct: asset.signal?.take_profit_pct ?? strategy?.take_profit_value ?? null, // Also include as take_profit_pct for mapSignalsToTrades
+          trend_score: ((asset as any).signal?.trend_score) ?? null, // Trend score from signal (only available when signal exists)
+          details: asset.signal ? [{
+            entry_price: asset.signal.entry_price,
+            stop_loss: asset.signal.stop_loss,
+            take_profit_1: asset.signal.take_profit_1,
+          }] : [],
+          realtime_data: {
+            price: asset.price_usd,
+            priceChangePercent: asset.price_change_24h,
+            volume24h: asset.volume_24h,
+          },
+          hasAiInsight: asset.hasAiInsight,
+          // Include timestamp for time filtering (cast to any for dynamic fields)
+          timestamp: (asset.signal as any)?.timestamp || (asset as any).poll_timestamp,
+          poll_timestamp: (asset as any).poll_timestamp,
+        };
+      });
       
       setStrategySignals((p) => ({ ...p, [strategyId]: signals }));
     } catch (err: any) {
@@ -553,9 +579,32 @@ export default function TopTradesPage() {
       const stopLossPrice = signal.stop_loss_price || signal.details?.[0]?.stop_loss || null;
       const takeProfitPrice = signal.take_profit_price || signal.details?.[0]?.take_profit_1 || null;
       
-      // Get stop loss and take profit percentages from strategy (already formatted)
-      const stopLossPct = signal.stop_loss || null;
-      const takeProfitPct = signal.take_profit || null;
+      // Get stop loss and take profit percentages from signal (set from strategy in backend)
+      // These are percentages like "5" or "10", format them with % sign
+      const stopLossPct = signal.stop_loss_pct ?? signal.stop_loss ?? null;
+      const takeProfitPct = signal.take_profit_pct ?? signal.take_profit ?? null;
+      
+      // Debug log for first signal to see what data we have
+      if (idx === 0) {
+        console.log('[TopTrades] mapSignalsToTrades - Sample signal:', {
+          signal_id: signal.signal_id,
+          stop_loss_pct: signal.stop_loss_pct,
+          stop_loss: signal.stop_loss,
+          take_profit_pct: signal.take_profit_pct,
+          take_profit: signal.take_profit,
+          trend_score: signal.trend_score,
+          asset_trend_score: asset.trend_score,
+          final_score: signal.final_score,
+        });
+      }
+      
+      // Get trend score from signal
+      // For stocks, trend_score is only available when a signal has been generated
+      // If no signal exists, trend_score will be null/0 (which is expected)
+      const trendScore = signal.trend_score ?? (signal as any).asset?.trend_score ?? null;
+      
+      // Get win rate if available (might not be in signal data)
+      const winRate = (signal as any).win_rate ?? (signal as any).winRate ?? null;
       
       // Get explanation text
       const explanationText = signal.explanations?.[0]?.text || signal.explanation?.text || 'No explanation available';
@@ -568,13 +617,13 @@ export default function TopTradesPage() {
         confidence,
         ext: entryPrice ? String(entryPrice) : "—",
         entry: entryPrice ? String(entryPrice) : "—",
-        stopLoss: stopLossPct ? String(stopLossPct) : "—",
+        stopLoss: stopLossPct !== null && stopLossPct !== undefined ? `${stopLossPct}%` : "—",
         progressMin: 0,
         progressMax: 100,
         progressValue: Math.min(100, Math.max(0, Math.floor((score || 0) * 100))),
         entryPrice: entryPrice ? String(entryPrice) : "—",
         stopLossPrice: stopLossPrice ? String(stopLossPrice) : "—",
-        takeProfit1: takeProfitPct ? String(takeProfitPct) : "—",
+        takeProfit1: takeProfitPct !== null && takeProfitPct !== undefined ? `${takeProfitPct}%` : "—",
         takeProfitPrice: takeProfitPrice ? String(takeProfitPrice) : "—",
         target: "",
         insights: explanationText ? [explanationText] : [],
@@ -582,10 +631,10 @@ export default function TopTradesPage() {
         profitValue: Number(realtimePriceChange ?? 0) || 0,
         volume: realtimeVolume ? String(Number(realtimeVolume).toLocaleString()) : "—",
         volumeValue: Number(realtimeVolume ?? 0) || 0,
-        winRate: "—",
-        winRateValue: 0,
+        winRate: winRate !== null && winRate !== undefined ? `${winRate}%` : "—",
+        winRateValue: Number(winRate ?? 0) || 0,
         hoursAgo: signal.timestamp ? Math.floor((Date.now() - new Date(signal.timestamp).getTime()) / (1000 * 60 * 60)) : 0,
-        trend_score: score,
+        trend_score: trendScore !== null && trendScore !== undefined ? Number(trendScore) : 0, // Show 0 if no signal/trend_score available
         trend_direction: "STABLE",
         score_change: 0,
         volume_ratio: 1,
@@ -632,7 +681,11 @@ export default function TopTradesPage() {
 
     // Choose preview endpoint based on strategy type if available. User strategies use the generic preview path.
     const isUserStrategy = (strategy as any)?.type === "user" || false;
-    const previewPath = isUserStrategy ? `/strategies/${strategyId}/preview?limit=20` : `/strategies/pre-built/${strategyId}/preview?limit=20`;
+    // Use 500 limit to match market page stocks, and specify asset_type=stock for stocks connection
+    const assetTypeParam = isStocksConnection ? '&asset_type=stock' : '';
+    const previewPath = isUserStrategy 
+      ? `/strategies/${strategyId}/preview?limit=500${assetTypeParam}` 
+      : `/strategies/pre-built/${strategyId}/preview?limit=500${assetTypeParam}`;
 
     try {
       const preview = await apiRequest<never, any>({ path: previewPath, method: "GET" });
