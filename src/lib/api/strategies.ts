@@ -158,8 +158,10 @@ export async function getPreBuiltStrategySignals(strategyId: string): Promise<St
 /**
  * Get trending assets with AI insights for a pre-built strategy
  * Returns top N assets with AI insights generated for the top 2
+ * Uses the same data source as the market page (market_rankings table)
+ * @param limit Maximum number of assets to return (default: 10000 to get all available)
  */
-export async function getTrendingAssetsWithInsights(strategyId: string, limit: number = 10): Promise<{
+export async function getTrendingAssetsWithInsights(strategyId: string, limit: number = 10000): Promise<{
   strategy: { id: string; name: string; description: string };
   assets: Array<{
     asset_id: string;
@@ -182,6 +184,8 @@ export async function getTrendingAssetsWithInsights(strategyId: string, limit: n
       take_profit_1?: number;
       stop_loss_pct?: number;
       take_profit_pct?: number;
+      trend_score?: number;
+      sentiment_score?: number;
     };
   }>;
 }> {
@@ -274,7 +278,7 @@ export interface StocksForTopTradesResponse {
  * Get stocks with real-time market data for Top Trades page
  * Data is sourced from Alpaca API with automatic caching
  */
-export async function getStocksForTopTrades(limit: number = 20): Promise<StocksForTopTradesResponse> {
+export async function getStocksForTopTrades(limit: number = 500): Promise<StocksForTopTradesResponse> {
   return apiRequest<unknown, StocksForTopTradesResponse>({
     path: `/strategies/stocks/top-trades?limit=${limit}`,
     method: 'GET',

@@ -488,7 +488,8 @@ export default function PaperTradingPage() {
     
     setLoadingMarketData(true);
     try {
-      const response = await getStocksForTopTrades(20);
+      // Use 500 limit to match top-trades page and market page
+      const response = await getStocksForTopTrades(500);
       setStockMarketData(response.stocks);
       setMarketDataSource(response.source);
       setLastMarketDataUpdate(new Date(response.updated_at));
@@ -612,8 +613,9 @@ export default function PaperTradingPage() {
 
     try {
       // For stocks, use the trending-with-insights endpoint (same as Top Trades)
+      // Use high limit to get all available stocks (same as market page)
       if (connectionType === "stocks") {
-        const response = await getTrendingAssetsWithInsights(strategyId, 10);
+        const response = await getTrendingAssetsWithInsights(strategyId, 10000);
         const assets = response.assets || [];
         
         // Map assets to signals format for compatibility
