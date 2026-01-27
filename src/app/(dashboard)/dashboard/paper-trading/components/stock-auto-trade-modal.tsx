@@ -9,6 +9,7 @@ interface StockAutoTradeModalProps {
   onClose: () => void;
   onSuccess: (order?: any) => void;
   marketOpen: boolean;
+  strategy?: any;
 }
 
 type RiskLevel = "conservative" | "moderate" | "aggressive";
@@ -45,6 +46,7 @@ export function StockAutoTradeModal({
   onClose,
   onSuccess,
   marketOpen,
+  strategy,
 }: StockAutoTradeModalProps) {
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("conservative");
   const [orderClass, setOrderClass] = useState<OrderClass>("bracket");
@@ -58,9 +60,11 @@ export function StockAutoTradeModal({
   // Extract symbol from signal
   const symbol = signal.symbol || signal.assetId || signal.pair?.replace(/\s*\/.*$/, '').trim() || '';
 
-  // Get signal's SL/TP percentages (fallback to defaults)
-  const stopLossPercent = parsePercent(signal.stopLoss) || 5;
-  const takeProfitPercent = parsePercent(signal.takeProfit1) || 10;
+  // Get signal's SL/TP percentages - use strategy values as fallback instead of hardcoded 5 and 10
+  const defaultStopLoss = strategy?.stop_loss_value ?? 5;
+  const defaultTakeProfit = strategy?.take_profit_value ?? 10;
+  const stopLossPercent = parsePercent(signal.stopLoss) || defaultStopLoss;
+  const takeProfitPercent = parsePercent(signal.takeProfit1) || defaultTakeProfit;
 
   // Fetch current price
   useEffect(() => {
@@ -86,6 +90,13 @@ export function StockAutoTradeModal({
 
     fetchPrice();
   }, [signal]);
+
+  // Disable extended hours when bracket order is selected (Alpaca doesn't support it)
+  useEffect(() => {
+    if (orderClass === "bracket" && extendedHours) {
+      setExtendedHours(false);
+    }
+  }, [orderClass]);
 
   // Calculate position and prices
   const riskPercent = RISK_LEVELS[riskLevel].percent;
@@ -124,15 +135,42 @@ export function StockAutoTradeModal({
         throw new Error(`Insufficient balance. Need $${totalCost.toFixed(2)} but only have $${balance.toFixed(2)}`);
       }
 
+      // Alpaca restrictions:
+      // 1. Bracket orders do not support extended hours
+      // 2. Extended hours orders must be DAY limit orders (not market)
+      
+      // Determine order type and time in force
+      let orderType: "market" | "limit" = "market";
+      let finalTimeInForce = orderClass === "bracket" ? "gtc" : timeInForce;
+      let finalExtendedHours = extendedHours;
+      let limitPrice: number | undefined = undefined;
+
+      // If bracket order, disable extended hours
+      if (orderClass === "bracket") {
+        finalExtendedHours = false;
+      }
+
+      // If extended hours is enabled, convert market to limit order with DAY time in force
+      if (finalExtendedHours && orderClass === "simple") {
+        orderType = "limit";
+        limitPrice = parseFloat(currentPrice.toFixed(2));
+        finalTimeInForce = "day";
+      }
+
       // Build order parameters matching Alpaca API
       const orderParams: PlaceOrderParams = {
         symbol: symbol.toUpperCase(),
         qty: quantity,
         side: side as "buy" | "sell",
-        type: "market",
-        time_in_force: timeInForce,
-        extended_hours: extendedHours,
+        type: orderType,
+        time_in_force: finalTimeInForce,
+        extended_hours: finalExtendedHours,
       };
+
+      // Add limit price if converted from market to limit for extended hours
+      if (limitPrice !== undefined) {
+        orderParams.limit_price = limitPrice;
+      }
 
       // Add bracket order legs if selected
       if (orderClass === "bracket") {
@@ -330,33 +368,62 @@ export function StockAutoTradeModal({
               Time In Force:
             </label>
             <select
-              value={timeInForce}
-              onChange={(e) => setTimeInForce(e.target.value as "day" | "gtc" | "ioc" | "fok")}
-              className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+              value={orderClass === "bracket" ? "gtc" : timeInForce}
+              onChange={(e) => {
+                if (orderClass === "bracket") {
+                  // Bracket orders require GTC - show info but don't change selection
+                  return;
+                }
+                setTimeInForce(e.target.value as "day" | "gtc" | "ioc" | "fok");
+              }}
+              disabled={orderClass === "bracket"}
+              className={`w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none ${
+                orderClass === "bracket" ? "opacity-60 cursor-not-allowed" : ""
+              }`}
             >
               {TIME_IN_FORCE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+            {orderClass === "bracket" && (
+              <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Bracket orders use GTC to keep protective orders active
+              </p>
+            )}
           </div>
         </div>
 
         {/* Extended Hours Toggle */}
         <div className="mb-5">
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className={`flex items-center gap-3 ${orderClass === "bracket" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
             <div className="relative">
               <input
                 type="checkbox"
                 checked={extendedHours}
-                onChange={(e) => setExtendedHours(e.target.checked)}
+                onChange={(e) => {
+                  if (orderClass === "bracket") {
+                    // Bracket orders don't support extended hours
+                    return;
+                  }
+                  setExtendedHours(e.target.checked);
+                }}
+                disabled={orderClass === "bracket"}
                 className="sr-only peer"
               />
-              <div className="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-blue-500 transition-colors" />
+              <div className={`w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-blue-500 transition-colors ${orderClass === "bracket" ? "opacity-50" : ""}`} />
               <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
             </div>
             <div>
               <span className="text-sm font-medium text-slate-200">Extended Hours Trading</span>
-              <p className="text-xs text-slate-500">Trade during pre-market (4am-9:30am) and after-hours (4pm-8pm ET)</p>
+              <p className="text-xs text-slate-500">
+                {orderClass === "bracket" 
+                  ? "Not available for bracket orders (Alpaca limitation)"
+                  : "Trade during pre-market (4am-9:30am) and after-hours (4pm-8pm ET). Market orders will be converted to limit orders."
+                }
+              </p>
             </div>
           </label>
         </div>

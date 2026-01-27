@@ -13,7 +13,6 @@ const pageTitles: Record<string, string> = {
   "/dashboard/top-trades": "Top Trades",
   "/dashboard/ai-insights": "AI Insights",
   "/dashboard/vc-pool": "VC Pool",
-  "/dashboard/holdings": "My Holdings",
   "/dashboard/profile": "Profile",
   "/dashboard/screener": "Market Screener",
   "/dashboard/settings": "Settings",

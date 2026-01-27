@@ -18,6 +18,7 @@ interface AutoTradeModalProps {
   balance: number;
   onClose: () => void;
   onSuccess: () => void;
+  strategy?: any;
 }
 
 type RiskLevel = "conservative" | "moderate" | "aggressive";
@@ -28,7 +29,7 @@ const RISK_LEVELS: Record<RiskLevel, { percent: number; label: string }> = {
   aggressive: { percent: 5, label: "Aggressive (5% of balance)" },
 };
 
-export function AutoTradeModal({ signal, balance, onClose, onSuccess }: AutoTradeModalProps) {
+export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }: AutoTradeModalProps) {
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("conservative");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,8 +72,11 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess }: AutoTrad
   }, [signal, symbol]);
 
   const riskPercent = RISK_LEVELS[riskLevel].percent;
-  const stopLossPercent = parsePercent(signal.stopLoss) || 5;
-  const takeProfitPercent = parsePercent(signal.takeProfit1) || 10;
+  // Use strategy values as fallback instead of hardcoded 5 and 10
+  const defaultStopLoss = strategy?.stop_loss_value ?? 5;
+  const defaultTakeProfit = strategy?.take_profit_value ?? 10;
+  const stopLossPercent = parsePercent(signal.stopLoss) || defaultStopLoss;
+  const takeProfitPercent = parsePercent(signal.takeProfit1) || defaultTakeProfit;
 
   const position = calculatePositionSize(balance, riskPercent, currentPrice);
   const prices = calculatePrices(
