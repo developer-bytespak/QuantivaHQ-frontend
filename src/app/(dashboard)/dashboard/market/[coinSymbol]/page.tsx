@@ -7,8 +7,10 @@ import CoinDetailHeader from "@/components/market/CoinDetailHeader";
 import CoinPriceChart from "@/components/market/CoinPriceChart";
 import StockPriceChart from "@/components/market/StockPriceChart";
 import TradingPanel from "@/components/market/TradingPanel";
+import StockTradingPanel from "@/components/market/StockTradingPanel";
 import InfoTab from "@/components/market/InfoTab";
 import TradingDataTab from "@/components/market/TradingDataTab";
+import StockTradingDataTab from "@/components/market/StockTradingDataTab";
 
 interface CoinDetailData {
   symbol: string;
@@ -41,12 +43,19 @@ interface StockDetailData {
   changePercent24h: number;
   marketCap: number | null;
   volume24h: number;
+  high24h?: number;
+  low24h?: number;
   high52Week?: number;
   low52Week?: number;
+  prevClose?: number;
+  open?: number;
   peRatio?: number;
+  eps?: number;
   dividendYield?: number;
+  avgVolume?: number;
   marketCapFormatted?: string;
   description?: string;
+  timestamp?: string;
 }
 
 export default function MarketDetailPage() {
@@ -265,11 +274,11 @@ export default function MarketDetailPage() {
                       <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                       </svg>
-                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">24h High</p>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Day High</p>
                     </div>
                     <p className="text-lg font-bold text-white">
                       ${connectionType === "stocks" 
-                        ? (stockData?.high52Week || stockData?.price || 0).toLocaleString("en-US", {
+                        ? (stockData?.high24h || stockData?.price || 0).toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })
@@ -286,11 +295,11 @@ export default function MarketDetailPage() {
                       <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
                       </svg>
-                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">24h Low</p>
+                      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Day Low</p>
                     </div>
                     <p className="text-lg font-bold text-white">
                       ${connectionType === "stocks" 
-                        ? (stockData?.low52Week || stockData?.price || 0).toLocaleString("en-US", {
+                        ? (stockData?.low24h || stockData?.price || 0).toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })
@@ -304,18 +313,32 @@ export default function MarketDetailPage() {
                 </div>
               </div>
 
-              {/* Inverse Price */}
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500">Inverse Price</p>
-                  <p className="text-sm font-mono text-slate-300">
-                    {coinData?.currentPrice && coinData.currentPrice > 0
-                      ? (1 / coinData.currentPrice).toFixed(8)
-                      : "0"}{" "}
-                    <span className="text-slate-500">{symbol.toUpperCase()}</span>
-                  </p>
+              {/* Inverse Price - Only show for crypto */}
+              {connectionType === "crypto" && coinData?.currentPrice && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500">Inverse Price</p>
+                    <p className="text-sm font-mono text-slate-300">
+                      {coinData.currentPrice > 0
+                        ? (1 / coinData.currentPrice).toFixed(8)
+                        : "0"}{" "}
+                      <span className="text-slate-500">{symbol.toUpperCase()}</span>
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Previous Close - Only show for stocks */}
+              {connectionType === "stocks" && stockData?.prevClose && (
+                <div className="mt-6 pt-6 border-t border-white/10">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-slate-500">Previous Close</p>
+                    <p className="text-sm font-mono text-slate-300">
+                      ${stockData.prevClose.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -369,8 +392,12 @@ export default function MarketDetailPage() {
                 </div>
                 <p className="text-2xl font-bold text-white">
                   {connectionType === "stocks" 
-                    ? `$${(stockData?.marketCap ? (stockData.marketCap / 1e9).toFixed(1) + "B" : "N/A")}`
-                    : `$${(coinData?.volume24h && coinData.volume24h > 0 ? (coinData.volume24h * 10).toFixed(1) + "B" : "N/A")}`
+                    ? (stockData?.marketCap 
+                        ? `$${(stockData.marketCap / 1e9).toFixed(1)}B` 
+                        : <span className="text-slate-400">N/A</span>)
+                    : (coinData?.volume24h && coinData.volume24h > 0 
+                        ? `$${(coinData.volume24h * 10 / 1e9).toFixed(1)}B` 
+                        : <span className="text-slate-400">N/A</span>)
                   }
                 </p>
               </div>
@@ -420,14 +447,14 @@ export default function MarketDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                   </div>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">24h Range</p>
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Day Range</p>
                 </div>
                 <p className="text-sm font-semibold text-white">
                   {connectionType === "stocks" 
-                    ? `$${(stockData?.low52Week || 0).toLocaleString("en-US", {
+                    ? `$${(stockData?.low24h || stockData?.price || 0).toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      })} - $${(stockData?.high52Week || 0).toLocaleString("en-US", {
+                      })} - $${(stockData?.high24h || stockData?.price || 0).toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}`
@@ -449,7 +476,27 @@ export default function MarketDetailPage() {
       {activeTab === "Info" && (
         <InfoTab 
           coinSymbol={symbol}
-          stockData={connectionType === "stocks" ? (stockData ?? undefined) : undefined}
+          stockData={connectionType === "stocks" && stockData ? {
+            symbol: stockData.symbol,
+            name: stockData.name,
+            sector: stockData.sector,
+            price: stockData.price,
+            change24h: stockData.change24h,
+            changePercent24h: stockData.changePercent24h,
+            marketCap: stockData.marketCap,
+            volume24h: stockData.volume24h,
+            high24h: stockData.high24h,
+            low24h: stockData.low24h,
+            high52Week: stockData.high52Week,
+            low52Week: stockData.low52Week,
+            prevClose: stockData.prevClose,
+            open: stockData.open,
+            peRatio: stockData.peRatio,
+            eps: stockData.eps,
+            dividendYield: stockData.dividendYield,
+            avgVolume: stockData.avgVolume,
+            description: stockData.description,
+          } : undefined}
           connectionType={connectionType}
         />
       )}
@@ -458,20 +505,15 @@ export default function MarketDetailPage() {
         <TradingDataTab connectionId={connectionId} symbol={coinData.tradingPair} />
       )}
 
-      {activeTab === "Trading Data" && connectionType === "stocks" && (
-        <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
-          <div className="flex flex-col items-center gap-3">
-            <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <h3 className="text-lg font-semibold text-white">Coming Soon</h3>
-            <p className="text-sm text-slate-400 max-w-md">Trading data for stocks is currently under development. Stay tuned!</p>
-          </div>
-        </div>
+      {activeTab === "Trading Data" && connectionType === "stocks" && stockData && (
+        <StockTradingDataTab 
+          symbol={stockData.symbol} 
+          currentPrice={stockData.price}
+        />
       )}
 
       {/* Trading Panel - Show on Price tab */}
-      {activeTab === "Price" && connectionId && coinData && (
+      {activeTab === "Price" && connectionType === "crypto" && connectionId && coinData && (
         <TradingPanel
           connectionId={connectionId}
           symbol={coinData.tradingPair}
@@ -479,6 +521,15 @@ export default function MarketDetailPage() {
           currentPrice={coinData.currentPrice}
           availableBalance={coinData.availableBalance}
           quoteCurrency={coinData.quoteCurrency}
+        />
+      )}
+
+      {/* Stock Trading Panel - Show on Price tab for stocks */}
+      {activeTab === "Price" && connectionType === "stocks" && stockData && (
+        <StockTradingPanel
+          symbol={stockData.symbol}
+          currentPrice={stockData.price}
+          stockName={stockData.name}
         />
       )}
     </div>

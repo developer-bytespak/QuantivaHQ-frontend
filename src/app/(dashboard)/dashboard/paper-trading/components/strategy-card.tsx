@@ -9,9 +9,11 @@ import {
 interface StrategyCardProps {
   signal: any;
   index: number;
-  onAutoTrade: () => void;
-  onManualTrade: () => void;
+  onAutoTrade?: () => void;
+  onManualTrade?: () => void;
   onViewDetails: () => void;
+  hideTradeButtons?: boolean;
+  isStockMode?: boolean;
 }
 
 export function StrategyCard({
@@ -20,6 +22,8 @@ export function StrategyCard({
   onAutoTrade,
   onManualTrade,
   onViewDetails,
+  hideTradeButtons = false,
+  isStockMode = false,
 }: StrategyCardProps) {
   // Helper to get trend direction badge
   const getTrendDirectionBadge = (direction?: string) => {
@@ -190,23 +194,31 @@ export function StrategyCard({
 
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
-          <button
-            onClick={onAutoTrade}
-            className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
-          >
-            Auto Trade
-          </button>
-          <button
-            onClick={onManualTrade}
-            className="flex-1 rounded-xl bg-slate-700/50 px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:bg-slate-700 hover:text-white"
-          >
-            Manual
-          </button>
+          {!hideTradeButtons && onAutoTrade && (
+            <button
+              onClick={onAutoTrade}
+              className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-xl ${
+                isStockMode 
+                  ? 'bg-gradient-to-r from-blue-600 to-blue-500 shadow-blue-500/30 hover:shadow-blue-500/40' 
+                  : 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] shadow-[#fc4f02]/30 hover:shadow-[#fc4f02]/40'
+              }`}
+            >
+              {isStockMode ? '🤖 Auto Trade' : 'Auto Trade'}
+            </button>
+          )}
+          {!hideTradeButtons && onManualTrade && (
+            <button
+              onClick={onManualTrade}
+              className="flex-1 rounded-xl bg-slate-700/50 px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:bg-slate-700 hover:text-white"
+            >
+              {isStockMode ? '✋ Manual' : 'Manual'}
+            </button>
+          )}
           <button
             onClick={onViewDetails}
-            className="rounded-xl bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white"
+            className={`rounded-xl bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white ${hideTradeButtons ? 'flex-1' : ''}`}
           >
-            View
+            View Details
           </button>
         </div>
       </div>

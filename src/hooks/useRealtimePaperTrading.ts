@@ -47,7 +47,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 2000;
 
-export function useRealtimePaperTrading(userId: string = 'default-user', key?: any): UseRealtimePaperTrading {
+export function useRealtimePaperTrading(userId: string = 'default-user', key?: any, enabled: boolean = true): UseRealtimePaperTrading {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
@@ -61,6 +61,13 @@ export function useRealtimePaperTrading(userId: string = 'default-user', key?: a
   const reconnectTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // Skip WebSocket connection if disabled (e.g., for stocks mode)
+    if (!enabled) {
+      setConnected(false);
+      setError(null);
+      return;
+    }
+
     if (!userId) {
       setError('User ID is required');
       return;
@@ -229,7 +236,7 @@ export function useRealtimePaperTrading(userId: string = 'default-user', key?: a
         }
       }, 0);
     };
-  }, [userId, key]);
+  }, [userId, key, enabled]);
 
   return {
     connected,

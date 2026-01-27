@@ -158,13 +158,16 @@ export async function getPreBuiltStrategySignals(strategyId: string): Promise<St
 /**
  * Get trending assets with AI insights for a pre-built strategy
  * Returns top N assets with AI insights generated for the top 2
+ * Uses the same data source as the market page (market_rankings table)
+ * @param limit Maximum number of assets to return (default: 10000 to get all available)
  */
-export async function getTrendingAssetsWithInsights(strategyId: string, limit: number = 10): Promise<{
+export async function getTrendingAssetsWithInsights(strategyId: string, limit: number = 10000): Promise<{
   strategy: { id: string; name: string; description: string };
   assets: Array<{
     asset_id: string;
     symbol: string;
     display_name: string;
+    asset_type?: string;
     price_usd: number;
     price_change_24h: number;
     volume_24h: number;
@@ -181,6 +184,8 @@ export async function getTrendingAssetsWithInsights(strategyId: string, limit: n
       take_profit_1?: number;
       stop_loss_pct?: number;
       take_profit_pct?: number;
+      trend_score?: number;
+      sentiment_score?: number;
     };
   }>;
 }> {
@@ -242,5 +247,94 @@ export async function activateStrategy(strategyId: string): Promise<Strategy> {
  */
 export async function deactivateStrategy(strategyId: string): Promise<Strategy> {
   return updateStrategy(strategyId, { is_active: false });
+}
+
+// ============= STOCK MARKET DATA API =============
+
+export interface StockMarketData {
+  symbol: string;
+  asset_id: string;
+  name: string;
+  sector?: string;
+  price_usd: number;
+  price_change_24h: number;
+  price_change_24h_usd: number;
+  volume_24h: number;
+  high_24h: number;
+  low_24h: number;
+  day_open: number;
+  prev_close: number;
+  is_realtime: boolean;
+  last_updated: string;
+}
+
+export interface StocksForTopTradesResponse {
+  stocks: StockMarketData[];
+  source: 'alpaca' | 'database';
+  updated_at: string;
+}
+
+/**
+ * Get stocks with real-time market data for Top Trades page
+ * Data is sourced from Alpaca API with automatic caching
+ */
+export async function getStocksForTopTrades(limit: number = 500): Promise<StocksForTopTradesResponse> {
+  return apiRequest<unknown, StocksForTopTradesResponse>({
+    path: `/strategies/stocks/top-trades?limit=${limit}`,
+    method: 'GET',
+  });
+}
+
+/**
+ * Get real-time market data for a specific stock
+ */
+export async function getStockMarketData(symbol: string): Promise<StockMarketData> {
+  return apiRequest<unknown, StockMarketData>({
+    path: `/strategies/stocks/${symbol}/market-data`,
+    method: 'GET',
+  });
+}
+
+/**
+ * Manually trigger Alpaca market data sync (admin use)
+ */
+export async function syncAlpacaMarketData(): Promise<{
+  success: boolean;
+  updated: number;
+  errors: string[];
+}> {
+  return apiRequest<unknown, any>({
+    path: '/strategies/sync-alpaca-market-data',
+    method: 'POST',
+  });
+}
+
+/**
+ * Seed popular stocks with real Alpaca data (admin use)
+ */
+export async function seedPopularStocks(): Promise<{
+  success: boolean;
+  count: number;
+  errors: string[];
+}> {
+  return apiRequest<unknown, any>({
+    path: '/strategies/seed-popular-stocks',
+    method: 'POST',
+  });
+}
+
+/**
+ * Trigger stock signals generation (runs in background)
+ * Returns immediately - signals will appear within 1-2 minutes
+ */
+export async function triggerStockSignals(): Promise<{
+  message: string;
+  status: string;
+}> {
+  return apiRequest<unknown, any>({
+    path: '/strategies/trigger-stock-signals',
+    method: 'POST',
+    timeout: 60000, // 60 second timeout (though it returns immediately now)
+  });
 }
 

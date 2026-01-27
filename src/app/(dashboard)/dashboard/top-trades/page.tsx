@@ -4,8 +4,8 @@ import { useState, useMemo, useEffect } from "react";
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
-import type { Strategy } from "@/lib/api/strategies";
-import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight } from "@/lib/api/strategies";
+import type { Strategy, StockMarketData } from "@/lib/api/strategies";
+import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import { ComingSoon } from "@/components/common/coming-soon";
 
@@ -123,6 +123,14 @@ export default function TopTradesPage() {
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
   const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
+  // Stock market data state (for stocks connection)
+  const [stockMarketData, setStockMarketData] = useState<StockMarketData[]>([]);
+  const [marketDataSource, setMarketDataSource] = useState<'alpaca' | 'database'>('database');
+  const [lastMarketDataUpdate, setLastMarketDataUpdate] = useState<Date | null>(null);
+  const [loadingMarketData, setLoadingMarketData] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [isGeneratingSignals, setIsGeneratingSignals] = useState(false);
+
   // UI filters / pagination / overlay
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
   const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
@@ -141,7 +149,7 @@ export default function TopTradesPage() {
   const [createError, setCreateError] = useState<string | null>(null);
 
   // --- Helpers: map backend response into Trade[] (defensive) ---
-  const mapBackendToTrades = (data: any[]): Trade[] => {
+  const mapBackendToTrades = (data: any[], isStock: boolean = false): Trade[] => {
     const uniqueData: any[] = [];
     const seenIds = new Set<string>();
     for (const d of data) {
@@ -157,8 +165,17 @@ export default function TopTradesPage() {
     }
 
     return uniqueData.map((item: any, idx: number) => {
-      const symbol = item.symbol ?? item.asset_symbol ?? (item.asset?.symbol) ?? `ASSET-${idx}`;
-      const pair = item.pair ?? `${symbol} / USDT`;
+      const rawSymbol = item.symbol ?? item.asset_symbol ?? (item.asset?.symbol) ?? `ASSET-${idx}`;
+      const assetType = item.asset?.asset_type || item.asset_type;
+      const isStockAsset = isStock || assetType === 'stock';
+      
+      // For crypto: remove USDT suffix. For stocks: use as-is
+      const cleanSymbol = isStockAsset 
+        ? rawSymbol.trim() 
+        : rawSymbol.replace(/USDT$/i, '').trim();
+      
+      // Format pair based on asset type
+      const pair = item.pair ?? (isStockAsset ? `${cleanSymbol} / USD` : `${cleanSymbol} / USDT`);
       const score = Number(item.final_score ?? item.score ?? 0);
       const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
       
@@ -219,15 +236,103 @@ export default function TopTradesPage() {
     checkConnection();
   }, []);
 
+  // Determine if stocks connection
+  const isStocksConnection = connectionType === "stocks";
+
+  // --- Fetch stock market data from Alpaca (for stocks connection) ---
+  const fetchStockMarketData = async () => {
+    if (!isStocksConnection) return;
+    
+    setLoadingMarketData(true);
+    try {
+      // Fetch all stocks from market page (500 limit to match market page)
+      // Explicitly pass 500 to ensure all stocks are fetched
+      const response = await getStocksForTopTrades(500);
+      setStockMarketData(response.stocks);
+      setMarketDataSource(response.source);
+      setLastMarketDataUpdate(new Date(response.updated_at));
+    } catch (err) {
+      console.error("Failed to load stock market data:", err);
+    } finally {
+      setLoadingMarketData(false);
+    }
+  };
+
+  // Handler for seeding popular stocks
+  const handleSeedStocks = async () => {
+    setIsSeeding(true);
+    try {
+      const result = await seedPopularStocks();
+      if (result.success) {
+        // Refresh market data after seeding
+        await fetchStockMarketData();
+        // Trigger signal generation - fire and forget (don't await)
+        // This prevents the request from being cancelled on page refresh
+        setIsGeneratingSignals(true);
+        triggerStockSignals()
+          .then((res) => console.log("Signal generation:", res.message))
+          .catch((err) => console.warn("Signal trigger request cancelled (signals still generating):", err.message));
+        
+        // Signals generate in background - refresh at intervals
+        // The backend continues processing even if this page refreshes
+        setTimeout(() => {
+          preBuiltStrategies.forEach((strategy) => {
+            fetchStrategySignals(strategy.strategy_id);
+          });
+        }, 5000);
+        
+        setTimeout(() => {
+          preBuiltStrategies.forEach((strategy) => {
+            fetchStrategySignals(strategy.strategy_id);
+          });
+          setIsGeneratingSignals(false);
+        }, 30000);
+        
+        setTimeout(() => {
+          preBuiltStrategies.forEach((strategy) => {
+            fetchStrategySignals(strategy.strategy_id);
+          });
+        }, 60000);
+      }
+    } catch (err) {
+      console.error("Failed to seed stocks:", err);
+      setIsGeneratingSignals(false);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  // Handler for refreshing stock data
+  const handleRefreshStockData = async () => {
+    await fetchStockMarketData();
+    // Also refresh signals
+    preBuiltStrategies.forEach((strategy) => {
+      fetchStrategySignals(strategy.strategy_id);
+    });
+  };
+
   // --- Fetch trending assets (DISCOVERY) ---
   useEffect(() => {
-    // Only fetch if crypto connection
-    if (connectionType !== "crypto") return;
+    // Fetch for both crypto and stocks connections
+    if (connectionType !== "crypto" && connectionType !== "stocks") return;
     
     let mounted = true;
     (async () => {
       try {
         setLoadingTrending(true);
+        
+        // For stocks, use the dedicated stocks API (skip crypto trending-assets endpoint)
+        if (connectionType === "stocks") {
+          await fetchStockMarketData();
+          // Don't fetch crypto trending assets for stock accounts
+          if (mounted) {
+            setTrendingTrades([]);
+            setLoadingTrending(false);
+          }
+          return;
+        }
+        
+        // For crypto connections only, fetch crypto trending assets
         const data = await apiRequest<never, any[]>({ path: "/strategies/trending-assets?limit=20&realtime=true", method: "GET" });
         if (!mounted) return;
         if (!data || !Array.isArray(data) || data.length === 0) {
@@ -235,7 +340,7 @@ export default function TopTradesPage() {
           setLoadingTrending(false);
           return;
         }
-        const mapped = mapBackendToTrades(data);
+        const mapped = mapBackendToTrades(data, false);
         setTrendingTrades(mapped);
       } catch (err) {
         console.error("Failed to load trending assets:", err);
@@ -245,12 +350,12 @@ export default function TopTradesPage() {
       }
     })();
     return () => { mounted = false; };
-  }, [connectionType]);
+  }, [connectionType, isStocksConnection]);
 
   // --- Fetch pre-built strategies ---
   useEffect(() => {
-    // Only load pre-built strategies for crypto users (pre-built strategies currently target crypto)
-    if (connectionType !== "crypto") return;
+    // Load strategies for both crypto and stocks connections
+    if (connectionType !== "crypto" && connectionType !== "stocks") return;
 
     let mounted = true;
     (async () => {
@@ -259,7 +364,18 @@ export default function TopTradesPage() {
         const data = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
         if (!mounted) return;
         const adminOnly = (data || []).filter((s) => s?.type === "admin");
-        setPreBuiltStrategies(adminOnly.slice(0, 4));
+        
+        // Filter strategies based on connection type
+        let filteredStrategies: Strategy[];
+        if (connectionType === "stocks") {
+          // For stocks, only show strategies with "(Stocks)" in the name
+          filteredStrategies = adminOnly.filter((s) => s?.name?.includes("(Stocks)"));
+        } else {
+          // For crypto, show strategies WITHOUT "(Stocks)" in the name
+          filteredStrategies = adminOnly.filter((s) => !s?.name?.includes("(Stocks)")).slice(0, 4);
+        }
+        
+        setPreBuiltStrategies(filteredStrategies);
       } catch (err: any) {
         console.error("Failed to load pre-built strategies:", err);
         setPreBuiltError(err?.message || String(err));
@@ -273,16 +389,19 @@ export default function TopTradesPage() {
   // --- Fetch signals for a strategy with AI insights ---
   const fetchStrategySignals = async (strategyId: string) => {
     if (loadingSignals[strategyId]) return;
-    // Guard: only fetch crypto signals when connection is crypto
-    if (connectionType !== "crypto") return;
+    // Guard: only fetch signals when connection is crypto or stocks
+    if (connectionType !== "crypto" && connectionType !== "stocks") return;
     
     setLoadingSignals((p) => ({ ...p, [strategyId]: true }));
     setSignalsError((p) => { const c = { ...p }; delete c[strategyId]; return c; });
 
     try {
-      // Use new AI insights endpoint that returns top 2 with insights
-      const response = await getTrendingAssetsWithInsights(strategyId, 10);
+      // Use new AI insights endpoint - pass limit 500 to match market page
+      // This matches the market page which shows all available stocks
+      console.log(`[TopTrades] Fetching signals for strategy ${strategyId} with limit 500`);
+      const response = await getTrendingAssetsWithInsights(strategyId, 500);
       const assets = response.assets || [];
+      console.log(`[TopTrades] Received ${assets.length} assets from API for strategy ${strategyId}`);
       
       // Store AI insights separately with timestamps
       const insights: Record<string, { text: string; timestamp: number }> = {};
@@ -296,36 +415,61 @@ export default function TopTradesPage() {
       });
       setAiInsights((p) => ({ ...p, [strategyId]: insights }));
       
+      // Get strategy to access stop_loss_value and take_profit_value
+      const strategy = preBuiltStrategies.find(s => s.strategy_id === strategyId);
+      
       // Map assets to signals format for compatibility with existing code
-      const signals = assets.map(asset => ({
-        signal_id: asset.signal?.signal_id || asset.asset_id,
-        strategy_id: strategyId,
-        asset_id: asset.asset_id,
-        asset: {
+      const signals = assets.map((asset, idx) => {
+        // Debug log to see what we're getting (only for first asset)
+        if (idx === 0) {
+          console.log('[TopTrades] Sample asset:', {
+            symbol: asset.symbol,
+            hasSignal: !!asset.signal,
+            signal: asset.signal,
+            trend_score: asset.trend_score,
+            strategy_stop_loss: strategy?.stop_loss_value,
+            strategy_take_profit: strategy?.take_profit_value,
+          });
+        }
+        
+        return {
+          signal_id: asset.signal?.signal_id || asset.asset_id,
+          strategy_id: strategyId,
           asset_id: asset.asset_id,
-          symbol: asset.symbol,
-          display_name: asset.display_name,
-        },
-        action: asset.signal?.action || 'HOLD',
-        confidence: asset.signal?.confidence || 0,
-        final_score: asset.signal?.final_score || 0,
-        entry_price: asset.signal?.entry_price,
-        stop_loss_price: asset.signal?.stop_loss,
-        take_profit_price: asset.signal?.take_profit_1,
-        stop_loss: asset.signal?.stop_loss_pct, // Percentage from strategy
-        take_profit: asset.signal?.take_profit_pct, // Percentage from strategy
-        details: asset.signal ? [{
-          entry_price: asset.signal.entry_price,
-          stop_loss: asset.signal.stop_loss,
-          take_profit_1: asset.signal.take_profit_1,
-        }] : [],
-        realtime_data: {
-          price: asset.price_usd,
-          priceChangePercent: asset.price_change_24h,
-          volume24h: asset.volume_24h,
-        },
-        hasAiInsight: asset.hasAiInsight,
-      }));
+          asset: {
+            asset_id: asset.asset_id,
+            symbol: asset.symbol,
+            display_name: asset.display_name,
+            asset_type: asset.asset_type, // Include asset type for stock detection
+            trend_score: asset.trend_score, // Include trend_score from asset
+          },
+          action: asset.signal?.action || 'HOLD',
+          confidence: asset.signal?.confidence || 0,
+          final_score: asset.signal?.final_score || 0,
+          entry_price: asset.signal?.entry_price,
+          stop_loss_price: asset.signal?.stop_loss,
+          take_profit_price: asset.signal?.take_profit_1,
+          stop_loss: asset.signal?.stop_loss_pct ?? strategy?.stop_loss_value ?? null, // Percentage from signal or strategy
+          take_profit: asset.signal?.take_profit_pct ?? strategy?.take_profit_value ?? null, // Percentage from signal or strategy
+          stop_loss_pct: asset.signal?.stop_loss_pct ?? strategy?.stop_loss_value ?? null, // Also include as stop_loss_pct for mapSignalsToTrades
+          take_profit_pct: asset.signal?.take_profit_pct ?? strategy?.take_profit_value ?? null, // Also include as take_profit_pct for mapSignalsToTrades
+          trend_score: ((asset as any).signal?.trend_score) ?? null, // Trend score from signal (only available when signal exists)
+          details: asset.signal ? [{
+            entry_price: asset.signal.entry_price,
+            stop_loss: asset.signal.stop_loss,
+            take_profit_1: asset.signal.take_profit_1,
+          }] : [],
+          realtime_data: {
+            price: asset.price_usd,
+            priceChangePercent: asset.price_change_24h,
+            volume24h: asset.volume_24h,
+          },
+          hasAiInsight: asset.hasAiInsight,
+          // Include timestamp for time filtering (cast to any for dynamic fields)
+          timestamp: (asset.signal as any)?.timestamp || (asset as any).poll_timestamp,
+          poll_timestamp: (asset as any).poll_timestamp,
+        };
+      });
       
       setStrategySignals((p) => ({ ...p, [strategyId]: signals }));
     } catch (err: any) {
@@ -379,7 +523,7 @@ export default function TopTradesPage() {
 
   // --- Fetch signals for all strategies when they're loaded ---
   useEffect(() => {
-    if (connectionType !== "crypto") return;
+    if (connectionType !== "crypto" && connectionType !== "stocks") return;
     if (preBuiltStrategies.length > 0) {
       preBuiltStrategies.forEach((strategy) => {
         if (!strategySignals[strategy.strategy_id] && !loadingSignals[strategy.strategy_id]) {
@@ -387,11 +531,11 @@ export default function TopTradesPage() {
         }
       });
     }
-  }, [preBuiltStrategies]);
+  }, [preBuiltStrategies, connectionType]);
 
   // --- Auto-refresh signals every 60 seconds ---
   useEffect(() => {
-    if (connectionType !== "crypto") return;
+    if (connectionType !== "crypto" && connectionType !== "stocks") return;
     if (preBuiltStrategies.length === 0) return;
 
     const interval = setInterval(() => {
@@ -401,7 +545,7 @@ export default function TopTradesPage() {
     }, 60000); // 60 seconds
 
     return () => clearInterval(interval);
-  }, [preBuiltStrategies]);
+  }, [preBuiltStrategies, connectionType]);
 
   // --- Map signals to trades for display ---
   const mapSignalsToTrades = (signals: any[]): Trade[] => {
@@ -409,8 +553,19 @@ export default function TopTradesPage() {
     
     return signals.map((signal, idx) => {
       const asset = signal.asset || {};
-      const symbol = asset.symbol || asset.asset_id || 'Unknown';
-      const pair = `${symbol} / USDT`;
+      const rawSymbol = asset.symbol || asset.asset_id || 'Unknown';
+      const isStockAsset = isStocksConnection || asset.asset_type === 'stock';
+      
+      // For crypto: remove USDT suffix. For stocks: use as-is
+      const cleanSymbol = isStockAsset 
+        ? rawSymbol.trim() 
+        : rawSymbol.replace(/USDT$/i, '').trim();
+      
+      // Format pair based on asset type
+      const pair = isStockAsset 
+        ? `${cleanSymbol} / USD` 
+        : `${cleanSymbol} / USDT`;
+      
       const score = Number(signal.final_score ?? 0);
       const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
       
@@ -424,9 +579,32 @@ export default function TopTradesPage() {
       const stopLossPrice = signal.stop_loss_price || signal.details?.[0]?.stop_loss || null;
       const takeProfitPrice = signal.take_profit_price || signal.details?.[0]?.take_profit_1 || null;
       
-      // Get stop loss and take profit percentages from strategy (already formatted)
-      const stopLossPct = signal.stop_loss || null;
-      const takeProfitPct = signal.take_profit || null;
+      // Get stop loss and take profit percentages from signal (set from strategy in backend)
+      // These are percentages like "5" or "10", format them with % sign
+      const stopLossPct = signal.stop_loss_pct ?? signal.stop_loss ?? null;
+      const takeProfitPct = signal.take_profit_pct ?? signal.take_profit ?? null;
+      
+      // Debug log for first signal to see what data we have
+      if (idx === 0) {
+        console.log('[TopTrades] mapSignalsToTrades - Sample signal:', {
+          signal_id: signal.signal_id,
+          stop_loss_pct: signal.stop_loss_pct,
+          stop_loss: signal.stop_loss,
+          take_profit_pct: signal.take_profit_pct,
+          take_profit: signal.take_profit,
+          trend_score: signal.trend_score,
+          asset_trend_score: asset.trend_score,
+          final_score: signal.final_score,
+        });
+      }
+      
+      // Get trend score from signal
+      // For stocks, trend_score is only available when a signal has been generated
+      // If no signal exists, trend_score will be null/0 (which is expected)
+      const trendScore = signal.trend_score ?? (signal as any).asset?.trend_score ?? null;
+      
+      // Get win rate if available (might not be in signal data)
+      const winRate = (signal as any).win_rate ?? (signal as any).winRate ?? null;
       
       // Get explanation text
       const explanationText = signal.explanations?.[0]?.text || signal.explanation?.text || 'No explanation available';
@@ -439,13 +617,13 @@ export default function TopTradesPage() {
         confidence,
         ext: entryPrice ? String(entryPrice) : "—",
         entry: entryPrice ? String(entryPrice) : "—",
-        stopLoss: stopLossPct ? String(stopLossPct) : "—",
+        stopLoss: stopLossPct !== null && stopLossPct !== undefined ? `${stopLossPct}%` : "—",
         progressMin: 0,
         progressMax: 100,
         progressValue: Math.min(100, Math.max(0, Math.floor((score || 0) * 100))),
         entryPrice: entryPrice ? String(entryPrice) : "—",
         stopLossPrice: stopLossPrice ? String(stopLossPrice) : "—",
-        takeProfit1: takeProfitPct ? String(takeProfitPct) : "—",
+        takeProfit1: takeProfitPct !== null && takeProfitPct !== undefined ? `${takeProfitPct}%` : "—",
         takeProfitPrice: takeProfitPrice ? String(takeProfitPrice) : "—",
         target: "",
         insights: explanationText ? [explanationText] : [],
@@ -453,10 +631,10 @@ export default function TopTradesPage() {
         profitValue: Number(realtimePriceChange ?? 0) || 0,
         volume: realtimeVolume ? String(Number(realtimeVolume).toLocaleString()) : "—",
         volumeValue: Number(realtimeVolume ?? 0) || 0,
-        winRate: "—",
-        winRateValue: 0,
+        winRate: winRate !== null && winRate !== undefined ? `${winRate}%` : "—",
+        winRateValue: Number(winRate ?? 0) || 0,
         hoursAgo: signal.timestamp ? Math.floor((Date.now() - new Date(signal.timestamp).getTime()) / (1000 * 60 * 60)) : 0,
-        trend_score: score,
+        trend_score: trendScore !== null && trendScore !== undefined ? Number(trendScore) : 0, // Show 0 if no signal/trend_score available
         trend_direction: "STABLE",
         score_change: 0,
         volume_ratio: 1,
@@ -503,7 +681,11 @@ export default function TopTradesPage() {
 
     // Choose preview endpoint based on strategy type if available. User strategies use the generic preview path.
     const isUserStrategy = (strategy as any)?.type === "user" || false;
-    const previewPath = isUserStrategy ? `/strategies/${strategyId}/preview?limit=20` : `/strategies/pre-built/${strategyId}/preview?limit=20`;
+    // Use 500 limit to match market page stocks, and specify asset_type=stock for stocks connection
+    const assetTypeParam = isStocksConnection ? '&asset_type=stock' : '';
+    const previewPath = isUserStrategy 
+      ? `/strategies/${strategyId}/preview?limit=500${assetTypeParam}` 
+      : `/strategies/pre-built/${strategyId}/preview?limit=500${assetTypeParam}`;
 
     try {
       const preview = await apiRequest<never, any>({ path: previewPath, method: "GET" });
@@ -573,27 +755,102 @@ export default function TopTradesPage() {
     );
   }
 
-  // Show coming soon for stocks
-  if (connectionType === "stocks") {
-    return <ComingSoon title="Trading Signals" description="Automated trading signals for stocks are currently under development. This feature will provide AI-powered buy/sell signals for stocks soon!" icon="trade" />;
-  }
+  // Stocks connection - no longer show coming soon, show stock strategies
 
   // --- UI Rendering (reuse existing layout and style) ---
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
+      {/* Stocks Info Banner with Controls */}
+      {isStocksConnection && (
+        <div className="rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className={`h-2 w-2 rounded-full ${marketDataSource === 'alpaca' ? 'bg-green-500 animate-pulse' : 'bg-blue-500'}`} />
+              <span className="text-sm text-blue-300">
+                Stock Trading Signals - {marketDataSource === 'alpaca' ? 'Real-time Alpaca data' : 'Database cached data'}
+              </span>
+              {lastMarketDataUpdate && (
+                <span className="text-xs text-slate-500">
+                  Updated: {lastMarketDataUpdate.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefreshStockData}
+                disabled={loadingMarketData}
+                className="flex items-center gap-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 px-3 py-1.5 text-xs font-medium text-blue-300 transition-all disabled:opacity-50"
+              >
+                <svg className={`w-3.5 h-3.5 ${loadingMarketData ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+              <button
+                onClick={handleSeedStocks}
+                disabled={isSeeding || isGeneratingSignals}
+                className="flex items-center gap-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 px-3 py-1.5 text-xs font-medium text-purple-300 transition-all disabled:opacity-50"
+                title="Seed popular stocks and generate signals"
+              >
+                {isSeeding ? (
+                  <>
+                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    {isGeneratingSignals ? 'Generating signals...' : 'Seeding...'}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Seed & Generate
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+          {stockMarketData.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {stockMarketData.slice(0, 8).map(stock => (
+                <div key={stock.symbol} className="flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1">
+                  <span className="text-xs font-medium text-white">{stock.symbol}</span>
+                  <span className={`text-xs ${stock.price_change_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {stock.price_change_24h >= 0 ? '+' : ''}{stock.price_change_24h.toFixed(2)}%
+                  </span>
+                </div>
+              ))}
+              {stockMarketData.length > 8 && (
+                <span className="text-xs text-slate-500 self-center">+{stockMarketData.length - 8} more</span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs sm:text-sm text-slate-400">Track your best performing trades and strategies</p>
+          <p className="text-xs sm:text-sm text-slate-400">
+            {isStocksConnection 
+              ? "AI-powered trading signals for your stock portfolio"
+              : "Track your best performing trades and strategies"
+            }
+          </p>
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
-          <Link href="/dashboard/my-strategies" className="rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium transition-all bg-transparent text-slate-300 hover:text-white border border-transparent hover:border-white/10 whitespace-nowrap">My Strategies</Link>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white whitespace-nowrap`}
-          >
-            Create
-          </button>
+          {!isStocksConnection && (
+            <Link href="/dashboard/my-strategies" className="rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium transition-all bg-transparent text-slate-300 hover:text-white border border-transparent hover:border-white/10 whitespace-nowrap">My Strategies</Link>
+          )}
+          {!isStocksConnection && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white whitespace-nowrap`}
+            >
+              Create
+            </button>
+          )}
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}
@@ -881,12 +1138,14 @@ export default function TopTradesPage() {
                     })()}
 
                     <div className="flex gap-2 pt-2">
-                      <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">Auto Trade</button>
+                      {!isStocksConnection && (
+                        <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">Auto Trade</button>
+                      )}
                       <button
                         onClick={() => handleViewTrade(index)}
-                        className="rounded-xl  bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300  hover:text-white"
+                        className={`rounded-xl bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white ${isStocksConnection ? 'flex-1' : ''}`}
                       >
-                        View Trade
+                        View Details
                       </button>
                     </div>
                   </div>
@@ -906,7 +1165,7 @@ export default function TopTradesPage() {
           <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
             <p className="text-sm text-slate-400">
               {currentStrategy 
-                ? `No signals available for ${currentStrategy.name}. Signals are generated every 10 minutes.`
+                ? `No signals available for ${currentStrategy.name}. ${isStocksConnection ? 'Stock signals are generated every 10 minutes during market hours.' : 'Signals are generated every 10 minutes.'}`
                 : 'No signals found for the selected time period'}
             </p>
           </div>
@@ -983,24 +1242,56 @@ export default function TopTradesPage() {
                 })()}
               </div>
 
-              {/* Insights below - full width */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-white">Insights</h3>
-                {filteredAndSortedTrades[selectedTradeIndex].insights.map((insight: string, idx: number) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-400" />
-                    <p className="text-sm text-slate-300">{insight}</p>
+              {/* AI Insights / Explanation below - full width */}
+              {(() => {
+                const trade = filteredAndSortedTrades[selectedTradeIndex];
+                const assetId = trade.assetId;
+                const strategyInsights = currentStrategy ? aiInsights[currentStrategy.strategy_id] || {} : {};
+                const aiInsightData = assetId ? strategyInsights[assetId] : null;
+                
+                // Check if we have AI insight or default insights
+                const hasAiInsight = !!aiInsightData?.text;
+                const hasDefaultInsights = trade.insights && trade.insights.length > 0 && 
+                  !trade.insights.every((i: string) => i === 'No explanation available');
+                
+                return (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-white">AI Insight</h3>
+                    
+                    {hasAiInsight ? (
+                      <div className="rounded-lg bg-gradient-to-br from-[#fc4f02]/10 to-[#fda300]/5 p-4 border border-[#fc4f02]/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-4 h-4 text-[#fc4f02]" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 7H7v6h6V7z" />
+                            <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-xs font-semibold text-[#fc4f02]">AI Analysis</span>
+                        </div>
+                        <p className="text-sm text-slate-200 leading-relaxed">{aiInsightData.text}</p>
+                      </div>
+                    ) : hasDefaultInsights ? (
+                      <>
+                        {trade.insights.map((insight: string, idx: number) => (
+                          <div key={idx} className="flex items-start gap-2">
+                            <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-green-400" />
+                            <p className="text-sm text-slate-300">{insight}</p>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <p className="text-sm text-slate-400 italic">No AI insight available yet. Generate one from the trade card.</p>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
             </div>
           </div>
         </div>
       )}
 
-      {/* Create Custom Strategy Modal */}
-      {showCreateModal && (
+      {/* Create Custom Strategy Modal - Only for crypto */}
+      {!isStocksConnection && showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-xl bg-[--color-surface] p-6 text-slate-100 ring-1 ring-white/5 shadow-lg">
             <div className="flex items-center justify-between">
