@@ -18,6 +18,7 @@ interface ManualTradeModalProps {
   balance: number;
   onClose: () => void;
   onSuccess: () => void;
+  strategy?: any;
 }
 
 type OrderType = "MARKET" | "LIMIT";
@@ -28,6 +29,7 @@ export function ManualTradeModal({
   balance,
   onClose,
   onSuccess,
+  strategy,
 }: ManualTradeModalProps) {
   const [step, setStep] = useState(1);
   const [executing, setExecuting] = useState(false);
@@ -90,13 +92,15 @@ export function ManualTradeModal({
   const entryPrice = orderType === "LIMIT" ? parseFloat(limitPrice) || currentPrice : currentPrice;
   const quantity = investmentAmount / entryPrice;
 
-  // Get SL and TP values
+  // Get SL and TP values - use strategy defaults as fallback
+  const defaultStopLoss = strategy?.stop_loss_value ?? 5;
+  const defaultTakeProfit = strategy?.take_profit_value ?? 10;
   const stopLossPercent = useSignalSL
-    ? parsePercent(signal.stopLoss) || 5
-    : parseFloat(customSL) || 5;
+    ? parsePercent(signal.stopLoss) || defaultStopLoss
+    : parseFloat(customSL) || defaultStopLoss;
   const takeProfitPercent = useSignalTP
-    ? parsePercent(signal.takeProfit1) || 10
-    : parseFloat(customTP) || 10;
+    ? parsePercent(signal.takeProfit1) || defaultTakeProfit
+    : parseFloat(customTP) || defaultTakeProfit;
 
   const prices = calculatePrices(entryPrice, stopLossPercent, takeProfitPercent, signal.type);
   const maxLossAmount = (investmentAmount * stopLossPercent) / 100;
@@ -497,7 +501,7 @@ export function ManualTradeModal({
                     />
                     <span className="text-sm text-slate-200">
                       Use Signal's TP (
-                      {formatPercent(parsePercent(signal.takeProfit1) || 10)})
+                      {formatPercent(parsePercent(signal.takeProfit1) || defaultTakeProfit)})
                     </span>
                   </label>
 

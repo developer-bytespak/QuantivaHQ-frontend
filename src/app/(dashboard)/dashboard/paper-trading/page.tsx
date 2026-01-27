@@ -709,8 +709,12 @@ export default function PaperTradingPage() {
   }, [preBuiltStrategies]);
 
   // --- Map signals to trades for display ---
-  const mapSignalsToTrades = (signals: any[]): Trade[] => {
+  const mapSignalsToTrades = (signals: any[], strategy: any): Trade[] => {
     if (!signals || signals.length === 0) return [];
+
+    // Get strategy's default stop loss and take profit values
+    const strategyStopLoss = strategy?.stop_loss_value ?? 5;
+    const strategyTakeProfit = strategy?.take_profit_value ?? 10;
 
     return signals.map((signal, idx) => {
       const asset = signal.asset || {};
@@ -737,8 +741,9 @@ export default function PaperTradingPage() {
       const realtimePriceChange = signal.realtime_data?.priceChangePercent ?? null;
 
       const entryPrice = realtimePrice ?? signal.price ?? signal.last_price ?? 0;
-      const stopLoss = signal.stop_loss ?? "-5%";
-      const takeProfit = signal.take_profit ?? "+10%";
+      // Use signal values if available, otherwise use strategy defaults
+      const stopLoss = signal.stop_loss ?? `-${strategyStopLoss}%`;
+      const takeProfit = signal.take_profit ?? `+${strategyTakeProfit}%`;
 
       // Calculate hours ago from signal timestamp or poll_timestamp
       const signalTimestamp = signal.timestamp || signal.poll_timestamp || signal.created_at;
@@ -788,7 +793,7 @@ export default function PaperTradingPage() {
   const currentSignals = currentStrategy
     ? strategySignals[currentStrategy.strategy_id] || []
     : [];
-  const currentTrades = mapSignalsToTrades(currentSignals);
+  const currentTrades = mapSignalsToTrades(currentSignals, currentStrategy);
 
   // Filter and sort trades
   const filteredAndSortedTrades = useMemo(() => {
@@ -1340,6 +1345,7 @@ export default function PaperTradingPage() {
             onClose={() => setShowAutoTradeModal(false)}
             onSuccess={handleStockTradeSuccess}
             marketOpen={alpacaMarketOpen}
+            strategy={currentStrategy}
           />
         ) : (
           <AutoTradeModal
@@ -1347,6 +1353,7 @@ export default function PaperTradingPage() {
             balance={balance}
             onClose={() => setShowAutoTradeModal(false)}
             onSuccess={handleTradeSuccess}
+            strategy={currentStrategy}
           />
         )
       )}
@@ -1359,6 +1366,7 @@ export default function PaperTradingPage() {
             onClose={() => setShowManualTradeModal(false)}
             onSuccess={handleStockTradeSuccess}
             marketOpen={alpacaMarketOpen}
+            strategy={currentStrategy}
           />
         ) : (
           <ManualTradeModal
@@ -1366,6 +1374,7 @@ export default function PaperTradingPage() {
             balance={balance}
             onClose={() => setShowManualTradeModal(false)}
             onSuccess={handleTradeSuccess}
+            strategy={currentStrategy}
           />
         )
       )}

@@ -9,6 +9,7 @@ interface StockManualTradeModalProps {
   onClose: () => void;
   onSuccess: (order?: any) => void;
   marketOpen: boolean;
+  strategy?: any;
 }
 
 type OrderType = "market" | "limit" | "stop" | "stop_limit" | "trailing_stop";
@@ -35,6 +36,7 @@ export function StockManualTradeModal({
   onClose,
   onSuccess,
   marketOpen,
+  strategy,
 }: StockManualTradeModalProps) {
   const [step, setStep] = useState(1);
   const [executing, setExecuting] = useState(false);
@@ -115,13 +117,15 @@ export function StockManualTradeModal({
   const entryPrice = orderType === "limit" ? parseFloat(limitPrice) || currentPrice : currentPrice;
   const totalCost = quantity * entryPrice;
 
-  // Get SL and TP values
+  // Get SL and TP values - use strategy defaults as fallback
+  const defaultStopLoss = strategy?.stop_loss_value ?? 5;
+  const defaultTakeProfit = strategy?.take_profit_value ?? 10;
   const stopLossPercent = useSignalSL
-    ? parsePercent(signal.stopLoss) || 5
-    : parseFloat(customSL) || 5;
+    ? parsePercent(signal.stopLoss) || defaultStopLoss
+    : parseFloat(customSL) || defaultStopLoss;
   const takeProfitPercent = useSignalTP
-    ? parsePercent(signal.takeProfit1) || 10
-    : parseFloat(customTP) || 10;
+    ? parsePercent(signal.takeProfit1) || defaultTakeProfit
+    : parseFloat(customTP) || defaultTakeProfit;
 
   const stopLossPrice = side === "buy"
     ? entryPrice * (1 - stopLossPercent / 100)
@@ -207,7 +211,8 @@ export function StockManualTradeModal({
         qty: quantity,
         side: side as "buy" | "sell",
         type: orderType,
-        time_in_force: timeInForce,
+        // For bracket orders, use GTC so child orders don't expire at end of day
+        time_in_force: (enableBracket && orderType === "market") ? "gtc" : timeInForce,
         extended_hours: extendedHours,
       };
 
@@ -542,14 +547,31 @@ export function StockManualTradeModal({
                 <div>
                   <label className="block text-sm text-slate-300 mb-2">Time In Force:</label>
                   <select
-                    value={timeInForce}
-                    onChange={(e) => setTimeInForce(e.target.value as "day" | "gtc" | "ioc" | "fok")}
-                    className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
+                    value={(enableBracket && orderType === "market") ? "gtc" : timeInForce}
+                    onChange={(e) => {
+                      if (enableBracket && orderType === "market") {
+                        // Bracket orders require GTC - don't allow change
+                        return;
+                      }
+                      setTimeInForce(e.target.value as "day" | "gtc" | "ioc" | "fok");
+                    }}
+                    disabled={enableBracket && orderType === "market"}
+                    className={`w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none ${
+                      enableBracket && orderType === "market" ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
                   >
                     {TIME_IN_FORCE_OPTIONS.map((opt) => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
                     ))}
                   </select>
+                  {enableBracket && orderType === "market" && (
+                    <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      Bracket orders use GTC to keep protective orders active
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer p-2">
@@ -607,7 +629,7 @@ export function StockManualTradeModal({
                           className="h-4 w-4 accent-blue-500"
                         />
                         <span className="text-sm text-slate-200">
-                          Use Signal's SL ({parsePercent(signal.stopLoss) || 5}%)
+                          Use Signal's SL ({parsePercent(signal.stopLoss) || defaultStopLoss}%)
                         </span>
                       </label>
 
@@ -664,7 +686,7 @@ export function StockManualTradeModal({
                           className="h-4 w-4 accent-blue-500"
                         />
                         <span className="text-sm text-slate-200">
-                          Use Signal's TP ({parsePercent(signal.takeProfit1) || 10}%)
+                          Use Signal's TP ({parsePercent(signal.takeProfit1) || defaultTakeProfit}%)
                         </span>
                       </label>
 

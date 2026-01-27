@@ -9,6 +9,7 @@ interface StockAutoTradeModalProps {
   onClose: () => void;
   onSuccess: (order?: any) => void;
   marketOpen: boolean;
+  strategy?: any;
 }
 
 type RiskLevel = "conservative" | "moderate" | "aggressive";
@@ -45,6 +46,7 @@ export function StockAutoTradeModal({
   onClose,
   onSuccess,
   marketOpen,
+  strategy,
 }: StockAutoTradeModalProps) {
   const [riskLevel, setRiskLevel] = useState<RiskLevel>("conservative");
   const [orderClass, setOrderClass] = useState<OrderClass>("bracket");
@@ -58,9 +60,11 @@ export function StockAutoTradeModal({
   // Extract symbol from signal
   const symbol = signal.symbol || signal.assetId || signal.pair?.replace(/\s*\/.*$/, '').trim() || '';
 
-  // Get signal's SL/TP percentages (fallback to defaults)
-  const stopLossPercent = parsePercent(signal.stopLoss) || 5;
-  const takeProfitPercent = parsePercent(signal.takeProfit1) || 10;
+  // Get signal's SL/TP percentages - use strategy values as fallback instead of hardcoded 5 and 10
+  const defaultStopLoss = strategy?.stop_loss_value ?? 5;
+  const defaultTakeProfit = strategy?.take_profit_value ?? 10;
+  const stopLossPercent = parsePercent(signal.stopLoss) || defaultStopLoss;
+  const takeProfitPercent = parsePercent(signal.takeProfit1) || defaultTakeProfit;
 
   // Fetch current price
   useEffect(() => {
@@ -130,7 +134,8 @@ export function StockAutoTradeModal({
         qty: quantity,
         side: side as "buy" | "sell",
         type: "market",
-        time_in_force: timeInForce,
+        // For bracket orders, use GTC so child orders don't expire at end of day
+        time_in_force: orderClass === "bracket" ? "gtc" : timeInForce,
         extended_hours: extendedHours,
       };
 
@@ -330,14 +335,31 @@ export function StockAutoTradeModal({
               Time In Force:
             </label>
             <select
-              value={timeInForce}
-              onChange={(e) => setTimeInForce(e.target.value as "day" | "gtc" | "ioc" | "fok")}
-              className="w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+              value={orderClass === "bracket" ? "gtc" : timeInForce}
+              onChange={(e) => {
+                if (orderClass === "bracket") {
+                  // Bracket orders require GTC - show info but don't change selection
+                  return;
+                }
+                setTimeInForce(e.target.value as "day" | "gtc" | "ioc" | "fok");
+              }}
+              disabled={orderClass === "bracket"}
+              className={`w-full rounded-lg bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none ${
+                orderClass === "bracket" ? "opacity-60 cursor-not-allowed" : ""
+              }`}
             >
               {TIME_IN_FORCE_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
+            {orderClass === "bracket" && (
+              <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                Bracket orders use GTC to keep protective orders active
+              </p>
+            )}
           </div>
         </div>
 

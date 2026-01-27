@@ -63,9 +63,9 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
         onClick={onClose}
       />
 
-      {/* Panel - centered, 80% of screen */}
+      {/* Panel - centered, larger size */}
       <div className="fixed inset-0 z-[11000] flex items-center justify-center p-4">
-        <div className="w-full max-w-[60vw] h-[60vh] rounded-2xl border border-white/10 bg-gradient-to-b from-gray-800 to-black shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08)] overflow-hidden flex flex-col">
+        <div className="w-full max-w-[75vw] h-[85vh] rounded-2xl border border-white/10 bg-gradient-to-b from-gray-800 to-black shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08)] overflow-hidden flex flex-col">
           {/* Header */}
           <div className="border-b border-white/5 bg-gradient-to-r from-gray-800 to-gray-700 p-4 flex-shrink-0">
             <div className="flex items-center justify-between gap-3 mb-3">
@@ -247,8 +247,11 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
           <div className="overflow-y-auto flex-1">
             {/* Show positions if available (Alpaca) */}
             {portfolioMetrics?.positions && portfolioMetrics.positions.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 px-4 pt-2">
+              <div className="mb-6">
+                <h4 className="text-base font-bold text-slate-300 uppercase tracking-wide mb-4 px-4 pt-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
                   Current Positions
                 </h4>
                 <div className="divide-y divide-white/5">
@@ -261,27 +264,27 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                     return (
                       <div
                         key={`${pos.symbol}-${idx}`}
-                        className="flex items-center justify-between gap-3 p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                        className="flex items-center justify-between gap-4 p-5 hover:bg-white/5 transition-colors border-b border-white/5"
                       >
                         <div className="flex flex-col flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <div className="text-sm font-semibold text-white">{pos.symbol}</div>
-                            <span className="text-xs text-slate-400">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="text-lg font-bold text-white">{pos.symbol}</div>
+                            <span className="text-sm text-slate-400 font-medium">
                               {qty.toFixed(2)} shares
                             </span>
                           </div>
-                          <div className="text-xs text-slate-500 mt-1">
-                            Entry: ${parseFloat(pos.avg_entry_price || '0').toFixed(2)} • 
-                            Current: ${parseFloat(pos.current_price || '0').toFixed(2)}
+                          <div className="text-sm text-slate-400 mt-1">
+                            Entry: <span className="text-slate-200 font-semibold">${parseFloat(pos.avg_entry_price || '0').toFixed(2)}</span> • 
+                            Current: <span className="text-slate-200 font-semibold">${parseFloat(pos.current_price || '0').toFixed(2)}</span>
                           </div>
                         </div>
 
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="text-xs text-slate-400">
-                            Value: <span className="text-slate-200 font-medium">${marketValue.toFixed(2)}</span>
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="text-sm text-slate-400">
+                            Value: <span className="text-slate-100 font-bold text-base">${marketValue.toFixed(2)}</span>
                           </div>
                           <div
-                            className={`rounded-md px-2.5 py-1 text-xs font-bold ${
+                            className={`rounded-lg px-3 py-2 text-sm font-bold ${
                               unrealizedPL >= 0
                                 ? "bg-emerald-500/20 text-emerald-400"
                                 : "bg-rose-500/20 text-rose-400"
@@ -289,7 +292,7 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                           >
                             {unrealizedPL >= 0 ? "+" : ""}${unrealizedPL.toFixed(2)}
                             {unrealizedPLPercent !== 0 && (
-                              <span className="ml-1">
+                              <span className="ml-2">
                                 ({unrealizedPLPercent >= 0 ? "+" : ""}{unrealizedPLPercent.toFixed(2)}%)
                               </span>
                             )}
@@ -311,20 +314,23 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
               </div>
             ) : trades.length > 0 ? (
               <div>
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2 px-4 pt-2">
+                <h4 className="text-base font-bold text-slate-300 uppercase tracking-wide mb-4 px-4 pt-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
                   Session Trades
                 </h4>
                 <div className="divide-y divide-white/5">
                   {trades.map((trade, idx) => (
                     <div
                       key={trade.id}
-                      className="flex items-center justify-between gap-3 p-4 hover:bg-white/5 transition-colors border-b border-white/5"
+                      className="flex items-center justify-between gap-4 p-5 hover:bg-white/5 transition-colors border-b border-white/5"
                     >
                       <div className="flex flex-col flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-semibold text-white">{trade.symbol}</div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="text-lg font-bold text-white">{trade.symbol}</div>
                           <span
-                            className={`text-xs font-bold px-2 py-0.5 rounded ${
+                            className={`text-sm font-bold px-3 py-1 rounded ${
                               trade.type === "BUY"
                                 ? "bg-green-500/20 text-green-400"
                                 : "bg-red-500/20 text-red-400"
@@ -333,18 +339,18 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                             {trade.type}
                           </span>
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          {trade.strategyName && <span className="text-slate-400">{trade.strategyName} • </span>}
-                          {new Date(trade.timestamp).toLocaleTimeString()}
+                        <div className="text-sm text-slate-400 mt-1">
+                          {trade.strategyName && <span className="text-slate-300 font-medium">{trade.strategyName} • </span>}
+                          <span className="text-slate-400">{new Date(trade.timestamp).toLocaleTimeString()}</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-1">
-                        <div className="text-xs text-slate-400">
-                          Entry: <span className="text-slate-200 font-medium">{trade.entryPrice}</span>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="text-sm text-slate-400">
+                          Entry: <span className="text-slate-100 font-bold text-base">{trade.entryPrice}</span>
                         </div>
                         <div
-                          className={`rounded-md px-2.5 py-1 text-xs font-bold ${
+                          className={`rounded-lg px-3 py-2 text-sm font-bold ${
                             trade.profitValue >= 0
                               ? "bg-emerald-500/20 text-emerald-400"
                               : "bg-rose-500/20 text-rose-400"

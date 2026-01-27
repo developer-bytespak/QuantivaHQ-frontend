@@ -230,6 +230,7 @@ export const alpacaPaperTradingService = {
     until?: string;
     direction?: 'asc' | 'desc';
     symbols?: string;
+    nested?: boolean;
   }): Promise<AlpacaOrder[]> {
     const searchParams = new URLSearchParams();
     if (params?.status) searchParams.append('status', params.status);
@@ -238,6 +239,13 @@ export const alpacaPaperTradingService = {
     if (params?.until) searchParams.append('until', params.until);
     if (params?.direction) searchParams.append('direction', params.direction);
     if (params?.symbols) searchParams.append('symbols', params.symbols);
+    // Add nested=true to show parent-child relationships for bracket orders
+    if (params?.nested !== undefined) {
+      searchParams.append('nested', params.nested.toString());
+    } else {
+      // Default to nested=true to show bracket order relationships
+      searchParams.append('nested', 'true');
+    }
 
     const url = `/alpaca-paper-trading/orders${searchParams.toString() ? `?${searchParams}` : ''}`;
     const response = await apiRequest<never, { success: boolean; data: AlpacaOrder[]; count: number }>({
