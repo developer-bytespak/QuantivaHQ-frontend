@@ -91,6 +91,13 @@ export function StockAutoTradeModal({
     fetchPrice();
   }, [signal]);
 
+  // Disable extended hours when bracket order is selected (Alpaca doesn't support it)
+  useEffect(() => {
+    if (orderClass === "bracket" && extendedHours) {
+      setExtendedHours(false);
+    }
+  }, [orderClass]);
+
   // Calculate position and prices
   const riskPercent = RISK_LEVELS[riskLevel].percent;
   const investmentAmount = (balance * riskPercent) / 100;
@@ -128,16 +135,42 @@ export function StockAutoTradeModal({
         throw new Error(`Insufficient balance. Need $${totalCost.toFixed(2)} but only have $${balance.toFixed(2)}`);
       }
 
+      // Alpaca restrictions:
+      // 1. Bracket orders do not support extended hours
+      // 2. Extended hours orders must be DAY limit orders (not market)
+      
+      // Determine order type and time in force
+      let orderType: "market" | "limit" = "market";
+      let finalTimeInForce = orderClass === "bracket" ? "gtc" : timeInForce;
+      let finalExtendedHours = extendedHours;
+      let limitPrice: number | undefined = undefined;
+
+      // If bracket order, disable extended hours
+      if (orderClass === "bracket") {
+        finalExtendedHours = false;
+      }
+
+      // If extended hours is enabled, convert market to limit order with DAY time in force
+      if (finalExtendedHours && orderClass === "simple") {
+        orderType = "limit";
+        limitPrice = parseFloat(currentPrice.toFixed(2));
+        finalTimeInForce = "day";
+      }
+
       // Build order parameters matching Alpaca API
       const orderParams: PlaceOrderParams = {
         symbol: symbol.toUpperCase(),
         qty: quantity,
         side: side as "buy" | "sell",
-        type: "market",
-        // For bracket orders, use GTC so child orders don't expire at end of day
-        time_in_force: orderClass === "bracket" ? "gtc" : timeInForce,
-        extended_hours: extendedHours,
+        type: orderType,
+        time_in_force: finalTimeInForce,
+        extended_hours: finalExtendedHours,
       };
+
+      // Add limit price if converted from market to limit for extended hours
+      if (limitPrice !== undefined) {
+        orderParams.limit_price = limitPrice;
+      }
 
       // Add bracket order legs if selected
       if (orderClass === "bracket") {
@@ -365,20 +398,32 @@ export function StockAutoTradeModal({
 
         {/* Extended Hours Toggle */}
         <div className="mb-5">
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className={`flex items-center gap-3 ${orderClass === "bracket" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
             <div className="relative">
               <input
                 type="checkbox"
                 checked={extendedHours}
-                onChange={(e) => setExtendedHours(e.target.checked)}
+                onChange={(e) => {
+                  if (orderClass === "bracket") {
+                    // Bracket orders don't support extended hours
+                    return;
+                  }
+                  setExtendedHours(e.target.checked);
+                }}
+                disabled={orderClass === "bracket"}
                 className="sr-only peer"
               />
-              <div className="w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-blue-500 transition-colors" />
+              <div className={`w-10 h-5 bg-slate-700 rounded-full peer peer-checked:bg-blue-500 transition-colors ${orderClass === "bracket" ? "opacity-50" : ""}`} />
               <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5" />
             </div>
             <div>
               <span className="text-sm font-medium text-slate-200">Extended Hours Trading</span>
-              <p className="text-xs text-slate-500">Trade during pre-market (4am-9:30am) and after-hours (4pm-8pm ET)</p>
+              <p className="text-xs text-slate-500">
+                {orderClass === "bracket" 
+                  ? "Not available for bracket orders (Alpaca limitation)"
+                  : "Trade during pre-market (4am-9:30am) and after-hours (4pm-8pm ET). Market orders will be converted to limit orders."
+                }
+              </p>
             </div>
           </label>
         </div>

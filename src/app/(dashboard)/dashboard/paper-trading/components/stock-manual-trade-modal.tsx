@@ -98,6 +98,13 @@ export function StockManualTradeModal({
     fetchPrice();
   }, [signal, side]);
 
+  // Disable extended hours when bracket order is enabled (Alpaca doesn't support it)
+  useEffect(() => {
+    if (enableBracket && orderType === "market" && extendedHours) {
+      setExtendedHours(false);
+    }
+  }, [enableBracket, orderType]);
+
   // Calculate quantity based on position mode
   const calculateQuantity = (): number => {
     if (positionMode === "shares") {
@@ -205,25 +212,49 @@ export function StockManualTradeModal({
         throw new Error(`Insufficient buying power. Need $${totalCost.toFixed(2)} but only have $${balance.toFixed(2)}`);
       }
 
+      // Alpaca restrictions:
+      // 1. Bracket orders do not support extended hours
+      // 2. Extended hours orders must be DAY limit orders (not market)
+      
+      // Determine order type and time in force
+      let finalOrderType = orderType;
+      let finalTimeInForce = (enableBracket && orderType === "market") ? "gtc" : timeInForce;
+      let finalExtendedHours = extendedHours;
+      let needsLimitPrice = false;
+
+      // If bracket order, disable extended hours
+      if (enableBracket && orderType === "market") {
+        finalExtendedHours = false;
+      }
+
+      // If extended hours is enabled and order is market, convert to limit order with DAY time in force
+      if (finalExtendedHours && orderType === "market") {
+        finalOrderType = "limit";
+        finalTimeInForce = "day";
+        needsLimitPrice = true;
+      }
+
       // Build order parameters
       const orderParams: PlaceOrderParams = {
         symbol: symbol.toUpperCase(),
         qty: quantity,
         side: side as "buy" | "sell",
-        type: orderType,
-        // For bracket orders, use GTC so child orders don't expire at end of day
-        time_in_force: (enableBracket && orderType === "market") ? "gtc" : timeInForce,
-        extended_hours: extendedHours,
+        type: finalOrderType,
+        time_in_force: finalTimeInForce,
+        extended_hours: finalExtendedHours,
       };
 
       // Add price parameters based on order type
-      if (orderType === "limit" || orderType === "stop_limit") {
-        orderParams.limit_price = parseFloat(limitPrice);
+      if (finalOrderType === "limit" || finalOrderType === "stop_limit") {
+        // Use current price if converted from market for extended hours, otherwise use user's limit price
+        orderParams.limit_price = needsLimitPrice 
+          ? parseFloat(currentPrice.toFixed(2))
+          : parseFloat(limitPrice);
       }
-      if (orderType === "stop" || orderType === "stop_limit") {
+      if (finalOrderType === "stop" || finalOrderType === "stop_limit") {
         orderParams.stop_price = parseFloat(stopPrice);
       }
-      if (orderType === "trailing_stop") {
+      if (finalOrderType === "trailing_stop") {
         if (parseFloat(trailPercent)) {
           orderParams.trail_percent = parseFloat(trailPercent);
         } else if (parseFloat(trailPrice)) {
@@ -574,14 +605,29 @@ export function StockManualTradeModal({
                   )}
                 </div>
                 <div className="flex items-end">
-                  <label className="flex items-center gap-2 cursor-pointer p-2">
+                  <label className={`flex items-center gap-2 p-2 ${(enableBracket && orderType === "market") ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
                     <input
                       type="checkbox"
                       checked={extendedHours}
-                      onChange={(e) => setExtendedHours(e.target.checked)}
+                      onChange={(e) => {
+                        if (enableBracket && orderType === "market") {
+                          // Bracket orders don't support extended hours
+                          return;
+                        }
+                        setExtendedHours(e.target.checked);
+                      }}
+                      disabled={enableBracket && orderType === "market"}
                       className="h-4 w-4 accent-blue-500"
                     />
-                    <span className="text-sm text-slate-300">Extended Hours</span>
+                    <div>
+                      <span className="text-sm text-slate-300">Extended Hours</span>
+                      {(enableBracket && orderType === "market") && (
+                        <p className="text-xs text-amber-400 mt-0.5">Not available for bracket orders</p>
+                      )}
+                      {extendedHours && orderType === "market" && !enableBracket && (
+                        <p className="text-xs text-blue-400 mt-0.5">Will convert to limit order</p>
+                      )}
+                    </div>
                   </label>
                 </div>
               </div>
