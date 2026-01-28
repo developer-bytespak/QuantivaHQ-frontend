@@ -409,6 +409,126 @@ function FilterButtons({
   );
 }
 
+// Pagination Component
+function PaginationControls({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalItems,
+  itemsPerPage,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems: number;
+  itemsPerPage: number;
+}) {
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  // Generate page numbers to show
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      // Show all pages if total is small
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show first, last, current, and surrounding pages
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push(-1); // ellipsis
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push(-1);
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push(-1);
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-700/50">
+      {/* Info text */}
+      <div className="text-xs sm:text-sm text-slate-400">
+        Showing {startItem} to {endItem} of {totalItems} items
+      </div>
+
+      {/* Pagination buttons */}
+      <div className="flex items-center gap-1 sm:gap-2">
+        {/* Previous button */}
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            currentPage === 1
+              ? "bg-slate-800/30 text-slate-600 cursor-not-allowed"
+              : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Page numbers */}
+        <div className="flex items-center gap-1">
+          {getPageNumbers().map((page, index) => {
+            if (page === -1) {
+              return (
+                <span key={`ellipsis-${index}`} className="px-2 text-slate-500">
+                  ...
+                </span>
+              );
+            }
+            return (
+              <button
+                key={page}
+                onClick={() => onPageChange(page)}
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                  currentPage === page
+                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                    : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Next button */}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+            currentPage === totalPages
+              ? "bg-slate-800/30 text-slate-600 cursor-not-allowed"
+              : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+          }`}
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // Floating coin symbols component (background)
 function FloatingCoinSymbols({ coins }: { coins: string[] }) {
   return (
@@ -541,6 +661,10 @@ export default function AIInsightsPage() {
   const [coinLogos, setCoinLogos] = useState<Record<string, string>>({});
   const [loadingStartTime, setLoadingStartTime] = useState<number | null>(null);
   const [isInitializingML, setIsInitializingML] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Check connection type on mount
   useEffect(() => {
@@ -777,6 +901,19 @@ export default function AIInsightsPage() {
     return filtered;
   }, [allNewsItems, allStockNewsItems, activeFilter, sortBy, connectionType]);
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredAndSortedNews.length / itemsPerPage);
+  const paginatedNews = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedNews.slice(startIndex, endIndex);
+  }, [filteredAndSortedNews, currentPage, itemsPerPage]);
+
+  // Reset to page 1 when filters or sorting changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeFilter, sortBy, connectionType]);
+
   const handleNewsClick = (news: AIEnhancedNewsItem | AIEnhancedStockNewsItem) => {
     setSelectedNews(news);
   };
@@ -913,10 +1050,11 @@ export default function AIInsightsPage() {
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 sm:p-4 text-center">
             <p className="text-xs sm:text-sm text-red-300">{newsError}</p>
           </div>
-          ) : filteredAndSortedNews.length > 0 ? (
-            filteredAndSortedNews.map((news, index) => (
+          ) : paginatedNews.length > 0 ? (
+            <>
+              {paginatedNews.map((news, index) => (
             <div
-                key={`${news.symbol}-${index}`}
+                  key={`${news.symbol}-${(currentPage - 1) * itemsPerPage + index}`}
               onClick={() => handleNewsClick(news)}
                 className="group cursor-pointer rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_25px_30px_-5px_rgba(0,0,0,0.15),0_0_25px_rgba(252,79,2,0.12),0_0_35px_rgba(253,163,0,0.1)]"
               >
@@ -988,7 +1126,17 @@ export default function AIInsightsPage() {
                   </div>
                 </div>
             </div>
-          ))
+              ))}
+              
+              {/* Pagination Controls */}
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filteredAndSortedNews.length}
+                itemsPerPage={itemsPerPage}
+              />
+            </>
         ) : (
           <div className="py-8 sm:py-12 text-center text-slate-400">
               <p className="text-xs sm:text-sm">No news available</p>
