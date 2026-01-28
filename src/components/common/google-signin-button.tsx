@@ -99,6 +99,36 @@ export default function GoogleSignInButton({ onSuccess }: Props) {
         credentials: "include",
       });
 
+      // DEBUG: Log backend response to see what we're getting
+      console.log("Google Auth Response from backend:", JSON.stringify(data, null, 2));
+
+      // Check if this is a new user who needs to complete registration
+      // Handle both direct response and nested data response
+      const responseData = data?.data || data;
+      const isNewUser = responseData?.is_new_user === true;
+      const googleUser = responseData?.google_user;
+
+      console.log("Parsed - isNewUser:", isNewUser, "googleUser:", googleUser);
+
+      if (isNewUser && googleUser) {
+        // Store Google user info for the complete-registration page
+        localStorage.setItem(
+          "quantivahq_google_pending_registration",
+          JSON.stringify({
+            email: googleUser.email,
+            name: googleUser.name,
+            google_id: googleUser.google_id,
+            picture: googleUser.picture,
+          })
+        );
+        
+        isProcessingRef.current = false;
+        // Route to complete registration page
+        router.push("/onboarding/complete-registration");
+        return;
+      }
+
+      // Existing user - proceed with login
       // store auth method and email
       try {
         if (data?.user?.email) {
@@ -118,7 +148,7 @@ export default function GoogleSignInButton({ onSuccess }: Props) {
           "quantivahq_is_authenticated",
           data?.accessToken ? "true" : "false"
         );
-        // Set new signup flag if this is a new user
+        // Set new signup flag if this is a new user (legacy check)
         if (data?.isNewUser) {
           localStorage.setItem("quantivahq_is_new_signup", "true");
         }

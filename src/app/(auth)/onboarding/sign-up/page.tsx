@@ -413,8 +413,7 @@ export default function SignUpPage() {
                     </button>
                   </div>
 
-                      {/* OAuth Buttons */}
-                      {activeTab === "login" && (
+                      {/* OAuth Buttons - Show for both login and signup */}
                         <div className="grid grid-cols-1 gap-2.5">
                           {/* Google Sign-In button (GSI) */}
                           <div>
@@ -424,13 +423,11 @@ export default function SignUpPage() {
                             <GoogleSignInButton />
                           </div>
                         </div>
-                      )}
                 </div>
               </div>
             </div>
 
-            {/* Middle: Divider (horizontal on mobile, vertical on desktop) - hidden on mobile for signup */}
-            {!(activeTab === "signup") && (
+            {/* Middle: Divider (horizontal on mobile, vertical on desktop) */}
             <div className="relative flex items-center justify-center lg:items-center lg:justify-center lg:self-stretch my-4 lg:my-0 w-full lg:w-auto">
               <div className="w-0.5 h-0.5 lg:h-auto lg:w-0.5 bg-[--color-border] lg:absolute lg:inset-y-0 lg:left-1/2 lg:-translate-x-1/2" />
               <div className="relative z-10 px-3 lg:px-0 lg:bg-transparent bg-black">
@@ -447,7 +444,6 @@ export default function SignUpPage() {
                 </span>
               </div>
             </div>
-            )}
 
             {/* Right Side: Email Form (shows first on mobile, second on desktop) */}
             <div className="flex-1 flex items-center justify-center">

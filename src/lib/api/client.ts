@@ -216,9 +216,9 @@ export async function uploadFile<TResponse = unknown>({
 
   // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
 
-  // Create AbortController for timeout (60 seconds for file uploads, especially KYC operations)
+  // Create AbortController for timeout (3 minutes for file uploads, especially KYC operations)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds for KYC operations
+  const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes for KYC operations
 
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
