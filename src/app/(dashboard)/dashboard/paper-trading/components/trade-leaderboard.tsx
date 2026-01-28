@@ -362,7 +362,7 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                   Current Positions
                 </h4>
                 <div className="divide-y divide-white/5">
-                  {portfolioMetrics.positions.map((pos, idx) => {
+                  {portfolioMetrics.positions?.map((pos, idx) => {
                     const unrealizedPL = parseFloat(pos.unrealized_pl || '0');
                     const unrealizedPLPercent = parseFloat(pos.unrealized_plpc || '0');
                     const marketValue = parseFloat(pos.market_value || '0');
