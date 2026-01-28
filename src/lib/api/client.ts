@@ -174,6 +174,7 @@ type UploadParams = {
   path: string;
   file: File;
   additionalData?: Record<string, string>;
+  timeout?: number; // Timeout in milliseconds (default: 60000, use 180000+ for KYC operations with ML processing)
 };
 
 /**
@@ -184,6 +185,7 @@ export async function uploadFile<TResponse = unknown>({
   path,
   file,
   additionalData,
+  timeout,
 }: UploadParams): Promise<TResponse> {
   if (process.env.NODE_ENV === "development") {
     console.info(`[API] POST ${path} (file upload: ${file.name})`);
@@ -216,9 +218,22 @@ export async function uploadFile<TResponse = unknown>({
 
   // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
 
-  // Create AbortController for timeout (60 seconds for file uploads, especially KYC operations)
+  // Determine timeout: use provided timeout, or detect KYC operations (longer due to ML processing), or default
+  let requestTimeout = timeout;
+  if (!requestTimeout) {
+    // KYC selfie verification involves ML processing (liveness detection + face matching)
+    if (path.includes('/kyc/selfie')) {
+      requestTimeout = 180000; // 3 minutes for selfie verification with ML
+    } else if (path.includes('/kyc/')) {
+      requestTimeout = 120000; // 2 minutes for other KYC operations
+    } else {
+      requestTimeout = 60000; // 60 seconds for regular file uploads
+    }
+  }
+
+  // Create AbortController for timeout
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 seconds for KYC operations
+  const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -274,7 +289,17 @@ export async function uploadFile<TResponse = unknown>({
     
     // Handle timeout/abort errors
     if (error.name === 'AbortError' || error.message?.includes('timeout')) {
-      throw new Error('Request timeout. The operation is taking longer than expected. Please try again or ensure your images are clear and contain visible faces.');
+      const timeoutSeconds = Math.round(requestTimeout / 1000);
+      const isKycOperation = path.includes('/kyc/');
+      let errorMessage = `Request timeout after ${timeoutSeconds} seconds. `;
+      
+      if (isKycOperation) {
+        errorMessage += 'KYC verification involves AI-powered face matching which may take longer. Please ensure your selfie is clear, well-lit, and try again. If the issue persists, the verification service may be temporarily busy.';
+      } else {
+        errorMessage += 'The operation is taking longer than expected. Please try again or ensure your images are clear and contain visible faces.';
+      }
+      
+      throw new Error(errorMessage);
     }
     
     // Re-throw other errors (preserve status if it exists)
