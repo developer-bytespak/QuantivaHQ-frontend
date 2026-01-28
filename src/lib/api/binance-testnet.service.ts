@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 interface TestnetBalance {
   balances: Array<{
@@ -131,34 +131,43 @@ class BinanceTestnetService {
   }
 
   /**
-   * Get all orders (including filled)
+   * Get all orders from database (no rate limits!)
    */
   async getAllOrders(symbol?: string, limit?: number): Promise<TestnetOrder[]> {
     const params = new URLSearchParams();
-    if (symbol) params.append("symbol", symbol);
     if (limit) params.append("limit", limit.toString());
 
+    console.log(`[Binance API] Fetching orders from DB: ${this.baseUrl}/orders/db?${params.toString()}`);
+
     const response = await fetch(
-      `${this.baseUrl}/orders/all${params.toString() ? "?" + params : ""}`,
+      `${this.baseUrl}/orders/db${params.toString() ? "?" + params : ""}`,
       {
         credentials: "include",
       }
     );
 
+    console.log(`[Binance API] Response status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      let errorMessage = "Failed to fetch all orders";
+      let errorMessage = "Failed to fetch orders from database";
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
+        console.error(`[Binance API] Error response:`, errorData);
       } catch {
-        errorMessage = `Failed to fetch all orders: ${response.statusText}`;
+        errorMessage = `Failed to fetch orders: ${response.statusText}`;
       }
       throw new Error(errorMessage);
     }
 
     const data = await response.json();
+    console.log(`[Binance API] Raw response data:`, data);
+    
     // Backend returns { orders: [...] }, extract the array
-    return (Array.isArray(data) ? data : data?.orders || []);
+    const orders = Array.isArray(data) ? data : data?.orders || [];
+    console.log(`[Binance API] Parsed orders count:`, orders.length);
+    
+    return orders;
   }
 
   /**
