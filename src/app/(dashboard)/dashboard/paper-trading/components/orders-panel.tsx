@@ -27,7 +27,7 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<"all" | "open" | "filled" | "canceled">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "open" | "filled" | "canceled" | "positions">("positions");
 
   useEffect(() => {
     fetchOrders();
@@ -102,6 +102,53 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
     return side === "BUY" ? "text-green-400" : "text-red-400";
   };
 
+  // Calculate open positions (filled BUYs without matching SELLs)
+  const calculateOpenPositions = () => {
+    const positions = new Map<string, { quantity: number; avgPrice: number; totalCost: number }>();
+    
+    // Sort orders by timestamp
+    const sortedByTime = [...orders].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+    
+    for (const order of sortedByTime) {
+      if (order.status !== 'FILLED') continue;
+      
+      const symbol = order.symbol;
+      const qty = order.executedQuantity || order.quantity;
+      const price = order.price || 0;
+      
+      if (!positions.has(symbol)) {
+        positions.set(symbol, { quantity: 0, avgPrice: 0, totalCost: 0 });
+      }
+      
+      const pos = positions.get(symbol)!;
+      
+      if (order.side === 'BUY') {
+        const newTotalCost = pos.totalCost + (qty * price);
+        const newQuantity = pos.quantity + qty;
+        pos.avgPrice = newQuantity > 0 ? newTotalCost / newQuantity : 0;
+        pos.quantity = newQuantity;
+        pos.totalCost = newTotalCost;
+      } else {
+        // SELL reduces position
+        pos.quantity -= qty;
+        if (pos.quantity <= 0) {
+          pos.quantity = 0;
+          pos.totalCost = 0;
+          pos.avgPrice = 0;
+        } else {
+          pos.totalCost = pos.quantity * pos.avgPrice;
+        }
+      }
+    }
+    
+    // Return only positions with quantity > 0
+    return Array.from(positions.entries())
+      .filter(([_, pos]) => pos.quantity > 0)
+      .map(([symbol, pos]) => ({ symbol, ...pos }));
+  };
+
+  const openPositions = calculateOpenPositions();
+
   const formatPrice = (price: number | null | undefined) => {
     if (!price) return "—";
     return Number(price).toFixed(2);
@@ -142,8 +189,9 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
           <div className="flex gap-2 flex-wrap">
             {(
               [
+                { key: "positions", label: "Positions" },
                 { key: "all", label: "All Orders" },
-                { key: "open", label: "Open" },
+                { key: "open", label: "Pending" },
                 { key: "filled", label: "Filled" },
                 { key: "canceled", label: "Canceled" },
               ] as const
@@ -158,16 +206,16 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
                 }`}
               >
                 {label}
-                {key !== "all" && (
-                  <span className="ml-2 text-xs opacity-70">
-                    ({filteredOrders.filter(
+                <span className="ml-2 text-xs opacity-70">
+                  ({key === "all" ? orders.length :
+                    key === "positions" ? openPositions.length :
+                    orders.filter(
                       (o) =>
                         (key === "open" && (o.status === "NEW" || o.status === "PARTIALLY_FILLED")) ||
                         (key === "filled" && o.status === "FILLED") ||
                         (key === "canceled" && o.status === "CANCELED")
                     ).length})
-                  </span>
-                )}
+                </span>
               </button>
             ))}
           </div>
@@ -191,7 +239,7 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
                 </button>
               </div>
             </div>
-          ) : sortedOrders.length === 0 ? (
+          ) : sortedOrders.length === 0 && filterStatus !== "positions" ? (
             <div className="flex items-center justify-center h-64">
               <p className="text-slate-400">
                 {filterStatus === "all"
@@ -199,6 +247,63 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
                   : `No ${filterStatus} orders found`}
               </p>
             </div>
+          ) : filterStatus === "positions" ? (
+            // Show Open Positions view
+            openPositions.length === 0 ? (
+              <div className="flex items-center justify-center h-64">
+                <p className="text-slate-400">No open positions</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/[0.08] bg-white/[0.02]">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300">
+                        Symbol
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300">
+                        Quantity
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300">
+                        Avg Entry Price
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300">
+                        Total Cost
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {openPositions.map((pos, idx) => (
+                      <tr
+                        key={`${pos.symbol}-${idx}`}
+                        className="border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors"
+                      >
+                        <td className="px-6 py-4 text-sm font-medium text-white">
+                          {pos.symbol}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-300">
+                          {pos.quantity.toFixed(4)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-300">
+                          ${pos.avgPrice.toFixed(4)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-300">
+                          ${pos.totalCost.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <span className="px-2 py-1 rounded-md text-xs font-semibold text-orange-400 bg-orange-400/10">
+                            HOLDING
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -277,26 +382,32 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
         </div>
 
         {/* Footer Stats */}
-        {sortedOrders.length > 0 && (
+        {(orders.length > 0 || openPositions.length > 0) && (
           <div className="border-t border-white/[0.08] bg-white/[0.02] px-6 py-4 flex gap-6 flex-wrap">
+            <div className="border-r border-white/10 pr-6">
+              <p className="text-xs text-slate-400">Open Positions</p>
+              <p className="text-lg font-bold text-orange-400">
+                {openPositions.length}
+              </p>
+            </div>
             <div>
               <p className="text-xs text-slate-400">Total Orders</p>
               <p className="text-lg font-bold text-white">{orders.length}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400">Open Orders</p>
+              <p className="text-xs text-slate-400">Pending</p>
               <p className="text-lg font-bold text-blue-400">
                 {orders.filter((o) => o.status === "NEW" || o.status === "PARTIALLY_FILLED").length}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-400">Filled Orders</p>
+              <p className="text-xs text-slate-400">Filled</p>
               <p className="text-lg font-bold text-green-400">
                 {orders.filter((o) => o.status === "FILLED").length}
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-400">Canceled Orders</p>
+              <p className="text-xs text-slate-400">Canceled</p>
               <p className="text-lg font-bold text-red-400">
                 {orders.filter((o) => o.status === "CANCELED").length}
               </p>

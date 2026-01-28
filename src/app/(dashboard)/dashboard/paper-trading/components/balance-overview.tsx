@@ -76,11 +76,11 @@ export function BalanceOverview({
           </div>
         ) : (
           <div className="text-left sm:text-right">
-            <p className="text-xs sm:text-sm text-slate-400 mb-1">Open Orders</p>
+            <p className="text-xs sm:text-sm text-slate-400 mb-1">Open Positions</p>
             {loading ? (
               <div className="h-7 sm:h-8 w-16 animate-pulse rounded bg-slate-700/50" />
             ) : (
-              <p className={`text-2xl sm:text-3xl font-bold ${isStockMode ? 'text-blue-400' : 'text-cyan-400'}`}>{openOrdersCount}</p>
+              <p className={`text-2xl sm:text-3xl font-bold ${isStockMode ? 'text-blue-400' : 'text-orange-400'}`}>{openOrdersCount}</p>
             )}
           </div>
         )}
