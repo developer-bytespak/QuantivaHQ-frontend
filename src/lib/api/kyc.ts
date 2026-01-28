@@ -27,11 +27,15 @@ export async function uploadDocument(
 
 /**
  * Upload selfie for liveness detection and face matching
+ * Uses extended timeout (3 minutes) due to ML processing for:
+ * - Liveness detection (anti-spoofing)
+ * - Face matching against ID document
  */
 export async function uploadSelfie(file: File): Promise<void> {
   await uploadFile({
     path: "/kyc/selfie",
     file,
+    timeout: 180000, // 3 minutes for ML-based liveness detection and face matching
   });
 }
 
