@@ -22,6 +22,16 @@ interface AlpacaPosition {
   current_price: string;
 }
 
+interface CryptoPosition {
+  symbol: string;
+  quantity: number;
+  avgPrice: number;
+  totalCost: number;
+  currentPrice?: number;
+  unrealizedPL?: number;
+  unrealizedPLPercent?: number;
+}
+
 interface PortfolioMetrics {
   portfolioValue?: number;
   dailyChange?: number;
@@ -30,14 +40,23 @@ interface PortfolioMetrics {
   positions?: AlpacaPosition[];
 }
 
+interface CryptoMetrics {
+  balance?: number;
+  positions?: CryptoPosition[];
+  totalUnrealizedPL?: number;
+  totalValue?: number;
+}
+
 interface TradeLeaderboardProps {
   trades: TradeRecord[];
   onClose: () => void;
   onClear: () => void;
-  portfolioMetrics?: PortfolioMetrics; // Optional Alpaca portfolio data
+  portfolioMetrics?: PortfolioMetrics; // Alpaca portfolio data for stocks
+  cryptoMetrics?: CryptoMetrics; // Crypto positions data
+  isCrypto?: boolean;
 }
 
-export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMetrics }: TradeLeaderboardProps) {
+export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMetrics, cryptoMetrics, isCrypto = false }: TradeLeaderboardProps) {
   const totalProfit = trades.reduce((acc, t) => acc + t.profitValue, 0);
   const winCount = trades.filter((t) => t.profitValue >= 0).length;
   const lossCount = trades.filter((t) => t.profitValue < 0).length;
@@ -54,6 +73,15 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
     const totalValue = portfolioMetrics.portfolioValue || 1;
     return sum + (plpc * (marketValue / totalValue));
   }, 0) || 0;
+
+  // Calculate crypto unrealized P/L
+  const cryptoUnrealizedPL = cryptoMetrics?.totalUnrealizedPL || 0;
+  const cryptoPositions = cryptoMetrics?.positions || [];
+  const cryptoTotalValue = cryptoMetrics?.totalValue || (cryptoMetrics?.balance || 0);
+
+  // Determine if we have positions to show
+  const hasStockPositions = portfolioMetrics?.positions && portfolioMetrics.positions.length > 0;
+  const hasCryptoPositions = cryptoPositions.length > 0;
 
   return (
     <>
@@ -129,8 +157,15 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
 
             {/* Stats row */}
             <div className="grid grid-cols-3 gap-2">
-              {/* Portfolio Value (from Alpaca) */}
-              {portfolioMetrics?.portfolioValue !== undefined ? (
+              {/* Portfolio Value / Balance */}
+              {isCrypto ? (
+                <div className="rounded-lg bg-white/5 p-2 text-center">
+                  <div className="text-xs text-slate-400">Portfolio Value</div>
+                  <div className="text-sm font-bold text-white">
+                    ${cryptoTotalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+              ) : portfolioMetrics?.portfolioValue !== undefined ? (
                 <div className="rounded-lg bg-white/5 p-2 text-center">
                   <div className="text-xs text-slate-400">Portfolio Value</div>
                   <div className="text-sm font-bold text-white">
@@ -155,8 +190,19 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                 </div>
               )}
 
-              {/* Daily Change (from Alpaca) */}
-              {portfolioMetrics?.dailyChange !== undefined ? (
+              {/* Daily Change / Unrealized P&L for crypto */}
+              {isCrypto && hasCryptoPositions ? (
+                <div className="rounded-lg bg-white/5 p-2 text-center">
+                  <div className="text-xs text-slate-400">Unrealized P&L</div>
+                  <div
+                    className={`text-sm font-bold ${
+                      cryptoUnrealizedPL >= 0 ? "text-emerald-400" : "text-rose-400"
+                    }`}
+                  >
+                    {cryptoUnrealizedPL >= 0 ? "+" : ""}${cryptoUnrealizedPL.toFixed(2)}
+                  </div>
+                </div>
+              ) : portfolioMetrics?.dailyChange !== undefined ? (
                 <div className="rounded-lg bg-white/5 p-2 text-center">
                   <div className="text-xs text-slate-400">Daily Change</div>
                   <div
@@ -245,8 +291,8 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
 
           {/* Trades list */}
           <div className="overflow-y-auto flex-1">
-            {/* Show positions if available (Alpaca) */}
-            {portfolioMetrics?.positions && portfolioMetrics.positions.length > 0 && (
+            {/* Show crypto positions if available */}
+            {isCrypto && hasCryptoPositions && (
               <div className="mb-6">
                 <h4 className="text-base font-bold text-slate-300 uppercase tracking-wide mb-4 px-4 pt-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,7 +301,68 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                   Current Positions
                 </h4>
                 <div className="divide-y divide-white/5">
-                  {portfolioMetrics.positions.map((pos, idx) => {
+                  {cryptoPositions.map((pos, idx) => {
+                    const unrealizedPL = pos.unrealizedPL || 0;
+                    const unrealizedPLPercent = pos.unrealizedPLPercent || 0;
+                    const marketValue = pos.currentPrice ? pos.quantity * pos.currentPrice : pos.totalCost;
+                    
+                    return (
+                      <div
+                        key={`${pos.symbol}-${idx}`}
+                        className="flex items-center justify-between gap-4 p-5 hover:bg-white/5 transition-colors border-b border-white/5"
+                      >
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="text-lg font-bold text-white">{pos.symbol.replace(/USDT$/i, '')}</div>
+                            <span className="text-sm text-slate-400 font-medium">
+                              {pos.quantity.toFixed(4)} tokens
+                            </span>
+                          </div>
+                          <div className="text-sm text-slate-400 mt-1">
+                            Entry: <span className="text-slate-200 font-semibold">${pos.avgPrice.toFixed(4)}</span>
+                            {pos.currentPrice && (
+                              <> • Current: <span className="text-slate-200 font-semibold">${pos.currentPrice.toFixed(4)}</span></>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="text-sm text-slate-400">
+                            Value: <span className="text-slate-100 font-bold text-base">${marketValue.toFixed(2)}</span>
+                          </div>
+                          <div
+                            className={`rounded-lg px-3 py-2 text-sm font-bold ${
+                              unrealizedPL >= 0
+                                ? "bg-emerald-500/20 text-emerald-400"
+                                : "bg-rose-500/20 text-rose-400"
+                            }`}
+                          >
+                            {unrealizedPL >= 0 ? "+" : ""}${unrealizedPL.toFixed(2)}
+                            {unrealizedPLPercent !== 0 && (
+                              <span className="ml-2">
+                                ({unrealizedPLPercent >= 0 ? "+" : ""}{unrealizedPLPercent.toFixed(2)}%)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Show stock positions if available (Alpaca) */}
+            {!isCrypto && hasStockPositions && (
+              <div className="mb-6">
+                <h4 className="text-base font-bold text-slate-300 uppercase tracking-wide mb-4 px-4 pt-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Current Positions
+                </h4>
+                <div className="divide-y divide-white/5">
+                  {portfolioMetrics.positions?.map((pos, idx) => {
                     const unrealizedPL = parseFloat(pos.unrealized_pl || '0');
                     const unrealizedPLPercent = parseFloat(pos.unrealized_plpc || '0');
                     const marketValue = parseFloat(pos.market_value || '0');
@@ -306,7 +413,7 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
             )}
 
             {/* Show session trades */}
-            {trades.length === 0 && (!portfolioMetrics?.positions || portfolioMetrics.positions.length === 0) ? (
+            {trades.length === 0 && !hasStockPositions && !hasCryptoPositions ? (
               <div className="flex flex-col items-center justify-center gap-2 h-full text-center p-8">
                 <div className="text-5xl opacity-20 font-light">No Data</div>
                 <p className="text-sm text-slate-400">No trades executed yet this session</p>

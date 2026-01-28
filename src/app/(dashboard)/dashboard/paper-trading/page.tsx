@@ -172,6 +172,15 @@ export default function PaperTradingPage() {
   // Crypto paper trading state (Binance testnet integration)
   const [cryptoOrders, setCryptoOrders] = useState<any[]>([]);
   const [loadingCryptoOrders, setLoadingCryptoOrders] = useState(false);
+  const [cryptoPositions, setCryptoPositions] = useState<{
+    symbol: string;
+    quantity: number;
+    avgPrice: number;
+    totalCost: number;
+    currentPrice?: number;
+    unrealizedPL?: number;
+    unrealizedPLPercent?: number;
+  }[]>([]);
 
   // Create custom strategy state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -245,11 +254,10 @@ export default function PaperTradingPage() {
       
       setCryptoOrders(allOrders || []);
       
-      // Update open orders count
-      const openCount = (allOrders || []).filter(
+      // Update open orders count (pending orders + open positions)
+      const pendingOrdersCount = (allOrders || []).filter(
         (order: any) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
       ).length;
-      setOpenOrdersCount(openCount);
       
       // Convert filled orders to trade records for leaderboard
       const filledOrders = (allOrders || []).filter(
@@ -258,7 +266,16 @@ export default function PaperTradingPage() {
       
       console.log("📋 Filled orders:", filledOrders);
       
-      const records: TradeRecord[] = filledOrders.map((order: any) => {
+      // Calculate P/L by matching buys and sells
+      const buys: Map<string, { price: number; quantity: number; timestamp: number }[]> = new Map();
+      const records: TradeRecord[] = [];
+      
+      // Sort orders by timestamp to process in order
+      const sortedOrders = [...filledOrders].sort((a: any, b: any) => 
+        (a.timestamp || a.updateTime) - (b.timestamp || b.updateTime)
+      );
+      
+      sortedOrders.forEach((order: any) => {
         // Calculate actual executed price for market orders
         let entryPrice = 0;
         if (order.price && order.price > 0) {
@@ -269,26 +286,103 @@ export default function PaperTradingPage() {
           entryPrice = order.cumulativeQuoteAssetTransacted / order.executedQuantity;
         }
         
-        return {
+        const symbol = order.symbol.replace(/USDT$/i, '');
+        const quantity = parseFloat(order.executedQuantity || order.origQty || '0');
+        let profitValue = 0;
+        
+        if (order.side.toUpperCase() === 'BUY') {
+          // Store buy order for P/L calculation
+          if (!buys.has(symbol)) {
+            buys.set(symbol, []);
+          }
+          buys.get(symbol)!.push({ price: entryPrice, quantity, timestamp: order.timestamp || order.updateTime });
+        } else if (order.side.toUpperCase() === 'SELL' && buys.has(symbol)) {
+          // Calculate P/L from matching buy orders (FIFO)
+          const buyOrders = buys.get(symbol)!;
+          let remainingQty = quantity;
+          
+          while (remainingQty > 0 && buyOrders.length > 0) {
+            const buyOrder = buyOrders[0];
+            const matchQty = Math.min(remainingQty, buyOrder.quantity);
+            profitValue += (entryPrice - buyOrder.price) * matchQty;
+            
+            buyOrder.quantity -= matchQty;
+            remainingQty -= matchQty;
+            
+            if (buyOrder.quantity <= 0) {
+              buyOrders.shift();
+            }
+          }
+        }
+        
+        records.push({
           id: order.orderId.toString(),
           timestamp: order.timestamp || order.updateTime || Date.now(),
-          symbol: order.symbol.replace(/USDT$/i, ''), // Remove USDT suffix
+          symbol,
           type: order.side.toUpperCase() as "BUY" | "SELL",
           entryPrice: entryPrice > 0 ? entryPrice.toFixed(4) : '0',
-          profitValue: 0, // Would need position data to calculate actual P/L
+          profitValue,
           strategyName: 'Binance Testnet Trade',
-        };
+        });
       });
       
       setTradeRecords(records);
       
+      // Count open positions (filled BUYs without matching SELLs)
+      const openPositionsArray = Array.from(buys.entries())
+        .filter(([_, orders]) => orders.length > 0 && orders.reduce((sum, o) => sum + o.quantity, 0) > 0)
+        .map(([symbol, orders]) => {
+          const totalQty = orders.reduce((sum, o) => sum + o.quantity, 0);
+          const totalCost = orders.reduce((sum, o) => sum + o.price * o.quantity, 0);
+          const avgPrice = totalQty > 0 ? totalCost / totalQty : 0;
+          return {
+            symbol: symbol + 'USDT',
+            quantity: totalQty,
+            avgPrice,
+            totalCost,
+          };
+        });
+      
+      // Fetch current prices for open positions
+      const positionsWithPrices = await Promise.all(
+        openPositionsArray.map(async (pos) => {
+          try {
+            const ticker = await binanceTestnetService.getTickerPrice(pos.symbol);
+            const currentPrice = ticker?.price || pos.avgPrice;
+            const marketValue = pos.quantity * currentPrice;
+            const unrealizedPL = marketValue - pos.totalCost;
+            const unrealizedPLPercent = pos.totalCost > 0 ? (unrealizedPL / pos.totalCost) * 100 : 0;
+            return {
+              ...pos,
+              currentPrice,
+              unrealizedPL,
+              unrealizedPLPercent,
+            };
+          } catch {
+            return pos;
+          }
+        })
+      );
+      
+      setCryptoPositions(positionsWithPrices);
+      
+      const openPositionsCount = positionsWithPrices.length;
+      
+      // Total open count = pending orders + open positions
+      const totalOpenCount = pendingOrdersCount + openPositionsCount;
+      setOpenOrdersCount(totalOpenCount);
+      
       console.log("💰 Crypto Orders Breakdown:", {
         "Total Orders": allOrders?.length || 0,
-        "Open Orders": openCount,
+        "Pending Orders": pendingOrdersCount,
+        "Open Positions": openPositionsCount,
+        "Total Open": totalOpenCount,
         "Filled Orders": filledOrders.length,
         "Trade Records": records.length,
+        "Open Position Details": positionsWithPrices,
         "Sample Order": allOrders?.[0],
         "Sample Trade Record": records[0],
+        "Total Realized P/L": records.reduce((sum, r) => sum + r.profitValue, 0).toFixed(2),
       });
     } catch (err: any) {
       console.error("❌ Failed to load crypto orders:", err);
@@ -332,15 +426,61 @@ export default function PaperTradingPage() {
       
       // Convert recent filled orders to trade records for leaderboard
       const filledOrders = (dashboard.recentOrders || []).filter(o => o.status === 'filled');
-      const records: TradeRecord[] = filledOrders.map(order => ({
-        id: order.id,
-        timestamp: new Date(order.filled_at || order.updated_at).getTime(),
-        symbol: order.symbol,
-        type: order.side.toUpperCase() as "BUY" | "SELL",
-        entryPrice: order.filled_avg_price || '0',
-        profitValue: 0, // Would need position data to calculate actual P/L
-        strategyName: 'Alpaca Paper Trade',
-      }));
+      
+      // Calculate P/L by matching buys and sells
+      const buys: Map<string, { price: number; quantity: number; timestamp: number }[]> = new Map();
+      const records: TradeRecord[] = [];
+      
+      // Sort orders by timestamp to process in order
+      const sortedOrders = [...filledOrders].sort((a, b) => 
+        new Date(a.filled_at || a.updated_at).getTime() - new Date(b.filled_at || b.updated_at).getTime()
+      );
+      
+      sortedOrders.forEach(order => {
+        const entryPrice = parseFloat(order.filled_avg_price || '0');
+        const quantity = parseFloat(order.filled_qty || order.qty || '0');
+        const symbol = order.symbol;
+        let profitValue = 0;
+        
+        if (order.side.toUpperCase() === 'BUY') {
+          // Store buy order for P/L calculation
+          if (!buys.has(symbol)) {
+            buys.set(symbol, []);
+          }
+          buys.get(symbol)!.push({ 
+            price: entryPrice, 
+            quantity, 
+            timestamp: new Date(order.filled_at || order.updated_at).getTime() 
+          });
+        } else if (order.side.toUpperCase() === 'SELL' && buys.has(symbol)) {
+          // Calculate P/L from matching buy orders (FIFO)
+          const buyOrders = buys.get(symbol)!;
+          let remainingQty = quantity;
+          
+          while (remainingQty > 0 && buyOrders.length > 0) {
+            const buyOrder = buyOrders[0];
+            const matchQty = Math.min(remainingQty, buyOrder.quantity);
+            profitValue += (entryPrice - buyOrder.price) * matchQty;
+            
+            buyOrder.quantity -= matchQty;
+            remainingQty -= matchQty;
+            
+            if (buyOrder.quantity <= 0) {
+              buyOrders.shift();
+            }
+          }
+        }
+        
+        records.push({
+          id: order.id,
+          timestamp: new Date(order.filled_at || order.updated_at).getTime(),
+          symbol,
+          type: order.side.toUpperCase() as "BUY" | "SELL",
+          entryPrice: entryPrice.toFixed(2),
+          profitValue,
+          strategyName: 'Alpaca Paper Trade',
+        });
+      });
       setStockTradeRecords(records);
       
       console.log("✅ Alpaca paper trading data loaded (FROM API):", {
@@ -451,23 +591,26 @@ export default function PaperTradingPage() {
 
   // --- Load initial orders on mount ---
   useEffect(() => {
-    // Intentionally not auto-loading orders on mount.
-    // Orders are loaded only when the user opens the Orders panel (OrdersPanel will fetch them).
-  }, [status?.configured]);
+    // Load crypto orders on mount for crypto connections
+    // Note: This is independent of status?.configured - we want positions loaded immediately
+    if (connectionType === "crypto") {
+      console.log("📊 Loading crypto orders on mount...");
+      loadCryptoOrders();
+    }
+  }, [connectionType]);
 
-  // --- Sync WebSocket order updates with open orders count ---
+  // --- Sync WebSocket order updates - refresh crypto orders for accurate position count ---
   useEffect(() => {
-    if (realtimeData.orders && realtimeData.orders.length > 0) {
-      // Count open orders from WebSocket data
-      const openCount = realtimeData.orders.filter(
-        (order) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
-      ).length;
-      setOpenOrdersCount(openCount);
+    if (realtimeData.orders && realtimeData.orders.length > 0 && connectionType === "crypto") {
+      // When new orders come via WebSocket, refresh the full crypto orders to recalculate positions
+      // This ensures open positions (filled BUYs without matching SELLs) are properly counted
+      console.log("📡 WebSocket order update detected - refreshing crypto orders for position count");
+      loadCryptoOrders();
       
       // Trigger OrdersPanel refresh
       setOrdersRefreshKey((k) => k + 1);
     }
-  }, [realtimeData.orders]);
+  }, [realtimeData.orders, connectionType]);
 
   // If WebSocket connects but we haven't received a balance snapshot via socket yet,
   // fetch a REST balance snapshot so the UI shows immediate balances.
@@ -539,13 +682,12 @@ export default function PaperTradingPage() {
       const balanceData = await binanceTestnetService.getAccountBalance();
       setBalance(balanceData.totalBalanceUSD);
 
-      // Do NOT fetch orders here - only update open orders count from WebSocket if available.
-      // This prevents the expensive /orders/all aggregation unless explicitly requested by the user.
-      if (realtimeData.orders && Array.isArray(realtimeData.orders)) {
-        const openCount = realtimeData.orders.filter(
-          (order: any) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
-        ).length;
-        setOpenOrdersCount(openCount);
+      // Don't overwrite openOrdersCount here - let loadCryptoOrders handle it
+      // since it properly calculates open positions (filled BUYs without matching SELLs)
+      // If we don't have positions yet, trigger a load
+      if (cryptoPositions.length === 0) {
+        console.log("📊 No positions loaded yet - triggering loadCryptoOrders");
+        loadCryptoOrders();
       }
     } catch (err: any) {
       console.error("Failed to load account data:", err);
@@ -1182,10 +1324,10 @@ export default function PaperTradingPage() {
           <button
             onClick={() => setShowOrdersPanel(true)}
             className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-800 to-blue-700 px-4 py-2 text-sm font-medium text-blue-200 hover:from-blue-700 hover:to-blue-600 transition-all border border-blue-600/50"
-            title={isStocksConnection ? "View orders (Alpaca paper trading coming soon)" : "View all orders"}
+            title={isStocksConnection ? "View positions and orders" : "View positions and order history"}
           >
-            <span>Orders</span>
-            <span className="text-xs bg-gradient-to-r from-blue-500 to-blue-400 text-white px-2 py-0.5 rounded-full font-bold">
+            <span>Positions</span>
+            <span className="text-xs bg-gradient-to-r from-orange-500 to-orange-400 text-white px-2 py-0.5 rounded-full font-bold">
               {isStocksConnection ? stockOpenOrders : openOrdersCount}
             </span>
           </button>
@@ -1495,6 +1637,7 @@ export default function PaperTradingPage() {
           trades={isStocksConnection ? stockTradeRecords : tradeRecords}
           onClose={() => setShowLeaderboard(false)}
           onClear={() => isStocksConnection ? setStockTradeRecords([]) : setTradeRecords([])}
+          isCrypto={!isStocksConnection}
           portfolioMetrics={isStocksConnection ? {
             portfolioValue: stockPortfolioValue,
             dailyChange: stockDailyChange,
@@ -1509,6 +1652,12 @@ export default function PaperTradingPage() {
               avg_entry_price: pos.avg_entry_price?.toString() || '0',
               current_price: pos.current_price?.toString() || '0',
             })),
+          } : undefined}
+          cryptoMetrics={!isStocksConnection ? {
+            balance: balance,
+            positions: cryptoPositions,
+            totalUnrealizedPL: cryptoPositions.reduce((sum, p) => sum + (p.unrealizedPL || 0), 0),
+            totalValue: balance + cryptoPositions.reduce((sum, p) => sum + (p.currentPrice ? p.quantity * p.currentPrice : p.totalCost), 0),
           } : undefined}
         />
       )}

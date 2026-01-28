@@ -131,16 +131,16 @@ class BinanceTestnetService {
   }
 
   /**
-   * Get all orders from database (no rate limits!)
+   * Get all orders from database synced with fresh Binance API data
    */
   async getAllOrders(symbol?: string, limit?: number): Promise<TestnetOrder[]> {
     const params = new URLSearchParams();
     if (limit) params.append("limit", limit.toString());
 
-    console.log(`[Binance API] Fetching orders from DB: ${this.baseUrl}/orders/db?${params.toString()}`);
+    console.log(`[Binance API] Fetching synced orders: ${this.baseUrl}/orders/synced?${params.toString()}`);
 
     const response = await fetch(
-      `${this.baseUrl}/orders/db${params.toString() ? "?" + params : ""}`,
+      `${this.baseUrl}/orders/synced${params.toString() ? "?" + params : ""}`,
       {
         credentials: "include",
       }
@@ -149,7 +149,7 @@ class BinanceTestnetService {
     console.log(`[Binance API] Response status: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
-      let errorMessage = "Failed to fetch orders from database";
+      let errorMessage = "Failed to fetch synced orders";
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
@@ -166,6 +166,7 @@ class BinanceTestnetService {
     // Backend returns { orders: [...] }, extract the array
     const orders = Array.isArray(data) ? data : data?.orders || [];
     console.log(`[Binance API] Parsed orders count:`, orders.length);
+    console.log(`[Binance API] Sample order:`, orders[0]);
     
     return orders;
   }
