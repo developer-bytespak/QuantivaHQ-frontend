@@ -168,6 +168,10 @@ export default function PaperTradingPage() {
   const [tradeRecords, setTradeRecords] = useState<TradeRecord[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
 
+  // Crypto paper trading state (Binance testnet integration)
+  const [cryptoOrders, setCryptoOrders] = useState<any[]>([]);
+  const [loadingCryptoOrders, setLoadingCryptoOrders] = useState(false);
+
   // Create custom strategy state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -219,6 +223,76 @@ export default function PaperTradingPage() {
     };
     loadStatus();
   }, [connectionType]);
+
+  // --- Load crypto orders from Binance testnet ---
+  const loadCryptoOrders = async () => {
+    if (connectionType !== "crypto") return;
+    
+    setLoadingCryptoOrders(true);
+    
+    try {
+      console.log("📡 Fetching orders from Binance Testnet...");
+      
+      // Fetch all orders (open + filled)
+      const allOrders = await binanceTestnetService.getAllOrders(undefined, 100);
+      
+      console.log("✅ Binance orders loaded:", allOrders?.length || 0);
+      console.log("📦 Raw orders data:", allOrders);
+      
+      setCryptoOrders(allOrders || []);
+      
+      // Update open orders count
+      const openCount = (allOrders || []).filter(
+        (order: any) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
+      ).length;
+      setOpenOrdersCount(openCount);
+      
+      // Convert filled orders to trade records for leaderboard
+      const filledOrders = (allOrders || []).filter(
+        (order: any) => order.status === 'FILLED'
+      );
+      
+      console.log("📋 Filled orders:", filledOrders);
+      
+      const records: TradeRecord[] = filledOrders.map((order: any) => {
+        // Calculate actual executed price for market orders
+        let entryPrice = 0;
+        if (order.price && order.price > 0) {
+          // Limit order - use the limit price
+          entryPrice = order.price;
+        } else if (order.cumulativeQuoteAssetTransacted && order.executedQuantity) {
+          // Market order - calculate average price from executed values
+          entryPrice = order.cumulativeQuoteAssetTransacted / order.executedQuantity;
+        }
+        
+        return {
+          id: order.orderId.toString(),
+          timestamp: order.timestamp || order.updateTime || Date.now(),
+          symbol: order.symbol.replace(/USDT$/i, ''), // Remove USDT suffix
+          type: order.side.toUpperCase() as "BUY" | "SELL",
+          entryPrice: entryPrice > 0 ? entryPrice.toFixed(4) : '0',
+          profitValue: 0, // Would need position data to calculate actual P/L
+          strategyName: 'Binance Testnet Trade',
+        };
+      });
+      
+      setTradeRecords(records);
+      
+      console.log("💰 Crypto Orders Breakdown:", {
+        "Total Orders": allOrders?.length || 0,
+        "Open Orders": openCount,
+        "Filled Orders": filledOrders.length,
+        "Trade Records": records.length,
+        "Sample Order": allOrders?.[0],
+        "Sample Trade Record": records[0],
+      });
+    } catch (err: any) {
+      console.error("❌ Failed to load crypto orders:", err);
+      console.error("Error details:", err.message, err.stack);
+    } finally {
+      setLoadingCryptoOrders(false);
+    }
+  };
 
   // --- Load Alpaca paper trading data for stocks connections ---
   const loadAlpacaData = async () => {
@@ -300,12 +374,19 @@ export default function PaperTradingPage() {
     }
   };
 
+  // Load data based on connection type
   useEffect(() => {
     if (connectionType === "stocks") {
       loadAlpacaData();
       
       // Refresh Alpaca data every 30 seconds
       const interval = setInterval(loadAlpacaData, 30000);
+      return () => clearInterval(interval);
+    } else if (connectionType === "crypto") {
+      loadCryptoOrders();
+      
+      // Refresh crypto orders every 10 minutes (to avoid Binance rate limits)
+      const interval = setInterval(loadCryptoOrders, 600000);
       return () => clearInterval(interval);
     }
   }, [connectionType]);
@@ -869,7 +950,7 @@ export default function PaperTradingPage() {
     setShowSuccessToast(true);
     setTimeout(() => setShowSuccessToast(false), 3000);
     
-    // For crypto, reload account data. For stocks, update placeholder balance
+    // For crypto, reload account data and orders. For stocks, update placeholder balance
     if (isStocksConnection) {
       // Placeholder: simulate balance change for stocks
       const tradeValue = Number(signalToRecord?.entryPrice || 0) * 10; // Assume 10 shares
@@ -878,7 +959,9 @@ export default function PaperTradingPage() {
       }
       setStockOpenOrders((prev) => prev + 1);
     } else {
+      // Reload both balance and orders for crypto
       loadAccountData();
+      loadCryptoOrders();
     }
     
     // Trigger instant refresh in OrdersPanel
