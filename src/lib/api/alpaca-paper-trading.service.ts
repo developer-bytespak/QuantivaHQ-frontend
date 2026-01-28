@@ -409,6 +409,239 @@ export const alpacaPaperTradingService = {
     });
     return response.data;
   },
+
+  // =============================================
+  // Auto Trading API Methods
+  // =============================================
+
+  /**
+   * Get auto-trading status (poll this every 3 seconds)
+   */
+  async getAutoTradingStatus(): Promise<AutoTradingStatus> {
+    const response = await apiRequest<never, { success: boolean; data: AutoTradingStatus }>({
+      path: '/alpaca-paper-trading/auto-trading/status',
+      method: 'GET',
+    });
+    return response.data;
+  },
+
+  /**
+   * Get comprehensive auto-trading stats
+   */
+  async getAutoTradingStats(): Promise<AutoTradingStats> {
+    const response = await apiRequest<never, { success: boolean; data: AutoTradingStats }>({
+      path: '/alpaca-paper-trading/auto-trading/stats',
+      method: 'GET',
+    });
+    return response.data;
+  },
+
+  /**
+   * Get quick summary (lightweight polling)
+   */
+  async getAutoTradingSummary(): Promise<AutoTradingSummary> {
+    const response = await apiRequest<never, { success: boolean; data: AutoTradingSummary }>({
+      path: '/alpaca-paper-trading/auto-trading/summary',
+      method: 'GET',
+    });
+    return response.data;
+  },
+
+  /**
+   * Get recent auto-trades
+   */
+  async getAutoTradingTrades(): Promise<AutoTradeRecord[]> {
+    const response = await apiRequest<never, { success: boolean; data: AutoTradeRecord[]; count: number }>({
+      path: '/alpaca-paper-trading/auto-trading/trades',
+      method: 'GET',
+    });
+    return response.data;
+  },
+
+  /**
+   * Get AI messages
+   */
+  async getAutoTradingMessages(): Promise<AiMessage[]> {
+    const response = await apiRequest<never, { success: boolean; data: AiMessage[]; count: number }>({
+      path: '/alpaca-paper-trading/auto-trading/messages',
+      method: 'GET',
+    });
+    return response.data;
+  },
+
+  /**
+   * Start auto-trading
+   */
+  async startAutoTrading(): Promise<{ success: boolean; message: string; data: any }> {
+    return apiRequest<never, { success: boolean; message: string; data: any }>({
+      path: '/alpaca-paper-trading/auto-trading/start',
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Pause auto-trading
+   */
+  async pauseAutoTrading(): Promise<{ success: boolean; message: string; data: any }> {
+    return apiRequest<never, { success: boolean; message: string; data: any }>({
+      path: '/alpaca-paper-trading/auto-trading/pause',
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Resume auto-trading
+   */
+  async resumeAutoTrading(): Promise<{ success: boolean; message: string; data: any }> {
+    return apiRequest<never, { success: boolean; message: string; data: any }>({
+      path: '/alpaca-paper-trading/auto-trading/resume',
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Stop auto-trading
+   */
+  async stopAutoTrading(): Promise<{ success: boolean; message: string; data: any }> {
+    return apiRequest<never, { success: boolean; message: string; data: any }>({
+      path: '/alpaca-paper-trading/auto-trading/stop',
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Reset auto-trading session
+   */
+  async resetAutoTrading(): Promise<{ success: boolean; message: string; data: any }> {
+    return apiRequest<never, { success: boolean; message: string; data: any }>({
+      path: '/alpaca-paper-trading/auto-trading/reset',
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Execute trades manually (trigger immediately)
+   */
+  async executeAutoTradingNow(): Promise<{ success: boolean; message: string; data: any }> {
+    return apiRequest<never, { success: boolean; message: string; data: any }>({
+      path: '/alpaca-paper-trading/auto-trading/execute-now',
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Execute a single trade manually
+   */
+  async executeAutoTradingSingle(): Promise<{ success: boolean; message: string; data: any }> {
+    return apiRequest<never, { success: boolean; message: string; data: any }>({
+      path: '/alpaca-paper-trading/auto-trading/execute-single',
+      method: 'POST',
+    });
+  },
 };
+
+// Auto Trading Types
+export interface AutoTradeRecord {
+  id: string;
+  timestamp: string;
+  strategyId: string;
+  strategyName: string;
+  symbol: string;
+  action: 'BUY' | 'SELL';
+  amount: number;
+  price: number;
+  orderId: string;
+  status: 'pending' | 'filled' | 'failed';
+  aiMessage: string;
+  confidence: number;
+}
+
+export interface AiMessage {
+  timestamp: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'trade';
+}
+
+export interface SessionStats {
+  totalTrades: number;
+  successfulTrades: number;
+  failedTrades: number;
+  totalVolume: number;
+  todayTrades: number;
+  winRate: number;
+  lastTradeTime: string | null;
+  sessionStartTime: string | null;
+  currentBalance: number;
+  startingBalance: number;
+  profitLoss: number;
+  profitLossPercent: number;
+}
+
+export interface AutoTradingStatus {
+  status: 'idle' | 'running' | 'paused' | 'stopped';
+  sessionId: string;
+  startTime: string | null;
+  lastRunTime: string | null;
+  nextRunTime: string | null;
+  isExecuting: boolean;
+  stats: SessionStats;
+  recentTrades: AutoTradeRecord[];
+  aiMessages: AiMessage[];
+}
+
+export interface StrategyPerformance {
+  strategyId: string;
+  strategyName: string;
+  totalTrades: number;
+  successfulTrades: number;
+  failedTrades: number;
+  totalVolume: number;
+  avgConfidence: number;
+  winRate: number;
+  lastTradeTime: string | null;
+}
+
+export interface DailyStats {
+  date: string;
+  trades: number;
+  volume: number;
+  profitLoss: number;
+}
+
+export interface AutoTradingStats {
+  currentBalance: number;
+  buyingPower: number;
+  portfolioValue: number;
+  dailyChange: number;
+  dailyChangePercent: number;
+  sessionStartTime: string | null;
+  sessionDuration: string;
+  status: string;
+  totalTrades: number;
+  todayTrades: number;
+  successfulTrades: number;
+  failedTrades: number;
+  totalVolume: number;
+  avgTradeSize: number;
+  winRate: number;
+  lastTradeTime: string | null;
+  nextScheduledRun: string | null;
+  strategyPerformance: StrategyPerformance[];
+  dailyStats: DailyStats[];
+  openPositions: number;
+  totalPositionValue: number;
+}
+
+export interface AutoTradingSummary {
+  status: string;
+  todayTrades: number;
+  totalTrades: number;
+  currentBalance: number;
+  profitLoss: number;
+  profitLossPercent: number;
+  lastTradeTime: string | null;
+  nextRunTime: string | null;
+  isExecuting: boolean;
+}
 
 export default alpacaPaperTradingService;

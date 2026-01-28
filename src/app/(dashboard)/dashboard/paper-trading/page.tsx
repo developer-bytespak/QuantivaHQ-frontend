@@ -17,6 +17,7 @@ import { StockManualTradeModal } from "./components/stock-manual-trade-modal";
 import { StockOrdersPanel } from "./components/stock-orders-panel";
 import TradeLeaderboard from "./components/trade-leaderboard";
 import { OrdersPanel } from "./components/orders-panel";
+import { AIAutoTradePanel } from "./components/ai-auto-trade-panel";
 import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
 
 // ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
@@ -185,6 +186,9 @@ export default function PaperTradingPage() {
   // Orders panel state
   const [showOrdersPanel, setShowOrdersPanel] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+
+  // AI Auto Trade panel state (stocks only)
+  const [showAIAutoTradePanel, setShowAIAutoTradePanel] = useState(false);
 
   // Stock market data state (for stocks connection)
   const [stockMarketData, setStockMarketData] = useState<StockMarketData[]>([]);
@@ -1196,6 +1200,20 @@ export default function PaperTradingPage() {
               {isStocksConnection ? stockTradeRecords.length : tradeRecords.length}
             </span>
           </button>
+          {/* AI Auto Trade button - stocks only */}
+          {isStocksConnection && (
+            <button
+              onClick={() => setShowAIAutoTradePanel(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-800 to-indigo-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-purple-200 hover:from-purple-700 hover:to-indigo-600 transition-all border border-purple-600/50 w-full sm:w-auto"
+              title="View AI Auto Trading Dashboard"
+            >
+              <span>AI Auto Trade</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1619,6 +1637,14 @@ export default function PaperTradingPage() {
             refreshTrigger={ordersRefreshKey}
           />
         )
+      )}
+
+      {/* AI Auto Trade Panel - Stocks only */}
+      {isStocksConnection && showAIAutoTradePanel && (
+        <AIAutoTradePanel
+          isOpen={showAIAutoTradePanel}
+          onClose={() => setShowAIAutoTradePanel(false)}
+        />
       )}
     </div>
   );
