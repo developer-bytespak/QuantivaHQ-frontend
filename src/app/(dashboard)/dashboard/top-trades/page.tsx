@@ -305,10 +305,11 @@ export default function TopTradesPage() {
   // Handler for refreshing stock data
   const handleRefreshStockData = async () => {
     await fetchStockMarketData();
-    // Also refresh signals
-    preBuiltStrategies.forEach((strategy) => {
-      fetchStrategySignals(strategy.strategy_id);
-    });
+    // Only refresh signals for the active strategy
+    const activeStrategy = preBuiltStrategies[activeTab];
+    if (activeStrategy) {
+      fetchStrategySignals(activeStrategy.strategy_id);
+    }
   };
 
   // --- Fetch trending assets (DISCOVERY) ---
@@ -521,31 +522,33 @@ export default function TopTradesPage() {
     }
   };
 
-  // --- Fetch signals for all strategies when they're loaded ---
+  // --- Fetch signals for ONLY the active strategy (lazy loading) ---
+  // This dramatically improves performance by only loading data for the currently viewed tab
   useEffect(() => {
     if (connectionType !== "crypto" && connectionType !== "stocks") return;
     if (preBuiltStrategies.length > 0) {
-      preBuiltStrategies.forEach((strategy) => {
-        if (!strategySignals[strategy.strategy_id] && !loadingSignals[strategy.strategy_id]) {
-          fetchStrategySignals(strategy.strategy_id);
-        }
-      });
+      const activeStrategy = preBuiltStrategies[activeTab];
+      if (activeStrategy && !strategySignals[activeStrategy.strategy_id] && !loadingSignals[activeStrategy.strategy_id]) {
+        fetchStrategySignals(activeStrategy.strategy_id);
+      }
     }
-  }, [preBuiltStrategies, connectionType]);
+  }, [preBuiltStrategies, connectionType, activeTab]);
 
-  // --- Auto-refresh signals every 60 seconds ---
+  // --- Auto-refresh signals every 60 seconds (only for active strategy) ---
   useEffect(() => {
     if (connectionType !== "crypto" && connectionType !== "stocks") return;
     if (preBuiltStrategies.length === 0) return;
 
     const interval = setInterval(() => {
-      preBuiltStrategies.forEach((strategy) => {
-        fetchStrategySignals(strategy.strategy_id);
-      });
+      // Only refresh the currently active strategy to reduce API load
+      const activeStrategy = preBuiltStrategies[activeTab];
+      if (activeStrategy) {
+        fetchStrategySignals(activeStrategy.strategy_id);
+      }
     }, 60000); // 60 seconds
 
     return () => clearInterval(interval);
-  }, [preBuiltStrategies, connectionType]);
+  }, [preBuiltStrategies, connectionType, activeTab]);
 
   // --- Map signals to trades for display ---
   const mapSignalsToTrades = (signals: any[]): Trade[] => {
