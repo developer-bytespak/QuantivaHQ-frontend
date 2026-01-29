@@ -59,6 +59,16 @@ interface TradeLeaderboardProps {
 export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMetrics, cryptoMetrics, isCrypto = false }: TradeLeaderboardProps) {
   const totalProfit = trades.reduce((acc, t) => acc + t.profitValue, 0);
   
+  // Only count SELL orders as wins/losses (completed trades)
+  // BUY orders are just entries - they haven't realized any P&L yet
+  // Wins: SELL orders with profit > 0
+  // Losses: SELL orders with profit < 0
+  // Neutral: SELL orders with profit = 0 (breakeven) - not counted as win or loss
+  const completedTrades = trades.filter((t) => t.type === "SELL");
+  const winCount = completedTrades.filter((t) => t.profitValue > 0).length;
+  const lossCount = completedTrades.filter((t) => t.profitValue < 0).length;
+
+  
   // Calculate total unrealized P/L from Alpaca positions
   const totalUnrealizedPL = portfolioMetrics?.positions?.reduce((sum, pos) => {
     return sum + parseFloat(pos.unrealized_pl || '0');

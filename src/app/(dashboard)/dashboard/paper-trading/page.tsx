@@ -965,11 +965,22 @@ export default function PaperTradingPage() {
       const confidence: Trade["confidence"] =
         score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
 
-      const realtimePrice = signal.realtime_data?.price ?? null;
-      const realtimeVolume = signal.realtime_data?.volume24h ?? null;
+      // Get realtime data, treating 0 as invalid (API returned no data)
+      const realtimePrice = signal.realtime_data?.price && signal.realtime_data.price > 0 
+        ? signal.realtime_data.price 
+        : null;
+      const realtimeVolume = signal.realtime_data?.volume24h && signal.realtime_data.volume24h > 0
+        ? signal.realtime_data.volume24h
+        : null;
       const realtimePriceChange = signal.realtime_data?.priceChangePercent ?? null;
 
-      const entryPrice = realtimePrice ?? signal.price ?? signal.last_price ?? 0;
+      // Fall back through multiple price sources: realtime > signal.price_usd > signal.price > 0
+      // price_usd is from the trending_assets database table
+      const entryPrice = realtimePrice 
+        ?? (signal.price_usd && signal.price_usd > 0 ? signal.price_usd : null)
+        ?? (signal.price && signal.price > 0 ? signal.price : null)
+        ?? (signal.last_price && signal.last_price > 0 ? signal.last_price : null)
+        ?? 0;
       // Use signal values if available, otherwise use strategy defaults
       const stopLoss = signal.stop_loss ?? `-${strategyStopLoss}%`;
       const takeProfit = signal.take_profit ?? `+${strategyTakeProfit}%`;
