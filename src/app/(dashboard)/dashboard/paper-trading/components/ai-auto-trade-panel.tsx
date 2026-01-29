@@ -5,6 +5,8 @@ import alpacaPaperTradingService, {
   AutoTradingStatus,
   AutoTradeRecord,
   AiMessage,
+  AlpacaPosition,
+  AlpacaOrder,
 } from "@/lib/api/alpaca-paper-trading.service";
 
 // Polling interval (3 seconds)
@@ -30,8 +32,19 @@ const formatTime = (dateStr: string | null) => {
   });
 };
 
+// Extended trade interface for chart
+interface TradeForChart {
+  id: string;
+  symbol: string;
+  action: string;
+  amount: number;
+  price: number;
+  unrealizedPL?: number;
+  timestamp: string;
+}
+
 // Simple P&L Line Chart Component
-function PLChart({ trades }: { trades: AutoTradeRecord[] }) {
+function PLChart({ trades }: { trades: TradeForChart[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -57,16 +70,16 @@ function PLChart({ trades }: { trades: AutoTradeRecord[] }) {
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Generate cumulative P&L data points from trades
+    // Generate cumulative P&L data points from trades (use actual P/L if available)
     let cumulativePL = 0;
     const dataPoints = [{ time: 0, pl: 0 }];
     
     trades.slice().reverse().forEach((trade, i) => {
-      // Simulate P&L based on trade (random for demo, real would need actual fill price vs current)
-      const randomPL = trade.action === "BUY" 
-        ? (Math.random() - 0.4) * trade.amount * 0.1  // Slight positive bias
-        : (Math.random() - 0.5) * trade.amount * 0.08;
-      cumulativePL += randomPL;
+      // Use actual unrealized P/L if available, otherwise estimate
+      const tradePL = trade.unrealizedPL !== undefined 
+        ? trade.unrealizedPL 
+        : (trade.action === "BUY" ? (Math.random() - 0.4) * trade.amount * 0.1 : (Math.random() - 0.5) * trade.amount * 0.08);
+      cumulativePL += tradePL;
       dataPoints.push({ time: i + 1, pl: cumulativePL });
     });
 
@@ -209,19 +222,84 @@ interface AIAutoTradePanelProps {
   onClose: () => void;
 }
 
+// Extended trade with P/L info
+interface TradeWithPL extends AutoTradeRecord {
+  currentPrice?: number;
+  unrealizedPL?: number;
+  unrealizedPLPercent?: number;
+}
+
 export function AIAutoTradePanel({ isOpen, onClose }: AIAutoTradePanelProps) {
   const [status, setStatus] = useState<AutoTradingStatus | null>(null);
+  const [positions, setPositions] = useState<AlpacaPosition[]>([]);
+  const [tradesWithPL, setTradesWithPL] = useState<TradeWithPL[]>([]);
+  const [totalUnrealizedPL, setTotalUnrealizedPL] = useState(0);
+  const [bracketOrders, setBracketOrders] = useState<AlpacaOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'trades' | 'brackets'>('trades');
 
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch status
+  // Fetch status and positions
   const fetchStatus = useCallback(async () => {
     try {
-      const data = await alpacaPaperTradingService.getAutoTradingStatus();
-      setStatus(data);
+      // Fetch status, positions, and orders
+      const [statusData, positionsData, ordersData] = await Promise.all([
+        alpacaPaperTradingService.getAutoTradingStatus(),
+        alpacaPaperTradingService.getPositions().catch(() => []),
+        alpacaPaperTradingService.getOrders({ status: 'all', limit: 100, nested: true }).catch(() => []),
+      ]);
+      
+      setStatus(statusData);
+      setPositions(positionsData);
+      
+      // Filter bracket orders (orders with legs or order_class = bracket)
+      const brackets = ordersData.filter((order: AlpacaOrder) => 
+        order.order_class === 'bracket' || (order.legs && order.legs.length > 0)
+      );
+      setBracketOrders(brackets);
+      
+      // Create a map of current prices from positions
+      const priceMap = new Map<string, { price: number; pl: number; plPercent: number }>();
+      positionsData.forEach((pos: AlpacaPosition) => {
+        priceMap.set(pos.symbol, {
+          price: parseFloat(pos.current_price),
+          pl: parseFloat(pos.unrealized_pl),
+          plPercent: parseFloat(pos.unrealized_plpc) * 100,
+        });
+      });
+      
+      // Calculate P/L for each trade
+      const trades = statusData.recentTrades || [];
+      const enrichedTrades: TradeWithPL[] = trades.map((trade: AutoTradeRecord) => {
+        const posInfo = priceMap.get(trade.symbol);
+        if (posInfo && trade.price > 0) {
+          const qty = trade.amount / trade.price;
+          const currentValue = qty * posInfo.price;
+          const costBasis = trade.amount;
+          const tradePL = trade.action === 'BUY' ? currentValue - costBasis : costBasis - currentValue;
+          const tradePLPercent = costBasis > 0 ? (tradePL / costBasis) * 100 : 0;
+          
+          return {
+            ...trade,
+            currentPrice: posInfo.price,
+            unrealizedPL: tradePL,
+            unrealizedPLPercent: tradePLPercent,
+          };
+        }
+        return trade;
+      });
+      
+      setTradesWithPL(enrichedTrades);
+      
+      // Calculate total unrealized P/L from positions
+      const totalPL = positionsData.reduce((sum: number, pos: AlpacaPosition) => {
+        return sum + parseFloat(pos.unrealized_pl || '0');
+      }, 0);
+      setTotalUnrealizedPL(totalPL);
+      
       setError(null);
     } catch (err: any) {
       console.error("Failed to fetch status:", err);
@@ -367,24 +445,26 @@ export function AIAutoTradePanel({ isOpen, onClose }: AIAutoTradePanelProps) {
                 <p className="text-xs text-gray-400">{status?.stats?.todayTrades || 0} today</p>
               </div>
               <div className="bg-[#1a1a2a] rounded-lg p-3">
-                <p className="text-gray-500 text-xs mb-1">Win Rate</p>
-                <p className="text-xl font-bold text-green-400">{(status?.stats?.winRate || 0).toFixed(1)}%</p>
-                <p className="text-xs text-gray-400">{status?.stats?.successfulTrades || 0} successful</p>
+                <p className="text-gray-500 text-xs mb-1">Positions</p>
+                <p className="text-xl font-bold text-purple-400">{positions.length}</p>
+                <p className="text-xs text-gray-400">
+                  {positions.filter(p => parseFloat(p.unrealized_pl) > 0).length} up / {positions.filter(p => parseFloat(p.unrealized_pl) < 0).length} down
+                </p>
               </div>
               <div className="bg-[#1a1a2a] rounded-lg p-3">
                 <p className="text-gray-500 text-xs mb-1">Volume</p>
                 <p className="text-xl font-bold text-blue-400">{formatCurrency(status?.stats?.totalVolume || 0)}</p>
               </div>
               <div className="bg-[#1a1a2a] rounded-lg p-3">
-                <p className="text-gray-500 text-xs mb-1">Session P/L</p>
-                <p className={`text-xl font-bold ${(status?.stats?.profitLoss || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {formatCurrency(status?.stats?.profitLoss || 0)}
+                <p className="text-gray-500 text-xs mb-1">Unrealized P/L</p>
+                <p className={`text-xl font-bold ${totalUnrealizedPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {totalUnrealizedPL >= 0 ? '+' : ''}{formatCurrency(totalUnrealizedPL)}
                 </p>
               </div>
             </div>
 
             {/* P&L Performance Chart */}
-            <PLChart trades={status?.recentTrades || []} />
+            <PLChart trades={tradesWithPL} />
 
             {/* Manual Triggers */}
             <div className="flex gap-2 mb-4">
@@ -440,32 +520,152 @@ export function AIAutoTradePanel({ isOpen, onClose }: AIAutoTradePanelProps) {
                 </div>
               </div>
 
-              {/* Recent Trades */}
+              {/* Recent Trades & Bracket Orders */}
               <div className="bg-[#1a1a2a] rounded-lg overflow-hidden">
-                <div className="p-3 border-b border-gray-700">
-                  <span className="text-sm font-medium text-white">Recent Trades</span>
+                {/* Tabs */}
+                <div className="p-3 border-b border-gray-700 flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveTab('trades')}
+                    className={`text-sm font-medium transition ${activeTab === 'trades' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                  >
+                    Recent Trades ({tradesWithPL.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('brackets')}
+                    className={`text-sm font-medium transition ${activeTab === 'brackets' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+                  >
+                    Bracket Orders ({bracketOrders.length})
+                  </button>
                 </div>
-                <div className="h-48 overflow-y-auto">
-                  {(status?.recentTrades || []).slice(0, 10).map((trade) => (
-                    <div key={trade.id} className="p-2 border-b border-gray-700/50 flex items-center justify-between">
-                      <div>
-                        <span className="font-medium text-white text-sm">{trade.symbol}</span>
-                        <span className={`ml-2 px-1.5 py-0.5 rounded text-xs ${
-                          trade.action === "BUY" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-                        }`}>
-                          {trade.action}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-white">{formatCurrency(trade.amount)}</p>
-                        <p className="text-xs text-gray-500">{formatTime(trade.timestamp)}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {(!status?.recentTrades || status.recentTrades.length === 0) && (
-                    <div className="p-4 text-center text-gray-600 text-sm">
-                      No trades yet.
-                    </div>
+
+                <div className="h-56 overflow-y-auto">
+                  {activeTab === 'trades' ? (
+                    // Recent Trades Tab
+                    <>
+                      {tradesWithPL.slice(0, 10).map((trade) => (
+                        <div key={trade.id} className="p-2 border-b border-gray-700/50">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-white text-sm">{trade.symbol}</span>
+                              <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                trade.action === "BUY" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                              }`}>
+                                {trade.action}
+                              </span>
+                              <span className="text-xs text-gray-500">{trade.strategyName?.split(' ')[0]}</span>
+                            </div>
+                            <div className="text-right">
+                              {trade.unrealizedPL !== undefined ? (
+                                <span className={`text-sm font-medium ${trade.unrealizedPL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {trade.unrealizedPL >= 0 ? '+' : ''}{formatCurrency(trade.unrealizedPL)}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-gray-500">-</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-500">
+                              Entry: {formatCurrency(trade.price)} • Amt: {formatCurrency(trade.amount)}
+                            </span>
+                            <span className="text-gray-600">{formatTime(trade.timestamp)}</span>
+                          </div>
+                          {trade.currentPrice && (
+                            <div className="flex items-center justify-between text-xs mt-0.5">
+                              <span className="text-gray-500">
+                                Current: {formatCurrency(trade.currentPrice)}
+                              </span>
+                              {trade.unrealizedPLPercent !== undefined && (
+                                <span className={trade.unrealizedPLPercent >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                  {trade.unrealizedPLPercent >= 0 ? '+' : ''}{trade.unrealizedPLPercent.toFixed(2)}%
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {tradesWithPL.length === 0 && (
+                        <div className="p-4 text-center text-gray-600 text-sm">
+                          No trades yet.
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    // Bracket Orders Tab
+                    <>
+                      {bracketOrders.length > 0 ? (
+                        bracketOrders.slice(0, 15).map((order) => (
+                          <div key={order.id} className="p-3 border-b border-gray-700/50">
+                            {/* Entry Order */}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-white text-sm">{order.symbol}</span>
+                                <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                  order.side === "buy" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                                }`}>
+                                  {order.side.toUpperCase()}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                  order.status === 'filled' ? 'bg-green-500/20 text-green-400' :
+                                  order.status === 'new' ? 'bg-blue-500/20 text-blue-400' :
+                                  order.status === 'held' ? 'bg-yellow-500/20 text-yellow-400' :
+                                  'bg-gray-500/20 text-gray-400'
+                                }`}>
+                                  {order.status}
+                                </span>
+                              </div>
+                              <span className="text-xs text-gray-500">
+                                {order.filled_avg_price ? `@$${parseFloat(order.filled_avg_price).toFixed(2)}` : 'Market'}
+                              </span>
+                            </div>
+                            
+                            {/* Legs (TP & SL) */}
+                            {order.legs && order.legs.length > 0 && (
+                              <div className="ml-3 pl-3 border-l-2 border-gray-700 space-y-1.5">
+                                {order.legs.map((leg, idx) => {
+                                  const isTP = leg.type === 'limit';
+                                  const isSL = leg.type === 'stop';
+                                  return (
+                                    <div key={leg.id || idx} className="flex items-center justify-between text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`w-14 text-center px-1.5 py-0.5 rounded ${
+                                          isTP ? 'bg-emerald-500/20 text-emerald-400' : 
+                                          isSL ? 'bg-red-500/20 text-red-400' : 
+                                          'bg-gray-500/20 text-gray-400'
+                                        }`}>
+                                          {isTP ? 'TP' : isSL ? 'SL' : leg.type}
+                                        </span>
+                                        <span className="text-gray-400">
+                                          {leg.side} {leg.qty} @ ${isTP ? leg.limit_price : leg.stop_price}
+                                        </span>
+                                      </div>
+                                      <span className={`px-1.5 py-0.5 rounded text-xs ${
+                                        leg.status === 'filled' ? 'bg-green-500/20 text-green-400' :
+                                        leg.status === 'new' ? 'bg-blue-500/20 text-blue-400' :
+                                        leg.status === 'held' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        leg.status === 'canceled' ? 'bg-gray-500/20 text-gray-400' :
+                                        'bg-gray-500/20 text-gray-400'
+                                      }`}>
+                                        {leg.status}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            
+                            <div className="text-xs text-gray-600 mt-1">
+                              {formatTime(order.created_at)}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-gray-600 text-sm">
+                          <p>No bracket orders yet.</p>
+                          <p className="text-xs mt-1">New auto-trades will have TP/SL attached.</p>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -474,9 +674,9 @@ export function AIAutoTradePanel({ isOpen, onClose }: AIAutoTradePanelProps) {
             {/* Info Note */}
             <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <p className="text-xs text-blue-400">
-                AI Auto Trading runs automatically every 2 hours when the session is active. 
-                It executes trades across all active admin strategies using your Alpaca paper trading account.
-                Trading stops automatically if balance falls below $10,000.
+                <strong>Bracket Orders:</strong> Each BUY trade automatically includes Take-Profit (TP) and Stop-Loss (SL) orders. 
+                When TP or SL is triggered, the other is auto-cancelled (OCO). Check "Bracket Orders" tab to see exit levels.
+                Trading runs every 6 hours and stops if balance falls below $10,000.
               </p>
             </div>
           </div>

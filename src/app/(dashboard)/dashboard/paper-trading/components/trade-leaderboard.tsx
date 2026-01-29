@@ -67,6 +67,7 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
   const completedTrades = trades.filter((t) => t.type === "SELL");
   const winCount = completedTrades.filter((t) => t.profitValue > 0).length;
   const lossCount = completedTrades.filter((t) => t.profitValue < 0).length;
+
   
   // Calculate total unrealized P/L from Alpaca positions
   const totalUnrealizedPL = portfolioMetrics?.positions?.reduce((sum, pos) => {
@@ -80,6 +81,20 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
     const totalValue = portfolioMetrics.portfolioValue || 1;
     return sum + (plpc * (marketValue / totalValue));
   }, 0) || 0;
+
+  // For stocks: Calculate wins/losses based on position unrealized P/L (more meaningful)
+  const stockWinCount = portfolioMetrics?.positions?.filter(pos => parseFloat(pos.unrealized_pl || '0') > 0).length || 0;
+  const stockLossCount = portfolioMetrics?.positions?.filter(pos => parseFloat(pos.unrealized_pl || '0') < 0).length || 0;
+  const stockBreakEvenCount = portfolioMetrics?.positions?.filter(pos => parseFloat(pos.unrealized_pl || '0') === 0).length || 0;
+  
+  // For trades without positions, use trade-based counting
+  const tradeWinCount = trades.filter((t) => t.profitValue > 0).length;
+  const tradeLossCount = trades.filter((t) => t.profitValue < 0).length;
+  
+  // Use position-based for stocks if we have positions, otherwise trade-based
+  const hasPositions = portfolioMetrics?.positions && portfolioMetrics.positions.length > 0;
+  const winCount = hasPositions ? stockWinCount : tradeWinCount;
+  const lossCount = hasPositions ? stockLossCount : tradeLossCount;
 
   // Calculate crypto unrealized P/L
   const cryptoUnrealizedPL = cryptoMetrics?.totalUnrealizedPL || 0;
@@ -270,28 +285,19 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
             {/* Additional portfolio metrics row (only show if Alpaca data available) */}
             {portfolioMetrics && (portfolioMetrics.portfolioValue !== undefined || portfolioMetrics.positions?.length) && (
               <div className="grid grid-cols-3 gap-2 mt-2">
-                {trades.length > 0 && (
-                  <>
-                    <div className="rounded-lg bg-white/5 p-2 text-center">
-                      <div className="text-xs text-slate-400">Session P&L</div>
-                      <div
-                        className={`text-sm font-bold ${
-                          totalProfit >= 0 ? "text-emerald-400" : "text-rose-400"
-                        }`}
-                      >
-                        {totalProfit >= 0 ? "+" : ""}${totalProfit.toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="rounded-lg bg-white/5 p-2 text-center">
-                      <div className="text-xs text-slate-400">Wins</div>
-                      <div className="text-sm font-bold text-emerald-400">{winCount}</div>
-                    </div>
-                    <div className="rounded-lg bg-white/5 p-2 text-center">
-                      <div className="text-xs text-slate-400">Losses</div>
-                      <div className="text-sm font-bold text-rose-400">{lossCount}</div>
-                    </div>
-                  </>
-                )}
+                {/* Position Performance - Win/Loss based on unrealized P/L */}
+                <div className="rounded-lg bg-white/5 p-2 text-center">
+                  <div className="text-xs text-slate-400">Positions Up</div>
+                  <div className="text-sm font-bold text-emerald-400">{stockWinCount}</div>
+                </div>
+                <div className="rounded-lg bg-white/5 p-2 text-center">
+                  <div className="text-xs text-slate-400">Positions Down</div>
+                  <div className="text-sm font-bold text-rose-400">{stockLossCount}</div>
+                </div>
+                <div className="rounded-lg bg-white/5 p-2 text-center">
+                  <div className="text-xs text-slate-400">Total Positions</div>
+                  <div className="text-sm font-bold text-white">{portfolioMetrics.positions?.length || 0}</div>
+                </div>
               </div>
             )}
           </div>

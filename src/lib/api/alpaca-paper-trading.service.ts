@@ -46,6 +46,21 @@ export interface AlpacaPosition {
   change_today: string;
 }
 
+export interface AlpacaOrderLeg {
+  id: string;
+  symbol: string;
+  side: string;
+  type: string;
+  qty: string;
+  filled_qty: string;
+  limit_price: string | null;
+  stop_price: string | null;
+  status: string;
+  filled_avg_price: string | null;
+  filled_at: string | null;
+  created_at: string;
+}
+
 export interface AlpacaOrder {
   id: string;
   client_order_id: string;
@@ -70,6 +85,8 @@ export interface AlpacaOrder {
   stop_price: string | null;
   status: string;
   extended_hours: boolean;
+  order_class?: 'simple' | 'bracket' | 'oco' | 'oto';
+  legs?: AlpacaOrderLeg[];
 }
 
 export interface AlpacaBalance {
