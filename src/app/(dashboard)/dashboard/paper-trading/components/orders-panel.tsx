@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 
 interface Order {
   orderId: number;
@@ -28,6 +28,8 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<"all" | "open" | "filled" | "canceled" | "positions">("positions");
+  const [closingPosition, setClosingPosition] = useState<string | null>(null);
+  const [closeError, setCloseError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -63,6 +65,30 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
       setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Close position handler - sells the full position at market price
+  const handleClosePosition = async (symbol: string, quantity: number) => {
+    try {
+      setClosingPosition(symbol);
+      setCloseError(null);
+
+      // Place a MARKET SELL order to close the position
+      await binanceTestnetService.placeOrder({
+        symbol,
+        side: "SELL",
+        type: "MARKET",
+        quantity,
+      });
+
+      // Refresh orders after closing
+      await fetchOrders();
+    } catch (err: any) {
+      console.error("Failed to close position:", err);
+      setCloseError(err?.message || "Failed to close position");
+    } finally {
+      setClosingPosition(null);
     }
   };
 
@@ -255,6 +281,11 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
               </div>
             ) : (
               <div className="overflow-x-auto">
+                {closeError && (
+                  <div className="mx-6 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm text-red-400">⚠️ {closeError}</p>
+                  </div>
+                )}
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-white/[0.08] bg-white/[0.02]">
@@ -272,6 +303,9 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
                       </th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300">
                         Status
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300">
+                        Actions
                       </th>
                     </tr>
                   </thead>
@@ -297,6 +331,22 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
                           <span className="px-2 py-1 rounded-md text-xs font-semibold text-orange-400 bg-orange-400/10">
                             HOLDING
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm">
+                          <button
+                            onClick={() => handleClosePosition(pos.symbol, pos.quantity)}
+                            disabled={closingPosition === pos.symbol}
+                            className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                          >
+                            {closingPosition === pos.symbol ? (
+                              <>
+                                <Loader2 size={12} className="animate-spin" />
+                                Closing...
+                              </>
+                            ) : (
+                              "Close Position"
+                            )}
+                          </button>
                         </td>
                       </tr>
                     ))}
