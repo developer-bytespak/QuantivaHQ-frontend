@@ -366,8 +366,18 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
     try {
       setIsLoading(true);
-      const { requestDeleteAccountCode } = await import("@/lib/api/user");
       
+      // Step 1: Verify password first
+      const { verifyPassword } = await import("@/lib/api/auth");
+      const verifyResult = await verifyPassword(deletePassword);
+      
+      if (!verifyResult.success) {
+        setDeleteError("Please enter your correct password.");
+        return;
+      }
+      
+      // Step 2: Password verified, now send 2FA code
+      const { requestDeleteAccountCode } = await import("@/lib/api/user");
       await requestDeleteAccountCode();
       
       // Show success and move to step 2
@@ -379,16 +389,19 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         setShowNotification(false);
       }, 3000);
     } catch (error: any) {
-      console.error("Failed to send verification code:", error);
+      console.error("Failed to verify password or send verification code:", error);
       const errorMessage = error.message || error.toString();
       
-      if (errorMessage.includes("Session expired") || errorMessage.includes("Unauthorized")) {
+      // Handle invalid password error
+      if (errorMessage.includes("Invalid password") || errorMessage.includes("correct password")) {
+        setDeleteError("Please enter your correct password.");
+      } else if (errorMessage.includes("Session expired") || errorMessage.includes("Unauthorized")) {
         setDeleteError("Your session has expired. Please log in again.");
         setTimeout(() => {
           router.push("/onboarding/sign-up?tab=login");
         }, 2000);
       } else {
-        setDeleteError(errorMessage || "Failed to send verification code. Please try again.");
+        setDeleteError(errorMessage || "Failed to verify. Please try again.");
       }
     } finally {
       setIsLoading(false);
