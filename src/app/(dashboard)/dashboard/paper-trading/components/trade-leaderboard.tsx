@@ -65,8 +65,8 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
   // Losses: SELL orders with profit < 0
   // Neutral: SELL orders with profit = 0 (breakeven) - not counted as win or loss
   const completedTrades = trades.filter((t) => t.type === "SELL");
-  const winCount = completedTrades.filter((t) => t.profitValue > 0).length;
-  const lossCount = completedTrades.filter((t) => t.profitValue < 0).length;
+  const completedWinCount = completedTrades.filter((t) => t.profitValue > 0).length;
+  const completedLossCount = completedTrades.filter((t) => t.profitValue < 0).length;
 
   
   // Calculate total unrealized P/L from Alpaca positions
