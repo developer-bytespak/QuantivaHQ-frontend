@@ -169,6 +169,14 @@ export default function VerificationStatusPage() {
           progress: 100,
         };
       case "rejected":
+        // Show user-friendly message instead of technical similarity details
+        const getUserFriendlyMessage = () => {
+          const reason = kycData?.decision_reason?.toLowerCase() || "";
+          if (reason.includes("face match") || reason.includes("similarity")) {
+            return "Please upload a clear, well-lit document and take a proper selfie with your face clearly visible.";
+          }
+          return kycData?.decision_reason || "Please review the requirements and try again with clearer documents.";
+        };
         return {
           badge: "Rejected",
           badgeColor: "bg-gradient-to-r from-red-500 to-red-600",
@@ -179,7 +187,7 @@ export default function VerificationStatusPage() {
             </svg>
           ),
           message: "Verification was not successful",
-          description: kycData?.decision_reason || "Please review the requirements and try again with clearer documents.",
+          description: getUserFriendlyMessage(),
           progress: 0,
         };
       case "review":
