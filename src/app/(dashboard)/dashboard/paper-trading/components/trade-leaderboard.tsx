@@ -65,10 +65,7 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
   // Losses: SELL orders with profit < 0
   // Neutral: SELL orders with profit = 0 (breakeven) - not counted as win or loss
   const completedTrades = trades.filter((t) => t.type === "SELL");
-  const winCount = completedTrades.filter((t) => t.profitValue > 0).length;
-  const lossCount = completedTrades.filter((t) => t.profitValue < 0).length;
 
-  
   // Calculate total unrealized P/L from Alpaca positions
   const totalUnrealizedPL = portfolioMetrics?.positions?.reduce((sum, pos) => {
     return sum + parseFloat(pos.unrealized_pl || '0');
@@ -87,9 +84,9 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
   const stockLossCount = portfolioMetrics?.positions?.filter(pos => parseFloat(pos.unrealized_pl || '0') < 0).length || 0;
   const stockBreakEvenCount = portfolioMetrics?.positions?.filter(pos => parseFloat(pos.unrealized_pl || '0') === 0).length || 0;
   
-  // For trades without positions, use trade-based counting
-  const tradeWinCount = trades.filter((t) => t.profitValue > 0).length;
-  const tradeLossCount = trades.filter((t) => t.profitValue < 0).length;
+  // For trades without positions, use trade-based counting (SELL orders only)
+  const tradeWinCount = completedTrades.filter((t) => t.profitValue > 0).length;
+  const tradeLossCount = completedTrades.filter((t) => t.profitValue < 0).length;
   
   // Use position-based for stocks if we have positions, otherwise trade-based
   const hasPositions = portfolioMetrics?.positions && portfolioMetrics.positions.length > 0;
