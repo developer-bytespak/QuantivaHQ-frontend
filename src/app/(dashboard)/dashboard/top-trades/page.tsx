@@ -843,9 +843,15 @@ export default function TopTradesPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
-          {!isStocksConnection && (
-            <Link href="/dashboard/my-strategies" className="rounded-md px-2 sm:px-3 py-1.5 sm:py-2 text-xs font-medium transition-all bg-transparent text-slate-300 hover:text-white border border-transparent hover:border-white/10 whitespace-nowrap">My Strategies</Link>
-          )}
+          <Link
+            href="/dashboard/my-strategies"
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 whitespace-nowrap flex items-center gap-1.5 text-white"
+          >
+            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-white">My Strategies</span>
+          </Link>
           {!isStocksConnection && (
             <button
               onClick={() => setShowCreateModal(true)}
@@ -910,6 +916,16 @@ export default function TopTradesPage() {
                   </button>
                 );
               })}
+              {/* Custom Strategy Button */}
+              <Link
+                href="/dashboard/my-strategies/create"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all rounded-lg whitespace-nowrap bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 flex items-center gap-1.5 shadow-lg shadow-[#fc4f02]/10"
+              >
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="text-white">Custom</span>
+              </Link>
             </div>
           </div>
           
