@@ -18,6 +18,7 @@ import { StockOrdersPanel } from "./components/stock-orders-panel";
 import TradeLeaderboard from "./components/trade-leaderboard";
 import { OrdersPanel } from "./components/orders-panel";
 import { AIAutoTradePanel } from "./components/ai-auto-trade-panel";
+import { CryptoAIAutoTradePanel } from "./components/crypto-ai-auto-trade-panel";
 import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
 
 // ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
@@ -198,6 +199,8 @@ export default function PaperTradingPage() {
 
   // AI Auto Trade panel state (stocks only)
   const [showAIAutoTradePanel, setShowAIAutoTradePanel] = useState(false);
+  // Crypto AI Auto Trade panel state
+  const [showCryptoAIAutoTradePanel, setShowCryptoAIAutoTradePanel] = useState(false);
 
   // Stock market data state (for stocks connection)
   const [stockMarketData, setStockMarketData] = useState<StockMarketData[]>([]);
@@ -392,6 +395,36 @@ export default function PaperTradingPage() {
     }
   };
 
+  // --- Load automated crypto trades from auto-trading system ---
+  const loadCryptoAutomatedTrades = async () => {
+    if (connectionType !== "crypto") return;
+    
+    try {
+      const response = await binanceTestnetService.getCryptoAutoTradingTrades();
+      if (response.success && response.data) {
+        const automatedTrades = response.data.map((trade: any) => ({
+          id: trade.id,
+          timestamp: new Date(trade.timestamp).getTime(),
+          symbol: trade.symbol,
+          type: trade.action as "BUY" | "SELL",
+          entryPrice: trade.price?.toFixed(4) || '0',
+          profitValue: 0, // Automated trades don't track P/L yet
+          strategyName: trade.strategyName || 'Auto Trade',
+        }));
+        
+        // Merge with existing manual trades (avoid duplicates)
+        setTradeRecords((prev) => {
+          const manualTrades = prev.filter(t => !automatedTrades.some((at: any) => at.id === t.id));
+          return [...automatedTrades, ...manualTrades];
+        });
+        
+        console.log(`✅ Loaded ${automatedTrades.length} automated crypto trades`);
+      }
+    } catch (err: any) {
+      console.error("❌ Failed to load automated crypto trades:", err);
+    }
+  };
+
   // --- Load Alpaca paper trading data for stocks connections ---
   const loadAlpacaData = async () => {
     if (connectionType !== "stocks") return;
@@ -528,10 +561,15 @@ export default function PaperTradingPage() {
       return () => clearInterval(interval);
     } else if (connectionType === "crypto") {
       loadCryptoOrders();
+      loadCryptoAutomatedTrades(); // Load automated trades
       
-      // Refresh crypto orders every 10 minutes (to avoid Binance rate limits)
-      const interval = setInterval(loadCryptoOrders, 600000);
-      return () => clearInterval(interval);
+      // Refresh crypto orders and automated trades
+      const ordersInterval = setInterval(loadCryptoOrders, 600000); // Every 10 minutes
+      const tradesInterval = setInterval(loadCryptoAutomatedTrades, 30000); // Every 30 seconds for trades
+      return () => {
+        clearInterval(ordersInterval);
+        clearInterval(tradesInterval);
+      };
     }
   }, [connectionType]);
 
@@ -1126,6 +1164,7 @@ export default function PaperTradingPage() {
       // Reload both balance and orders for crypto
       loadAccountData();
       loadCryptoOrders();
+      loadCryptoAutomatedTrades(); // Also load automated trades
     }
     
     // Trigger instant refresh in OrdersPanel
@@ -1364,6 +1403,20 @@ export default function PaperTradingPage() {
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+            </button>
+          )}
+          {/* Crypto AI Auto Trade button - crypto only */}
+          {!isStocksConnection && connectionType === "crypto" && (
+            <button
+              onClick={() => setShowCryptoAIAutoTradePanel(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-cyan-800 to-teal-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-cyan-200 hover:from-cyan-700 hover:to-teal-600 transition-all border border-cyan-600/50 w-full sm:w-auto"
+              title="View Crypto AI Auto Trading Dashboard"
+            >
+              <span>₿ Crypto AI Trade</span>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
               </span>
             </button>
           )}
@@ -1804,6 +1857,20 @@ export default function PaperTradingPage() {
         <AIAutoTradePanel
           isOpen={showAIAutoTradePanel}
           onClose={() => setShowAIAutoTradePanel(false)}
+        />
+      )}
+
+      {/* Crypto AI Auto Trade Panel - Crypto only */}
+      {!isStocksConnection && connectionType === "crypto" && showCryptoAIAutoTradePanel && (
+        <CryptoAIAutoTradePanel
+          isOpen={showCryptoAIAutoTradePanel}
+          onClose={() => setShowCryptoAIAutoTradePanel(false)}
+          onTradeExecuted={() => {
+            // Refresh positions and orders when auto-trading executes trades
+            loadCryptoOrders();
+            loadCryptoAutomatedTrades();
+            loadAccountData();
+          }}
         />
       )}
     </div>

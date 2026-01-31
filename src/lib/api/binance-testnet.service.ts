@@ -341,7 +341,180 @@ class BinanceTestnetService {
 
     return response.json();
   }
+
+  // ==========================================
+  // CRYPTO AUTO-TRADING ENDPOINTS
+  // ==========================================
+
+  /**
+   * Get crypto auto-trading status (poll every 3 seconds)
+   */
+  async getCryptoAutoTradingStatus(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/status`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to get crypto auto-trading status");
+    return response.json();
+  }
+
+  /**
+   * Get comprehensive crypto auto-trading stats
+   */
+  async getCryptoAutoTradingStats(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/stats`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to get crypto auto-trading stats");
+    return response.json();
+  }
+
+  /**
+   * Get quick summary (lightweight for fast polling)
+   */
+  async getCryptoAutoTradingSummary(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/summary`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to get crypto auto-trading summary");
+    return response.json();
+  }
+
+  /**
+   * Get recent crypto auto-trades
+   */
+  async getCryptoAutoTradingTrades(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/trades`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to get crypto auto-trading trades");
+    return response.json();
+  }
+
+  /**
+   * Get AI messages
+   */
+  async getCryptoAutoTradingMessages(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/messages`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to get crypto AI messages");
+    return response.json();
+  }
+
+  /**
+   * Get OCO orders
+   */
+  async getCryptoOcoOrders(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/oco-orders`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to get OCO orders");
+    return response.json();
+  }
+
+  /**
+   * Start crypto auto-trading
+   */
+  async startCryptoAutoTrading(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/start`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to start crypto auto-trading");
+    }
+    return response.json();
+  }
+
+  /**
+   * Pause crypto auto-trading
+   */
+  async pauseCryptoAutoTrading(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/pause`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to pause crypto auto-trading");
+    return response.json();
+  }
+
+  /**
+   * Resume crypto auto-trading
+   */
+  async resumeCryptoAutoTrading(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/resume`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to resume crypto auto-trading");
+    return response.json();
+  }
+
+  /**
+   * Stop crypto auto-trading
+   */
+  async stopCryptoAutoTrading(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/stop`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to stop crypto auto-trading");
+    return response.json();
+  }
+
+  /**
+   * Reset crypto auto-trading session
+   */
+  async resetCryptoAutoTrading(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/reset`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to reset crypto auto-trading");
+    return response.json();
+  }
+
+  /**
+   * Execute crypto auto-trades now (manual trigger)
+   */
+  async executeCryptoAutoTradeNow(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/execute-now`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to execute crypto auto-trades");
+    }
+    return response.json();
+  }
+
+  /**
+   * Execute a single crypto trade (for testing)
+   */
+  async executeCryptoSingleTrade(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/execute-single`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to execute single crypto trade");
+    }
+    return response.json();
+  }
+
+  /**
+   * Get testnet connection status for auto-trading
+   */
+  async getCryptoAutoTradingConnection(): Promise<any> {
+    const response = await fetch(`${this.baseUrl}/auto-trading/connection`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to get connection status");
+    return response.json();
+  }
 }
 
 export const binanceTestnetService = new BinanceTestnetService();
-
