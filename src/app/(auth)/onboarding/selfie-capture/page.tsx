@@ -7,6 +7,7 @@ import { uploadSelfie } from "@/lib/api/kyc";
 import { getCurrentUser } from "@/lib/api/user";
 import { getKycStatus } from "@/lib/api/kyc";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { VerificationLoading } from "@/components/common/verification-loading";
 
 export default function SelfieCapturePage() {
   const router = useRouter();
@@ -22,6 +23,8 @@ export default function SelfieCapturePage() {
   const [animatedProgress, setAnimatedProgress] = useState(50);
   const [showPermissionDialog, setShowPermissionDialog] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
+  const [showVerificationLoading, setShowVerificationLoading] = useState(false);
+  const [verificationComplete, setVerificationComplete] = useState(false);
 
   // Check KYC status on mount - redirect if already approved
   useEffect(() => {
@@ -358,7 +361,8 @@ export default function SelfieCapturePage() {
       return;
     }
 
-    setIsLoading(true);
+    // Show full-screen verification loading
+    setShowVerificationLoading(true);
     setError("");
 
     try {
@@ -383,22 +387,34 @@ export default function SelfieCapturePage() {
         streamRef.current = null;
       }
 
-      // Navigate to verification status page
-      router.push("/onboarding/verification-status");
+      // Mark verification as complete - this will trigger 100% progress animation
+      setVerificationComplete(true);
+      
+      // Wait for the completion animation to show, then navigate
+      setTimeout(() => {
+        router.push("/onboarding/verification-status");
+      }, 800); // 800ms to show the 100% completion
     } catch (err) {
       console.error("Selfie upload failed:", err);
+      setShowVerificationLoading(false);
       setError(
         err instanceof Error
           ? err.message
           : "Failed to upload selfie. Please try again."
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
+      {/* Verification Loading Screen */}
+      {showVerificationLoading && (
+        <VerificationLoading 
+          capturedImage={capturedPhoto || undefined} 
+          isComplete={verificationComplete}
+        />
+      )}
+
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
@@ -642,26 +658,14 @@ export default function SelfieCapturePage() {
                       </button>
                       <button
                         onClick={handleSubmit}
-                        disabled={isLoading}
+                        disabled={showVerificationLoading}
                         className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-[10px] sm:text-xs font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
                         <span className="relative z-10 flex items-center justify-center gap-1.5 sm:gap-2">
-                          {isLoading ? (
-                            <>
-                              <svg className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                              </svg>
-                              Verifying...
-                            </>
-                          ) : (
-                            <>
-                              Continue
-                              <svg className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                              </svg>
-                            </>
-                          )}
+                          Verify Identity
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
                         </span>
                         <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                       </button>
