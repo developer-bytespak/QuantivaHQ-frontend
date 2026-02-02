@@ -192,6 +192,7 @@ export async function getTrendingAssetsWithInsights(strategyId: string, limit: n
   return apiRequest<unknown, any>({
     path: `/strategies/pre-built/${strategyId}/trending-with-insights?limit=${limit}`,
     method: 'GET',
+    timeout: 300000, // 5 min - signal generation can run engines on many assets
   });
 }
 

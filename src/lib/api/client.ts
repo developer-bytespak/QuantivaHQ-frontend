@@ -51,14 +51,17 @@ export async function apiRequest<TRequest, TResponse = unknown>({
     headers["x-device-id"] = getDeviceId();
   }
 
-  // Determine timeout: use provided timeout, or detect ML operations (news/sentiment), or default to 30s
+  // Determine timeout: use provided timeout, or detect long-running operations, or default to 30s
   let requestTimeout = timeout;
   if (!requestTimeout) {
+    const pathOnly = path.split('?')[0];
     // News/sentiment now read from DB (instant), but still allow extra time for Python refresh
     if (path.includes('/news/') && path.includes('forceRefresh=true')) {
       requestTimeout = 300000; // 5 minutes only for force refresh
     } else if (path.includes('/sentiment')) {
       requestTimeout = 60000; // 1 minute for sentiment analysis
+    } else if (pathOnly.includes('/strategies/') && (pathOnly.includes('/preview') || pathOnly.includes('trending-with-insights') || pathOnly.includes('/signals'))) {
+      requestTimeout = 300000; // 5 minutes for strategy signal generation / preview (can run engines on many assets)
     } else {
       requestTimeout = 30000; // 30 seconds for regular API requests (including DB news reads)
     }
