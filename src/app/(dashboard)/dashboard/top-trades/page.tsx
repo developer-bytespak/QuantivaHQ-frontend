@@ -362,21 +362,16 @@ export default function TopTradesPage() {
     (async () => {
       try {
         setLoadingPreBuilt(true);
-        const data = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
+        // Use asset_type query param to filter strategies on backend
+        const assetType = connectionType === "stocks" ? "stock" : "crypto";
+        const data = await apiRequest<never, Strategy[]>({ 
+          path: `/strategies/pre-built?asset_type=${assetType}`, 
+          method: "GET" 
+        });
         if (!mounted) return;
+        // Backend already filters by asset_type, just filter for admin strategies
         const adminOnly = (data || []).filter((s) => s?.type === "admin");
-        
-        // Filter strategies based on connection type
-        let filteredStrategies: Strategy[];
-        if (connectionType === "stocks") {
-          // For stocks, only show strategies with "(Stocks)" in the name
-          filteredStrategies = adminOnly.filter((s) => s?.name?.includes("(Stocks)"));
-        } else {
-          // For crypto, show strategies WITHOUT "(Stocks)" in the name
-          filteredStrategies = adminOnly.filter((s) => !s?.name?.includes("(Stocks)")).slice(0, 4);
-        }
-        
-        setPreBuiltStrategies(filteredStrategies);
+        setPreBuiltStrategies(adminOnly);
       } catch (err: any) {
         console.error("Failed to load pre-built strategies:", err);
         setPreBuiltError(err?.message || String(err));
@@ -852,14 +847,12 @@ export default function TopTradesPage() {
             </svg>
             <span className="text-white">My Strategies</span>
           </Link>
-          {!isStocksConnection && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white whitespace-nowrap`}
-            >
-              Create
-            </button>
-          )}
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white whitespace-nowrap`}
+          >
+            Create
+          </button>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}
@@ -1309,12 +1302,12 @@ export default function TopTradesPage() {
         </div>
       )}
 
-      {/* Create Custom Strategy Modal - Only for crypto */}
-      {!isStocksConnection && showCreateModal && (
+      {/* Create Custom Strategy Modal - Works for both crypto and stocks */}
+      {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-xl bg-[--color-surface] p-6 text-slate-100 ring-1 ring-white/5 shadow-lg">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Create Custom Strategy</h3>
+              <h3 className="text-lg font-semibold">Create Custom {isStocksConnection ? 'Stock' : 'Crypto'} Strategy</h3>
               <button className="text-slate-400" onClick={() => { setShowCreateModal(false); setCreateError(null); }} aria-label="Close">✕</button>
             </div>
             <div className="mt-4 space-y-3">
@@ -1375,21 +1368,21 @@ export default function TopTradesPage() {
                         name: createName,
                         // backend expects 'admin' or 'user' — use 'user' for custom strategies
                         type: "user",
-                        description: createDescription || "Created from Top Trades UI",
+                        description: createDescription || `Created from Top Trades UI for ${isStocksConnection ? 'stocks' : 'crypto'}`,
                         risk_level: createRiskLevel,
-                        // backend validation expects 'indicator' (string) not 'field' / 'property'
-                        entry_rules: [{ indicator: "final_score", operator: ">", value: 0.25 }],
-                        exit_rules: [{ indicator: "final_score", operator: "<", value: -0.15 }],
+                        // Use 'field' for new API format
+                        entry_rules: [{ field: "final_score", operator: ">", value: 0.25 }],
+                        exit_rules: [{ field: "final_score", operator: "<", value: -0.15 }],
                         indicators: [],
                         stop_loss_value: stopLossNum,
                         take_profit_value: takeProfitNum,
-                        schedule_cron: null,
                         target_assets: [],
-                        auto_trade_threshold: null,
                         is_active: true,
                       };
 
-                      const created = await apiRequest<typeof dto, any>({ path: "/strategies/custom", method: "POST", body: dto });
+                      // Use correct endpoint based on connection type
+                      const endpoint = isStocksConnection ? "/strategies/custom/stocks" : "/strategies/custom/crypto";
+                      const created = await apiRequest<typeof dto, any>({ path: endpoint, method: "POST", body: dto });
                       setPreBuiltStrategies((prev) => [created, ...prev]);
                       setShowCreateModal(false);
                       // apply preview automatically
