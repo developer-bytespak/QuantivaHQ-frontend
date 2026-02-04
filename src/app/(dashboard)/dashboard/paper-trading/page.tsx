@@ -1375,6 +1375,17 @@ export default function PaperTradingPage() {
             </svg>
             <span className="text-white">Custom</span>
           </Link>
+          {/* Trade Custom Strategies Button */}
+          <Link
+            href="/dashboard/custom-strategies-trading?mode=paper"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-600/30 to-purple-500/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-purple-600/40 hover:to-purple-500/30 transition-all border border-purple-500/40 hover:border-purple-500/60 shadow-lg shadow-purple-500/10 w-full sm:w-auto"
+            title="Trade with your custom strategies"
+          >
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span className="text-white">Trade Custom</span>
+          </Link>
           {/* Orders button - show for both */}
           <button
             onClick={() => setShowOrdersPanel(true)}
