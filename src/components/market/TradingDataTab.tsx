@@ -54,8 +54,8 @@ export default function TradingDataTab({ connectionId, symbol }: TradingDataTabP
 
     fetchData();
 
-    // Refresh data every 5 seconds
-    const interval = setInterval(fetchData, 5000);
+    // Refresh data every 30 seconds
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [connectionId, symbol]);
 
