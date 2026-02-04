@@ -131,6 +131,27 @@ class BinanceTestnetService {
   }
 
   /**
+   * Get all orders from database (fast, no API sync)
+   */
+  async getOrdersFromDB(limit?: number): Promise<{ orders: TestnetOrder[] }> {
+    const params = new URLSearchParams();
+    if (limit) params.append("limit", limit.toString());
+
+    const response = await fetch(
+      `${this.baseUrl}/orders/db${params.toString() ? "?" + params : ""}`,
+      {
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch orders from database: ${response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  /**
    * Get all orders from database synced with fresh Binance API data
    */
   async getAllOrders(symbol?: string, limit?: number): Promise<TestnetOrder[]> {

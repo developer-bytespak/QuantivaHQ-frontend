@@ -239,12 +239,13 @@ export default function PaperTradingPage() {
     setLoadingCryptoOrders(true);
     
     try {
-      console.log("📡 Fetching orders from Binance Testnet...");
+      console.log("📡 Fetching orders from database...");
       
-      // Fetch all orders (open + filled)
-      const allOrders = await binanceTestnetService.getAllOrders(undefined, 100);
+      // Fetch all orders from database (includes AI bot orders)
+      const response = await binanceTestnetService.getOrdersFromDB(200);
+      const allOrders = response?.orders || []; // Extract orders array from response
       
-      console.log("✅ Binance orders loaded:", allOrders?.length || 0);
+      console.log("✅ Orders loaded from database:", allOrders?.length || 0);
       console.log("📦 Raw orders data:", allOrders);
       
       setCryptoOrders(allOrders || []);
