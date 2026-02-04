@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api/client";
 import { exchangesService } from "@/lib/api/exchanges.service";
@@ -52,6 +52,25 @@ type Step = "basics" | "assets" | "weights" | "rules" | "risk" | "review";
 
 export default function CreateStrategyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from") || "my-strategies"; // Original source (paper-trading, top-trades, or my-strategies)
+  const via = searchParams.get("via") || null; // Whether we came via my-strategies
+  
+  // Get page name for display
+  const pageNames: Record<string, string> = {
+    "paper-trading": "Paper Trading",
+    "top-trades": "Top Trades",
+    "my-strategies": "My Strategies",
+  };
+  
+  // Determine back navigation
+  const backUrl = via === "my-strategies" 
+    ? `/dashboard/my-strategies?from=${from}` 
+    : `/dashboard/${from}`;
+  const backPageName = via === "my-strategies" 
+    ? "My Strategies" 
+    : pageNames[from] || "My Strategies";
+  
   const [currentStep, setCurrentStep] = useState<Step>("basics");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -312,13 +331,13 @@ export default function CreateStrategyPage() {
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative">
           <Link 
-            href="/dashboard/my-strategies"
+            href={backUrl}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors mb-3 group"
           >
             <svg className="w-4 h-4 text-white group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-white/90 group-hover:text-[#fda300]">Back to My Strategies</span>
+            <span className="text-white/90 group-hover:text-[#fda300]">Back to {backPageName}</span>
           </Link>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#fc4f02] to-[#fda300] flex items-center justify-center shadow-lg shadow-[#fc4f02]/30">
