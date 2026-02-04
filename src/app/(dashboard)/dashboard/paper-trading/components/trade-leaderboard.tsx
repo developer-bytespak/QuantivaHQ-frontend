@@ -199,17 +199,13 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                     : 'bg-white/5 text-slate-400 hover:bg-white/10'
                 }`}
               >
-                Open Positions ({(hasStockPositions ? portfolioMetrics.positions?.length : 0) + (hasCryptoPositions ? cryptoPositions.length : 0)})
+                Open Positions ({(hasStockPositions ? (portfolioMetrics.positions?.length ?? 0) : 0) + (hasCryptoPositions ? cryptoPositions.length : 0)})
               </button>
             </div>
 
             {/* Summary Stats - Show different stats based on active tab */}
             {activeTab === 'history' && summary && (
               <div className="grid grid-cols-4 gap-2 mt-3">
-                <div className="rounded-lg bg-white/5 p-2 text-center">
-                  <div className="text-xs text-slate-400">Total Trades</div>
-                  <div className="text-sm font-bold text-white">{summary.totalTrades}</div>
-                </div>
                 <div className="rounded-lg bg-white/5 p-2 text-center">
                   <div className="text-xs text-slate-400">Total P&L</div>
                   <div className={`text-sm font-bold ${summary.totalProfitLoss >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
