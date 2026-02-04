@@ -138,15 +138,6 @@ export default function TopTradesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
-  // create-custom modal state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createDescription, setCreateDescription] = useState("");
-  const [createStopLoss, setCreateStopLoss] = useState("5");
-  const [createTakeProfit, setCreateTakeProfit] = useState("10");
-  const [createRiskLevel, setCreateRiskLevel] = useState<"low"|"medium"|"high">("medium");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   // --- Helpers: map backend response into Trade[] (defensive) ---
   const mapBackendToTrades = (data: any[], isStock: boolean = false): Trade[] => {
@@ -844,7 +835,7 @@ export default function TopTradesPage() {
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <Link
-            href="/dashboard/my-strategies"
+            href="/dashboard/my-strategies?from=top-trades"
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 whitespace-nowrap flex items-center gap-1.5 text-white"
           >
             <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -852,14 +843,6 @@ export default function TopTradesPage() {
             </svg>
             <span className="text-white">My Strategies</span>
           </Link>
-          {!isStocksConnection && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white whitespace-nowrap`}
-            >
-              Create
-            </button>
-          )}
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}
@@ -918,7 +901,7 @@ export default function TopTradesPage() {
               })}
               {/* Custom Strategy Button */}
               <Link
-                href="/dashboard/my-strategies/create"
+                href="/dashboard/my-strategies/create?from=top-trades"
                 className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all rounded-lg whitespace-nowrap bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 flex items-center gap-1.5 shadow-lg shadow-[#fc4f02]/10"
               >
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1309,108 +1292,7 @@ export default function TopTradesPage() {
         </div>
       )}
 
-      {/* Create Custom Strategy Modal - Only for crypto */}
-      {!isStocksConnection && showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-xl bg-[--color-surface] p-6 text-slate-100 ring-1 ring-white/5 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Create Custom Strategy</h3>
-              <button className="text-slate-400" onClick={() => { setShowCreateModal(false); setCreateError(null); }} aria-label="Close">✕</button>
-            </div>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-sm text-slate-300">Name</label>
-                <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="My Custom Strategy" />
-              </div>
-              <div>
-                <label className="text-sm text-slate-300">Description</label>
-                <textarea className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} placeholder="Optional description" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm text-slate-300">Stop Loss %</label>
-                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createStopLoss} onChange={(e) => setCreateStopLoss(e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-sm text-slate-300">Take Profit %</label>
-                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createTakeProfit} onChange={(e) => setCreateTakeProfit(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-slate-300">Risk Level</label>
-                <select className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createRiskLevel} onChange={(e) => setCreateRiskLevel(e.target.value as any)}>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              {createError && <div className="text-sm text-red-400">{createError}</div>}
-              <div className="mt-4 flex justify-end gap-2">
-                <button className="rounded-md px-4 py-2 text-sm" onClick={() => { setShowCreateModal(false); setCreateError(null); }}>Cancel</button>
-                <button
-                  className="rounded-md px-4 py-2 text-sm bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white"
-                  onClick={async () => {
-                    // basic validation
-                    if (!createName || createName.trim().length < 2) {
-                      setCreateError("Please provide a name for the strategy");
-                      return;
-                    }
-                    setCreateError(null);
-                    setCreating(true);
-                    try {
-                      const stopLossNum = Number(createStopLoss);
-                      const takeProfitNum = Number(createTakeProfit);
-                      if (isNaN(stopLossNum) || stopLossNum < 0 || stopLossNum > 100) {
-                        setCreateError("Stop Loss must be a number between 0 and 100");
-                        setCreating(false);
-                        return;
-                      }
-                      if (isNaN(takeProfitNum) || takeProfitNum < 0 || takeProfitNum > 100) {
-                        setCreateError("Take Profit must be a number between 0 and 100");
-                        setCreating(false);
-                        return;
-                      }
 
-                      const dto = {
-                        name: createName,
-                        // backend expects 'admin' or 'user' — use 'user' for custom strategies
-                        type: "user",
-                        description: createDescription || "Created from Top Trades UI",
-                        risk_level: createRiskLevel,
-                        // backend validation expects 'indicator' (string) not 'field' / 'property'
-                        entry_rules: [{ indicator: "final_score", operator: ">", value: 0.25 }],
-                        exit_rules: [{ indicator: "final_score", operator: "<", value: -0.15 }],
-                        indicators: [],
-                        stop_loss_value: stopLossNum,
-                        take_profit_value: takeProfitNum,
-                        schedule_cron: null,
-                        target_assets: [],
-                        auto_trade_threshold: null,
-                        is_active: true,
-                      };
-
-                      const created = await apiRequest<typeof dto, any>({ path: "/strategies/custom", method: "POST", body: dto });
-                      setPreBuiltStrategies((prev) => [created, ...prev]);
-                      setShowCreateModal(false);
-                      // apply preview automatically
-                      if (created?.strategy_id) await previewStrategy(created.strategy_id);
-                    } catch (e) {
-                      const er: any = e;
-                      console.error("Create custom strategy error:", er);
-                      setCreateError(er?.message ?? String(er) ?? "Failed to create strategy");
-                    } finally {
-                      setCreating(false);
-                    }
-                  }}
-                  disabled={creating}
-                >
-                  {creating ? "Creating..." : "Create & Preview"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
