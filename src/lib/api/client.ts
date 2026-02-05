@@ -6,9 +6,14 @@ type RequestParams<T> = {
   body?: T;
   credentials?: RequestCredentials;
   timeout?: number; // Timeout in milliseconds (default: 30000 for regular requests, 180000 for ML operations)
+  _skipRefreshRetry?: boolean; // Internal flag to prevent infinite retry loops
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+
+// Mutex to prevent concurrent token refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
 
 // Helper function to get or create device ID
 function getDeviceId(): string {
@@ -23,12 +28,60 @@ function getDeviceId(): string {
   return "";
 }
 
+/**
+ * Attempt to refresh the access token using the refresh token
+ * Uses a lock to prevent multiple concurrent refresh attempts
+ */
+async function attemptTokenRefresh(): Promise<boolean> {
+  // If already refreshing, wait for the refresh to complete
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Use refresh token from cookie
+        cache: "no-store",
+      });
+
+      if (response.ok) {
+        if (process.env.NODE_ENV === "development") {
+          console.info("[API] Token refreshed successfully");
+        }
+        return true;
+      } else {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[API] Token refresh failed with status:", response.status);
+        }
+        return false;
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("[API] Token refresh error:", error);
+      }
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 export async function apiRequest<TRequest, TResponse = unknown>({
   path,
   method = "GET",
   body,
   credentials = "include", // Include cookies in requests
   timeout, // Optional timeout override
+  _skipRefreshRetry = false, // Internal flag
 }: RequestParams<TRequest>): Promise<TResponse> {
   if (process.env.NODE_ENV === "development") {
     console.info(`[API] ${method} ${path}`);
@@ -117,22 +170,55 @@ export async function apiRequest<TRequest, TResponse = unknown>({
         }
       }
       
-      // Handle 401 errors globally - redirect to login if not already on auth pages
-      if (response.status === 401 && typeof window !== "undefined") {
+      // Handle 401 errors - try to refresh token before redirecting
+      if (response.status === 401 && typeof window !== "undefined" && !_skipRefreshRetry) {
         const currentPath = window.location.pathname;
         const isAuthPage = currentPath.includes("/onboarding") || currentPath === "/";
         
-        // Only redirect if not already on auth pages
+        // Only attempt refresh if not already on auth pages
         if (!isAuthPage) {
-          // Clear any stored auth data
-          localStorage.removeItem("quantivahq_pending_email");
-          sessionStorage.clear();
-          
-          // Redirect to login
-          window.location.href = "/onboarding/sign-up?tab=login";
-          // Return early to prevent throwing error (redirect is happening)
-          throw new Error("Session expired. Redirecting to login...");
+          try {
+            if (process.env.NODE_ENV === "development") {
+              console.info("[API] Attempting token refresh after 401 error");
+            }
+            
+            const refreshed = await attemptTokenRefresh();
+            
+            if (refreshed) {
+              // Token was refreshed, retry the request with _skipRefreshRetry flag
+              if (process.env.NODE_ENV === "development") {
+                console.info("[API] Token refreshed, retrying request:", path);
+              }
+              
+              return apiRequest({
+                path,
+                method,
+                body,
+                credentials,
+                timeout,
+                _skipRefreshRetry: true, // Prevent infinite retry loop
+              });
+            } else {
+              // Refresh failed, proceed with redirect
+              if (process.env.NODE_ENV === "development") {
+                console.warn("[API] Token refresh failed, redirecting to login");
+              }
+            }
+          } catch (refreshError) {
+            if (process.env.NODE_ENV === "development") {
+              console.error("[API] Error during token refresh:", refreshError);
+            }
+          }
         }
+        
+        // Clear any stored auth data and redirect to login
+        localStorage.removeItem("quantivahq_pending_email");
+        sessionStorage.clear();
+        
+        // Redirect to login
+        window.location.href = "/onboarding/sign-up?tab=login";
+        // Return early to prevent throwing error (redirect is happening)
+        throw new Error("Session expired. Redirecting to login...");
       }
       
       const error = new Error(errorMessage) as any;
