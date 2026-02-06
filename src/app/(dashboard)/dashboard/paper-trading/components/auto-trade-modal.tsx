@@ -121,7 +121,7 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
       const result = await alpacaCryptoService.placeOrder({
         symbol,
         side: signal.type,
-        type: "MARKET",
+        type: "market",
         quantity: position.quantity,
       });
 
