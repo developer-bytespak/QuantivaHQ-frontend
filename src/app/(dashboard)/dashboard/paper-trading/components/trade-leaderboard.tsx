@@ -207,6 +207,10 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
             {activeTab === 'history' && summary && (
               <div className="grid grid-cols-4 gap-2 mt-3">
                 <div className="rounded-lg bg-white/5 p-2 text-center">
+                  <div className="text-xs text-slate-400">Total Trades</div>
+                  <div className="text-sm font-bold text-white">{summary.totalTrades}</div>
+                </div>
+                <div className="rounded-lg bg-white/5 p-2 text-center">
                   <div className="text-xs text-slate-400">Total P&L</div>
                   <div className={`text-sm font-bold ${summary.totalProfitLoss >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {summary.totalProfitLoss >= 0 ? '+' : ''}${summary.totalProfitLoss.toFixed(2)}
