@@ -34,7 +34,7 @@ export function BalanceOverview({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
         <div>
           <p className="text-xs sm:text-sm text-slate-400 mb-1">
-            {isStockMode ? 'Cash Balance' : 'Testnet Balance'}
+            {isStockMode ? 'Cash Balance' : 'Paper Balance'}
           </p>
           {loading ? (
             <div className="h-7 sm:h-8 w-32 animate-pulse rounded bg-slate-700/50" />
@@ -97,7 +97,7 @@ export function BalanceOverview({
             ? alpacaConnected
               ? `Connected to Alpaca Paper Trading${marketOpen ? ' • Market Open' : ' • Market Closed'}`
               : 'Connecting to Alpaca Paper Trading...'
-            : 'Connected to Binance Testnet'
+            : 'Connected to Alpaca Crypto Paper Trading'
           }
         </span>
       </div>

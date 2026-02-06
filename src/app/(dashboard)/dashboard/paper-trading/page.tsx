@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
+import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { alpacaPaperTradingService, type AlpacaPosition, type AlpacaOrder, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
@@ -223,7 +223,7 @@ export default function PaperTradingPage() {
 
     const loadStatus = async () => {
       try {
-        const testnetStatus = await binanceTestnetService.getStatus();
+        const testnetStatus = await alpacaCryptoService.getStatus();
         setStatus(testnetStatus);
       } catch (err: any) {
         console.error("Failed to load testnet status:", err);
@@ -239,11 +239,11 @@ export default function PaperTradingPage() {
     setLoadingCryptoOrders(true);
     
     try {
-      console.log("📡 Fetching orders from database...");
+      console.log("📡 Fetching orders from Alpaca...");
       
-      // Fetch all orders from database (includes AI bot orders)
-      const response = await binanceTestnetService.getOrdersFromDB(200);
-      const allOrders = response?.orders || []; // Extract orders array from response
+      // Fetch all orders from Alpaca (includes AI bot orders)
+      const allOrders = await alpacaCryptoService.getOrders('all');
+      
       
       console.log("✅ Orders loaded from database:", allOrders?.length || 0);
       console.log("📦 Raw orders data:", allOrders);
@@ -343,7 +343,7 @@ export default function PaperTradingPage() {
       const positionsWithPrices = await Promise.all(
         openPositionsArray.map(async (pos) => {
           try {
-            const ticker = await binanceTestnetService.getTickerPrice(pos.symbol);
+            const ticker = await alpacaCryptoService.getTickerPrice(pos.symbol);
             const currentPrice = ticker?.price || pos.avgPrice;
             const marketValue = pos.quantity * currentPrice;
             const unrealizedPL = marketValue - pos.totalCost;
@@ -393,8 +393,9 @@ export default function PaperTradingPage() {
     if (connectionType !== "crypto") return;
     
     try {
-      const response = await binanceTestnetService.getCryptoAutoTradingTrades();
-      if (response.success && response.data) {
+      const dashboard = await alpacaCryptoService.getDashboard();
+      if (dashboard && dashboard.recentOrders) {
+        const response = { success: true, data: dashboard.recentOrders };
         const automatedTrades = response.data.map((trade: any) => ({
           id: trade.id,
           timestamp: new Date(trade.timestamp).getTime(),
@@ -677,7 +678,7 @@ export default function PaperTradingPage() {
     
     try {
       lastAllOrdersFetch.current = Date.now();
-      await binanceTestnetService.getAllOrders(undefined, 100);
+      await alpacaCryptoService.getOrders('all');
     } catch (err: any) {
       console.error("Failed to fetch all orders:", err);
       
@@ -710,7 +711,7 @@ export default function PaperTradingPage() {
       setLoadingBalance(true);
 
       // Fetch only the account snapshot (fast single call to /balance)
-      const balanceData = await binanceTestnetService.getAccountBalance();
+      const balanceData = await alpacaCryptoService.getAccountBalance();
       setBalance(balanceData.totalBalanceUSD);
 
       // Don't overwrite openOrdersCount here - let loadCryptoOrders handle it
