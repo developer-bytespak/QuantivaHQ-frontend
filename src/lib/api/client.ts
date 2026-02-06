@@ -44,6 +44,13 @@ async function refreshAccessToken(): Promise<boolean> {
   refreshPromise = (async () => {
     try {
       const response = await axiosInstance.post("/auth/refresh");
+      
+      // Save the new access token from response to localStorage
+      const newAccessToken = response.data?.accessToken || response.data?.access_token;
+      if (newAccessToken && typeof window !== "undefined") {
+        localStorage.setItem("quantivahq_access_token", newAccessToken);
+      }
+      
       if (process.env.NODE_ENV === "development") {
         console.info("[API] Token refreshed successfully");
       }
@@ -66,48 +73,40 @@ async function refreshAccessToken(): Promise<boolean> {
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config as any;
 
     // Only handle 401 errors
     if (error.response?.status !== 401 || !originalRequest) {
       return Promise.reject(error);
     }
 
-    // Don't retry on auth endpoints (prevents loop)
-    const skipRefreshPaths = ["/auth/me", "/auth/verify-2fa", "/auth/login"];
+    // Don't attempt refresh on these endpoints (prevents infinite loop)
+    // /auth/refresh - if refresh itself fails, don't try to refresh again
+    // /auth/login, /auth/verify-2fa - these are login endpoints, no refresh needed
+    const skipRefreshPaths = ["/auth/refresh", "/auth/verify-2fa", "/auth/login"];
     const shouldSkipRefresh = skipRefreshPaths.some((p) => originalRequest.url?.includes(p));
 
-    // Check if already on auth page
-    const isAuthPage = typeof window !== "undefined" && (window.location.pathname.includes("/onboarding") || window.location.pathname === "/");
-
-    // If skip refresh or on auth page, redirect to login
-    if (shouldSkipRefresh || isAuthPage) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("quantivahq_pending_email");
-        sessionStorage.clear();
-        window.location.href = "/onboarding/sign-up?tab=login";
-      }
+    // Don't retry if already retried once
+    if (shouldSkipRefresh || originalRequest._retried) {
       return Promise.reject(error);
     }
+
+    // Mark request as retried to prevent infinite loop
+    originalRequest._retried = true;
 
     // Try to refresh token
     const refreshed = await refreshAccessToken();
 
     if (refreshed) {
-      // Retry original request with new token
+      // Retry original request with new token (interceptor will add fresh token)
       if (process.env.NODE_ENV === "development") {
         console.info("[API] Retrying request after token refresh:", originalRequest.url);
       }
       return axiosInstance(originalRequest);
-    } else {
-      // Refresh failed, redirect to login
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("quantivahq_pending_email");
-        sessionStorage.clear();
-        window.location.href = "/onboarding/sign-up?tab=login";
-      }
-      return Promise.reject(error);
     }
+
+    // Refresh failed - just reject, let the caller (AuthGuard) handle redirect
+    return Promise.reject(error);
   }
 );
 
