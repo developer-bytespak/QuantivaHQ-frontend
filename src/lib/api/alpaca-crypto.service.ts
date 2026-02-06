@@ -147,7 +147,7 @@ class AlpacaCryptoService {
   /**
    * Get orders with optional status filter
    */
-  async getOrders(status: 'open' | 'closed' | 'all' = 'all'): Promise<AlpacaOrder[]> {
+  async getOrders(status: 'open' | 'closed' | 'all' = 'all'): Promise<any[]> {
     const response = await fetch(`${this.baseUrl}/orders?status=${status}`, {
       credentials: "include",
     });
@@ -164,7 +164,7 @@ class AlpacaCryptoService {
     return orders
       .filter((order: AlpacaOrder) => order.symbol.includes('/'))
       .map((order: AlpacaOrder) => ({
-        orderId: order.id,
+        orderId: parseInt(order.id.replace(/[^0-9]/g, '').slice(-9)) || Date.now(), // Convert UUID to number
         symbol: order.symbol.replace('/', ''), // BTC/USD -> BTCUSD
         side: order.side.toUpperCase() as 'BUY' | 'SELL',
         type: order.type.toUpperCase() as 'MARKET' | 'LIMIT',

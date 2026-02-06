@@ -122,7 +122,7 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
         symbol,
         side: signal.type,
         type: "market",
-        quantity: position.quantity,
+        qty: position.quantity,
       });
 
       console.log('Order placed successfully:', result);

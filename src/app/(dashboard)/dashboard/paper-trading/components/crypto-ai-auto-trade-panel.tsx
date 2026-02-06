@@ -357,7 +357,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const handleExecuteSingle = async () => {
     setActionLoading(true);
     try {
-      const result = await binanceTestnetService.executeCryptoSingleTrade();
+      const result = await alpacaAutoTradingService.executeSingle();
       if (!result.success) {
         setError(result.message);
       } else {
