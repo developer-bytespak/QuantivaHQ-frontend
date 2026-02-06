@@ -1,12 +1,12 @@
+import axios, { AxiosInstance, AxiosError } from "axios";
+
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 type RequestParams<T> = {
   path: string;
   method?: HttpMethod;
   body?: T;
-  credentials?: RequestCredentials;
-  timeout?: number; // Timeout in milliseconds (default: 30000 for regular requests, 180000 for ML operations)
-  _skipRefreshRetry?: boolean; // Internal flag to prevent infinite retry loops
+  timeout?: number;
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -15,25 +15,27 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// Helper function to get or create device ID
-function getDeviceId(): string {
-  if (typeof window !== "undefined") {
-    let deviceId = localStorage.getItem("quantivahq_device_id");
-    if (!deviceId) {
-      deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem("quantivahq_device_id", deviceId);
-    }
-    return deviceId;
-  }
-  return "";
-}
+// Create axios instance with defaults
+const axiosInstance: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true, // Include cookies (refresh token)
+  timeout: 30000,
+});
 
-/**
- * Attempt to refresh the access token using the refresh token
- * Uses a lock to prevent multiple concurrent refresh attempts
- */
-async function attemptTokenRefresh(): Promise<boolean> {
-  // If already refreshing, wait for the refresh to complete
+// Add request interceptor to include access token
+axiosInstance.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const accessToken = localStorage.getItem("quantivahq_access_token");
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+  }
+  return config;
+});
+
+// Refresh token function
+async function refreshAccessToken(): Promise<boolean> {
+  // If already refreshing, wait for it
   if (isRefreshing && refreshPromise) {
     return refreshPromise;
   }
@@ -41,29 +43,14 @@ async function attemptTokenRefresh(): Promise<boolean> {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Use refresh token from cookie
-        cache: "no-store",
-      });
-
-      if (response.ok) {
-        if (process.env.NODE_ENV === "development") {
-          console.info("[API] Token refreshed successfully");
-        }
-        return true;
-      } else {
-        if (process.env.NODE_ENV === "development") {
-          console.warn("[API] Token refresh failed with status:", response.status);
-        }
-        return false;
+      const response = await axiosInstance.post("/auth/refresh");
+      if (process.env.NODE_ENV === "development") {
+        console.info("[API] Token refreshed successfully");
       }
+      return true;
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.error("[API] Token refresh error:", error);
+        console.error("[API] Token refresh failed:", error);
       }
       return false;
     } finally {
@@ -75,201 +62,101 @@ async function attemptTokenRefresh(): Promise<boolean> {
   return refreshPromise;
 }
 
+// Add response interceptor to handle 401 errors
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config;
+
+    // Only handle 401 errors
+    if (error.response?.status !== 401 || !originalRequest) {
+      return Promise.reject(error);
+    }
+
+    // Don't retry on auth endpoints (prevents loop)
+    const skipRefreshPaths = ["/auth/me", "/auth/verify-2fa", "/auth/login"];
+    const shouldSkipRefresh = skipRefreshPaths.some((p) => originalRequest.url?.includes(p));
+
+    // Check if already on auth page
+    const isAuthPage = typeof window !== "undefined" && (window.location.pathname.includes("/onboarding") || window.location.pathname === "/");
+
+    // If skip refresh or on auth page, redirect to login
+    if (shouldSkipRefresh || isAuthPage) {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_pending_email");
+        sessionStorage.clear();
+        window.location.href = "/onboarding/sign-up?tab=login";
+      }
+      return Promise.reject(error);
+    }
+
+    // Try to refresh token
+    const refreshed = await refreshAccessToken();
+
+    if (refreshed) {
+      // Retry original request with new token
+      if (process.env.NODE_ENV === "development") {
+        console.info("[API] Retrying request after token refresh:", originalRequest.url);
+      }
+      return axiosInstance(originalRequest);
+    } else {
+      // Refresh failed, redirect to login
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_pending_email");
+        sessionStorage.clear();
+        window.location.href = "/onboarding/sign-up?tab=login";
+      }
+      return Promise.reject(error);
+    }
+  }
+);
+
+// Main API request function
 export async function apiRequest<TRequest, TResponse = unknown>({
   path,
   method = "GET",
   body,
-  credentials = "include", // Include cookies in requests
-  timeout, // Optional timeout override
-  _skipRefreshRetry = false, // Internal flag
+  timeout,
 }: RequestParams<TRequest>): Promise<TResponse> {
   if (process.env.NODE_ENV === "development") {
     console.info(`[API] ${method} ${path}`);
   }
 
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-
-  // Add Authorization header from stored client JWT if available
-  if (typeof window !== "undefined") {
-    const accessToken = localStorage.getItem("quantivahq_access_token");
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-  }
-
-  // Add device ID header for 2FA verification
-  if (typeof window !== "undefined") {
-    headers["x-device-id"] = getDeviceId();
-  }
-
-  // Determine timeout: use provided timeout, or detect long-running operations, or default to 30s
-  let requestTimeout = timeout;
-  if (!requestTimeout) {
-    const pathOnly = path.split('?')[0];
-    // News/sentiment now read from DB (instant), but still allow extra time for Python refresh
-    if (path.includes('/news/') && path.includes('forceRefresh=true')) {
-      requestTimeout = 300000; // 5 minutes only for force refresh
-    } else if (path.includes('/sentiment')) {
-      requestTimeout = 60000; // 1 minute for sentiment analysis
-    } else if (pathOnly.includes('/strategies/') && (pathOnly.includes('/preview') || pathOnly.includes('trending-with-insights') || pathOnly.includes('/signals'))) {
-      requestTimeout = 300000; // 5 minutes for strategy signal generation / preview (can run engines on many assets)
-    } else {
-      requestTimeout = 30000; // 30 seconds for regular API requests (including DB news reads)
-    }
-  }
-
-  // Create AbortController for timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
-
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      credentials, // Include cookies (access_token, refresh_token)
-      cache: "no-store",
-      signal: controller.signal,
+    const response = await axiosInstance({
+      url: path,
+      method: method.toLowerCase() as any,
+      data: body,
+      timeout: timeout || 30000,
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      let errorMessage = `API error: ${response.status} ${response.statusText}`;
-      
-      try {
-        const errorData = await response.json();
-        // Handle NestJS error formats
-        if (typeof errorData === 'string') {
-          errorMessage = errorData;
-        } else if (Array.isArray(errorData.message)) {
-          errorMessage = errorData.message.join(', ');
-        } else if (errorData.message) {
-          // Handle nested error objects
-          if (typeof errorData.message === 'object' && errorData.message.message) {
-            errorMessage = errorData.message.message;
-          } else {
-            errorMessage = errorData.message;
-          }
-        } else if (errorData.error?.message) {
-          errorMessage = errorData.error.message;
-        } else if (errorData.detail) {
-          errorMessage = errorData.detail;
-        }
-        
-        // For 401 errors, include more context
-        if (response.status === 401) {
-          errorMessage = `Unauthorized: ${errorMessage}. Please ensure you are logged in and your session is valid.`;
-        }
-      } catch {
-        // If JSON parsing fails, use status text
-        if (response.status === 401) {
-          errorMessage = "Unauthorized: Authentication failed. Please log in again.";
-        }
-      }
-      
-      // Handle 401 errors - try to refresh token before redirecting
-      if (response.status === 401 && typeof window !== "undefined" && !_skipRefreshRetry) {
-        const currentPath = window.location.pathname;
-        const isAuthPage = currentPath.includes("/onboarding") || currentPath === "/";
-        
-        // Only attempt refresh if not already on auth pages
-        if (!isAuthPage) {
-          try {
-            if (process.env.NODE_ENV === "development") {
-              console.info("[API] Attempting token refresh after 401 error");
-            }
-            
-            const refreshed = await attemptTokenRefresh();
-            
-            if (refreshed) {
-              // Token was refreshed, retry the request with _skipRefreshRetry flag
-              if (process.env.NODE_ENV === "development") {
-                console.info("[API] Token refreshed, retrying request:", path);
-              }
-              
-              return apiRequest({
-                path,
-                method,
-                body,
-                credentials,
-                timeout,
-                _skipRefreshRetry: true, // Prevent infinite retry loop
-              });
-            } else {
-              // Refresh failed, proceed with redirect
-              if (process.env.NODE_ENV === "development") {
-                console.warn("[API] Token refresh failed, redirecting to login");
-              }
-            }
-          } catch (refreshError) {
-            if (process.env.NODE_ENV === "development") {
-              console.error("[API] Error during token refresh:", refreshError);
-            }
-          }
-        }
-        
-        // Clear any stored auth data and redirect to login
-        localStorage.removeItem("quantivahq_pending_email");
-        sessionStorage.clear();
-        
-        // Redirect to login
-        window.location.href = "/onboarding/sign-up?tab=login";
-        // Return early to prevent throwing error (redirect is happening)
-        throw new Error("Session expired. Redirecting to login...");
-      }
-      
-      const error = new Error(errorMessage) as any;
-      error.status = response.status;
-      error.statusCode = response.status;
-      throw error;
-    }
-
-    return (await response.json()) as TResponse;
+    return response.data as TResponse;
   } catch (error: any) {
-    clearTimeout(timeoutId);
-    
-    // Handle timeout/abort errors
-    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
-      const timeoutSeconds = Math.round(requestTimeout / 1000);
-      const timeoutMinutes = Math.round(timeoutSeconds / 60);
-      const isMLOperation = path.includes('/news/') || path.includes('/sentiment');
-      let errorMessage = `Request timeout after ${timeoutMinutes} minute${timeoutMinutes > 1 ? 's' : ''}. `;
-      
-      if (isMLOperation) {
-        errorMessage += 'The FinBERT ML model is still initializing. This is a one-time process that downloads ~438MB and can take 5-10 minutes depending on your internet speed. Please wait a moment and refresh the page. The model will be cached after the first download.';
-      } else {
-        errorMessage += 'The operation is taking longer than expected. Please try again.';
-      }
-      
-      throw new Error(errorMessage);
+    let errorMessage = "API request failed";
+
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message?.includes("timeout")) {
+      errorMessage = "Request timeout. Please try again.";
+    } else if (error.message) {
+      errorMessage = error.message;
     }
-    
-    // Re-throw other errors (preserve status if it exists)
-    if (error.status || error.statusCode) {
-      const preservedError = new Error(error.message || 'API request failed') as any;
-      preservedError.status = error.status || error.statusCode;
-      preservedError.statusCode = error.status || error.statusCode;
-      throw preservedError;
-    }
-    
-    throw error;
+
+    const apiError = new Error(errorMessage) as any;
+    apiError.status = error.response?.status;
+    apiError.statusCode = error.response?.status;
+    throw apiError;
   }
 }
 
+// File upload function
 type UploadParams = {
   path: string;
   file: File;
   additionalData?: Record<string, string>;
-  timeout?: number; // Timeout in milliseconds (default: 60000, use 180000+ for KYC operations with ML processing)
+  timeout?: number;
 };
 
-/**
- * Upload a file with multipart/form-data
- * Supports additional form fields and includes authentication cookies
- */
 export async function uploadFile<TResponse = unknown>({
   path,
   file,
@@ -280,125 +167,33 @@ export async function uploadFile<TResponse = unknown>({
     console.info(`[API] POST ${path} (file upload: ${file.name})`);
   }
 
-  const formData = new FormData();
-  formData.append("file", file);
-
-  // Add any additional form fields
-  if (additionalData) {
-    Object.entries(additionalData).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-  }
-
-  const headers: HeadersInit = {};
-
-  // Add Authorization header from stored client JWT if available
-  if (typeof window !== "undefined") {
-    const accessToken = localStorage.getItem("quantivahq_access_token");
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-  }
-
-  // Add device ID header for 2FA verification
-  if (typeof window !== "undefined") {
-    headers["x-device-id"] = getDeviceId();
-  }
-
-  // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
-
-  // Determine timeout: use provided timeout, or detect KYC operations (longer due to ML processing), or default
-  let requestTimeout = timeout;
-  if (!requestTimeout) {
-    // KYC selfie verification involves ML processing (liveness detection + face matching)
-    if (path.includes('/kyc/selfie')) {
-      requestTimeout = 180000; // 3 minutes for selfie verification with ML
-    } else if (path.includes('/kyc/')) {
-      requestTimeout = 120000; // 2 minutes for other KYC operations
-    } else {
-      requestTimeout = 60000; // 60 seconds for regular file uploads
-    }
-  }
-
-  // Create AbortController for timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
-
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      method: "POST",
-      headers,
-      body: formData,
-      credentials: "include", // Include cookies (access_token, refresh_token)
-      cache: "no-store",
-      signal: controller.signal,
+    const formData = new FormData();
+    formData.append("file", file);
+
+    if (additionalData) {
+      Object.entries(additionalData).forEach(([key, value]) => {
+        formData.append(key, value);
+      });
+    }
+
+    const response = await axiosInstance.post(path, formData, {
+      timeout: timeout || 60000,
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
-      
-      try {
-        const errorData = await response.json();
-        // NestJS error format: { message: string } or { detail: string } or string[]
-        if (typeof errorData === 'string') {
-          errorMessage = errorData;
-        } else if (Array.isArray(errorData.message)) {
-          // Validation errors: { message: string[] }
-          errorMessage = errorData.message.join(', ');
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.detail) {
-          errorMessage = errorData.detail;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (parseError) {
-        // If JSON parsing fails, try to get text response
-        try {
-          const text = await response.text();
-          if (text) {
-            errorMessage = text;
-          }
-        } catch {
-          // Use default error message
-        }
-      }
-      
-      const uploadError = new Error(errorMessage) as any;
-      uploadError.status = response.status;
-      uploadError.statusCode = response.status;
-      throw uploadError;
-    }
-
-    return (await response.json()) as TResponse;
+    return response.data as TResponse;
   } catch (error: any) {
-    clearTimeout(timeoutId);
-    
-    // Handle timeout/abort errors
-    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
-      const timeoutSeconds = Math.round(requestTimeout / 1000);
-      const isKycOperation = path.includes('/kyc/');
-      let errorMessage = `Request timeout after ${timeoutSeconds} seconds. `;
-      
-      if (isKycOperation) {
-        errorMessage += 'KYC verification involves AI-powered face matching which may take longer. Please ensure your selfie is clear, well-lit, and try again. If the issue persists, the verification service may be temporarily busy.';
-      } else {
-        errorMessage += 'The operation is taking longer than expected. Please try again or ensure your images are clear and contain visible faces.';
-      }
-      
-      throw new Error(errorMessage);
+    let errorMessage = "Upload failed";
+
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
     }
-    
-    // Re-throw other errors (preserve status if it exists)
-    if (error.status || error.statusCode) {
-      const preservedError = new Error(error.message || 'Upload failed') as any;
-      preservedError.status = error.status || error.statusCode;
-      preservedError.statusCode = error.status || error.statusCode;
-      throw preservedError;
-    }
-    
-    throw error;
+
+    const uploadError = new Error(errorMessage) as any;
+    uploadError.status = error.response?.status;
+    uploadError.statusCode = error.response?.status;
+    throw uploadError;
   }
 }
