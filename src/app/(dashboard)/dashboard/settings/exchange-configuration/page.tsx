@@ -38,7 +38,9 @@ export default function ExchangeConfigurationPage() {
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [exchangeToggle, setExchangeToggle] = useState<"binance" | "bybit">("binance");
+  const [exchangeType, setExchangeType] = useState<"crypto" | "stocks">("crypto");
+  const [cryptoToggle, setCryptoToggle] = useState<"binance" | "bybit">("binance");
+  const [stocksToggle, setStocksToggle] = useState<"alpaca" | "ibkr">("alpaca");
 
   // Form states
   const [formData, setFormData] = useState({
@@ -58,6 +60,13 @@ export default function ExchangeConfigurationPage() {
   useEffect(() => {
     setMounted(true);
     loadConnections();
+    
+    // Detect exchange type from existing connections or URL params
+    const params = new URLSearchParams(window.location.search);
+    const typeParam = params.get('type');
+    if (typeParam === 'stocks' || typeParam === 'crypto') {
+      setExchangeType(typeParam);
+    }
   }, []);
 
   const loadConnections = async () => {
@@ -188,12 +197,17 @@ export default function ExchangeConfigurationPage() {
   };
 
   const handleExchangeSwitch = () => {
-    const newExchange = exchangeToggle === "binance" ? "bybit" : "binance";
-    setExchangeToggle(newExchange);
-    localStorage.setItem("quantivahq_selected_exchange", newExchange);
-    
-    // Navigate to onboarding to connect the selected exchange
-    router.push("/onboarding/crypto-exchange");
+    if (exchangeType === "crypto") {
+      const newExchange = cryptoToggle === "binance" ? "bybit" : "binance";
+      setCryptoToggle(newExchange);
+      localStorage.setItem("quantivahq_selected_exchange", newExchange);
+      router.push("/onboarding/crypto-exchange");
+    } else {
+      const newExchange = stocksToggle === "alpaca" ? "ibkr" : "alpaca";
+      setStocksToggle(newExchange);
+      localStorage.setItem("quantivahq_selected_stocks_exchange", newExchange);
+      router.push("/onboarding/stock-exchange");
+    }
   };
 
   return (
@@ -317,55 +331,129 @@ export default function ExchangeConfigurationPage() {
 
         {/* Exchange Switch Section */}
         <div className="bg-gradient-to-br from-[#fc4f02]/10 to-[#fc4f02]/5 border border-[#fc4f02]/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+          {/* Exchange Type Tabs */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setExchangeType("crypto")}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                exchangeType === "crypto"
+                  ? "bg-[#fc4f02] text-white"
+                  : "bg-slate-800/50 text-slate-400 hover:bg-slate-800"
+              }`}
+            >
+              Crypto Exchanges
+            </button>
+            <button
+              onClick={() => setExchangeType("stocks")}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                exchangeType === "stocks"
+                  ? "bg-[#fc4f02] text-white"
+                  : "bg-slate-800/50 text-slate-400 hover:bg-slate-800"
+              }`}
+            >
+              Stock Brokers
+            </button>
+          </div>
+
           <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
             Switch Exchange
           </h2>
-          <p className="text-sm text-slate-400 mb-6">Toggle between Binance and Bybit to connect your preferred exchange</p>
+          <p className="text-sm text-slate-400 mb-6">
+            {exchangeType === "crypto" 
+              ? "Toggle between Binance and Bybit to connect your preferred exchange"
+              : "Toggle between Alpaca and Interactive Brokers to connect your preferred broker"}
+          </p>
           
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-              <div className="flex items-center gap-3">
-                {/* Binance Icon */}
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
-                  exchangeToggle === "binance" 
-                    ? "bg-[#f7931a] text-white" 
-                    : "bg-[#f7931a]/20 text-[#f7931a]"
-                }`}>
-                  <span className="text-lg font-bold">B</span>
-                </div>
-                <span className="text-sm sm:text-base font-medium text-white">Binance</span>
-              </div>
+              {exchangeType === "crypto" ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    {/* Binance Icon */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      cryptoToggle === "binance" 
+                        ? "bg-[#f7931a] text-white" 
+                        : "bg-[#f7931a]/20 text-[#f7931a]"
+                    }`}>
+                      <span className="text-lg font-bold">B</span>
+                    </div>
+                    <span className="text-sm sm:text-base font-medium text-white">Binance</span>
+                  </div>
 
-              {/* Toggle Switch */}
-              <button
-                onClick={handleExchangeSwitch}
-                className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 flex-shrink-0 ${
-                  exchangeToggle === "bybit"
-                    ? "bg-gradient-to-r from-[#f0b90b] to-[#ffc53d]"
-                    : "bg-slate-700"
-                }`}
-              >
-                <span
-                  className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
-                    exchangeToggle === "bybit" ? "translate-x-7 sm:translate-x-9" : "translate-x-1"
-                  }`}
-                />
-              </button>
+                  {/* Toggle Switch */}
+                  <button
+                    onClick={handleExchangeSwitch}
+                    className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 flex-shrink-0 ${
+                      cryptoToggle === "bybit"
+                        ? "bg-gradient-to-r from-[#f0b90b] to-[#ffc53d]"
+                        : "bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        cryptoToggle === "bybit" ? "translate-x-7 sm:translate-x-9" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
 
-              {/* Bybit Icon */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm sm:text-base font-medium text-white">Bybit</span>
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
-                  exchangeToggle === "bybit" 
-                    ? "bg-[#f0b90b] text-white" 
-                    : "bg-[#f0b90b]/20 text-[#f0b90b]"
-                }`}>
-                  <span className="text-lg font-bold">₿</span>
-                </div>
-              </div>
+                  {/* Bybit Icon */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm sm:text-base font-medium text-white">Bybit</span>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      cryptoToggle === "bybit" 
+                        ? "bg-[#f0b90b] text-white" 
+                        : "bg-[#f0b90b]/20 text-[#f0b90b]"
+                    }`}>
+                      <span className="text-lg font-bold">₿</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    {/* Alpaca Icon */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      stocksToggle === "alpaca" 
+                        ? "bg-[#fcda03] text-slate-900" 
+                        : "bg-[#fcda03]/20 text-[#fcda03]"
+                    }`}>
+                      <span className="text-lg font-bold">A</span>
+                    </div>
+                    <span className="text-sm sm:text-base font-medium text-white">Alpaca</span>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <button
+                    onClick={handleExchangeSwitch}
+                    className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 flex-shrink-0 ${
+                      stocksToggle === "ibkr"
+                        ? "bg-gradient-to-r from-[#c7292a] to-[#e84343]"
+                        : "bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        stocksToggle === "ibkr" ? "translate-x-7 sm:translate-x-9" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+
+                  {/* IBKR Icon */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm sm:text-base font-medium text-white">IBKR</span>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      stocksToggle === "ibkr" 
+                        ? "bg-[#c7292a] text-white" 
+                        : "bg-[#c7292a]/20 text-[#c7292a]"
+                    }`}>
+                      <span className="text-lg font-bold">I</span>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Connect Button */}
