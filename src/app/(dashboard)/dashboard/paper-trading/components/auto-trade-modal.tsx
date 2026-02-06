@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
+import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import {
   calculatePositionSize,
   calculatePrices,
@@ -52,9 +52,9 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
         setLoadingPrice(true);
         const entryPrice = getEntryPrice(signal);
         
-        // Try to get real-time price from Binance
+        // Try to get real-time price from Alpaca
         try {
-          const ticker = await binanceTestnetService.getTickerPrice(symbol);
+          const ticker = await alpacaCryptoService.getTickerPrice(symbol);
           setCurrentPrice(ticker.price);
         } catch {
           // Fallback to signal price
@@ -117,14 +117,12 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
         totalCost: position.totalCost,
       });
 
-      // Place market order
-      // For BUY orders, send the USDT amount (quoteOrderQty)
-      // For SELL orders, send the asset quantity
-      const result = await binanceTestnetService.placeOrder({
+      // Place market order on Alpaca
+      const result = await alpacaCryptoService.placeOrder({
         symbol,
         side: signal.type,
         type: "MARKET",
-        quantity: signal.type === 'BUY' ? position.totalCost : position.quantity,
+        quantity: position.quantity,
       });
 
       console.log('Order placed successfully:', result);
@@ -138,12 +136,12 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
       // Extract more specific error message
       let errorMessage = err.message || "Failed to execute trade";
       
-      // Check for common Binance errors
-      if (errorMessage.includes('MIN_NOTIONAL')) {
+      // Check for common trading errors
+      if (errorMessage.includes('notional') || errorMessage.includes('MIN_NOTIONAL')) {
         errorMessage = "Order value too small. Try increasing your investment amount.";
-      } else if (errorMessage.includes('LOT_SIZE')) {
+      } else if (errorMessage.includes('quantity') || errorMessage.includes('LOT_SIZE')) {
         errorMessage = "Invalid quantity size for this trading pair.";
-      } else if (errorMessage.includes('INSUFFICIENT')) {
+      } else if (errorMessage.includes('INSUFFICIENT') || errorMessage.includes('insufficient')) {
         errorMessage = "Insufficient balance to complete this trade.";
       }
       
