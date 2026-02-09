@@ -77,9 +77,10 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
       // Place a MARKET SELL order to close the position
       await alpacaCryptoService.placeOrder({
         symbol,
-        side: 'buy',
+        side: 'sell',
         type: 'market',
         qty: quantity,
+        time_in_force: 'gtc',
       });
 
       // Refresh orders after closing

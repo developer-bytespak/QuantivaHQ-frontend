@@ -160,12 +160,12 @@ class AlpacaCryptoService {
     const orders = result.data || [];
     
     // Filter to only crypto orders (symbol contains '/')
-    // Transform to Binance-compatible format
+    // Keep Alpaca format (BTC/USD) instead of converting to BTCUSD
     return orders
       .filter((order: AlpacaOrder) => order.symbol.includes('/'))
       .map((order: AlpacaOrder) => ({
         orderId: parseInt(order.id.replace(/[^0-9]/g, '').slice(-9)) || Date.now(), // Convert UUID to number
-        symbol: order.symbol.replace('/', ''), // BTC/USD -> BTCUSD
+        symbol: order.symbol, // Keep Alpaca format: BTC/USD
         side: order.side.toUpperCase() as 'BUY' | 'SELL',
         type: order.type.toUpperCase() as 'MARKET' | 'LIMIT',
         quantity: parseFloat(order.qty),
@@ -221,14 +221,21 @@ class AlpacaCryptoService {
     type: 'market' | 'limit';
     qty: number;
     limit_price?: number;
+    time_in_force?: 'gtc' | 'ioc' | 'fok';
   }): Promise<AlpacaOrder> {
+    // Default to 'gtc' for crypto orders if not specified
+    const orderPayload = {
+      ...payload,
+      time_in_force: payload.time_in_force || 'gtc',
+    };
+    
     const response = await fetch(`${this.baseUrl}/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(orderPayload),
     });
 
     if (!response.ok) {

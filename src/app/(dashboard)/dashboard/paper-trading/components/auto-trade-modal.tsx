@@ -117,17 +117,19 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
         totalCost: position.totalCost,
       });
 
-      // Place market order on Alpaca
+      // Place market order on Alpaca (convert side to lowercase for API)
       const result = await alpacaCryptoService.placeOrder({
         symbol,
-        side: signal.type,
+        side: signal.type.toLowerCase() as 'buy' | 'sell',
         type: "market",
         qty: position.quantity,
+        time_in_force: 'gtc',
       });
 
       console.log('Order placed successfully:', result);
 
       // Success!
+      console.log('✅ Trade executed successfully! Please wait 1-2 seconds for positions to update.');
       onSuccess();
       onClose();
     } catch (err: any) {
