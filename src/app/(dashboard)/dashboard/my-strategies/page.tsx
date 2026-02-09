@@ -54,7 +54,6 @@ export default function MyStrategiesPage() {
   const [generatingSignals, setGeneratingSignals] = useState<string | null>(null);
   const [deletingStrategy, setDeletingStrategy] = useState<string | null>(null);
   const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const router = useRouter();
 
 
   // Check connection type on mount

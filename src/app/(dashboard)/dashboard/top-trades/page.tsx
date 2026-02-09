@@ -139,6 +139,18 @@ export default function TopTradesPage() {
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
 
+  // Create strategy modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  // Create strategy form state
+  const [createName, setCreateName] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createStopLoss, setCreateStopLoss] = useState("5");
+  const [createTakeProfit, setCreateTakeProfit] = useState("10");
+  const [createRiskLevel, setCreateRiskLevel] = useState<"low" | "medium" | "high">("medium");
+
   // --- Helpers: map backend response into Trade[] (defensive) ---
   const mapBackendToTrades = (data: any[], isStock: boolean = false): Trade[] => {
     const uniqueData: any[] = [];
@@ -217,9 +229,11 @@ export default function TopTradesPage() {
     const checkConnection = async () => {
       try {
         const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
+        setConnectionType(response.data?.exchange?.type || "crypto"); // Default to crypto if no connection
       } catch (error) {
         console.error("Failed to check connection type:", error);
+        // Default to crypto on error to allow viewing strategies
+        setConnectionType("crypto");
       } finally {
         setIsCheckingConnection(false);
       }
@@ -865,8 +879,24 @@ export default function TopTradesPage() {
           <p className="text-xs sm:text-sm text-slate-400">Loading strategies...</p>
         </div>
       ) : preBuiltError ? (
-        <div className="rounded-lg sm:rounded-xl bg-red-600/10 p-4 sm:p-6 text-center">
-          <p className="text-xs sm:text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
+        <div className="rounded-lg sm:rounded-xl bg-red-600/10 p-4 sm:p-6 text-center border border-red-500/20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="rounded-full bg-red-600/20 p-3">
+              <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.734 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm text-red-300 mb-1">Failed to load strategies</p>
+              <p className="text-xs text-red-400/70">{preBuiltError}</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 px-3 py-1.5 text-xs text-red-300 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       ) : preBuiltStrategies.length > 0 ? (
         <div className="space-y-3 sm:space-y-4">
@@ -936,8 +966,24 @@ export default function TopTradesPage() {
           )}
         </div>
       ) : (
-        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-4 sm:p-6 text-center">
-          <p className="text-xs sm:text-sm text-slate-400">No pre-built strategies available</p>
+        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-6 sm:p-8 text-center border border-white/10">
+          <div className="flex flex-col items-center gap-4">
+            <div className="rounded-full bg-slate-800/50 p-4">
+              <svg className="h-8 w-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300 mb-2">No trading strategies available</p>
+              <p className="text-xs text-slate-500">Connect an exchange to view trading signals and strategies</p>
+            </div>
+            <Link 
+              href="/dashboard/settings/exchange-configuration" 
+              className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              Configure Exchange
+            </Link>
+          </div>
         </div>
       )}
 
