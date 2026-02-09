@@ -138,15 +138,6 @@ export default function TopTradesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
-  // create-custom modal state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createDescription, setCreateDescription] = useState("");
-  const [createStopLoss, setCreateStopLoss] = useState("5");
-  const [createTakeProfit, setCreateTakeProfit] = useState("10");
-  const [createRiskLevel, setCreateRiskLevel] = useState<"low"|"medium"|"high">("medium");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   // --- Helpers: map backend response into Trade[] (defensive) ---
   const mapBackendToTrades = (data: any[], isStock: boolean = false): Trade[] => {
@@ -839,7 +830,7 @@ export default function TopTradesPage() {
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <Link
-            href="/dashboard/my-strategies"
+            href="/dashboard/my-strategies?from=top-trades"
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 whitespace-nowrap flex items-center gap-1.5 text-white"
           >
             <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -911,7 +902,7 @@ export default function TopTradesPage() {
               })}
               {/* Custom Strategy Button */}
               <Link
-                href="/dashboard/my-strategies/create"
+                href="/dashboard/my-strategies/create?from=top-trades"
                 className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all rounded-lg whitespace-nowrap bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 flex items-center gap-1.5 shadow-lg shadow-[#fc4f02]/10"
               >
                 <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

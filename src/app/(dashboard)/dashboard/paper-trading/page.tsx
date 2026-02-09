@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import Link from "next/link";
 import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
 import { alpacaPaperTradingService, type AlpacaPosition, type AlpacaOrder, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
@@ -183,15 +184,6 @@ export default function PaperTradingPage() {
     unrealizedPLPercent?: number;
   }[]>([]);
 
-  // Create custom strategy state
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createName, setCreateName] = useState("");
-  const [createDescription, setCreateDescription] = useState("");
-  const [createStopLoss, setCreateStopLoss] = useState("5");
-  const [createTakeProfit, setCreateTakeProfit] = useState("10");
-  const [createRiskLevel, setCreateRiskLevel] = useState<"low"|"medium"|"high">("medium");
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
 
   // Orders panel state
   const [showOrdersPanel, setShowOrdersPanel] = useState(false);
@@ -1361,15 +1353,28 @@ export default function PaperTradingPage() {
 
         {/* Buttons - Show for both crypto and stocks */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-          {/* Create Strategy - crypto only for now */}
-          {!isStocksConnection && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white w-full sm:w-auto`}
-            >
-              Create Strategy
-            </button>
-          )}
+          {/* My Strategies Button - Links to strategies library */}
+          <Link
+            href="/dashboard/my-strategies?from=paper-trading"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 hover:border-slate-500/50 shadow-lg shadow-slate-900/30 w-full sm:w-auto"
+            title="View and manage your strategies"
+          >
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-white">My Strategies</span>
+          </Link>
+          {/* Custom Strategy Button - Links to strategy builder */}
+          <Link
+            href="/dashboard/my-strategies/create?from=paper-trading"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 transition-all border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 shadow-lg shadow-[#fc4f02]/10 w-full sm:w-auto"
+            title="Create a custom trading strategy"
+          >
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-white">Custom</span>
+          </Link>
           {/* Orders button - show for both */}
           <button
             onClick={() => setShowOrdersPanel(true)}
@@ -1727,115 +1732,7 @@ export default function PaperTradingPage() {
       )}
 
       {/* Create Custom Strategy Modal - Only for crypto */}
-      {!isStocksConnection && showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-xl bg-[--color-surface] p-6 text-slate-100 ring-1 ring-white/5 shadow-lg">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Create Custom Strategy</h3>
-              <button className="text-slate-400" onClick={() => { setShowCreateModal(false); setCreateError(null); }} aria-label="Close">✕</button>
-            </div>
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-sm text-slate-300">Name</label>
-                <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="My Custom Strategy" />
-              </div>
-              <div>
-                <label className="text-sm text-slate-300">Description</label>
-                <textarea className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} placeholder="Optional description" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm text-slate-300">Stop Loss %</label>
-                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createStopLoss} onChange={(e) => setCreateStopLoss(e.target.value)} />
-                </div>
-                <div>
-                  <label className="text-sm text-slate-300">Take Profit %</label>
-                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createTakeProfit} onChange={(e) => setCreateTakeProfit(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-slate-300">Risk Level</label>
-                <select className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createRiskLevel} onChange={(e) => setCreateRiskLevel(e.target.value as any)}>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-              {createError && <div className="text-sm text-red-400">{createError}</div>}
-              <div className="mt-4 flex justify-end gap-2">
-                <button className="rounded-md px-4 py-2 text-sm" onClick={() => { setShowCreateModal(false); setCreateError(null); }}>Cancel</button>
-                <button
-                  className="rounded-md px-4 py-2 text-sm bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white"
-                  onClick={async () => {
-                    // basic validation
-                    if (!createName || createName.trim().length < 2) {
-                      setCreateError("Please provide a name for the strategy");
-                      return;
-                    }
-                    setCreateError(null);
-                    setCreating(true);
-                    try {
-                      const stopLossNum = Number(createStopLoss);
-                      const takeProfitNum = Number(createTakeProfit);
-                      if (isNaN(stopLossNum) || stopLossNum < 0 || stopLossNum > 100) {
-                        setCreateError("Stop Loss must be a number between 0 and 100");
-                        setCreating(false);
-                        return;
-                      }
-                      if (isNaN(takeProfitNum) || takeProfitNum < 0 || takeProfitNum > 100) {
-                        setCreateError("Take Profit must be a number between 0 and 100");
-                        setCreating(false);
-                        return;
-                      }
 
-                      const dto = {
-                        name: createName,
-                        // backend expects 'admin' or 'user' — use 'user' for custom strategies
-                        type: "user",
-                        description: createDescription || "Created from Paper Trading UI",
-                        risk_level: createRiskLevel,
-                        // backend validation expects 'indicator' (string) not 'field' / 'property'
-                        entry_rules: [{ indicator: "final_score", operator: ">", value: 0.25 }],
-                        exit_rules: [{ indicator: "final_score", operator: "<", value: -0.15 }],
-                        indicators: [],
-                        stop_loss_value: stopLossNum,
-                        take_profit_value: takeProfitNum,
-                        schedule_cron: null,
-                        target_assets: [],
-                        auto_trade_threshold: null,
-                        is_active: true,
-                      };
-
-                      const created = await apiRequest<typeof dto, any>({ path: "/strategies/custom", method: "POST", body: dto });
-                      setPreBuiltStrategies((prev) => [created, ...prev]);
-                      setShowCreateModal(false);
-                      setCreateName("");
-                      setCreateDescription("");
-                      setCreateStopLoss("5");
-                      setCreateTakeProfit("10");
-                      setCreateRiskLevel("medium");
-                      // auto-fetch signals for the new strategy
-                      if (created?.strategy_id) {
-                        setActiveTab(0); // Switch to the new strategy
-                        await fetchStrategySignals(created.strategy_id);
-                      }
-                    } catch (e) {
-                      const er: any = e;
-                      console.error("Create custom strategy error:", er);
-                      setCreateError(er?.message ?? String(er) ?? "Failed to create strategy");
-                    } finally {
-                      setCreating(false);
-                    }
-                  }}
-                  disabled={creating}
-                >
-                  {creating ? "Creating..." : "Create Strategy"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Orders Panel - Crypto uses Binance testnet, Stocks uses Alpaca paper trading */}
       {showOrdersPanel && (
