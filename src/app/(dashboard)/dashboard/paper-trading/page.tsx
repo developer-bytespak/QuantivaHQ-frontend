@@ -998,7 +998,7 @@ export default function PaperTradingPage() {
       
       // Format pair based on asset type
       const pair = isStock 
-        ? `${cleanSymbol} / USD` 
+        ? cleanSymbol 
         : `${cleanSymbol} / USDT`;
       
       const score = Number(signal.final_score ?? 0);
