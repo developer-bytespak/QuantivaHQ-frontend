@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api/client";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 // Engine-based fields that actually work in the signal generation system
 // These match the pre-built strategies format exactly
@@ -23,6 +24,11 @@ const OPERATORS = [
   { value: "<=", label: "Less or equal (≤)" },
 ];
 
+// Popular crypto symbols for quick add
+const POPULAR_CRYPTO = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"];
+// Popular stock symbols for quick add
+const POPULAR_STOCKS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD"];
+
 interface Rule {
   field: string;
   operator: string;
@@ -37,12 +43,12 @@ interface EngineWeights {
   liquidity: number;
 }
 
-interface StockOption {
+interface AssetOption {
   symbol: string;
   name: string;
 }
 
-type Step = "basics" | "stocks" | "weights" | "rules" | "risk" | "review";
+type Step = "basics" | "assets" | "weights" | "rules" | "risk" | "review";
 
 export default function CreateStrategyPage() {
   const router = useRouter();
@@ -69,13 +75,17 @@ export default function CreateStrategyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Connection type detection
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+
   // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "high">("medium");
   const [stopLoss, setStopLoss] = useState<number>(5);
   const [takeProfit, setTakeProfit] = useState<number>(15);
-  const [targetStocks, setTargetStocks] = useState<string[]>([]);
+  const [targetAssets, setTargetAssets] = useState<string[]>([]);
   
   // Engine weights (must sum to 1.0)
   const [engineWeights, setEngineWeights] = useState<EngineWeights>({
@@ -94,51 +104,82 @@ export default function CreateStrategyPage() {
     { field: "final_score", operator: "<", value: -0.3 }
   ]);
 
-  // Stock search
-  const [stockSearch, setStockSearch] = useState("");
-  const [stockResults, setStockResults] = useState<StockOption[]>([]);
-  const [searchingStocks, setSearchingStocks] = useState(false);
+  // Asset search
+  const [assetSearch, setAssetSearch] = useState("");
+  const [assetResults, setAssetResults] = useState<AssetOption[]>([]);
+  const [searchingAssets, setSearchingAssets] = useState(false);
+
+  // Check connection type on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await exchangesService.getActiveConnection();
+        setConnectionType(response.data?.exchange?.type || null);
+      } catch (error) {
+        console.error("Failed to check connection type:", error);
+      } finally {
+        setIsCheckingConnection(false);
+      }
+    };
+    checkConnection();
+  }, []);
+
+  // Derived values
+  const isStocksConnection = connectionType === "stocks";
+  const assetTypeLabel = isStocksConnection ? "Stocks" : "Crypto Assets";
+  const popularAssets = isStocksConnection ? POPULAR_STOCKS : POPULAR_CRYPTO;
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
   const weightsValid = Math.abs(totalWeight - 1.0) < 0.01;
 
-  // Search stocks from backend
+  // Search assets from backend
   useEffect(() => {
-    if (stockSearch.length < 1) {
-      setStockResults([]);
+    if (assetSearch.length < 1) {
+      setAssetResults([]);
       return;
     }
     
     const timer = setTimeout(async () => {
-      setSearchingStocks(true);
+      setSearchingAssets(true);
       try {
-        const results = await apiRequest<never, StockOption[]>({
-          path: `/strategies/available-stocks?search=${encodeURIComponent(stockSearch)}`,
+        // Use different endpoint based on connection type
+        const searchEndpoint = isStocksConnection
+          ? `/strategies/available-stocks?search=${encodeURIComponent(assetSearch)}`
+          : `/strategies/available-crypto?search=${encodeURIComponent(assetSearch)}`;
+        
+        const results = await apiRequest<never, AssetOption[]>({
+          path: searchEndpoint,
           method: "GET",
         });
-        setStockResults(results || []);
+        setAssetResults(results || []);
       } catch (err) {
-        console.error("Stock search error:", err);
-        setStockResults([]);
+        console.error("Asset search error:", err);
+        // For crypto, if endpoint doesn't exist, allow manual entry
+        if (!isStocksConnection) {
+          setAssetResults([{ symbol: assetSearch.toUpperCase(), name: assetSearch.toUpperCase() }]);
+        } else {
+          setAssetResults([]);
+        }
       } finally {
-        setSearchingStocks(false);
+        setSearchingAssets(false);
       }
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [stockSearch]);
+  }, [assetSearch, isStocksConnection]);
 
-  const addStock = (symbol: string) => {
-    if (!targetStocks.includes(symbol)) {
-      setTargetStocks([...targetStocks, symbol]);
+  const addAsset = (symbol: string) => {
+    const upperSymbol = symbol.toUpperCase();
+    if (!targetAssets.includes(upperSymbol)) {
+      setTargetAssets([...targetAssets, upperSymbol]);
     }
-    setStockSearch("");
-    setStockResults([]);
+    setAssetSearch("");
+    setAssetResults([]);
   };
 
-  const removeStock = (symbol: string) => {
-    setTargetStocks(targetStocks.filter((s) => s !== symbol));
+  const removeAsset = (symbol: string) => {
+    setTargetAssets(targetAssets.filter((s) => s !== symbol));
   };
 
   const updateEngineWeight = (engine: keyof EngineWeights, value: number) => {
@@ -183,8 +224,11 @@ export default function CreateStrategyPage() {
     setError(null);
 
     try {
+      // Use correct endpoint based on connection type
+      const endpoint = isStocksConnection ? "/strategies/custom/stocks" : "/strategies/custom/crypto";
+      
       await apiRequest({
-        path: "/strategies/custom/stocks",
+        path: endpoint,
         method: "POST",
         body: {
           name,
@@ -195,7 +239,7 @@ export default function CreateStrategyPage() {
           stop_loss_value: stopLoss,
           take_profit_type: "percentage",
           take_profit_value: takeProfit,
-          target_assets: targetStocks,
+          target_assets: targetAssets,
           engine_weights: engineWeights,
           entry_rules: entryRules.map((r) => ({
             field: r.field,
@@ -222,7 +266,7 @@ export default function CreateStrategyPage() {
 
   const steps: { key: Step; label: string }[] = [
     { key: "basics", label: "Basics" },
-    { key: "stocks", label: "Stocks" },
+    { key: "assets", label: isStocksConnection ? "Stocks" : "Crypto" },
     { key: "weights", label: "AI Weights" },
     { key: "rules", label: "Rules" },
     { key: "risk", label: "Risk" },
@@ -233,8 +277,8 @@ export default function CreateStrategyPage() {
     switch (currentStep) {
       case "basics":
         return name.trim().length > 0;
-      case "stocks":
-        return targetStocks.length > 0;
+      case "assets":
+        return targetAssets.length > 0;
       case "weights":
         return weightsValid;
       case "rules":
@@ -267,6 +311,18 @@ export default function CreateStrategyPage() {
     return RULE_FIELDS.find(f => f.value === field)?.label || field;
   };
 
+  // Show loading while checking connection
+  if (isCheckingConnection) {
+    return (
+      <div className="max-w-4xl mx-auto pb-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="w-10 h-10 border-3 border-[#fc4f02]/30 border-t-[#fc4f02] rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto pb-8">
       {/* Hero Header */}
@@ -289,9 +345,22 @@ export default function CreateStrategyPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Create Custom Strategy</h1>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                Create {isStocksConnection ? 'Stock' : 'Crypto'} Strategy
+              </h1>
+              <span className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                isStocksConnection 
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                  : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+              }`}>
+                {isStocksConnection ? '📈 Stocks Mode' : '₿ Crypto Mode'}
+              </span>
+            </div>
           </div>
-          <p className="text-slate-400 max-w-lg">Build your own AI-powered stock trading strategy using the same engines as our pre-built strategies</p>
+          <p className="text-slate-400 max-w-lg">
+            Build your own AI-powered {isStocksConnection ? 'stock' : 'crypto'} trading strategy using the same engines as our pre-built strategies
+          </p>
         </div>
       </div>
 
@@ -363,52 +432,52 @@ export default function CreateStrategyPage() {
           </div>
         )}
 
-        {/* Step 2: Stock Selection */}
-        {currentStep === "stocks" && (
+        {/* Step 2: Asset Selection (Dynamic for Stocks/Crypto) */}
+        {currentStep === "assets" && (
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
                 <span className="text-[#fda300] font-bold">2</span>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">Select Stocks</h3>
-                <p className="text-sm text-slate-400">Choose which stocks this strategy will analyze</p>
+                <h3 className="text-lg font-semibold text-white">Select {assetTypeLabel}</h3>
+                <p className="text-sm text-slate-400">Choose which {isStocksConnection ? 'stocks' : 'crypto assets'} this strategy will analyze</p>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Search & Add Stocks *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Search & Add {assetTypeLabel} *</label>
               <div className="relative">
                 <input
                   type="text"
-                  value={stockSearch}
-                  onChange={(e) => setStockSearch(e.target.value)}
-                  placeholder="Search by symbol (e.g., AAPL, MSFT)"
+                  value={assetSearch}
+                  onChange={(e) => setAssetSearch(e.target.value)}
+                  placeholder={isStocksConnection ? "Search by symbol (e.g., AAPL, MSFT)" : "Search by symbol (e.g., BTC, ETH)"}
                   className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:ring-1 focus:ring-[#fc4f02]/30 focus:outline-none transition-all"
                 />
-                {searchingStocks && (
+                {searchingAssets && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     <div className="w-5 h-5 border-2 border-[#fc4f02]/30 border-t-[#fc4f02] rounded-full animate-spin"></div>
                   </div>
                 )}
               </div>
 
-              {stockResults.length > 0 && (
+              {assetResults.length > 0 && (
                 <div className="mt-2 rounded-xl bg-black/40 border border-white/10 max-h-48 overflow-y-auto">
-                  {stockResults.map((stock) => (
+                  {assetResults.map((asset) => (
                     <button
-                      key={stock.symbol}
-                      onClick={() => addStock(stock.symbol)}
-                      disabled={targetStocks.includes(stock.symbol)}
+                      key={asset.symbol}
+                      onClick={() => addAsset(asset.symbol)}
+                      disabled={targetAssets.includes(asset.symbol)}
                       className={`w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between border-b border-white/5 last:border-0 ${
-                        targetStocks.includes(stock.symbol) ? "opacity-50" : ""
+                        targetAssets.includes(asset.symbol) ? "opacity-50" : ""
                       }`}
                     >
                       <div>
-                        <span className="text-white font-medium">{stock.symbol}</span>
-                        <span className="text-slate-400 text-sm ml-2">{stock.name}</span>
+                        <span className="text-white font-medium">{asset.symbol}</span>
+                        <span className="text-slate-400 text-sm ml-2">{asset.name}</span>
                       </div>
-                      {targetStocks.includes(stock.symbol) ? (
+                      {targetAssets.includes(asset.symbol) ? (
                         <span className="text-xs text-emerald-400">Added</span>
                       ) : (
                         <span className="text-xs text-[#fda300]">+ Add</span>
@@ -419,22 +488,22 @@ export default function CreateStrategyPage() {
               )}
             </div>
 
-            {/* Selected Stocks */}
+            {/* Selected Assets */}
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Selected Stocks ({targetStocks.length})
+                Selected {assetTypeLabel} ({targetAssets.length})
               </label>
-              {targetStocks.length === 0 ? (
-                <p className="text-slate-500 text-sm">No stocks selected. Use the search above or quick-add below.</p>
+              {targetAssets.length === 0 ? (
+                <p className="text-slate-500 text-sm">No {isStocksConnection ? 'stocks' : 'crypto assets'} selected. Use the search above or quick-add below.</p>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {targetStocks.map((symbol) => (
+                  {targetAssets.map((symbol) => (
                     <span
                       key={symbol}
                       className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 border border-[#fc4f02]/30 rounded-lg text-white font-medium"
                     >
                       {symbol}
-                      <button onClick={() => removeStock(symbol)} className="text-slate-400 hover:text-red-400">×</button>
+                      <button onClick={() => removeAsset(symbol)} className="text-slate-400 hover:text-red-400">×</button>
                     </span>
                   ))}
                 </div>
@@ -445,13 +514,13 @@ export default function CreateStrategyPage() {
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Quick Add Popular</label>
               <div className="flex flex-wrap gap-2">
-                {["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD"].map((symbol) => (
+                {popularAssets.map((symbol) => (
                   <button
                     key={symbol}
-                    onClick={() => addStock(symbol)}
-                    disabled={targetStocks.includes(symbol)}
+                    onClick={() => addAsset(symbol)}
+                    disabled={targetAssets.includes(symbol)}
                     className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                      targetStocks.includes(symbol)
+                      targetAssets.includes(symbol)
                         ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                         : "bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10 hover:border-[#fc4f02]/30"
                     }`}
@@ -808,9 +877,9 @@ export default function CreateStrategyPage() {
             </div>
 
             <div className="p-4 bg-black/20 rounded-xl border border-white/5">
-              <p className="text-xs text-slate-400 mb-2">Target Stocks ({targetStocks.length})</p>
+              <p className="text-xs text-slate-400 mb-2">Target {assetTypeLabel} ({targetAssets.length})</p>
               <div className="flex flex-wrap gap-2">
-                {targetStocks.map((s) => (
+                {targetAssets.map((s) => (
                   <span key={s} className="px-2.5 py-1 bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 border border-[#fc4f02]/20 rounded-lg text-sm text-white">{s}</span>
                 ))}
               </div>
