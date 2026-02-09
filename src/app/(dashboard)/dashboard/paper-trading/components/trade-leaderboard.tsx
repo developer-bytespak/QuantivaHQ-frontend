@@ -61,6 +61,7 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
   const [tradeHistory, setTradeHistory] = useState<ClosedTrade[]>([]);
   const [summary, setSummary] = useState<TradeHistorySummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [positionsLoading, setPositionsLoading] = useState(false);
   const [filter, setFilter] = useState<'all' | 'profit' | 'loss'>('all');
   const [sortBy, setSortBy] = useState<'recent' | 'profit' | 'duration'>('recent');
   const [activeTab, setActiveTab] = useState<'history' | 'positions'>('history');
@@ -73,8 +74,14 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
         let response;
         
         if (isCrypto) {
-          // Fetch crypto trade history from Binance endpoint
+          // Fetch crypto trade history from Alpaca endpoint
+          console.log('🔍 Fetching crypto trade history...');
           response = await tradeHistoryService.getCryptoTradeHistory({ limit: 100 });
+          console.log('📊 Crypto trade history response:', response);
+          console.log('📊 Number of crypto trades:', response.data?.length || 0);
+          if (response.data?.length > 0) {
+            console.log('📊 Sample crypto trades:', response.data.slice(0, 3));
+          }
         } else {
           // Fetch stock trade history from Alpaca endpoint
           response = await tradeHistoryService.getTradeHistory({ limit: 100 });
@@ -83,7 +90,7 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
         setTradeHistory(response.data);
         setSummary(response.summary);
       } catch (error) {
-        console.error('Failed to fetch trade history:', error);
+        console.error('❌ Failed to fetch trade history:', error);
       } finally {
         setLoading(false);
       }
@@ -96,6 +103,19 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
   const hasStockPositions = portfolioMetrics?.positions && portfolioMetrics.positions.length > 0;
   const hasCryptoPositions = cryptoMetrics?.positions && cryptoMetrics.positions.length > 0;
   const cryptoPositions = cryptoMetrics?.positions || [];
+  
+  // Debug log for positions whenever props change
+  useEffect(() => {
+    console.log('🔍 Leaderboard Position Update:', {
+      isCrypto,
+      hasStockPositions,
+      hasCryptoPositions,
+      cryptoPositionsCount: cryptoPositions.length,
+      cryptoPositions: cryptoPositions,
+      portfolioMetrics,
+      cryptoMetrics,
+    });
+  }, [cryptoMetrics, portfolioMetrics, isCrypto]);
   
   const totalUnrealizedPL = portfolioMetrics?.positions?.reduce((sum, pos) => {
     return sum + parseFloat(pos.unrealized_pl || '0');
@@ -206,6 +226,10 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
             {/* Summary Stats - Show different stats based on active tab */}
             {activeTab === 'history' && summary && (
               <div className="grid grid-cols-4 gap-2 mt-3">
+                <div className="rounded-lg bg-white/5 p-2 text-center">
+                  <div className="text-xs text-slate-400">Total Trades</div>
+                  <div className="text-sm font-bold text-white">{summary.totalTrades}</div>
+                </div>
                 <div className="rounded-lg bg-white/5 p-2 text-center">
                   <div className="text-xs text-slate-400">Total P&L</div>
                   <div className={`text-sm font-bold ${summary.totalProfitLoss >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -484,7 +508,9 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                           >
                             <div className="flex flex-col flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-2">
-                                <div className="text-lg font-bold text-white">{pos.symbol.replace(/USDT$/i, '')}</div>
+                                <div className="text-lg font-bold text-white">
+                                  {pos.symbol.split('/')[0]}
+                                </div>
                                 <span className="text-sm text-slate-400 font-medium">
                                   {pos.quantity.toFixed(4)} tokens
                                 </span>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
+import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { alpacaPaperTradingService, type AlpacaPosition, type AlpacaOrder, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
@@ -25,6 +25,13 @@ import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
 // ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
 const ACCOUNT_DATA_REFRESH_INTERVAL = 600000;  // 10 minutes - Fallback only
 const SIGNALS_REFRESH_INTERVAL = 300000;      // 5 minutes - Strategy signals
+
+// 🪙 Alpaca-supported cryptocurrencies (must match backend list)
+const ALPACA_SUPPORTED_CRYPTO = [
+  'BTC', 'ETH', 'LTC', 'BCH', 'USDT', 'USDC', 'XRP', 'DOGE', 'SHIB', 'MATIC',
+  'UNI', 'AAVE', 'LINK', 'MKR', 'ALGO', 'AVAX', 'DOT', 'SOL', 'ADA',
+  'XLM', 'ETC', 'FIL', 'GRT', 'SUSHI', 'YFI', 'BAT', 'CRV', 'ATOM'
+];
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -223,7 +230,7 @@ export default function PaperTradingPage() {
 
     const loadStatus = async () => {
       try {
-        const testnetStatus = await binanceTestnetService.getStatus();
+        const testnetStatus = await alpacaCryptoService.getStatus();
         setStatus(testnetStatus);
       } catch (err: any) {
         console.error("Failed to load testnet status:", err);
@@ -232,6 +239,62 @@ export default function PaperTradingPage() {
     loadStatus();
   }, [connectionType]);
 
+  const normalizeCryptoSymbol = (symbol: string) => {
+    if (!symbol) return symbol;
+    if (symbol.includes('/')) return symbol;
+    if (symbol.includes('-')) return symbol.replace('-', '/');
+
+    const knownQuotes = ['USDT', 'USDC', 'USD'];
+    const quote = knownQuotes.find((q) => symbol.endsWith(q));
+    if (quote) {
+      const base = symbol.slice(0, -quote.length);
+      return `${base}/${quote}`;
+    }
+
+    return symbol;
+  };
+
+  const calculateOpenPositionsFromOrders = (orders: any[]) => {
+    const positions = new Map<string, { quantity: number; avgPrice: number; totalCost: number }>();
+
+    const sortedByTime = [...orders].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+    for (const order of sortedByTime) {
+      if (order.status !== 'FILLED') continue;
+
+      const symbol = normalizeCryptoSymbol(order.symbol);
+      const qty = order.executedQuantity || order.quantity || 0;
+      const price = order.price || 0;
+
+      if (!positions.has(symbol)) {
+        positions.set(symbol, { quantity: 0, avgPrice: 0, totalCost: 0 });
+      }
+
+      const pos = positions.get(symbol)!;
+
+      if (order.side === 'BUY') {
+        const newTotalCost = pos.totalCost + (qty * price);
+        const newQuantity = pos.quantity + qty;
+        pos.avgPrice = newQuantity > 0 ? newTotalCost / newQuantity : 0;
+        pos.quantity = newQuantity;
+        pos.totalCost = newTotalCost;
+      } else {
+        pos.quantity -= qty;
+        if (pos.quantity <= 0) {
+          pos.quantity = 0;
+          pos.totalCost = 0;
+          pos.avgPrice = 0;
+        } else {
+          pos.totalCost = pos.quantity * pos.avgPrice;
+        }
+      }
+    }
+
+    return Array.from(positions.entries())
+      .filter(([_, pos]) => pos.quantity > 0)
+      .map(([symbol, pos]) => ({ symbol, ...pos }));
+  };
+
   // --- Load crypto orders from Binance testnet ---
   const loadCryptoOrders = async () => {
     if (connectionType !== "crypto") return;
@@ -239,148 +302,93 @@ export default function PaperTradingPage() {
     setLoadingCryptoOrders(true);
     
     try {
-      console.log("📡 Fetching orders from Binance Testnet...");
+      console.log("📡 Fetching crypto data from Alpaca...");
       
-      // Fetch all orders (open + filled)
-      const allOrders = await binanceTestnetService.getAllOrders(undefined, 100);
+      // Fetch both orders and positions in parallel (same as stock trading does)
+      const [allOrders, allPositions] = await Promise.all([
+        alpacaCryptoService.getOrders('all'),
+        alpacaCryptoService.getPositions(),
+      ]);
       
-      console.log("✅ Binance orders loaded:", allOrders?.length || 0);
-      console.log("📦 Raw orders data:", allOrders);
+      console.log("✅ Orders loaded:", allOrders?.length || 0);
+      console.log("✅ All positions from API:", allPositions?.length || 0, allPositions);
       
       setCryptoOrders(allOrders || []);
       
-      // Update open orders count (pending orders + open positions)
+      // Filter to only crypto positions (accept both BTC/USD and BTCUSD formats)
+      const cryptoPositionsFromAPI = allPositions
+        .filter(pos => pos.symbol.includes('/') || /USD(T|C)?$/.test(pos.symbol))
+        .map(pos => ({
+          ...pos,
+          symbol: normalizeCryptoSymbol(pos.symbol),
+        }));
+      
+      console.log("💰 Filtered crypto positions (with '/'):", cryptoPositionsFromAPI.length, cryptoPositionsFromAPI);
+      
+      // Transform Alpaca positions to our format (with P&L already calculated by Alpaca)
+      const positionsWithPrices = cryptoPositionsFromAPI.map(pos => ({
+        symbol: pos.symbol,
+        quantity: parseFloat(pos.qty || '0'),
+        avgPrice: parseFloat(pos.avg_entry_price || '0'),
+        totalCost: parseFloat(pos.cost_basis || '0'),
+        currentPrice: parseFloat(pos.current_price || '0'),
+        unrealizedPL: parseFloat(pos.unrealized_pl || '0'),
+        unrealizedPLPercent: parseFloat(pos.unrealized_plpc || '0'),
+      }));
+
+      const hasNonZeroPositions = positionsWithPrices.some((p) => p.quantity > 0);
+      const derivedPositions = calculateOpenPositionsFromOrders(allOrders || []);
+
+      setCryptoPositions(hasNonZeroPositions ? positionsWithPrices : derivedPositions);
+      
+      // Count pending orders
       const pendingOrdersCount = (allOrders || []).filter(
         (order: any) => order.status === 'NEW' || order.status === 'PARTIALLY_FILLED'
       ).length;
       
-      // Convert filled orders to trade records for leaderboard
+      // Total open count = pending orders + open positions
+      const totalOpenCount = pendingOrdersCount + (hasNonZeroPositions ? positionsWithPrices.length : derivedPositions.length);
+      setOpenOrdersCount(totalOpenCount);
+      
+      // Convert filled orders to trade records for trade history tab
       const filledOrders = (allOrders || []).filter(
         (order: any) => order.status === 'FILLED'
       );
       
-      console.log("📋 Filled orders:", filledOrders);
+      console.log("📋 Filled orders for history:", filledOrders.length);
       
-      // Calculate P/L by matching buys and sells
-      const buys: Map<string, { price: number; quantity: number; timestamp: number }[]> = new Map();
-      const records: TradeRecord[] = [];
-      
-      // Sort orders by timestamp to process in order
-      const sortedOrders = [...filledOrders].sort((a: any, b: any) => 
-        (a.timestamp || a.updateTime) - (b.timestamp || b.updateTime)
-      );
-      
-      sortedOrders.forEach((order: any) => {
-        // Calculate actual executed price for market orders
+      // Simple trade records from filled orders (for history display)
+      const records: TradeRecord[] = filledOrders.map((order: any) => {
         let entryPrice = 0;
         if (order.price && order.price > 0) {
-          // Limit order - use the limit price
           entryPrice = order.price;
         } else if (order.cumulativeQuoteAssetTransacted && order.executedQuantity) {
-          // Market order - calculate average price from executed values
           entryPrice = order.cumulativeQuoteAssetTransacted / order.executedQuantity;
         }
         
-        const symbol = order.symbol.replace(/USDT$/i, '');
-        const quantity = parseFloat(order.executedQuantity || order.origQty || '0');
-        let profitValue = 0;
-        
-        if (order.side.toUpperCase() === 'BUY') {
-          // Store buy order for P/L calculation
-          if (!buys.has(symbol)) {
-            buys.set(symbol, []);
-          }
-          buys.get(symbol)!.push({ price: entryPrice, quantity, timestamp: order.timestamp || order.updateTime });
-        } else if (order.side.toUpperCase() === 'SELL' && buys.has(symbol)) {
-          // Calculate P/L from matching buy orders (FIFO)
-          const buyOrders = buys.get(symbol)!;
-          let remainingQty = quantity;
-          
-          while (remainingQty > 0 && buyOrders.length > 0) {
-            const buyOrder = buyOrders[0];
-            const matchQty = Math.min(remainingQty, buyOrder.quantity);
-            profitValue += (entryPrice - buyOrder.price) * matchQty;
-            
-            buyOrder.quantity -= matchQty;
-            remainingQty -= matchQty;
-            
-            if (buyOrder.quantity <= 0) {
-              buyOrders.shift();
-            }
-          }
-        }
-        
-        records.push({
+        return {
           id: order.orderId.toString(),
           timestamp: order.timestamp || order.updateTime || Date.now(),
-          symbol,
+          symbol: order.symbol,
           type: order.side.toUpperCase() as "BUY" | "SELL",
           entryPrice: entryPrice > 0 ? entryPrice.toFixed(4) : '0',
-          profitValue,
-          strategyName: 'Binance Testnet Trade',
-        });
+          profitValue: 0, // P&L is calculated by trade history API
+          strategyName: 'Alpaca Crypto Trade',
+        };
       });
       
       setTradeRecords(records);
       
-      // Count open positions (filled BUYs without matching SELLs)
-      const openPositionsArray = Array.from(buys.entries())
-        .filter(([_, orders]) => orders.length > 0 && orders.reduce((sum, o) => sum + o.quantity, 0) > 0)
-        .map(([symbol, orders]) => {
-          const totalQty = orders.reduce((sum, o) => sum + o.quantity, 0);
-          const totalCost = orders.reduce((sum, o) => sum + o.price * o.quantity, 0);
-          const avgPrice = totalQty > 0 ? totalCost / totalQty : 0;
-          return {
-            symbol: symbol + 'USDT',
-            quantity: totalQty,
-            avgPrice,
-            totalCost,
-          };
-        });
-      
-      // Fetch current prices for open positions
-      const positionsWithPrices = await Promise.all(
-        openPositionsArray.map(async (pos) => {
-          try {
-            const ticker = await binanceTestnetService.getTickerPrice(pos.symbol);
-            const currentPrice = ticker?.price || pos.avgPrice;
-            const marketValue = pos.quantity * currentPrice;
-            const unrealizedPL = marketValue - pos.totalCost;
-            const unrealizedPLPercent = pos.totalCost > 0 ? (unrealizedPL / pos.totalCost) * 100 : 0;
-            return {
-              ...pos,
-              currentPrice,
-              unrealizedPL,
-              unrealizedPLPercent,
-            };
-          } catch {
-            return pos;
-          }
-        })
-      );
-      
-      setCryptoPositions(positionsWithPrices);
-      
-      const openPositionsCount = positionsWithPrices.length;
-      
-      // Total open count = pending orders + open positions
-      const totalOpenCount = pendingOrdersCount + openPositionsCount;
-      setOpenOrdersCount(totalOpenCount);
-      
-      console.log("💰 Crypto Orders Breakdown:", {
+      console.log("💰 Crypto Data Summary:", {
         "Total Orders": allOrders?.length || 0,
         "Pending Orders": pendingOrdersCount,
-        "Open Positions": openPositionsCount,
+        "Open Positions": positionsWithPrices.length,
         "Total Open": totalOpenCount,
-        "Filled Orders": filledOrders.length,
-        "Trade Records": records.length,
-        "Open Position Details": positionsWithPrices,
-        "Sample Order": allOrders?.[0],
-        "Sample Trade Record": records[0],
-        "Total Realized P/L": records.reduce((sum, r) => sum + r.profitValue, 0).toFixed(2),
+        "Positions Details": positionsWithPrices,
+        "Sample Position": positionsWithPrices[0],
       });
     } catch (err: any) {
-      console.error("❌ Failed to load crypto orders:", err);
+      console.error("❌ Failed to load crypto data:", err);
       console.error("Error details:", err.message, err.stack);
     } finally {
       setLoadingCryptoOrders(false);
@@ -392,8 +400,9 @@ export default function PaperTradingPage() {
     if (connectionType !== "crypto") return;
     
     try {
-      const response = await binanceTestnetService.getCryptoAutoTradingTrades();
-      if (response.success && response.data) {
+      const dashboard = await alpacaCryptoService.getDashboard();
+      if (dashboard && dashboard.recentOrders) {
+        const response = { success: true, data: dashboard.recentOrders };
         const automatedTrades = response.data.map((trade: any) => ({
           id: trade.id,
           timestamp: new Date(trade.timestamp).getTime(),
@@ -676,7 +685,7 @@ export default function PaperTradingPage() {
     
     try {
       lastAllOrdersFetch.current = Date.now();
-      await binanceTestnetService.getAllOrders(undefined, 100);
+      await alpacaCryptoService.getOrders('all');
     } catch (err: any) {
       console.error("Failed to fetch all orders:", err);
       
@@ -709,8 +718,9 @@ export default function PaperTradingPage() {
       setLoadingBalance(true);
 
       // Fetch only the account snapshot (fast single call to /balance)
-      const balanceData = await binanceTestnetService.getAccountBalance();
-      setBalance(balanceData.totalBalanceUSD);
+      const balanceData = await alpacaCryptoService.getAccountBalance();
+      // Use cash balance (remaining balance) instead of total portfolio value
+      setBalance(balanceData.balances[0].free);
 
       // Don't overwrite openOrdersCount here - let loadCryptoOrders handle it
       // since it properly calculates open positions (filled BUYs without matching SELLs)
@@ -1060,9 +1070,23 @@ export default function PaperTradingPage() {
 
   // Get current strategy and trades
   const currentStrategy = preBuiltStrategies[activeTab] || null;
-  const currentSignals = currentStrategy
+  let currentSignals = currentStrategy
     ? strategySignals[currentStrategy.strategy_id] || []
     : [];
+  
+  // Filter crypto signals to only show Alpaca-supported coins
+  if (connectionType === "crypto" && currentSignals.length > 0) {
+    currentSignals = currentSignals.filter((signal) => {
+      const asset = signal.asset || {};
+      const rawSymbol = asset.symbol || asset.asset_id || signal.asset_id || "";
+      // Remove USDT suffix to get clean symbol
+      const cleanSymbol = rawSymbol.replace(/USDT$/i, '').trim().toUpperCase();
+      // Check if this crypto is supported by Alpaca
+      const isSupported = ALPACA_SUPPORTED_CRYPTO.includes(cleanSymbol);
+      return isSupported;
+    });
+  }
+  
   const currentTrades = mapSignalsToTrades(currentSignals, currentStrategy);
 
   // Filter and sort trades
@@ -1134,7 +1158,7 @@ export default function PaperTradingPage() {
     }
   };
 
-  const handleTradeSuccess = (payload?: any) => {
+  const handleTradeSuccess = async (payload?: any) => {
     // payload may be unused by existing modals — use selectedSignal as fallback
     const signalToRecord = payload?.signal ?? selectedSignal ?? payload;
     if (signalToRecord) {
@@ -1154,9 +1178,19 @@ export default function PaperTradingPage() {
       setStockOpenOrders((prev) => prev + 1);
     } else {
       // Reload both balance and orders for crypto
-      loadAccountData();
-      loadCryptoOrders();
-      loadCryptoAutomatedTrades(); // Also load automated trades
+      console.log("🔄 Reloading crypto data after successful trade...");
+      
+      // Add small delay to ensure Alpaca has processed the order
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      await Promise.all([
+        loadAccountData(),
+        loadCryptoOrders(),
+        loadCryptoAutomatedTrades(),
+      ]);
+      
+      console.log("✅ Crypto data reloaded");
+      console.log("📊 Current positions:", cryptoPositions);
     }
     
     // Trigger instant refresh in OrdersPanel
@@ -1375,6 +1409,17 @@ export default function PaperTradingPage() {
             </svg>
             <span className="text-white">Custom</span>
           </Link>
+          {/* Trade Custom Strategies Button */}
+          <Link
+            href="/dashboard/custom-strategies-trading?mode=paper"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-600/30 to-purple-500/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-purple-600/40 hover:to-purple-500/30 transition-all border border-purple-500/40 hover:border-purple-500/60 shadow-lg shadow-purple-500/10 w-full sm:w-auto"
+            title="Trade with your custom strategies"
+          >
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span className="text-white">Trade Custom</span>
+          </Link>
           {/* Orders button - show for both */}
           <button
             onClick={() => setShowOrdersPanel(true)}
@@ -1388,7 +1433,13 @@ export default function PaperTradingPage() {
           </button>
           {/* Leaderboard button - show for both */}
           <button
-            onClick={() => setShowLeaderboard(true)}
+            onClick={() => {
+              // Refresh positions before opening leaderboard
+              if (isCryptoMode) {
+                loadCryptoOrders();
+              }
+              setShowLeaderboard(true);
+            }}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 w-full sm:w-auto"
             title="Open session leaderboard"
           >
@@ -1429,6 +1480,7 @@ export default function PaperTradingPage() {
       </div>
 
       {/* Balance Overview - Show for both crypto and stocks */}
+      {/* Balance already contains cash/remaining balance from Alpaca API */}
       <BalanceOverview
         balance={isStocksConnection ? stockPaperBalance : balance}
         openOrdersCount={isStocksConnection ? stockOpenOrders : openOrdersCount}
@@ -1730,6 +1782,13 @@ export default function PaperTradingPage() {
           } : undefined}
         />
       )}
+
+      {console.log('🔍 Leaderboard Data Check:', {
+        isStocksConnection,
+        cryptoPositionsCount: cryptoPositions.length,
+        cryptoPositions: cryptoPositions,
+        balance,
+      })}
 
       {/* Create Custom Strategy Modal - Only for crypto */}
 

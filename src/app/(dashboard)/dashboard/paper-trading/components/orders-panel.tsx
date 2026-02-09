@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
+import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { X, Loader2 } from "lucide-react";
 
 interface Order {
@@ -51,7 +51,7 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
       setError(null);
 
       // Backend now aggregates all symbols - single API call returns orders across all trading pairs
-      const allOrders = await binanceTestnetService.getAllOrders(undefined, 100);
+      const allOrders = await alpacaCryptoService.getOrders('all');
       
       // Sort by most recent first
       const sortedOrders = (allOrders || []).sort(
@@ -75,11 +75,12 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
       setCloseError(null);
 
       // Place a MARKET SELL order to close the position
-      await binanceTestnetService.placeOrder({
+      await alpacaCryptoService.placeOrder({
         symbol,
-        side: "SELL",
-        type: "MARKET",
-        quantity,
+        side: 'sell',
+        type: 'market',
+        qty: quantity,
+        time_in_force: 'gtc',
       });
 
       // Refresh orders after closing

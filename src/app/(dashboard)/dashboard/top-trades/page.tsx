@@ -852,12 +852,16 @@ export default function TopTradesPage() {
             </svg>
             <span className="text-white">My Strategies</span>
           </Link>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white whitespace-nowrap`}
+          <Link
+            href="/dashboard/custom-strategies-trading?mode=live"
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 whitespace-nowrap flex items-center gap-1.5 text-green-400"
+            title="Trade with your custom strategies (Live)"
           >
-            Create
-          </button>
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span>Trade Custom</span>
+          </Link>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}

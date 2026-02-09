@@ -3,22 +3,23 @@
  */
 
 /**
- * Map asset symbol to Binance testnet trading pair
+ * Map asset symbol to Alpaca trading pair format
+ * Converts to BTC/USD format for Alpaca (not BTCUSDT)
  */
 export function mapToTestnetSymbol(assetSymbol: string): string {
   if (!assetSymbol) return '';
   
-  // Remove all spaces and slashes first
-  let cleanSymbol = assetSymbol.replace(/\s+/g, '').replace(/\//g, '').toUpperCase();
+  // Remove spaces
+  let cleanSymbol = assetSymbol.replace(/\s+/g, '').toUpperCase();
   
-  // If already ends with USDT, return as-is
-  if (cleanSymbol.endsWith('USDT')) return cleanSymbol;
+  // If already in Alpaca format (contains /), return as-is
+  if (cleanSymbol.includes('/')) return cleanSymbol;
   
-  // Remove USDT if it appears anywhere and re-add at the end
-  cleanSymbol = cleanSymbol.replace(/USDT/g, '');
+  // Remove USDT/USDC suffixes if present
+  cleanSymbol = cleanSymbol.replace(/USDT?$/g, '').replace(/USDC$/g, '');
   
-  // Add USDT suffix
-  return `${cleanSymbol}USDT`;
+  // Return in Alpaca format: BTC/USD
+  return `${cleanSymbol}/USD`;
 }
 
 /**

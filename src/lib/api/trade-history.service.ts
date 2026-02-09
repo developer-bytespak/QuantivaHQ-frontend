@@ -37,12 +37,13 @@ export const tradeHistoryService = {
     until?: string;
   }): Promise<TradeHistoryResponse> {
     const queryParams = new URLSearchParams();
+    queryParams.append('type', 'stock'); // Filter for stocks only
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.after) queryParams.append('after', params.after);
     if (params?.until) queryParams.append('until', params.until);
     
     const query = queryParams.toString();
-    const path = `/alpaca-paper-trading/trade-history${query ? `?${query}` : ''}`;
+    const path = `/alpaca-paper-trading/trade-history?${query}`;
     
     const response = await apiRequest<null, TradeHistoryResponse>({
       path,
@@ -53,16 +54,17 @@ export const tradeHistoryService = {
 
   async getCryptoTradeHistory(params?: {
     limit?: number;
-    startTime?: number;
-    endTime?: number;
+    after?: string;
+    until?: string;
   }): Promise<TradeHistoryResponse> {
     const queryParams = new URLSearchParams();
+    queryParams.append('type', 'crypto'); // Filter for crypto only
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.startTime) queryParams.append('startTime', params.startTime.toString());
-    if (params?.endTime) queryParams.append('endTime', params.endTime.toString());
+    if (params?.after) queryParams.append('after', params.after);
+    if (params?.until) queryParams.append('until', params.until);
     
     const query = queryParams.toString();
-    const path = `/binance-testnet/trade-history${query ? `?${query}` : ''}`;
+    const path = `/alpaca-paper-trading/trade-history?${query}`;
     
     const response = await apiRequest<null, TradeHistoryResponse>({
       path,
