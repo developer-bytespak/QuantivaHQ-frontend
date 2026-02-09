@@ -26,7 +26,7 @@ const OPERATORS = [
 
 // Popular crypto symbols for quick add
 const POPULAR_CRYPTO = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"];
-// Popular stock symbols for quick add
+// Popular stock symbols for quick add - TO BE REPLACED WITH REAL ALPACA SYMBOLS
 const POPULAR_STOCKS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD"];
 
 interface Rule {
@@ -108,13 +108,20 @@ export default function CreateStrategyPage() {
   const [assetSearch, setAssetSearch] = useState("");
   const [assetResults, setAssetResults] = useState<AssetOption[]>([]);
   const [searchingAssets, setSearchingAssets] = useState(false);
+  const [realPopularStocks, setRealPopularStocks] = useState<string[]>(POPULAR_STOCKS);
 
   // Check connection type on mount
   useEffect(() => {
     const checkConnection = async () => {
       try {
         const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
+        const connType = response.data?.exchange?.type || null;
+        setConnectionType(connType);
+
+        // If stocks connection, fetch real popular stocks from Alpaca API
+        if (connType === "stocks") {
+          fetchRealPopularStocks();
+        }
       } catch (error) {
         console.error("Failed to check connection type:", error);
       } finally {
@@ -124,10 +131,33 @@ export default function CreateStrategyPage() {
     checkConnection();
   }, []);
 
+  // Fetch real popular stocks from Alpaca API
+  const fetchRealPopularStocks = async () => {
+    try {
+      console.log("🔍 Fetching real popular stocks from Alpaca...");
+      const response = await apiRequest<never, any>({
+        path: `/strategies/stocks/top-trades?limit=12`,
+        method: "GET",
+      });
+      
+      if (response?.stocks && Array.isArray(response.stocks)) {
+        const realSymbols = response.stocks.slice(0, 8).map((stock: any) => stock.symbol);
+        console.log("✅ Real Alpaca stock symbols:", realSymbols);
+        console.log("🔄 Old hardcoded:", POPULAR_STOCKS);
+        setRealPopularStocks(realSymbols);
+      } else {
+        console.log("⚠️ No real stocks found, keeping hardcoded symbols");
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch real popular stocks:", error);
+      console.log("Using hardcoded symbols as fallback");
+    }
+  };
+
   // Derived values
   const isStocksConnection = connectionType === "stocks";
   const assetTypeLabel = isStocksConnection ? "Stocks" : "Crypto Assets";
-  const popularAssets = isStocksConnection ? POPULAR_STOCKS : POPULAR_CRYPTO;
+  const popularAssets = isStocksConnection ? realPopularStocks : POPULAR_CRYPTO;
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
