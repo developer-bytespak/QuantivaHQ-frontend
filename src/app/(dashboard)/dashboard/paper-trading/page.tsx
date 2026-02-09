@@ -239,6 +239,62 @@ export default function PaperTradingPage() {
     loadStatus();
   }, [connectionType]);
 
+  const normalizeCryptoSymbol = (symbol: string) => {
+    if (!symbol) return symbol;
+    if (symbol.includes('/')) return symbol;
+    if (symbol.includes('-')) return symbol.replace('-', '/');
+
+    const knownQuotes = ['USDT', 'USDC', 'USD'];
+    const quote = knownQuotes.find((q) => symbol.endsWith(q));
+    if (quote) {
+      const base = symbol.slice(0, -quote.length);
+      return `${base}/${quote}`;
+    }
+
+    return symbol;
+  };
+
+  const calculateOpenPositionsFromOrders = (orders: any[]) => {
+    const positions = new Map<string, { quantity: number; avgPrice: number; totalCost: number }>();
+
+    const sortedByTime = [...orders].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+    for (const order of sortedByTime) {
+      if (order.status !== 'FILLED') continue;
+
+      const symbol = normalizeCryptoSymbol(order.symbol);
+      const qty = order.executedQuantity || order.quantity || 0;
+      const price = order.price || 0;
+
+      if (!positions.has(symbol)) {
+        positions.set(symbol, { quantity: 0, avgPrice: 0, totalCost: 0 });
+      }
+
+      const pos = positions.get(symbol)!;
+
+      if (order.side === 'BUY') {
+        const newTotalCost = pos.totalCost + (qty * price);
+        const newQuantity = pos.quantity + qty;
+        pos.avgPrice = newQuantity > 0 ? newTotalCost / newQuantity : 0;
+        pos.quantity = newQuantity;
+        pos.totalCost = newTotalCost;
+      } else {
+        pos.quantity -= qty;
+        if (pos.quantity <= 0) {
+          pos.quantity = 0;
+          pos.totalCost = 0;
+          pos.avgPrice = 0;
+        } else {
+          pos.totalCost = pos.quantity * pos.avgPrice;
+        }
+      }
+    }
+
+    return Array.from(positions.entries())
+      .filter(([_, pos]) => pos.quantity > 0)
+      .map(([symbol, pos]) => ({ symbol, ...pos }));
+  };
+
   // --- Load crypto orders from Binance testnet ---
   const loadCryptoOrders = async () => {
     if (connectionType !== "crypto") return;
@@ -259,14 +315,19 @@ export default function PaperTradingPage() {
       
       setCryptoOrders(allOrders || []);
       
-      // Filter to only crypto positions (symbols with '/')
-      const cryptoPositionsFromAPI = allPositions.filter(pos => pos.symbol.includes('/'));
+      // Filter to only crypto positions (accept both BTC/USD and BTCUSD formats)
+      const cryptoPositionsFromAPI = allPositions
+        .filter(pos => pos.symbol.includes('/') || /USD(T|C)?$/.test(pos.symbol))
+        .map(pos => ({
+          ...pos,
+          symbol: normalizeCryptoSymbol(pos.symbol),
+        }));
       
       console.log("💰 Filtered crypto positions (with '/'):", cryptoPositionsFromAPI.length, cryptoPositionsFromAPI);
       
       // Transform Alpaca positions to our format (with P&L already calculated by Alpaca)
       const positionsWithPrices = cryptoPositionsFromAPI.map(pos => ({
-        symbol: pos.symbol, // Already in BTC/USD format
+        symbol: pos.symbol,
         quantity: parseFloat(pos.qty || '0'),
         avgPrice: parseFloat(pos.avg_entry_price || '0'),
         totalCost: parseFloat(pos.cost_basis || '0'),
@@ -274,8 +335,11 @@ export default function PaperTradingPage() {
         unrealizedPL: parseFloat(pos.unrealized_pl || '0'),
         unrealizedPLPercent: parseFloat(pos.unrealized_plpc || '0'),
       }));
-      
-      setCryptoPositions(positionsWithPrices);
+
+      const hasNonZeroPositions = positionsWithPrices.some((p) => p.quantity > 0);
+      const derivedPositions = calculateOpenPositionsFromOrders(allOrders || []);
+
+      setCryptoPositions(hasNonZeroPositions ? positionsWithPrices : derivedPositions);
       
       // Count pending orders
       const pendingOrdersCount = (allOrders || []).filter(
@@ -283,7 +347,7 @@ export default function PaperTradingPage() {
       ).length;
       
       // Total open count = pending orders + open positions
-      const totalOpenCount = pendingOrdersCount + positionsWithPrices.length;
+      const totalOpenCount = pendingOrdersCount + (hasNonZeroPositions ? positionsWithPrices.length : derivedPositions.length);
       setOpenOrdersCount(totalOpenCount);
       
       // Convert filled orders to trade records for trade history tab
@@ -1369,7 +1433,13 @@ export default function PaperTradingPage() {
           </button>
           {/* Leaderboard button - show for both */}
           <button
-            onClick={() => setShowLeaderboard(true)}
+            onClick={() => {
+              // Refresh positions before opening leaderboard
+              if (isCryptoMode) {
+                loadCryptoOrders();
+              }
+              setShowLeaderboard(true);
+            }}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-slate-200 hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 w-full sm:w-auto"
             title="Open session leaderboard"
           >
