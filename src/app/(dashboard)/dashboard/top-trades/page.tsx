@@ -982,7 +982,7 @@ export default function TopTradesPage() {
               <p className="text-xs text-slate-500">Connect an exchange to view trading signals and strategies</p>
             </div>
             <Link 
-              href="/dashboard/settings/exchange-configuration" 
+              href={`/dashboard/settings/exchange-configuration?type=${connectionType || 'crypto'}`}
               className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Configure Exchange

@@ -553,7 +553,28 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        router.push("/dashboard/settings/exchange-configuration");
+        // Detect connection type from localStorage or fetch it
+        const getConnectionType = async () => {
+          try {
+            const { exchangesService } = await import("@/lib/api/exchanges.service");
+            const connections = await exchangesService.getConnections();
+            let connectionsArray: any[] = [];
+            
+            if (Array.isArray(connections)) {
+              connectionsArray = connections;
+            } else if (connections && typeof connections === 'object' && 'data' in connections) {
+              connectionsArray = (connections as any).data || [];
+            }
+            
+            const activeConn = connectionsArray.find((c: any) => c.status === 'active');
+            const type = activeConn?.exchange?.type || 'crypto';
+            router.push(`/dashboard/settings/exchange-configuration?type=${type}`);
+          } catch (error) {
+            // Fallback to crypto if we can't detect
+            router.push("/dashboard/settings/exchange-configuration?type=crypto");
+          }
+        };
+        getConnectionType();
       },
     },
     {
@@ -1033,27 +1054,6 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   </svg>
                   <span className="text-xs sm:text-sm font-medium text-white">Capture Photo</span>
                 </button>
-                {profileImage && (
-                  <button
-                    onClick={handleRemoveImage}
-                    className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-red-500/20 transition-colors text-red-400 border-t border-slate-700"
-                  >
-                    <svg
-                      className="w-4 sm:w-5 h-4 sm:h-5 text-red-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
-                    <span className="text-xs sm:text-sm font-medium text-red-400">Remove Photo</span>
-                  </button>
-                )}
               </div>
             )}
 
