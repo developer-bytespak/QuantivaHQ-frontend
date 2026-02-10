@@ -122,8 +122,12 @@ export async function apiRequest<TRequest, TResponse = unknown>({
         const currentPath = window.location.pathname;
         const isAuthPage = currentPath.includes("/onboarding") || currentPath === "/";
         
-        // Only redirect if not already on auth pages
-        if (!isAuthPage) {
+        // Don't redirect if it's a password change endpoint - let the error be caught by the component
+        const isPasswordChangeEndpoint = path.includes("/auth/change-password");
+        const isDeleteAccountEndpoint = path.includes("/auth/delete-account");
+        
+        // Only redirect if not already on auth pages and not handling 2FA verification
+        if (!isAuthPage && !isPasswordChangeEndpoint && !isDeleteAccountEndpoint) {
           // Clear any stored auth data
           localStorage.removeItem("quantivahq_pending_email");
           sessionStorage.clear();

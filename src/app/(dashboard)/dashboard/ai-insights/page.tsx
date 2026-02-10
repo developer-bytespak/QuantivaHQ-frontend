@@ -9,7 +9,6 @@ import { ComingSoon } from "@/components/common/coming-soon";
 // Extended news item with AI insights (for both crypto and stocks)
 interface AIEnhancedNewsItem extends CryptoNewsItem {
   symbol: string;
-  aiSummary?: string;
   impactScore?: number; // 0-100
   impactLevel?: "Low" | "Medium" | "High";
   marketMood?: "Bullish" | "Bearish" | "Neutral";
@@ -21,7 +20,6 @@ interface AIEnhancedNewsItem extends CryptoNewsItem {
 // Extended stock news item with AI insights
 interface AIEnhancedStockNewsItem extends StockNewsItem {
   symbol: string;
-  aiSummary?: string;
   impactScore?: number;
   impactLevel?: "Low" | "Medium" | "High";
   marketMood?: "Bullish" | "Bearish" | "Neutral";
@@ -104,14 +102,7 @@ function enhanceNewsWithAI(news: CryptoNewsItem, symbol: string): AIEnhancedNews
     news.sentiment.score > 0.1 ? "up" : 
     news.sentiment.score < -0.1 ? "down" : "neutral";
 
-  // Generate AI summary
-  const aiSummary = `This ${news.sentiment.label === "positive" ? "positive" : news.sentiment.label === "negative" ? "negative" : "neutral"} news suggests ${
-    marketMood === "Bullish" ? "increased market interest" :
-    marketMood === "Bearish" ? "potential market concerns" :
-    "neutral market conditions"
-  }. Historically, similar news has ${
-    marketMood === "Bullish" ? "boosted" : marketMood === "Bearish" ? "impacted" : "maintained"
-  } ${symbol} by ${Math.abs(news.sentiment.score * 10).toFixed(1)}-${(Math.abs(news.sentiment.score * 10) + 5).toFixed(1)}% within 24 hours.`;
+  // Use description from API response instead of generating static summary
 
   // Generate sparkline data (simulated price movement)
   const sparklineData = Array.from({ length: 20 }, (_, i) => {
@@ -124,7 +115,6 @@ function enhanceNewsWithAI(news: CryptoNewsItem, symbol: string): AIEnhancedNews
   return {
     ...news,
     symbol,
-    aiSummary,
     impactScore,
     impactLevel,
     marketMood,
@@ -160,14 +150,7 @@ function enhanceStockNewsWithAI(news: StockNewsItem, symbol: string): AIEnhanced
     news.sentiment.score > 0.1 ? "up" : 
     news.sentiment.score < -0.1 ? "down" : "neutral";
 
-  // Generate AI summary for stocks
-  const aiSummary = `This ${news.sentiment.label === "positive" ? "positive" : news.sentiment.label === "negative" ? "negative" : "neutral"} news indicates ${
-    marketMood === "Bullish" ? "increased investor confidence" :
-    marketMood === "Bearish" ? "potential market concerns" :
-    "neutral market sentiment"
-  } for ${symbol}. Based on sentiment analysis, the stock may ${
-    marketMood === "Bullish" ? "see upward movement" : marketMood === "Bearish" ? "face downward pressure" : "remain stable"
-  } in the short term.`;
+  // Use description from API response instead of generating static summary
 
   // Generate sparkline data
   const sparklineData = Array.from({ length: 20 }, (_, i) => {
@@ -180,7 +163,6 @@ function enhanceStockNewsWithAI(news: StockNewsItem, symbol: string): AIEnhanced
   return {
     ...news,
     symbol,
-    aiSummary,
     impactScore,
     impactLevel,
     marketMood,
@@ -1078,11 +1060,11 @@ export default function AIInsightsPage() {
                   </div>
                 </div>
 
-                {/* AI Summary */}
-                {news.aiSummary && (
+                {/* Description */}
+                {news.description && (
                   <div className="space-y-1 text-left mb-3 sm:mb-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">AI Summary</p>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">{news.aiSummary}</p>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">Description</p>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">{news.description}</p>
                   </div>
                 )}
 
@@ -1216,14 +1198,14 @@ export default function AIInsightsPage() {
                 <h2 className="text-lg sm:text-2xl font-bold text-white leading-tight">{selectedNews.title}</h2>
               </div>
 
-              {/* AI Summary Card */}
-              {selectedNews.aiSummary && (
+              {/* Description Card */}
+              {selectedNews.description && (
                 <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">
                     <div className="w-2 h-2 rounded-full bg-[#fc4f02] animate-pulse"></div>
-                    <p className="text-xs font-semibold text-[#fc4f02] uppercase tracking-wide">AI Summary</p>
+                    <p className="text-xs font-semibold text-[#fc4f02] uppercase tracking-wide">Description</p>
                   </div>
-                  <p className="text-xs sm:text-base text-slate-200 leading-relaxed">{selectedNews.aiSummary}</p>
+                  <p className="text-xs sm:text-base text-slate-200 leading-relaxed">{selectedNews.description}</p>
                 </div>
               )}
 
@@ -1324,12 +1306,6 @@ export default function AIInsightsPage() {
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Full Description */}
-              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30">
-                <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Full Description</p>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{selectedNews.description}</p>
               </div>
 
               {/* Footer with Actions */}
