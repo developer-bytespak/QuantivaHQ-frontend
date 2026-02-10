@@ -223,14 +223,14 @@ export async function generateAssetInsight(strategyId: string, assetId: string):
 }
 
 /**
- * Update a strategy
+ * Update a strategy (using backend-specified path)
  */
 export async function updateStrategy(
   strategyId: string,
   data: Partial<CreateStrategyDto>
 ): Promise<Strategy> {
   return apiRequest<Partial<CreateStrategyDto>, Strategy>({
-    path: `/strategies/${strategyId}`,
+    path: `/strategies/my-strategies/${strategyId}`,
     method: 'PUT',
     body: data,
   });

@@ -138,7 +138,11 @@ export default function CustomStrategiesTradingPage() {
       try {
         const response = await exchangesService.getActiveConnection();
         if (isMounted) {
-          setConnectionType(response.data?.exchange?.type || null);
+          // ✅ Backend correction: Check exchange.name for type detection
+          const exchangeName = response.data?.exchange?.name;
+          const connType = exchangeName === "Alpaca" ? "stocks" : 
+                          (exchangeName === "Binance" || exchangeName === "Bybit") ? "crypto" : null;
+          setConnectionType(connType);
         }
       } catch (error: any) {
         console.error("Failed to check connection type:", error);
@@ -202,56 +206,57 @@ export default function CustomStrategiesTradingPage() {
     }
   }, [connectionType, isPaperMode, isStocksConnection]);
 
-  // Fetch custom strategies
-  useEffect(() => {
-    const fetchStrategies = async () => {
-      // Only fetch when connection type is determined
-      if (connectionType === null) return;
-      
-      setLoadingStrategies(true);
-      setStrategiesError(null);
-      try {
-        // Use asset_type filter based on connection type (same as my-strategies page)
-        const assetType = connectionType === "stocks" ? "stock" : connectionType === "crypto" ? "crypto" : null;
-        const queryParam = assetType ? `?asset_type=${assetType}` : "";
-        const data = await apiRequest<never, UserStrategy[]>({
-          path: `/strategies/my-strategies${queryParam}`,
-          method: "GET",
+  // Fetch custom strategies function
+  const fetchStrategies = async () => {
+    // Only fetch when connection type is determined
+    if (connectionType === null) return;
+    
+    setLoadingStrategies(true);
+    setStrategiesError(null);
+    try {
+      // Use asset_type filter based on connection type (same as my-strategies page)
+      const assetType = connectionType === "stocks" ? "stock" : connectionType === "crypto" ? "crypto" : null;
+      const queryParam = assetType ? `?asset_type=${assetType}` : "";
+      const data = await apiRequest<never, UserStrategy[]>({
+        path: `/strategies/my-strategies${queryParam}`,
+        method: "GET",
+      });
+      console.log("📊 Fetched strategies:", data);
+      console.log("🔌 Connection type:", connectionType, "Asset type filter:", assetType);
+      if (!Array.isArray(data)) {
+        setStrategies([]);
+      } else {
+        // Log each strategy's type and details
+        data.forEach(s => {
+          console.log(`Strategy "${s.name}" (${s.strategy_id}): type=${s.type}, asset_type=${s.asset_type || 'undefined'}, active=${s.is_active}`);
+          console.log(`📊 Strategy target assets:`, s.target_assets);
+          console.log(`📈 Strategy metrics:`, s.metrics);
+          
+          // Calculate strategy age to determine if it's new
+          const createdAt = new Date(s.created_at);
+          const now = new Date();
+          const minutesOld = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60));
+          const isNew = minutesOld < 15; // Consider "new" if less than 15 minutes old
+          
+          setStrategyAges(prev => ({
+            ...prev,
+            [s.strategy_id]: { isNew, minutesOld }
+          }));
+          
+          console.log(`📅 Strategy "${s.name}" is ${minutesOld} minutes old (new: ${isNew})`);
         });
-        console.log("📊 Fetched strategies:", data);
-        console.log("🔌 Connection type:", connectionType, "Asset type filter:", assetType);
-        if (!Array.isArray(data)) {
-          setStrategies([]);
-        } else {
-          // Log each strategy's type and details
-          data.forEach(s => {
-            console.log(`Strategy "${s.name}" (${s.strategy_id}): type=${s.type}, asset_type=${s.asset_type || 'undefined'}, active=${s.is_active}`);
-            console.log(`📊 Strategy target assets:`, s.target_assets);
-            console.log(`📈 Strategy metrics:`, s.metrics);
-            
-            // Calculate strategy age to determine if it's new
-            const createdAt = new Date(s.created_at);
-            const now = new Date();
-            const minutesOld = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60));
-            const isNew = minutesOld < 15; // Consider "new" if less than 15 minutes old
-            
-            setStrategyAges(prev => ({
-              ...prev,
-              [s.strategy_id]: { isNew, minutesOld }
-            }));
-            
-            console.log(`📅 Strategy "${s.name}" is ${minutesOld} minutes old (new: ${isNew})`);
-          });
-          setStrategies(data);
-        }
-      } catch (err: any) {
-        console.error("Failed to load strategies:", err);
-        setStrategiesError(err?.message ?? String(err));
-      } finally {
-        setLoadingStrategies(false);
+        setStrategies(data);
       }
-    };
+    } catch (err: any) {
+      console.error("Failed to load strategies:", err);
+      setStrategiesError(err?.message ?? String(err));
+    } finally {
+      setLoadingStrategies(false);
+    }
+  };
 
+  // Fetch custom strategies on connection type change
+  useEffect(() => {
     fetchStrategies();
   }, [connectionType]);
 
@@ -313,7 +318,31 @@ export default function CustomStrategiesTradingPage() {
           );
           if (missingAssets.length > 0) {
             console.log(`⚠️ Missing signals for assets:`, missingAssets);
+            console.log(`🔧 SOLUTION: The strategy target assets were created with old hardcoded symbols.`);
+            console.log(`🔧 You need to either:`);
+            console.log(`   1. Recreate the strategy with real backend assets, OR`);
+            console.log(`   2. Check what symbols your backend actually supports for signal generation`);
           }
+        }
+        
+        // DEBUG: Check what assets are actually available in backend
+        console.log(`🔍 Checking what assets are actually available in backend...`);
+        try {
+          const backendAssets = await apiRequest<never, any[]>({
+            path: `/assets?asset_type=stock&limit=50`,
+            method: "GET",
+          });
+          console.log(`📋 Available backend stock assets:`, backendAssets?.map(a => a.symbol || a.asset_id)?.slice(0, 10));
+          
+          if (strategy?.target_assets) {
+            const availableTargets = strategy.target_assets.filter(target =>
+              backendAssets?.some(asset => (asset.symbol === target || asset.asset_id === target))
+            );
+            console.log(`✅ Target assets that exist in backend:`, availableTargets);
+            console.log(`❌ Target assets that DON'T exist in backend:`, strategy.target_assets.filter(t => !availableTargets.includes(t)));
+          }
+        } catch (e) {
+          console.log(`❌ Could not fetch backend assets:`, e);
         }
       }
       
@@ -382,6 +411,49 @@ export default function CustomStrategiesTradingPage() {
     } catch (err: any) {
       console.error(`❌ Generate signals error:`, err);
       alert(`Failed to generate signals: ${err?.message || err}`);
+    } finally {
+      setGeneratingSignals(null);
+    }
+  };
+
+  // Fix strategy assets by updating with real backend assets
+  const handleFixStrategyAssets = async (strategyId: string) => {
+    try {
+      setGeneratingSignals(strategyId);
+      
+      // Get real assets from backend
+      const assetType = connectionType === "stocks" ? "stock" : "crypto";
+      const backendAssets = await apiRequest<never, any[]>({
+        path: `/assets?asset_type=${assetType}&limit=50`,
+        method: "GET",
+      });
+      
+      if (!backendAssets || backendAssets.length === 0) {
+        alert(`No ${assetType} assets found in backend to update strategy`);
+        return;
+      }
+      
+      // Take first 8 as new target assets
+      const realSymbols = backendAssets.slice(0, 8).map((asset: any) => asset.symbol || asset.asset_id);
+      
+      // ✅ Update strategy with real assets using imported function
+      const { updateStrategy } = await import("@/lib/api/strategies");
+      await updateStrategy(strategyId, {
+        target_assets: realSymbols
+      });
+      
+      console.log(`✅ Updated strategy ${strategyId} with real ${assetType} assets:`, realSymbols);
+      alert(`✅ Strategy updated with ${realSymbols.length} real ${assetType} assets!\n\nNew assets: ${realSymbols.join(', ')}\n\nGenerating fresh signals...`);
+      
+      // Refresh strategies and generate signals
+      setTimeout(() => {
+        fetchStrategies();
+        handleGenerateSignals(strategyId);
+      }, 1000);
+      
+    } catch (err: any) {
+      console.error("Failed to fix strategy assets:", err);
+      alert(`❌ Failed to update strategy assets: ${err.message}`);
     } finally {
       setGeneratingSignals(null);
     }
@@ -854,6 +926,20 @@ export default function CustomStrategiesTradingPage() {
               </svg>
               Refresh
             </button>
+            {/* Fix Assets Button - Shows when missing signals */}
+            {currentStrategy?.target_assets && currentSignals.length > 0 && currentSignals.length < currentStrategy.target_assets.length && (
+              <button
+                onClick={() => handleFixStrategyAssets(currentStrategy.strategy_id)}
+                disabled={generatingSignals === currentStrategy.strategy_id}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm hover:shadow-lg hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                title={`Fix strategy assets - ${currentStrategy.target_assets.length - currentSignals.length} assets missing signals`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Fix Assets ({currentStrategy.target_assets.length - currentSignals.length} missing)
+              </button>
+            )}
             {/* Auto-refresh indicator */}
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
