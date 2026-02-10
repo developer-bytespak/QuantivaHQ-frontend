@@ -41,17 +41,27 @@ export interface CreateStrategyDto {
   is_active?: boolean;
 }
 
+export interface EngineWeights {
+  sentiment: number;
+  trend: number;
+  fundamental: number;
+  event_risk: number;
+  liquidity: number;
+}
+
 export interface Strategy {
   strategy_id: string;
   user_id?: string;
   name: string;
   type: string;
+  asset_type?: 'crypto' | 'stock';
   description?: string;
   risk_level: string;
   timeframe?: string;
   entry_rules?: EntryRule[];
   exit_rules?: ExitRule[];
   indicators?: IndicatorConfig[];
+  engine_weights?: EngineWeights;
   stop_loss_type?: string;
   stop_loss_value?: number;
   take_profit_type?: string;

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
+import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { alpacaPaperTradingService, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
 import { exchangesService } from "@/lib/api/exchanges.service";
@@ -169,7 +169,7 @@ export default function CustomStrategiesTradingPage() {
             setBalance(parseFloat(dashboard.account?.cash || "0"));
             setMarketOpen(dashboard.clock?.isOpen || false);
           } else {
-            const balanceData = await binanceTestnetService.getAccountBalance();
+            const balanceData = await alpacaCryptoService.getAccountBalance();
             setBalance(balanceData.totalBalanceUSD || 0);
           }
         } else {
@@ -181,8 +181,8 @@ export default function CustomStrategiesTradingPage() {
             setMarketOpen(dashboard.clock?.isOpen || false);
           } else {
             // For live crypto - would use main Binance API
-            // For now, using same testnet for demo
-            const balanceData = await binanceTestnetService.getAccountBalance();
+            // For now, using same Alpaca paper for demo
+            const balanceData = await alpacaCryptoService.getAccountBalance();
             setBalance(balanceData.totalBalanceUSD || 0);
           }
         }
@@ -410,7 +410,7 @@ export default function CustomStrategiesTradingPage() {
       }
     } else {
       try {
-        const balanceData = await binanceTestnetService.getAccountBalance();
+        const balanceData = await alpacaCryptoService.getAccountBalance();
         setBalance(balanceData.totalBalanceUSD || 0);
       } catch (e) {
         console.error("Failed to refresh balance:", e);

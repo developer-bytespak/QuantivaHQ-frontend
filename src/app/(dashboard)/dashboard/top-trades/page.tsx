@@ -139,6 +139,18 @@ export default function TopTradesPage() {
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
 
+  // Create strategy modal state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  // Create strategy form state
+  const [createName, setCreateName] = useState("");
+  const [createDescription, setCreateDescription] = useState("");
+  const [createStopLoss, setCreateStopLoss] = useState("5");
+  const [createTakeProfit, setCreateTakeProfit] = useState("10");
+  const [createRiskLevel, setCreateRiskLevel] = useState<"low" | "medium" | "high">("medium");
+
   // --- Helpers: map backend response into Trade[] (defensive) ---
   const mapBackendToTrades = (data: any[], isStock: boolean = false): Trade[] => {
     const uniqueData: any[] = [];
@@ -217,9 +229,11 @@ export default function TopTradesPage() {
     const checkConnection = async () => {
       try {
         const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
+        setConnectionType(response.data?.exchange?.type || "crypto"); // Default to crypto if no connection
       } catch (error) {
         console.error("Failed to check connection type:", error);
+        // Default to crypto on error to allow viewing strategies
+        setConnectionType("crypto");
       } finally {
         setIsCheckingConnection(false);
       }
@@ -353,21 +367,16 @@ export default function TopTradesPage() {
     (async () => {
       try {
         setLoadingPreBuilt(true);
-        const data = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
+        // Use asset_type query param to filter strategies on backend
+        const assetType = connectionType === "stocks" ? "stock" : "crypto";
+        const data = await apiRequest<never, Strategy[]>({ 
+          path: `/strategies/pre-built?asset_type=${assetType}`, 
+          method: "GET" 
+        });
         if (!mounted) return;
+        // Backend already filters by asset_type, just filter for admin strategies
         const adminOnly = (data || []).filter((s) => s?.type === "admin");
-        
-        // Filter strategies based on connection type
-        let filteredStrategies: Strategy[];
-        if (connectionType === "stocks") {
-          // For stocks, only show strategies with "(Stocks)" in the name
-          filteredStrategies = adminOnly.filter((s) => s?.name?.includes("(Stocks)"));
-        } else {
-          // For crypto, show strategies WITHOUT "(Stocks)" in the name
-          filteredStrategies = adminOnly.filter((s) => !s?.name?.includes("(Stocks)")).slice(0, 4);
-        }
-        
-        setPreBuiltStrategies(filteredStrategies);
+        setPreBuiltStrategies(adminOnly);
       } catch (err: any) {
         console.error("Failed to load pre-built strategies:", err);
         setPreBuiltError(err?.message || String(err));
@@ -874,8 +883,24 @@ export default function TopTradesPage() {
           <p className="text-xs sm:text-sm text-slate-400">Loading strategies...</p>
         </div>
       ) : preBuiltError ? (
-        <div className="rounded-lg sm:rounded-xl bg-red-600/10 p-4 sm:p-6 text-center">
-          <p className="text-xs sm:text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
+        <div className="rounded-lg sm:rounded-xl bg-red-600/10 p-4 sm:p-6 text-center border border-red-500/20">
+          <div className="flex flex-col items-center gap-3">
+            <div className="rounded-full bg-red-600/20 p-3">
+              <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.734 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs sm:text-sm text-red-300 mb-1">Failed to load strategies</p>
+              <p className="text-xs text-red-400/70">{preBuiltError}</p>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 px-3 py-1.5 text-xs text-red-300 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       ) : preBuiltStrategies.length > 0 ? (
         <div className="space-y-3 sm:space-y-4">
@@ -945,8 +970,24 @@ export default function TopTradesPage() {
           )}
         </div>
       ) : (
-        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.02] to-transparent p-4 sm:p-6 text-center">
-          <p className="text-xs sm:text-sm text-slate-400">No pre-built strategies available</p>
+        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-6 sm:p-8 text-center border border-white/10">
+          <div className="flex flex-col items-center gap-4">
+            <div className="rounded-full bg-slate-800/50 p-4">
+              <svg className="h-8 w-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-slate-300 mb-2">No trading strategies available</p>
+              <p className="text-xs text-slate-500">Connect an exchange to view trading signals and strategies</p>
+            </div>
+            <Link 
+              href={`/dashboard/settings/exchange-configuration?type=${connectionType || 'crypto'}`}
+              className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+            >
+              Configure Exchange
+            </Link>
+          </div>
         </div>
       )}
 
@@ -1302,7 +1343,108 @@ export default function TopTradesPage() {
         </div>
       )}
 
+      {/* Create Custom Strategy Modal - Works for both crypto and stocks */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-xl bg-[--color-surface] p-6 text-slate-100 ring-1 ring-white/5 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Create Custom {isStocksConnection ? 'Stock' : 'Crypto'} Strategy</h3>
+              <button className="text-slate-400" onClick={() => { setShowCreateModal(false); setCreateError(null); }} aria-label="Close">✕</button>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-sm text-slate-300">Name</label>
+                <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="My Custom Strategy" />
+              </div>
+              <div>
+                <label className="text-sm text-slate-300">Description</label>
+                <textarea className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} placeholder="Optional description" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-slate-300">Stop Loss %</label>
+                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createStopLoss} onChange={(e) => setCreateStopLoss(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-300">Take Profit %</label>
+                  <input className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createTakeProfit} onChange={(e) => setCreateTakeProfit(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-slate-300">Risk Level</label>
+                <select className="w-full rounded-md bg-[--color-surface-secondary] p-2 mt-1 text-slate-200" value={createRiskLevel} onChange={(e) => setCreateRiskLevel(e.target.value as any)}>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              {createError && <div className="text-sm text-red-400">{createError}</div>}
+              <div className="mt-4 flex justify-end gap-2">
+                <button className="rounded-md px-4 py-2 text-sm" onClick={() => { setShowCreateModal(false); setCreateError(null); }}>Cancel</button>
+                <button
+                  className="rounded-md px-4 py-2 text-sm bg-gradient-to-r from-[#10b981] to-[#06b6d4] text-white"
+                  onClick={async () => {
+                    // basic validation
+                    if (!createName || createName.trim().length < 2) {
+                      setCreateError("Please provide a name for the strategy");
+                      return;
+                    }
+                    setCreateError(null);
+                    setCreating(true);
+                    try {
+                      const stopLossNum = Number(createStopLoss);
+                      const takeProfitNum = Number(createTakeProfit);
+                      if (isNaN(stopLossNum) || stopLossNum < 0 || stopLossNum > 100) {
+                        setCreateError("Stop Loss must be a number between 0 and 100");
+                        setCreating(false);
+                        return;
+                      }
+                      if (isNaN(takeProfitNum) || takeProfitNum < 0 || takeProfitNum > 100) {
+                        setCreateError("Take Profit must be a number between 0 and 100");
+                        setCreating(false);
+                        return;
+                      }
 
+                      const dto = {
+                        name: createName,
+                        // backend expects 'admin' or 'user' — use 'user' for custom strategies
+                        type: "user",
+                        description: createDescription || `Created from Top Trades UI for ${isStocksConnection ? 'stocks' : 'crypto'}`,
+                        risk_level: createRiskLevel,
+                        // Use 'field' for new API format
+                        entry_rules: [{ field: "final_score", operator: ">", value: 0.25 }],
+                        exit_rules: [{ field: "final_score", operator: "<", value: -0.15 }],
+                        indicators: [],
+                        stop_loss_value: stopLossNum,
+                        take_profit_value: takeProfitNum,
+                        target_assets: [],
+                        is_active: true,
+                      };
+
+                      // Use correct endpoint based on connection type
+                      const endpoint = isStocksConnection ? "/strategies/custom/stocks" : "/strategies/custom/crypto";
+                      const created = await apiRequest<typeof dto, any>({ path: endpoint, method: "POST", body: dto });
+                      setPreBuiltStrategies((prev) => [created, ...prev]);
+                      setShowCreateModal(false);
+                      // apply preview automatically
+                      if (created?.strategy_id) await previewStrategy(created.strategy_id);
+                    } catch (e) {
+                      const er: any = e;
+                      console.error("Create custom strategy error:", er);
+                      setCreateError(er?.message ?? String(er) ?? "Failed to create strategy");
+                    } finally {
+                      setCreating(false);
+                    }
+                  }}
+                  disabled={creating}
+                >
+                  {creating ? "Creating..." : "Create & Preview"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

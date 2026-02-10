@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiRequest } from "@/lib/api/client";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 interface StrategyMetrics {
   total_signals: number;
@@ -18,6 +19,7 @@ interface UserStrategy {
   strategy_id: string;
   name: string;
   description?: string;
+  asset_type?: 'crypto' | 'stock';
   risk_level: string;
   is_active: boolean;
   timeframe?: string;
@@ -51,14 +53,31 @@ export default function MyStrategiesPage() {
   const [selected, setSelected] = useState<UserStrategy | null>(null);
   const [generatingSignals, setGeneratingSignals] = useState<string | null>(null);
   const [deletingStrategy, setDeletingStrategy] = useState<string | null>(null);
+  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
+
+
+  // Check connection type on mount
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const response = await exchangesService.getActiveConnection();
+        setConnectionType(response.data?.exchange?.type || null);
+      } catch (error) {
+        console.error("Failed to check connection type:", error);
+      }
+    };
+    checkConnection();
+  }, []);
 
   const fetchStrategies = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Use the new authenticated endpoint
+      // Use asset_type filter based on connection type
+      const assetType = connectionType === "stocks" ? "stock" : connectionType === "crypto" ? "crypto" : null;
+      const queryParam = assetType ? `?asset_type=${assetType}` : "";
       const data = await apiRequest<never, UserStrategy[]>({ 
-        path: "/strategies/my-strategies", 
+        path: `/strategies/my-strategies${queryParam}`, 
         method: "GET" 
       });
       if (!Array.isArray(data)) {
@@ -75,8 +94,11 @@ export default function MyStrategiesPage() {
   };
 
   useEffect(() => {
-    fetchStrategies();
-  }, []);
+    // Only fetch when connection type is determined
+    if (connectionType !== null) {
+      fetchStrategies();
+    }
+  }, [connectionType]);
 
   const handleGenerateSignals = async (strategyId: string) => {
     setGeneratingSignals(strategyId);

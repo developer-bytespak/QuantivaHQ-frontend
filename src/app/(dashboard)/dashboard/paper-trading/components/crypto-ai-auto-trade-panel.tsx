@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { binanceTestnetService } from "@/lib/api/binance-testnet.service";
+import { alpacaAutoTradingService } from "@/lib/api/alpaca-auto-trading.service";
 
 // Polling interval (3 seconds)
 const POLLING_INTERVAL = 3000;
@@ -265,8 +265,8 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const fetchStatus = useCallback(async () => {
     try {
       const [statusData, ocoData] = await Promise.all([
-        binanceTestnetService.getCryptoAutoTradingStatus(),
-        binanceTestnetService.getCryptoOcoOrders().catch(() => ({ data: { orders: [] } })),
+        alpacaAutoTradingService.getStatus(),
+        alpacaAutoTradingService.getBracketOrders().catch(() => ({ data: { orders: [] } })),
       ]);
       
       setStatus(statusData.data);
@@ -305,7 +305,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const handleStart = async () => {
     setActionLoading(true);
     try {
-      await binanceTestnetService.startCryptoAutoTrading();
+      await alpacaAutoTradingService.start();
       await fetchStatus();
     } catch (err: any) {
       setError(err?.message || "Failed to start");
@@ -318,7 +318,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const handlePause = async () => {
     setActionLoading(true);
     try {
-      await binanceTestnetService.pauseCryptoAutoTrading();
+      await alpacaAutoTradingService.pause();
       await fetchStatus();
     } catch (err: any) {
       setError(err?.message || "Failed to pause");
@@ -331,7 +331,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const handleResume = async () => {
     setActionLoading(true);
     try {
-      await binanceTestnetService.resumeCryptoAutoTrading();
+      await alpacaAutoTradingService.resume();
       await fetchStatus();
     } catch (err: any) {
       setError(err?.message || "Failed to resume");
@@ -344,7 +344,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const handleStop = async () => {
     setActionLoading(true);
     try {
-      await binanceTestnetService.stopCryptoAutoTrading();
+      await alpacaAutoTradingService.stop();
       await fetchStatus();
     } catch (err: any) {
       setError(err?.message || "Failed to stop");
@@ -357,7 +357,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const handleExecuteSingle = async () => {
     setActionLoading(true);
     try {
-      const result = await binanceTestnetService.executeCryptoSingleTrade();
+      const result = await alpacaAutoTradingService.executeSingle();
       if (!result.success) {
         setError(result.message);
       } else {
@@ -376,7 +376,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
   const handleExecuteAll = async () => {
     setActionLoading(true);
     try {
-      const result = await binanceTestnetService.executeCryptoAutoTradeNow();
+      const result = await alpacaAutoTradingService.executeNow();
       if (!result.success) {
         setError(result.message);
       } else {
@@ -431,8 +431,8 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
         <div className="p-4 border-b border-gray-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-2xl">₿</span>
-              <h2 className="text-xl font-bold text-white">Crypto AI Auto Trading</h2>
+            <span className="text-2xl">🤖</span>
+            <h2 className="text-xl font-bold text-white">AI Auto Trading</h2>
             </div>
             <div
               className={`px-3 py-1 rounded-full text-xs font-semibold uppercase ${getStatusColor(
