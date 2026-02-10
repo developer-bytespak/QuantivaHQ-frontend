@@ -7,6 +7,7 @@ type RequestParams<T> = {
   method?: HttpMethod;
   body?: T;
   timeout?: number;
+  credentials?: "include" | "omit" | "same-origin"; // Added for compatibility (handled globally by axios)
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
