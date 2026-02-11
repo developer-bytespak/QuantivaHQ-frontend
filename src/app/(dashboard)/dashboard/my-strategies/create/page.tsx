@@ -61,14 +61,19 @@ export default function CreateStrategyPage() {
     "paper-trading": "Paper Trading",
     "top-trades": "Top Trades",
     "my-strategies": "My Strategies",
+    "custom-strategies-trading": "Custom Trading",
   };
   
   // Determine back navigation
   const backUrl = via === "my-strategies" 
     ? `/dashboard/my-strategies?from=${from}` 
+    : via === "custom-strategies-trading"
+    ? `/dashboard/custom-strategies-trading?from=${from}`
     : `/dashboard/${from}`;
   const backPageName = via === "my-strategies" 
     ? "My Strategies" 
+    : via === "custom-strategies-trading"
+    ? "Custom Trading"
     : pageNames[from] || "My Strategies";
   
   const [currentStep, setCurrentStep] = useState<Step>("basics");

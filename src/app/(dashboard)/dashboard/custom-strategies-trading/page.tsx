@@ -7,6 +7,7 @@ import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { alpacaPaperTradingService, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { BalanceOverview } from "../paper-trading/components/balance-overview";
 import { StrategyCard } from "../paper-trading/components/strategy-card";
 import { AutoTradeModal } from "../paper-trading/components/auto-trade-modal";
 import { ManualTradeModal } from "../paper-trading/components/manual-trade-modal";
@@ -90,6 +91,15 @@ interface Trade {
 export default function CustomStrategiesTradingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const referrer = searchParams.get("from") || null;
+  
+  // Get page name for display
+  const pageNames: Record<string, string> = {
+    "paper-trading": "Paper Trading",
+    "top-trades": "Top Trades",
+    "my-strategies": "My Strategies",
+  };
+  const previousPageName = referrer ? pageNames[referrer] || referrer : null;
   
   // Mode: "paper" for testnet/paper trading, "live" for real trading
   const mode = searchParams.get("mode") || "paper";
@@ -127,6 +137,16 @@ export default function CustomStrategiesTradingPage() {
 
   // View modal for signal details
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // UI filters (matching Paper Trading page)
+  const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
+  const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
+  const ITEMS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Trade details overlay
+  const [showTradeOverlay, setShowTradeOverlay] = useState(false);
+  const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
 
   const isStocksConnection = connectionType === "stocks";
 
@@ -660,6 +680,45 @@ export default function CustomStrategiesTradingPage() {
     console.log('❌ Signals exist but no trades mapped - checking mapping function...');
   }
 
+  // Filter and sort trades (matching Paper Trading page logic)
+  const filteredAndSortedTrades = useMemo(() => {
+    let filtered = [...currentTrades];
+
+    // Time filter
+    if (timeFilter !== "all") {
+      const hoursMap = { "24h": 24, "7d": 168, "30d": 720 };
+      const maxHours = hoursMap[timeFilter];
+      filtered = filtered.filter((t) => t.hoursAgo <= maxHours);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      if (sortBy === "profit") return b.profitValue - a.profitValue;
+      if (sortBy === "volume") return b.volumeValue - a.volumeValue;
+      return b.winRateValue - a.winRateValue;
+    });
+
+    return filtered;
+  }, [currentTrades, timeFilter, sortBy]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedTrades.length / ITEMS_PER_PAGE);
+  const paginatedTrades = filteredAndSortedTrades.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [timeFilter, sortBy, activeTab]);
+
+  // View trade handler
+  const handleViewTrade = (index: number) => {
+    setSelectedTradeIndex(index);
+    setShowTradeOverlay(true);
+  };
+
   // Trade handlers
   const handleAutoTrade = (trade: Trade) => {
     setSelectedSignal(trade);
@@ -710,22 +769,48 @@ export default function CustomStrategiesTradingPage() {
   // No connection state
   if (!connectionType) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-16">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10 flex items-center justify-center">
-          <svg className="w-10 h-10 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
+      <div className="space-y-6 pb-8">
+        {/* Hero Header */}
+        <div className="relative rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 via-[#fda300]/10 to-transparent p-6 sm:p-8 border border-[#fc4f02]/20 overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#fc4f02] to-[#fda300] flex items-center justify-center shadow-lg shadow-[#fc4f02]/30">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Custom Strategy Trading</h2>
+            </div>
+            <p className="text-sm sm:text-base text-slate-400 max-w-md">Build powerful custom trading strategies with AI-powered signals</p>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-3">Connect Exchange First</h2>
-        <p className="text-slate-400 mb-6">
-          Please connect your exchange account to start trading with custom strategies.
-        </p>
-        <Link
-          href="/dashboard/settings/exchanges"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 transition-all"
-        >
-          Connect Exchange
-        </Link>
+
+        {/* Empty State Card */}
+        <div className="relative rounded-2xl bg-gradient-to-br from-white/[0.05] to-transparent p-12 text-center border border-white/5 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5"></div>
+          <div className="relative">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
+              <svg className="w-10 h-10 text-[#fda300]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Connect Exchange First</h3>
+            <p className="text-slate-400 mb-6 max-w-sm mx-auto">
+              Please connect your exchange account to start trading with custom strategies.
+            </p>
+            <Link
+              href="/dashboard/settings/exchange-configuration"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Connect Exchange
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -733,228 +818,224 @@ export default function CustomStrategiesTradingPage() {
   // No strategies state
   if (strategies.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-16">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10 flex items-center justify-center">
-          <svg className="w-10 h-10 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
+      <div className="space-y-6 pb-8">
+        {/* Hero Header */}
+        <div className="relative rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 via-[#fda300]/10 to-transparent p-6 sm:p-8 border border-[#fc4f02]/20 overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+          <div className="relative">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#fc4f02] to-[#fda300] flex items-center justify-center shadow-lg shadow-[#fc4f02]/30">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">Custom Strategy Trading</h2>
+                </div>
+                <p className="text-sm sm:text-base text-slate-400 max-w-md">Build powerful custom trading strategies with AI-powered signals</p>
+              </div>
+              <Link
+                href="/dashboard/my-strategies/create?from=custom-strategies-trading"
+                className="rounded-xl px-5 py-3 bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 transition-all duration-200 flex items-center gap-2 group"
+              >
+                <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Strategy
+              </Link>
+            </div>
+          </div>
         </div>
-        <h2 className="text-2xl font-bold text-white mb-3">No Custom Strategies Yet</h2>
-        <p className="text-slate-400 mb-6">
-          Create your first custom strategy to start generating signals and trading.
-        </p>
-        <Link
-          href="/dashboard/my-strategies/create?from=custom-strategies-trading"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 transition-all"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Create Strategy
-        </Link>
+
+        {/* Empty State Card */}
+        <div className="relative rounded-2xl bg-gradient-to-br from-white/[0.05] to-transparent p-12 text-center border border-white/5 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5"></div>
+          <div className="relative">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
+              <svg className="w-10 h-10 text-[#fda300]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <p className="text-xl font-semibold text-white mb-3">No Custom Strategies Yet</p>
+            <p className="text-slate-400 mb-6 max-w-sm mx-auto">Create your first custom trading strategy and let AI generate powerful signals for you.</p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link
+                href="/dashboard/my-strategies?from=custom-strategies-trading"
+                className="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-white/5 text-white font-medium border border-white/10 hover:bg-white/10 hover:border-[#fc4f02]/30 transition-all duration-200"
+              >
+                <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                View My Strategies
+              </Link>
+              <Link
+                href="/dashboard/my-strategies/create?from=custom-strategies-trading"
+                className="inline-flex items-center gap-2 rounded-xl px-6 py-3 bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 transition-all duration-200 group"
+              >
+                <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Your First Strategy
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Hero Header */}
-      <div className="relative rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 via-[#fda300]/10 to-transparent p-6 border border-[#fc4f02]/20 overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div className="relative">
-          {/* Back Button */}
-          <Link
-            href={`/dashboard/my-strategies?from=${isPaperMode ? "paper-trading" : "top-trades"}`}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors mb-3 group"
-          >
-            <svg
-              className="w-4 h-4 text-white group-hover:-translate-x-1 transition-transform"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="text-white/90 group-hover:text-[#fda300]">Back to My Strategies</span>
-          </Link>
+    <div className="space-y-4 sm:space-y-6 pb-8">
+      {/* Back Button */}
+      {referrer && previousPageName ? (
+        <Link
+          href={referrer === "paper-trading" ? "/dashboard/paper-trading" : referrer === "top-trades" ? "/dashboard/top-trades" : "/dashboard"}
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-white hover:text-[#fda300] transition-colors group mb-2"
+        >
+          <svg className="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>Back to {previousPageName}</span>
+        </Link>
+      ) : null}
 
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#fc4f02] to-[#fda300] flex items-center justify-center shadow-lg shadow-[#fc4f02]/30">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                    Custom Strategy Trading
-                  </h1>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        isPaperMode
-                          ? "bg-blue-500/20 text-blue-400"
-                          : "bg-green-500/20 text-green-400"
-                      }`}
-                    >
-                      {isPaperMode ? "📄 Paper Trading" : "💰 Live Trading"}
-                    </span>
-                    <span className="text-slate-400 text-sm">
-                      {isStocksConnection ? "Stocks" : "Crypto"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-slate-400 max-w-lg">
-                Execute trades using signals from your custom AI-powered strategies
-              </p>
-            </div>
-
-            {/* Balance Display */}
-            <div className="bg-white/5 rounded-xl px-5 py-3 border border-white/10">
-              <p className="text-xs text-slate-400 mb-1">Available Balance</p>
-              <p className="text-2xl font-bold text-white">
-                {loadingBalance ? (
-                  <span className="inline-block w-24 h-7 bg-white/10 rounded animate-pulse"></span>
-                ) : (
-                  formatCurrency(balance)
-                )}
-              </p>
-              {isStocksConnection && (
-                <p className={`text-xs mt-1 ${marketOpen ? "text-green-400" : "text-yellow-400"}`}>
-                  Market {marketOpen ? "Open" : "Closed"}
-                </p>
-              )}
-            </div>
-          </div>
+      {/* Header - Matching Paper Trading page */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div>
+          <h1 className="text-xl sm:text-3xl font-bold text-white">
+            Custom Strategy Trading
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            {isStocksConnection 
+              ? "Execute trades using your custom AI-powered stock strategies"
+              : "Execute trades using your custom AI-powered crypto strategies"
+            }
+          </p>
         </div>
-      </div>
 
-      {/* Strategy Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-white/10">
-        {strategies.map((strategy, idx) => (
-          <button
-            key={strategy.strategy_id}
-            onClick={() => setActiveTab(idx)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
-              activeTab === idx
-                ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
-                : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-white"
-            }`}
+        {/* Buttons - Matching Paper Trading page style */}
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+          {/* My Strategies Button */}
+          <Link
+            href={`/dashboard/my-strategies?from=${referrer || "paper-trading"}`}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 hover:border-slate-500/50 shadow-lg shadow-slate-900/30 w-full sm:w-auto"
+            title="View and manage your strategies"
           >
-            <span>{strategy.name}</span>
-            <span
-              className={`px-1.5 py-0.5 rounded text-xs ${
-                activeTab === idx ? "bg-white/20" : "bg-white/10"
-              }`}
-            >
-              {strategy.metrics?.total_signals || 0}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Current Strategy Info & Refresh */}
-      {currentStrategy && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-white/5 border border-white/10">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-white">{currentStrategy.name}</h3>
-              {currentStrategy.is_active && (
-                <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                  Active
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-slate-400 mt-1">
-              {currentStrategy.description || "No description"}
-            </p>
-            <p className="text-slate-400 mb-6 text-center">
-              <span className="font-medium">Target Assets ({currentStrategy?.target_assets?.length || 0}):</span><br/>
-              <span className="text-sm text-slate-500">
-                {currentStrategy?.target_assets?.join(', ') || 'No target assets configured'}
-              </span>
-            </p>
-            <div className="flex items-center gap-4 mt-2 text-xs justify-center">
-              <span className="text-emerald-400">
-                {currentStrategy.metrics?.buy_signals || 0} BUY
-              </span>
-              <span className="text-red-400">
-                {currentStrategy.metrics?.sell_signals || 0} SELL
-              </span>
-              <span className="text-slate-400">
-                {currentStrategy.metrics?.hold_signals || 0} HOLD
-              </span>
-              <span className="text-slate-500">
-                {currentStrategy.target_assets?.length || 0} assets
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Last Updated */}
-            {lastRefresh[currentStrategy.strategy_id] && (
-              <div className="text-xs text-slate-500">
-                Updated {new Date(lastRefresh[currentStrategy.strategy_id]).toLocaleTimeString()}
-              </div>
-            )}
-            {/* Generate Signals Button */}
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-white">My Strategies</span>
+          </Link>
+          {/* Create Strategy Button */}
+          <Link
+            href={`/dashboard/my-strategies/create?from=${referrer || "paper-trading"}&via=custom-strategies-trading`}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 transition-all border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 shadow-lg shadow-[#fc4f02]/10 w-full sm:w-auto"
+            title="Create a custom trading strategy"
+          >
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span className="text-white">Create Strategy</span>
+          </Link>
+          {/* Generate Signals Button */}
+          {currentStrategy && (
             <button
               onClick={() => handleGenerateSignals(currentStrategy.strategy_id)}
               disabled={generatingSignals === currentStrategy.strategy_id}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm hover:shadow-lg hover:shadow-[#fc4f02]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              title="Generate new signals"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-600/30 to-purple-500/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-purple-600/40 hover:to-purple-500/30 transition-all border border-purple-500/40 hover:border-purple-500/60 shadow-lg shadow-purple-500/10 w-full sm:w-auto disabled:opacity-50"
+              title="Generate new signals for current strategy"
             >
-              <svg 
-                className={`w-4 h-4 ${generatingSignals === currentStrategy.strategy_id ? 'animate-spin' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
+              <svg className={`w-3.5 h-3.5 text-white ${generatingSignals === currentStrategy.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              {generatingSignals === currentStrategy.strategy_id ? 'Generating...' : 'Generate Signals'}
+              <span className="text-white">{generatingSignals === currentStrategy.strategy_id ? 'Generating...' : 'Generate'}</span>
             </button>
-            {/* Refresh Button */}
-            <button
-              onClick={() => fetchStrategySignals(currentStrategy.strategy_id, true)}
-              disabled={loadingSignals[currentStrategy.strategy_id]}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-slate-300 text-sm hover:bg-white/10 hover:text-white disabled:opacity-50 transition-all"
-              title="Refresh signals"
-            >
-              <svg 
-                className={`w-4 h-4 ${loadingSignals[currentStrategy.strategy_id] ? 'animate-spin' : ''}`} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Refresh
-            </button>
-            {/* Fix Assets Button - Shows when missing signals */}
-            {currentStrategy?.target_assets && currentSignals.length > 0 && currentSignals.length < currentStrategy.target_assets.length && (
-              <button
-                onClick={() => handleFixStrategyAssets(currentStrategy.strategy_id)}
-                disabled={generatingSignals === currentStrategy.strategy_id}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm hover:shadow-lg hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                title={`Fix strategy assets - ${currentStrategy.target_assets.length - currentSignals.length} assets missing signals`}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Fix Assets ({currentStrategy.target_assets.length - currentSignals.length} missing)
-              </button>
-            )}
-            {/* Auto-refresh indicator */}
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              Auto-refresh 60s
+          )}
+        </div>
+      </div>
+
+      {/* Balance Overview - Using same component as Paper Trading */}
+      <BalanceOverview
+        balance={balance}
+        openOrdersCount={0}
+        loading={loadingBalance}
+        isStockMode={isStocksConnection}
+        alpacaConnected={true}
+        marketOpen={marketOpen}
+        positionsCount={0}
+        dailyChange={0}
+        dailyChangePercent={0}
+        portfolioValue={balance}
+      />
+
+      {/* Strategy Tabs - Matching Paper Trading */}
+      {strategies.length > 0 ? (
+        <div className="rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-4 backdrop-blur">
+          <div className="flex gap-2 overflow-x-auto border-b border-white/10 pb-2 scrollbar-thin scrollbar-thumb-white/10">
+            {strategies.map((strategy, idx) => {
+              const strategyId = strategy.strategy_id;
+              const isLoading = loadingSignals[strategyId];
+              const error = signalsError[strategyId];
+              const signalCount = strategySignals[strategyId]?.length || 0;
+
+              return (
+                <button
+                  key={strategyId}
+                  onClick={() => setActiveTab(idx)}
+                  className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all rounded-t-lg whitespace-nowrap ${
+                    activeTab === idx
+                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  {strategy.name}
+                  {!isLoading && !error && (
+                    <span className="ml-1 sm:ml-2 text-xs opacity-70">({signalCount})</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Filters */}
+          <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3">
+            <div className="flex gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 w-full sm:w-auto">
+              {(["24h", "7d", "30d", "all"] as const).map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setTimeFilter(period)}
+                  className={`rounded-md px-2 sm:px-4 py-1 sm:py-2 text-xs font-medium transition-all flex-1 sm:flex-none ${
+                    timeFilter === period
+                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {period === "all" ? "All" : period}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-1 sm:gap-2 w-full sm:w-auto">
+              <span className="text-xs sm:text-sm text-slate-400">Sort:</span>
+              {(["profit", "volume", "winrate"] as const).map((sort) => (
+                <button
+                  key={sort}
+                  onClick={() => setSortBy(sort)}
+                  className={`rounded-md px-2 sm:px-3 py-0.5 sm:py-1 text-xs font-medium transition-all ${
+                    sortBy === sort
+                      ? "bg-slate-700 text-white"
+                      : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {sort.charAt(0).toUpperCase() + sort.slice(1)}
+                </button>
+              ))}
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Signals Grid */}
       <div>
@@ -967,164 +1048,80 @@ export default function CustomStrategiesTradingPage() {
               ></div>
             ))}
           </div>
-        ) : signalsError[currentStrategy?.strategy_id] === "NEW_STRATEGY" ? (
-          <div className="text-center py-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-blue-400 mb-2">🎉 Strategy Created Successfully!</h3>
-            <p className="text-blue-300 mb-4 max-w-md mx-auto">
-              Your {isStocksConnection ? 'stock' : 'crypto'} strategy "{currentStrategy?.name}" is ready!
-            </p>
-            <div className="bg-blue-500/10 rounded-lg p-4 mb-6 max-w-lg mx-auto">
-              <div className="flex items-center justify-center gap-2 text-blue-400 text-sm mb-2">
-                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-                <span className="font-medium">Signals generate automatically every 10 minutes</span>
-              </div>
-              <p className="text-blue-300 text-xs">
-                Your first signals should appear within the next {Math.max(1, 10 - (strategyAges[currentStrategy?.strategy_id]?.minutesOld || 0))} minutes.
-              </p>
-            </div>
-            <div className="space-y-3">
-              <button
-                onClick={() => currentStrategy && handleGenerateSignals(currentStrategy.strategy_id)}
-                disabled={generatingSignals === currentStrategy?.strategy_id}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 transition-all"
-              >
-                <svg className={`w-5 h-5 ${generatingSignals === currentStrategy?.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                {generatingSignals === currentStrategy?.strategy_id ? 'Generating Signals...' : 'Generate Signals Now'}
-              </button>
-              <div className="text-xs text-blue-400">
-                Or wait for automatic generation (next cycle in ~{Math.max(1, 10 - (strategyAges[currentStrategy?.strategy_id]?.minutesOld || 0) % 10)} min)
-              </div>
-            </div>
+        ) : currentStrategy && loadingSignals[currentStrategy.strategy_id] ? (
+          <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 text-center backdrop-blur">
+            <p className="text-xs sm:text-sm text-slate-400">Loading signals...</p>
           </div>
-        ) : signalsError[currentStrategy?.strategy_id] === "NO_SIGNALS_EVER" ? (
-          <div className="text-center py-16 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-amber-400 mb-2">No Signals Generated</h3>
-            <p className="text-amber-300 mb-4 max-w-md mx-auto">
-              This strategy hasn't generated any signals yet. This could mean:
-            </p>
-            <div className="bg-amber-500/10 rounded-lg p-4 mb-6 max-w-md mx-auto">
-              <ul className="text-amber-300 text-sm space-y-1 text-left">
-                <li>• No {isStocksConnection ? 'stocks' : 'crypto assets'} match your strategy criteria</li>
-                <li>• Strategy rules are too restrictive</li>
-                <li>• Signal generation may have encountered errors</li>
-              </ul>
-            </div>
-            <div className="space-y-3">
-              <button
-                onClick={() => currentStrategy && handleGenerateSignals(currentStrategy.strategy_id)}
-                disabled={generatingSignals === currentStrategy?.strategy_id}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/30 disabled:opacity-50 transition-all"
-              >
-                <svg className={`w-5 h-5 ${generatingSignals === currentStrategy?.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                {generatingSignals === currentStrategy?.strategy_id ? 'Generating...' : 'Try Generate Signals'}
-              </button>
-              <div className="text-xs text-amber-400">
-                Strategy age: {strategyAges[currentStrategy?.strategy_id]?.minutesOld || 0} minutes
-              </div>
-            </div>
-          </div>
-        ) : signalsError[currentStrategy?.strategy_id] && signalsError[currentStrategy?.strategy_id] !== "NO_CURRENT_SIGNALS" ? (
-          <div className="text-center py-16 rounded-2xl bg-red-500/10 border border-red-500/20">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-red-400 mb-2">Failed to Load Signals</h3>
-            <p className="text-red-300 mb-4 max-w-md mx-auto text-sm">
-              {signalsError[currentStrategy?.strategy_id]}
+        ) : signalsError[currentStrategy?.strategy_id || ""] && signalsError[currentStrategy?.strategy_id || ""] !== "NO_CURRENT_SIGNALS" && signalsError[currentStrategy?.strategy_id || ""] !== "NEW_STRATEGY" && signalsError[currentStrategy?.strategy_id || ""] !== "NO_SIGNALS_EVER" ? (
+          <div className="rounded-lg sm:rounded-2xl bg-red-600/10 p-6 sm:p-8 text-center">
+            <p className="text-xs sm:text-sm text-red-300">
+              Failed to load signals: {signalsError[currentStrategy?.strategy_id || ""]}
             </p>
             <button
               onClick={() => currentStrategy && fetchStrategySignals(currentStrategy.strategy_id, true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm hover:bg-red-500/30 transition-all"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm hover:bg-red-500/30 transition-all"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
               Retry
             </button>
           </div>
-        ) : currentTrades.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {currentTrades.map((trade, idx) => (
-              <StrategyCard
-                key={trade.id}
-                signal={trade}
-                index={idx}
-                onAutoTrade={() => handleAutoTrade(trade)}
-                onManualTrade={() => handleManualTrade(trade)}
-                onViewDetails={() => handleViewDetails(trade)}
-                isStockMode={isStocksConnection}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16 rounded-2xl bg-white/5 border border-white/5">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#fc4f02]/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
+        ) : paginatedTrades.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {paginatedTrades.map((trade, index) => (
+                <StrategyCard
+                  key={trade.id}
+                  signal={trade}
+                  index={index}
+                  onAutoTrade={() => handleAutoTrade(trade)}
+                  onManualTrade={() => handleManualTrade(trade)}
+                  onViewDetails={() => handleViewTrade(index)}
+                  hideTradeButtons={false}
+                  isStockMode={isStocksConnection}
                 />
-              </svg>
+              ))}
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">No Current Signals</h3>
-            <p className="text-slate-400 mb-6 max-w-md mx-auto">
-              {isStocksConnection 
-                ? "No stock signals available right now. Market conditions may not match your strategy criteria."
-                : "No crypto signals available right now. Market conditions may not match your strategy criteria."
-              }
+
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-center gap-2 sm:gap-3">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <div className="text-xs text-slate-400">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 text-center backdrop-blur">
+            <p className="text-xs sm:text-sm text-slate-400">
+              {currentStrategy
+                ? `No signals available for ${currentStrategy.name}. ${isStocksConnection ? 'Stock signals are generated every 10 minutes during market hours.' : 'Signals are generated every 10 minutes.'}`
+                : "No signals found for the selected time period"}
             </p>
-            <div className="space-y-4">
+            {currentStrategy && (
               <button
-                onClick={() => currentStrategy && handleGenerateSignals(currentStrategy.strategy_id)}
-                disabled={generatingSignals === currentStrategy?.strategy_id}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 disabled:opacity-50 transition-all"
+                onClick={() => handleGenerateSignals(currentStrategy.strategy_id)}
+                disabled={generatingSignals === currentStrategy.strategy_id}
+                className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm hover:shadow-lg hover:shadow-[#fc4f02]/30 disabled:opacity-50 transition-all"
               >
-                <svg className={`w-5 h-5 ${generatingSignals === currentStrategy?.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className={`w-4 h-4 ${generatingSignals === currentStrategy.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                {generatingSignals === currentStrategy?.strategy_id ? 'Generating Signals...' : 'Generate Fresh Signals'}
+                {generatingSignals === currentStrategy.strategy_id ? 'Generating...' : 'Generate Signals'}
               </button>
-              <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                Auto-refresh enabled • Signals generate every 10 minutes
-              </div>
-              <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                Raw signals: {currentSignals.length} | Connection: {connectionType} | Strategy type: {currentStrategy?.asset_type || currentStrategy?.type}
-              </p>
-            </div>
+            )}
           </div>
         )}
       </div>
