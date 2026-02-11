@@ -1,0 +1,97 @@
+npm warn Unknown project config "optionalDependencies". This will stop working in the next major version of npm.
+
+> frontend@0.1.0 build
+> next build
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\BYTES PAK\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\BYTES PAK\Desktop\Quantiva-hq\QuantivaHQ-frontend\package-lock.json
+
+   Γû▓ Next.js 16.0.7 (Turbopack)
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ Γ£ô Compiled successfully in 1825.6ms
+   Running TypeScript ...
+   Collecting page data using 23 workers ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   Generating static pages using 23 workers (0/39) ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   Generating static pages using 23 workers (9/39) 
+   Generating static pages using 23 workers (19/39) 
+   Generating static pages using 23 workers (29/39) 
+ Γ£ô Generating static pages using 23 workers (39/39) in 614.8ms
+   Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /api/coingecko
+Γö£ Γùï /dashboard
+Γö£ Γùï /dashboard/ai-insights
+Γö£ Γùï /dashboard/ai-trading
+Γö£ Γùï /dashboard/custom-strategies-trading
+Γö£ Γùï /dashboard/market
+Γö£ ╞Æ /dashboard/market/[coinSymbol]
+Γö£ Γùï /dashboard/my-strategies
+Γö£ Γùï /dashboard/my-strategies/create
+Γö£ Γùï /dashboard/paper-trading
+Γö£ Γùï /dashboard/profile
+Γö£ Γùï /dashboard/settings
+Γö£ Γùï /dashboard/settings/bank-details
+Γö£ Γùï /dashboard/settings/exchange-configuration
+Γö£ Γùï /dashboard/settings/help-support
+Γö£ Γùï /dashboard/settings/notifications
+Γö£ Γùï /dashboard/settings/password
+Γö£ Γùï /dashboard/settings/security
+Γö£ Γùï /dashboard/settings/terms
+Γö£ Γùï /dashboard/settings/tokenomics
+Γö£ Γùï /dashboard/top-trades
+Γö£ Γùï /dashboard/vc-pool
+Γö£ Γùï /onboarding/account-type
+Γö£ Γùï /onboarding/api-key-tutorial
+Γö£ Γùï /onboarding/api-keys
+Γö£ Γùï /onboarding/connecting
+Γö£ Γùï /onboarding/crypto-exchange
+Γö£ Γùï /onboarding/personal-info
+Γö£ Γùï /onboarding/proof-upload
+Γö£ Γùï /onboarding/selfie-capture
+Γö£ Γùï /onboarding/sign-up
+Γö£ Γùï /onboarding/stock-exchange
+Γö£ Γùï /onboarding/verification-status
+Γö£ Γùï /onboarding/verify-2fa
+Γö£ Γùï /strategies
+Γöö Γùï /strategies/create
+
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+
