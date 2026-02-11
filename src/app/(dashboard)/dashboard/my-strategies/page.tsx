@@ -106,6 +106,7 @@ export default function MyStrategiesPage() {
       const result = await apiRequest<never, any>({
         path: `/strategies/my-strategies/${strategyId}/generate-signals`,
         method: "POST",
+        timeout: 300000, // 5 minutes - signal generation can take time especially for multiple assets
       });
       alert(`Generated ${result.signals?.length || 0} signals successfully!`);
       fetchStrategies(); // Refresh to show new signal counts
@@ -142,7 +143,12 @@ export default function MyStrategiesPage() {
       setSelected(null);
       fetchStrategies(); // Refresh
     } catch (err: any) {
-      alert(`Failed to delete strategy: ${err?.message || err}`);
+      // Enhanced error handling for backend improvements
+      let errorMessage = err?.message || err;
+      if (err.status === 403) {
+        errorMessage = 'Cannot delete this strategy. It may be a protected pre-built strategy.';
+      }
+      alert(`Failed to delete strategy: ${errorMessage}`);
     } finally {
       setDeletingStrategy(null);
     }

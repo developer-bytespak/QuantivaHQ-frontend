@@ -39,6 +39,7 @@ interface UserStrategy {
   name: string;
   description?: string;
   type?: string; // "user" for custom strategies
+  asset_type?: string; // "crypto" or "stock" 
   risk_level: string;
   is_active: boolean;
   timeframe?: string;
@@ -115,6 +116,8 @@ export default function CustomStrategiesTradingPage() {
   const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
   const [signalsError, setSignalsError] = useState<Record<string, string>>({});
   const [lastRefresh, setLastRefresh] = useState<Record<string, Date>>({});
+  const [generatingSignals, setGeneratingSignals] = useState<string | null>(null);
+  const [strategyAges, setStrategyAges] = useState<Record<string, { isNew: boolean; minutesOld: number }>>({});
 
   // Trade modals
   const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
@@ -135,7 +138,11 @@ export default function CustomStrategiesTradingPage() {
       try {
         const response = await exchangesService.getActiveConnection();
         if (isMounted) {
-          setConnectionType(response.data?.exchange?.type || null);
+          // ✅ Backend correction: Check exchange.name for type detection
+          const exchangeName = response.data?.exchange?.name;
+          const connType = exchangeName === "Alpaca" ? "stocks" : 
+                          (exchangeName === "Binance" || exchangeName === "Bybit") ? "crypto" : null;
+          setConnectionType(connType);
         }
       } catch (error: any) {
         console.error("Failed to check connection type:", error);
@@ -199,51 +206,176 @@ export default function CustomStrategiesTradingPage() {
     }
   }, [connectionType, isPaperMode, isStocksConnection]);
 
-  // Fetch custom strategies
-  useEffect(() => {
-    const fetchStrategies = async () => {
-      setLoadingStrategies(true);
-      setStrategiesError(null);
-      try {
-        const data = await apiRequest<never, UserStrategy[]>({
-          path: "/strategies/my-strategies",
-          method: "GET",
+  // Fetch custom strategies function
+  const fetchStrategies = async () => {
+    // Only fetch when connection type is determined
+    if (connectionType === null) return;
+    
+    setLoadingStrategies(true);
+    setStrategiesError(null);
+    try {
+      // Use asset_type filter based on connection type (same as my-strategies page)
+      const assetType = connectionType === "stocks" ? "stock" : connectionType === "crypto" ? "crypto" : null;
+      const queryParam = assetType ? `?asset_type=${assetType}` : "";
+      const data = await apiRequest<never, UserStrategy[]>({
+        path: `/strategies/my-strategies${queryParam}`,
+        method: "GET",
+      });
+      console.log("📊 Fetched strategies:", data);
+      console.log("🔌 Connection type:", connectionType, "Asset type filter:", assetType);
+      if (!Array.isArray(data)) {
+        setStrategies([]);
+      } else {
+        // Log each strategy's type and details
+        data.forEach(s => {
+          console.log(`Strategy "${s.name}" (${s.strategy_id}): type=${s.type}, asset_type=${s.asset_type || 'undefined'}, active=${s.is_active}`);
+          console.log(`📊 Strategy target assets:`, s.target_assets);
+          console.log(`📈 Strategy metrics:`, s.metrics);
+          
+          // Calculate strategy age to determine if it's new
+          const createdAt = new Date(s.created_at);
+          const now = new Date();
+          const minutesOld = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60));
+          const isNew = minutesOld < 15; // Consider "new" if less than 15 minutes old
+          
+          setStrategyAges(prev => ({
+            ...prev,
+            [s.strategy_id]: { isNew, minutesOld }
+          }));
+          
+          console.log(`📅 Strategy "${s.name}" is ${minutesOld} minutes old (new: ${isNew})`);
         });
-        console.log("📊 Fetched strategies:", data);
-        if (!Array.isArray(data)) {
-          setStrategies([]);
-        } else {
-          // Log each strategy's type
-          data.forEach(s => console.log(`Strategy "${s.name}" (${s.strategy_id}): type=${s.type}`));
-          setStrategies(data);
-        }
-      } catch (err: any) {
-        console.error("Failed to load strategies:", err);
-        setStrategiesError(err?.message ?? String(err));
-      } finally {
-        setLoadingStrategies(false);
+        setStrategies(data);
       }
-    };
+    } catch (err: any) {
+      console.error("Failed to load strategies:", err);
+      setStrategiesError(err?.message ?? String(err));
+    } finally {
+      setLoadingStrategies(false);
+    }
+  };
 
+  // Fetch custom strategies on connection type change
+  useEffect(() => {
     fetchStrategies();
-  }, []);
+  }, [connectionType]);
+
+  // Fetch signals for the first strategy immediately when strategies load
+  useEffect(() => {
+    if (strategies.length > 0 && connectionType) {
+      const firstStrategy = strategies[0];
+      console.log(`🚀 Auto-loading signals for first strategy: ${firstStrategy.name} (${firstStrategy.strategy_id})`);
+      
+      // Set active tab to 0 if not set
+      if (activeTab >= strategies.length) {
+        setActiveTab(0);
+      }
+      
+      // Load signals for the first strategy immediately
+      if (!strategySignals[firstStrategy.strategy_id] && !loadingSignals[firstStrategy.strategy_id]) {
+        console.log(`🔄 Auto-fetching signals for ${firstStrategy.strategy_id}`);
+        fetchStrategySignals(firstStrategy.strategy_id);
+      }
+    }
+  }, [strategies, connectionType]);
 
   // Fetch signals for a strategy
   const fetchStrategySignals = async (strategyId: string, isRefresh = false) => {
+    console.log(`🔍 Fetching signals for strategy ${strategyId}, connection: ${connectionType}, isRefresh: ${isRefresh}`);
+    
     if (!isRefresh) {
       setLoadingSignals((p) => ({ ...p, [strategyId]: true }));
     }
     setSignalsError((p) => ({ ...p, [strategyId]: "" }));
 
     try {
+      // First check if any signals exist for this strategy
+      // For stock strategies: don't send realtime=true (backend now handles gracefully but not needed)
+      const isStockStrategy = connectionType === "stocks";
+      const queryParams = isStockStrategy 
+        ? "latest_only=true" 
+        : "latest_only=true&realtime=true";
+      
       const signals = await apiRequest<never, any[]>({
-        path: `/strategies/my-strategies/${strategyId}/signals?latest_only=true&realtime=true`,
+        path: `/strategies/my-strategies/${strategyId}/signals?${queryParams}`,
         method: "GET",
       });
+      
+      console.log(`📡 Received ${signals?.length || 0} signals for strategy ${strategyId}:`, signals);
+      
+      // Debug: Check which assets the signals are for
+      if (signals && signals.length > 0) {
+        const signalAssets = signals.map(s => ({
+          asset_id: s.asset_id,
+          symbol: s.asset?.symbol || s.asset_id,
+          action: s.action,
+          score: s.final_score
+        }));
+        console.log(`📈 Signal breakdown by asset:`, signalAssets);
+        
+        // Check if signals match target assets
+        const strategy = strategies.find(s => s.strategy_id === strategyId);
+        if (strategy?.target_assets) {
+          console.log(`🎯 Expected assets:`, strategy.target_assets);
+          console.log(`📊 Actual signal assets:`, signalAssets.map(s => s.symbol));
+          
+          const missingAssets = strategy.target_assets.filter(target => 
+            !signalAssets.some(signal => signal.symbol === target || signal.asset_id === target)
+          );
+          if (missingAssets.length > 0) {
+            console.log(`⚠️ Missing signals for assets:`, missingAssets);
+            console.log(`🔧 SOLUTION: The strategy target assets were created with old hardcoded symbols.`);
+            console.log(`🔧 You need to either:`);
+            console.log(`   1. Recreate the strategy with real backend assets, OR`);
+            console.log(`   2. Check what symbols your backend actually supports for signal generation`);
+          }
+        }
+        
+        // DEBUG: Check what assets are actually available in backend
+        console.log(`🔍 Checking what assets are actually available in backend...`);
+        try {
+          const backendAssets = await apiRequest<never, any[]>({
+            path: `/assets?asset_type=stock&limit=50`,
+            method: "GET",
+          });
+          console.log(`📋 Available backend stock assets:`, backendAssets?.map(a => a.symbol || a.asset_id)?.slice(0, 10));
+          
+          if (strategy?.target_assets) {
+            const availableTargets = strategy.target_assets.filter(target =>
+              backendAssets?.some(asset => (asset.symbol === target || asset.asset_id === target))
+            );
+            console.log(`✅ Target assets that exist in backend:`, availableTargets);
+            console.log(`❌ Target assets that DON'T exist in backend:`, strategy.target_assets.filter(t => !availableTargets.includes(t)));
+          }
+        } catch (e) {
+          console.log(`❌ Could not fetch backend assets:`, e);
+        }
+      }
+      
+      if (!signals || signals.length === 0) {
+        console.log(`⚠️ No signals found for strategy ${strategyId}.`);
+        const strategy = strategies.find(s => s.strategy_id === strategyId);
+        const ageInfo = strategyAges[strategyId];
+        
+        if (strategy && ageInfo?.isNew) {
+          console.log(`🆕 Strategy "${strategy.name}" is new (${ageInfo.minutesOld} minutes old) - signals not generated yet`);
+          setSignalsError((p) => ({ ...p, [strategyId]: "NEW_STRATEGY" }));
+        } else if (strategy && (!strategy.metrics?.total_signals || strategy.metrics.total_signals === 0)) {
+          console.log(`🔔 Strategy "${strategy.name}" has never generated signals`);
+          setSignalsError((p) => ({ ...p, [strategyId]: "NO_SIGNALS_EVER" }));
+        } else {
+          console.log(`🔔 Strategy may have had signals before but none currently available`);
+          setSignalsError((p) => ({ ...p, [strategyId]: "NO_CURRENT_SIGNALS" }));
+        }
+      } else {
+        // Clear any previous errors if we got signals
+        setSignalsError((p) => ({ ...p, [strategyId]: "" }));
+      }
+      
       setStrategySignals((p) => ({ ...p, [strategyId]: signals || [] }));
       setLastRefresh((p) => ({ ...p, [strategyId]: new Date() }));
     } catch (err: any) {
-      console.error(`Failed to load signals for strategy ${strategyId}:`, err);
+      console.error(`❌ Failed to load signals for strategy ${strategyId}:`, err);
       setSignalsError((p) => ({
         ...p,
         [strategyId]: err?.message || String(err),
@@ -254,16 +386,107 @@ export default function CustomStrategiesTradingPage() {
     }
   };
 
+  // Generate signals for a strategy (like in my-strategies page)
+  const handleGenerateSignals = async (strategyId: string) => {
+    const strategy = strategies.find(s => s.strategy_id === strategyId);
+    console.log(`🚀 Generating signals for strategy:`, {
+      name: strategy?.name,
+      id: strategyId,
+      target_assets: strategy?.target_assets,
+      asset_count: strategy?.target_assets?.length || 0
+    });
+    
+    setGeneratingSignals(strategyId);
+    try {
+      const result = await apiRequest<never, any>({
+        path: `/strategies/my-strategies/${strategyId}/generate-signals`,
+        method: "POST",
+        timeout: 300000, // 5 minutes - signal generation can take time especially for multiple assets
+      });
+      console.log(`🎯 Generate signals result:`, result);
+      
+      if (result.signals && result.signals.length > 0) {
+        const generatedAssets = result.signals.map((s: any) => s.asset?.symbol || s.asset_id);
+        console.log(`✅ Generated signals for assets:`, generatedAssets);
+        alert(`Generated ${result.signals?.length || 0} signals for: ${generatedAssets.join(', ')}`);
+      } else {
+        alert(`Generated ${result.signals?.length || 0} signals successfully!`);
+      }
+      
+      // Refresh signals for this strategy
+      fetchStrategySignals(strategyId, true);
+    } catch (err: any) {
+      console.error(`❌ Generate signals error:`, err);
+      alert(`Failed to generate signals: ${err?.message || err}`);
+    } finally {
+      setGeneratingSignals(null);
+    }
+  };
+
+  // Fix strategy assets by updating with real backend assets
+  const handleFixStrategyAssets = async (strategyId: string) => {
+    try {
+      setGeneratingSignals(strategyId);
+      
+      // Get real assets from backend
+      const assetType = connectionType === "stocks" ? "stock" : "crypto";
+      const backendAssets = await apiRequest<never, any[]>({
+        path: `/assets?asset_type=${assetType}&limit=50`,
+        method: "GET",
+      });
+      
+      if (!backendAssets || backendAssets.length === 0) {
+        alert(`No ${assetType} assets found in backend to update strategy`);
+        return;
+      }
+      
+      // Take first 8 as new target assets
+      const realSymbols = backendAssets.slice(0, 8).map((asset: any) => asset.symbol || asset.asset_id);
+      
+      // ✅ Update strategy with real assets using imported function
+      const { updateStrategy } = await import("@/lib/api/strategies");
+      await updateStrategy(strategyId, {
+        target_assets: realSymbols
+      });
+      
+      console.log(`✅ Updated strategy ${strategyId} with real ${assetType} assets:`, realSymbols);
+      alert(`✅ Strategy updated with ${realSymbols.length} real ${assetType} assets!\n\nNew assets: ${realSymbols.join(', ')}\n\nGenerating fresh signals...`);
+      
+      // Refresh strategies and generate signals
+      setTimeout(() => {
+        fetchStrategies();
+        handleGenerateSignals(strategyId);
+      }, 1000);
+      
+    } catch (err: any) {
+      console.error("Failed to fix strategy assets:", err);
+      alert(`❌ Failed to update strategy assets: ${err.message}`);
+    } finally {
+      setGeneratingSignals(null);
+    }
+  };
+
   // Lazy load signals when tab changes
   useEffect(() => {
+    console.log(`🔄 Tab changed effect triggered: activeTab=${activeTab}, strategies.length=${strategies.length}`);
+    
     if (strategies.length > 0) {
       const activeStrategy = strategies[activeTab];
-      if (
-        activeStrategy &&
-        !strategySignals[activeStrategy.strategy_id] &&
-        !loadingSignals[activeStrategy.strategy_id]
-      ) {
-        fetchStrategySignals(activeStrategy.strategy_id);
+      console.log(`🔄 Tab changed to strategy: ${activeStrategy?.name} (${activeStrategy?.strategy_id})`);
+      
+      if (activeStrategy) {
+        const hasSignals = !!strategySignals[activeStrategy.strategy_id];
+        const isLoading = !!loadingSignals[activeStrategy.strategy_id];
+        
+        console.log(`📊 Signal status - hasSignals: ${hasSignals}, isLoading: ${isLoading}`);
+        
+        if (!hasSignals && !isLoading) {
+          console.log(`📡 Loading signals for new active strategy: ${activeStrategy.strategy_id}`);
+          fetchStrategySignals(activeStrategy.strategy_id);
+        } else if (hasSignals) {
+          const existingSignals = strategySignals[activeStrategy.strategy_id];
+          console.log(`💾 Using cached signals for ${activeStrategy.strategy_id}: ${existingSignals?.length || 0} signals`);
+        }
       }
     }
   }, [strategies, activeTab]);
@@ -296,6 +519,13 @@ export default function CustomStrategiesTradingPage() {
       const rawSymbol = asset.symbol || asset.asset_id || signal.asset_id || "Unknown";
       const isStock = isStocksConnection || asset.asset_type === "stock";
       
+      // Debug log for first signal to see structure
+      if (idx === 0) {
+        console.log(`🔍 Sample signal structure for ${isStock ? 'STOCK' : 'CRYPTO'}:`, signal);
+        console.log(`🔍 Asset data:`, asset);
+        console.log(`🔍 Price fields: realtime_data.price=${signal.realtime_data?.price}, price_usd=${signal.price_usd}, price=${signal.price}, last_price=${signal.last_price}, entry_price=${signal.entry_price}`);
+      }
+      
       // For crypto: remove USDT suffix. For stocks: use as-is
       const cleanSymbol = isStock 
         ? rawSymbol.trim() 
@@ -319,12 +549,31 @@ export default function CustomStrategiesTradingPage() {
         : null;
       const realtimePriceChange = signal.realtime_data?.priceChangePercent ?? null;
 
-      // Fall back through multiple price sources: realtime > signal.price_usd > signal.price > 0
-      const entryPrice = realtimePrice 
+      // Enhanced price extraction for stocks - try more fields
+      const entryPrice = isStock ? (
+        // For stocks, try these fields in order
+        realtimePrice 
+        ?? (signal.entry_price && signal.entry_price > 0 ? signal.entry_price : null)
+        ?? (signal.current_price && signal.current_price > 0 ? signal.current_price : null)
+        ?? (asset.price && asset.price > 0 ? asset.price : null)
+        ?? (asset.current_price && asset.current_price > 0 ? asset.current_price : null)
         ?? (signal.price_usd && signal.price_usd > 0 ? signal.price_usd : null)
         ?? (signal.price && signal.price > 0 ? signal.price : null)
         ?? (signal.last_price && signal.last_price > 0 ? signal.last_price : null)
-        ?? 0;
+        ?? 100  // Fallback for stocks - 100 USD placeholder
+      ) : (
+        // For crypto, use existing logic
+        realtimePrice 
+        ?? (signal.price_usd && signal.price_usd > 0 ? signal.price_usd : null)
+        ?? (signal.price && signal.price > 0 ? signal.price : null)
+        ?? (signal.last_price && signal.last_price > 0 ? signal.last_price : null)
+        ?? 0
+      );
+
+      // Log the final entry price for debugging
+      if (idx === 0) {
+        console.log(`💰 Final entry price for ${cleanSymbol}: ${entryPrice}`);
+      }
 
       // Use signal values if available, otherwise use strategy defaults
       const stopLoss = signal.stop_loss ?? `-${strategyStopLoss}%`;
@@ -344,10 +593,10 @@ export default function CustomStrategiesTradingPage() {
         assetId: signal.asset_id ?? asset.asset_id ?? cleanSymbol,
         symbol: cleanSymbol,
         pair,
-        type: signal.action && signal.action.toUpperCase() === "SELL" ? "SELL" : "BUY",
+        type: (signal.action && signal.action.toUpperCase() === "SELL" ? "SELL" : "BUY") as "BUY" | "SELL",
         confidence,
-        ext: entryPrice ? String(entryPrice) : "—",
-        entry: entryPrice ? String(entryPrice) : "—",
+        ext: String(entryPrice),
+        entry: String(entryPrice),
         stopLoss,
         progressMin: 0,
         progressMax: 100,
@@ -371,6 +620,19 @@ export default function CustomStrategiesTradingPage() {
         volume_status: signal.volume_status ?? "NORMAL",
         realtime_data: signal.realtime_data,
       };
+    }).filter((trade, idx) => {
+      // Log any trades that might be getting filtered out
+      if (!trade.symbol || trade.symbol === "Unknown") {
+        console.log(`⚠️ Trade ${idx + 1} has no symbol:`, trade);
+        return false;
+      }
+      
+      // For stocks, don't filter out trades with 100 USD placeholder price
+      if (isStocksConnection && trade.entryPrice === "100") {
+        console.log(`📈 Stock trade ${trade.symbol} using placeholder price`);
+      }
+      
+      return true; // Keep all valid trades
     });
   };
 
@@ -379,9 +641,24 @@ export default function CustomStrategiesTradingPage() {
   const currentSignals = currentStrategy
     ? strategySignals[currentStrategy.strategy_id] || []
     : [];
+  
+  console.log(`📊 Current strategy: ${currentStrategy?.name}, signals count: ${currentSignals.length}`);
+  if (currentSignals.length > 0) {
+    console.log('📈 Sample signal:', currentSignals[0]);
+    console.log('🎯 All signal actions:', currentSignals.map(s => ({ symbol: s.asset?.symbol || s.asset_id, action: s.action, score: s.final_score })));
+  }
+  
   const currentTrades = currentStrategy
     ? mapSignalsToTrades(currentSignals, currentStrategy)
     : [];
+    
+  console.log(`🎯 Mapped to ${currentTrades.length} trades`);
+  if (currentTrades.length > 0) {
+    console.log('💼 Sample trade:', currentTrades[0]);
+    console.log('💰 All trade symbols:', currentTrades.map(t => ({ symbol: t.symbol, price: t.entryPrice, type: t.type })));
+  } else if (currentSignals.length > 0) {
+    console.log('❌ Signals exist but no trades mapped - checking mapping function...');
+  }
 
   // Trade handlers
   const handleAutoTrade = (trade: Trade) => {
@@ -594,7 +871,13 @@ export default function CustomStrategiesTradingPage() {
             <p className="text-sm text-slate-400 mt-1">
               {currentStrategy.description || "No description"}
             </p>
-            <div className="flex items-center gap-4 mt-2 text-xs">
+            <p className="text-slate-400 mb-6 text-center">
+              <span className="font-medium">Target Assets ({currentStrategy?.target_assets?.length || 0}):</span><br/>
+              <span className="text-sm text-slate-500">
+                {currentStrategy?.target_assets?.join(', ') || 'No target assets configured'}
+              </span>
+            </p>
+            <div className="flex items-center gap-4 mt-2 text-xs justify-center">
               <span className="text-emerald-400">
                 {currentStrategy.metrics?.buy_signals || 0} BUY
               </span>
@@ -616,6 +899,23 @@ export default function CustomStrategiesTradingPage() {
                 Updated {new Date(lastRefresh[currentStrategy.strategy_id]).toLocaleTimeString()}
               </div>
             )}
+            {/* Generate Signals Button */}
+            <button
+              onClick={() => handleGenerateSignals(currentStrategy.strategy_id)}
+              disabled={generatingSignals === currentStrategy.strategy_id}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm hover:shadow-lg hover:shadow-[#fc4f02]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              title="Generate new signals"
+            >
+              <svg 
+                className={`w-4 h-4 ${generatingSignals === currentStrategy.strategy_id ? 'animate-spin' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {generatingSignals === currentStrategy.strategy_id ? 'Generating...' : 'Generate Signals'}
+            </button>
             {/* Refresh Button */}
             <button
               onClick={() => fetchStrategySignals(currentStrategy.strategy_id, true)}
@@ -633,6 +933,20 @@ export default function CustomStrategiesTradingPage() {
               </svg>
               Refresh
             </button>
+            {/* Fix Assets Button - Shows when missing signals */}
+            {currentStrategy?.target_assets && currentSignals.length > 0 && currentSignals.length < currentStrategy.target_assets.length && (
+              <button
+                onClick={() => handleFixStrategyAssets(currentStrategy.strategy_id)}
+                disabled={generatingSignals === currentStrategy.strategy_id}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm hover:shadow-lg hover:shadow-amber-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                title={`Fix strategy assets - ${currentStrategy.target_assets.length - currentSignals.length} assets missing signals`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Fix Assets ({currentStrategy.target_assets.length - currentSignals.length} missing)
+              </button>
+            )}
             {/* Auto-refresh indicator */}
             <div className="flex items-center gap-1.5 text-xs text-slate-500">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -652,6 +966,112 @@ export default function CustomStrategiesTradingPage() {
                 className="h-64 rounded-2xl bg-white/5 animate-pulse"
               ></div>
             ))}
+          </div>
+        ) : signalsError[currentStrategy?.strategy_id] === "NEW_STRATEGY" ? (
+          <div className="text-center py-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-blue-400 mb-2">🎉 Strategy Created Successfully!</h3>
+            <p className="text-blue-300 mb-4 max-w-md mx-auto">
+              Your {isStocksConnection ? 'stock' : 'crypto'} strategy "{currentStrategy?.name}" is ready!
+            </p>
+            <div className="bg-blue-500/10 rounded-lg p-4 mb-6 max-w-lg mx-auto">
+              <div className="flex items-center justify-center gap-2 text-blue-400 text-sm mb-2">
+                <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                <span className="font-medium">Signals generate automatically every 10 minutes</span>
+              </div>
+              <p className="text-blue-300 text-xs">
+                Your first signals should appear within the next {Math.max(1, 10 - (strategyAges[currentStrategy?.strategy_id]?.minutesOld || 0))} minutes.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => currentStrategy && handleGenerateSignals(currentStrategy.strategy_id)}
+                disabled={generatingSignals === currentStrategy?.strategy_id}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 text-white font-medium hover:shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 transition-all"
+              >
+                <svg className={`w-5 h-5 ${generatingSignals === currentStrategy?.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {generatingSignals === currentStrategy?.strategy_id ? 'Generating Signals...' : 'Generate Signals Now'}
+              </button>
+              <div className="text-xs text-blue-400">
+                Or wait for automatic generation (next cycle in ~{Math.max(1, 10 - (strategyAges[currentStrategy?.strategy_id]?.minutesOld || 0) % 10)} min)
+              </div>
+            </div>
+          </div>
+        ) : signalsError[currentStrategy?.strategy_id] === "NO_SIGNALS_EVER" ? (
+          <div className="text-center py-16 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-amber-400 mb-2">No Signals Generated</h3>
+            <p className="text-amber-300 mb-4 max-w-md mx-auto">
+              This strategy hasn't generated any signals yet. This could mean:
+            </p>
+            <div className="bg-amber-500/10 rounded-lg p-4 mb-6 max-w-md mx-auto">
+              <ul className="text-amber-300 text-sm space-y-1 text-left">
+                <li>• No {isStocksConnection ? 'stocks' : 'crypto assets'} match your strategy criteria</li>
+                <li>• Strategy rules are too restrictive</li>
+                <li>• Signal generation may have encountered errors</li>
+              </ul>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => currentStrategy && handleGenerateSignals(currentStrategy.strategy_id)}
+                disabled={generatingSignals === currentStrategy?.strategy_id}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white font-medium hover:shadow-lg hover:shadow-amber-500/30 disabled:opacity-50 transition-all"
+              >
+                <svg className={`w-5 h-5 ${generatingSignals === currentStrategy?.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {generatingSignals === currentStrategy?.strategy_id ? 'Generating...' : 'Try Generate Signals'}
+              </button>
+              <div className="text-xs text-amber-400">
+                Strategy age: {strategyAges[currentStrategy?.strategy_id]?.minutesOld || 0} minutes
+              </div>
+            </div>
+          </div>
+        ) : signalsError[currentStrategy?.strategy_id] && signalsError[currentStrategy?.strategy_id] !== "NO_CURRENT_SIGNALS" ? (
+          <div className="text-center py-16 rounded-2xl bg-red-500/10 border border-red-500/20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-red-400 mb-2">Failed to Load Signals</h3>
+            <p className="text-red-300 mb-4 max-w-md mx-auto text-sm">
+              {signalsError[currentStrategy?.strategy_id]}
+            </p>
+            <button
+              onClick={() => currentStrategy && fetchStrategySignals(currentStrategy.strategy_id, true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm hover:bg-red-500/30 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Retry
+            </button>
           </div>
         ) : currentTrades.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -675,18 +1095,35 @@ export default function CustomStrategiesTradingPage() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Signals Coming Soon</h3>
-            <p className="text-slate-400 mb-4 max-w-md mx-auto">
-              Signals are generated automatically every 10 minutes. Your strategy is active and 
-              signals will appear here shortly.
+            <h3 className="text-lg font-semibold text-white mb-2">No Current Signals</h3>
+            <p className="text-slate-400 mb-6 max-w-md mx-auto">
+              {isStocksConnection 
+                ? "No stock signals available right now. Market conditions may not match your strategy criteria."
+                : "No crypto signals available right now. Market conditions may not match your strategy criteria."
+              }
             </p>
-            <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              Auto-refresh enabled • Check back in a few minutes
+            <div className="space-y-4">
+              <button
+                onClick={() => currentStrategy && handleGenerateSignals(currentStrategy.strategy_id)}
+                disabled={generatingSignals === currentStrategy?.strategy_id}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 disabled:opacity-50 transition-all"
+              >
+                <svg className={`w-5 h-5 ${generatingSignals === currentStrategy?.strategy_id ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {generatingSignals === currentStrategy?.strategy_id ? 'Generating Signals...' : 'Generate Fresh Signals'}
+              </button>
+              <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                Auto-refresh enabled • Signals generate every 10 minutes
+              </div>
+              <p className="text-xs text-slate-600 max-w-sm mx-auto">
+                Raw signals: {currentSignals.length} | Connection: {connectionType} | Strategy type: {currentStrategy?.asset_type || currentStrategy?.type}
+              </p>
             </div>
           </div>
         )}
