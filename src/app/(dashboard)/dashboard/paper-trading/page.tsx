@@ -1388,38 +1388,16 @@ export default function PaperTradingPage() {
 
         {/* Buttons - Show for both crypto and stocks */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-          {/* My Strategies Button - Links to strategies library */}
-          <Link
-            href="/dashboard/my-strategies?from=paper-trading"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 hover:border-slate-500/50 shadow-lg shadow-slate-900/30 w-full sm:w-auto"
-            title="View and manage your strategies"
-          >
-            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span className="text-white">My Strategies</span>
-          </Link>
-          {/* Custom Strategy Button - Links to strategy builder */}
-          <Link
-            href="/dashboard/my-strategies/create?from=paper-trading"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 transition-all border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 shadow-lg shadow-[#fc4f02]/10 w-full sm:w-auto"
-            title="Create a custom trading strategy"
-          >
-            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span className="text-white">Custom</span>
-          </Link>
           {/* Trade Custom Strategies Button */}
           <Link
-            href="/dashboard/custom-strategies-trading?mode=paper"
+            href="/dashboard/custom-strategies-trading?mode=paper&from=paper-trading"
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-600/30 to-purple-500/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-purple-600/40 hover:to-purple-500/30 transition-all border border-purple-500/40 hover:border-purple-500/60 shadow-lg shadow-purple-500/10 w-full sm:w-auto"
             title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span className="text-white">Trade Custom</span>
+            <span className="text-white">Custom Strategy</span>
           </Link>
           {/* Orders button - show for both */}
           <button
