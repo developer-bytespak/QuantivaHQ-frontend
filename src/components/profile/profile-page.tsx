@@ -290,7 +290,7 @@ export function ProfilePage() {
               >
                 <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                   {coin.logoUrl ? (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
                       <Image
                         src={coin.logoUrl}
                         alt={coin.name}
@@ -301,7 +301,7 @@ export function ProfilePage() {
                       />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center text-lg sm:text-2xl flex-shrink-0 shadow-sm">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fc4f02]/40 border border-[#fc4f02]/50 flex items-center justify-center text-lg sm:text-2xl flex-shrink-0 shadow-sm">
                       {coin.icon}
                     </div>
                   )}
