@@ -290,8 +290,14 @@ export default function CustomStrategiesTradingPage() {
 
     try {
       // First check if any signals exist for this strategy
+      // For stock strategies: don't send realtime=true (backend now handles gracefully but not needed)
+      const isStockStrategy = connectionType === "stocks";
+      const queryParams = isStockStrategy 
+        ? "latest_only=true" 
+        : "latest_only=true&realtime=true";
+      
       const signals = await apiRequest<never, any[]>({
-        path: `/strategies/my-strategies/${strategyId}/signals?latest_only=true&realtime=true`,
+        path: `/strategies/my-strategies/${strategyId}/signals?${queryParams}`,
         method: "GET",
       });
       
@@ -395,6 +401,7 @@ export default function CustomStrategiesTradingPage() {
       const result = await apiRequest<never, any>({
         path: `/strategies/my-strategies/${strategyId}/generate-signals`,
         method: "POST",
+        timeout: 300000, // 5 minutes - signal generation can take time especially for multiple assets
       });
       console.log(`🎯 Generate signals result:`, result);
       

@@ -937,8 +937,9 @@ export default function PaperTradingPage() {
         // For user strategies, fetch from /strategies/{id}/signals
         signals = await apiRequest<never, any[]>({ path: `/strategies/${strategyId}/signals`, method: "GET" });
       } else {
-        // For pre-built strategies, use the existing function
-        signals = await getPreBuiltStrategySignals(strategyId);
+        // For pre-built strategies, use the existing function with asset type
+        const assetType = connectionType === "stocks" ? "stock" : "crypto";
+        signals = await getPreBuiltStrategySignals(strategyId, assetType);
       }
       
       setStrategySignals((p) => ({ ...p, [strategyId]: signals || [] }));
