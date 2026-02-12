@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile } from "@/lib/api/user";
 import { useMobileNav } from "@/hooks/useMobileNav";
+import { SubscriptionBadge } from "@/components/common/subscription-badge";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -492,7 +493,8 @@ export function TopBar() {
         <h1 ref={headingRef} className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">{pageTitle}</h1>
         <DashboardSwitcher headingRef={headingRef} />
       </div>
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 sm:gap-4">
+        <SubscriptionBadge />
         <MobileMenuButton />
         <UserProfileSection />
       </div>

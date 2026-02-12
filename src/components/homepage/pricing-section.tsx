@@ -5,6 +5,13 @@ import { useState } from "react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { getCurrentUser } from "@/lib/api/user";
 import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
+import useSubscriptionStore from "@/state/subscription-store";
+import {
+  SUBSCRIPTION_PLANS,
+  BillingPeriod,
+  PlanTier,
+  calculatePrice,
+} from "@/mock-data/subscription-dummy-data";
 
 interface PricingTier {
   name: string;
@@ -37,7 +44,7 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
   );
 }
 
-function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string; index: number }) {
+function PricingCard({ tier, delay, index, isCurrentPlan }: { tier: PricingTier; delay: string; index: number; isCurrentPlan: boolean }) {
   const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
@@ -83,9 +90,18 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
         </div>
       )}
 
+      {/* Current Plan Badge */}
+      {isCurrentPlan && (
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
+          <span className="inline-block bg-green-500 text-white text-[10px] font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">
+            Current Plan
+          </span>
+        </div>
+      )}
+
       <div
         className={`relative rounded-lg border-2 bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 backdrop-blur-xl p-5 h-full flex flex-col transition-all duration-200 ${
-          tier.popular
+          tier.popular || isCurrentPlan
             ? "border-[#fc4f02]/60"
             : "border-[--color-border]"
         } ${
@@ -113,7 +129,7 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
               <span className="text-3xl font-bold text-white">
                 {tier.price}
               </span>
-              {tier.price !== "Custom" && (
+              {tier.price !== "Custom" && tier.price !== "$0" && (
                 <span className="text-sm text-slate-500 font-normal">
                   /{tier.period}
                 </span>
@@ -144,15 +160,19 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
           {/* CTA Button */}
           <button
             onClick={handleGetStarted}
-            disabled={isCheckingAuth}
+            disabled={isCheckingAuth || isCurrentPlan}
             className={`w-full rounded-md px-4 py-2.5 text-xs font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-              tier.popular
+              tier.popular && !isCurrentPlan
                 ? "bg-[#fc4f02] text-white hover:bg-[#e04502]"
+                : isCurrentPlan
+                ? "bg-green-500 text-white cursor-not-allowed"
                 : "border border-[--color-border] bg-[--color-surface] text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
             }`}
           >
             {isCheckingAuth 
               ? "Checking..." 
+              : isCurrentPlan
+              ? "Your Current Plan"
               : tier.price === "Custom" 
                 ? "Contact Sales" 
                 : "Get Started"}
@@ -164,54 +184,60 @@ function PricingCard({ tier, delay, index }: { tier: PricingTier; delay: string;
 }
 
 export function PricingSection() {
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(BillingPeriod.MONTHLY);
+  const { currentSubscription } = useSubscriptionStore();
+  const currentTier = currentSubscription?.tier;
+
+  // Generate pricing tiers from dummy data
+  const getTierFeatures = (tier: PlanTier): string[] => {
+    const tiers: Record<PlanTier, string[]> = {
+      [PlanTier.FREE]: [
+        "✓ AI Trading",
+        "✓ Auto Execution",
+        "✓ Real-Time Data",
+        "✓ Mobile Access",
+        "✓ Web Access",
+        "✓ Community Access",
+        "✓ Multi-Exchange Support",
+      ],
+      [PlanTier.PRO]: [
+        "✓ Everything in FREE, PLUS:",
+        "✓ Up to 5 Custom Strategies",
+      ],
+      [PlanTier.ELITE]: [
+        "✓ Everything in PRO, PLUS:",
+        "✓ Unlimited Strategies",
+        "✓ Early Access to Features",
+        "✓ VC Pool Access",
+      ],
+    };
+    return tiers[tier];
+  };
+
   const tiers: PricingTier[] = [
     {
       name: "Free",
       price: "$0",
-      period: "month",
+      period: "forever",
       description: "Perfect for getting started",
-      features: [
-        "Basic AI trading strategies",
-        "Real-time market data",
-        "Single exchange connection",
-        "Community support",
-        "Basic portfolio tracking",
-      ],
+      features: getTierFeatures(PlanTier.FREE),
       gradient: "from-slate-600 to-slate-700",
     },
     {
-      name: "Pro",
-      price: "$49",
-      period: "month or $470/year (20% discount)",
-      description: "Perfect for individual traders and beginners",
+      name: "PRO",
+      price: `$${calculatePrice(PlanTier.PRO, billingPeriod).price.toFixed(2)}`,
+      period: billingPeriod === BillingPeriod.MONTHLY ? "month" : billingPeriod === BillingPeriod.QUARTERLY ? "3 months" : "year",
+      description: "Perfect for individual traders",
       popular: true,
-      features: [
-        "AI-powered trading",
-        "Automated trade execution",
-        "Live news sentiment analysis",
-        "Real-time market data",
-        "5 custom strategies",
-        "Basic portfolio analytics",
-        "Mobile & web access",
-        "Community access",
-        "Multi-exchange support (Binance, Bybit, IBKR)",
-      ],
+      features: getTierFeatures(PlanTier.PRO),
       gradient: "from-[#fc4f02] to-[#fda300]",
     },
     {
-      name: "Elite",
-      price: "$149",
-      period: "month or $1430/year (20% discount)",
-      description: "For professional traders and serious investors",
-      features: [
-        "Everything in PRO, PLUS:",
-        "Unlimited custom strategies",
-        "Advanced backtesting (10 years historical data)",
-        "VC Pool access (pooled investment opportunity)",
-        "Priority trade execution",
-        "Advanced portfolio optimization",
-        "Early access to new features",
-      ],
+      name: "ELITE",
+      price: `$${calculatePrice(PlanTier.ELITE, billingPeriod).price.toFixed(2)}`,
+      period: billingPeriod === BillingPeriod.MONTHLY ? "month" : billingPeriod === BillingPeriod.QUARTERLY ? "3 months" : "year",
+      description: "For professional traders",
+      features: getTierFeatures(PlanTier.ELITE),
       gradient: "from-[#1d4ed8] to-[#3b82f6]",
     },
   ];
@@ -226,6 +252,35 @@ export function PricingSection() {
           description="Flexible pricing options for traders of all levels"
         />
 
+        {/* Billing Period Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex rounded-lg border border-[--color-border] bg-[--color-surface] p-1">
+            {[
+              { label: "Monthly", value: BillingPeriod.MONTHLY },
+              { label: "Quarterly", value: BillingPeriod.QUARTERLY },
+              { label: "Yearly", value: BillingPeriod.YEARLY },
+            ].map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setBillingPeriod(option.value)}
+                className={`px-4 py-2 text-sm font-medium transition-all rounded-md ${
+                  billingPeriod === option.value
+                    ? "bg-[#fc4f02] text-white"
+                    : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                {option.label}
+                {option.value === BillingPeriod.QUARTERLY && (
+                  <span className="ml-1 text-xs text-green-400">-15%</span>
+                )}
+                {option.value === BillingPeriod.YEARLY && (
+                  <span className="ml-1 text-xs text-green-400">-20%</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Pricing Grid - Mobile responsive */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
           {tiers.map((tier, index) => (
@@ -234,6 +289,7 @@ export function PricingSection() {
               tier={tier}
               delay="animate-fade-in"
               index={index}
+              isCurrentPlan={currentTier ? tier.name.toUpperCase() === currentTier : false}
             />
           ))}
         </div>

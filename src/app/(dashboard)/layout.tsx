@@ -1,10 +1,16 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { DashboardSidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { DASHBOARD_NAV } from "@/config/navigation";
 import { AuthGuard } from "@/components/common/auth-guard";
+import useSubscriptionStore from "@/state/subscription-store";
+import {
+  UpgradeModal,
+  CancelSubscriptionModal,
+  PaymentModal,
+} from "@/components/common/subscription-modals";
 import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 export default function DashboardLayout({
@@ -12,6 +18,19 @@ export default function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
+  const {
+    showUpgradeModal,
+    setShowUpgradeModal,
+    showCancelModal,
+    setShowCancelModal,
+    showPaymentModal,
+    setShowPaymentModal,
+    fetchSubscriptionData,
+  } = useSubscriptionStore();
+
+  useEffect(() => {
+    fetchSubscriptionData();
+  }, [fetchSubscriptionData]);
   // Automatically refresh tokens before they expire (keeps active users logged in)
   useTokenRefresh();
 
@@ -25,6 +44,20 @@ export default function DashboardLayout({
             <div className="mx-auto w-full max-w-7xl space-y-8">{children}</div>
           </main>
         </div>
+
+        {/* Subscription Modals */}
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+        />
+        <CancelSubscriptionModal
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+        />
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+        />
       </div>
     </AuthGuard>
   );
