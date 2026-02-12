@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AuthGuard } from "@/components/common/auth-guard";
+import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 export default function AuthLayout({
   children,
@@ -9,6 +10,9 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  
+  // Enable token refresh for all pages (hook handles token existence check internally)
+  useTokenRefresh();
   
   // Only sign-up page should be accessible without authentication
   // All other onboarding pages require authentication
