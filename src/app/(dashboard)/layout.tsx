@@ -5,12 +5,16 @@ import { DashboardSidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { DASHBOARD_NAV } from "@/config/navigation";
 import { AuthGuard } from "@/components/common/auth-guard";
+import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 export default function DashboardLayout({
   children,
 }: {
   children: ReactNode;
 }) {
+  // Automatically refresh tokens before they expire (keeps active users logged in)
+  useTokenRefresh();
+
   return (
     <AuthGuard>
       <div className="flex h-screen overflow-hidden bg-[--color-background] text-[--color-foreground]">

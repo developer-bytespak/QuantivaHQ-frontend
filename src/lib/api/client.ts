@@ -46,10 +46,22 @@ async function refreshAccessToken(): Promise<boolean> {
     try {
       const response = await axiosInstance.post("/auth/refresh");
       
-      // Save the new access token from response to localStorage
+      // Save the new tokens from response to localStorage
       const newAccessToken = response.data?.accessToken || response.data?.access_token;
+      const newRefreshToken = response.data?.refreshToken || response.data?.refresh_token;
+      
       if (newAccessToken && typeof window !== "undefined") {
         localStorage.setItem("quantivahq_access_token", newAccessToken);
+        if (process.env.NODE_ENV === "development") {
+          console.info("[API] New access token stored in localStorage");
+        }
+      }
+      
+      if (newRefreshToken && typeof window !== "undefined") {
+        localStorage.setItem("quantivahq_refresh_token", newRefreshToken);
+        if (process.env.NODE_ENV === "development") {
+          console.info("[API] New refresh token stored in localStorage");
+        }
       }
       
       if (process.env.NODE_ENV === "development") {

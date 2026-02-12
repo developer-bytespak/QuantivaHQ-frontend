@@ -1,10 +1,18 @@
 /**
- * Hook for managing automatic token refresh before expiration
- * This prevents the token from expiring during active user sessions
+ * Hook for managing automatic token refresh with activity tracking
+ * Only refreshes tokens if user has been active recently
+ * Logs out inactive users for security
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { authService } from '@/lib/auth/auth.service';
+
+// Inactivity timeout: 30 minutes (1800000 ms)
+// If user is inactive for 30 minutes, they will be logged out
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
+
+// Refresh threshold: Refresh token when 5 minutes remaining
+const REFRESH_THRESHOLD = 5 * 60 * 1000;
 
 /**
  * Decode JWT token to extract payload
@@ -21,7 +29,7 @@ function decodeJWT(token: string) {
     );
     return JSON.parse(jsonPayload);
   } catch (error) {
-    console.error('Failed to decode JWT:', error);
+    console.error('[TokenRefresh] Failed to decode JWT:', error);
     return null;
   }
 }
@@ -32,9 +40,9 @@ function decodeJWT(token: string) {
 function isTokenExpired(token: string): boolean {
   const payload = decodeJWT(token);
   if (!payload || !payload.exp) {
-    return false; // If we can't decode, assume it's valid
+    return false;
   }
-  const expirationTime = payload.exp * 1000; // Convert to milliseconds
+  const expirationTime = payload.exp * 1000;
   return Date.now() > expirationTime;
 }
 
@@ -46,36 +54,67 @@ function getTimeUntilExpiry(token: string): number | null {
   if (!payload || !payload.exp) {
     return null;
   }
-  const expirationTime = payload.exp * 1000; // Convert to milliseconds
+  const expirationTime = payload.exp * 1000;
   return expirationTime - Date.now();
 }
 
 /**
  * Hook to automatically refresh token before it expires
- * Refreshes token when it has ~5 minutes remaining
+ * ONLY refreshes if user has been active within the inactivity timeout
+ * Logs out inactive users for security
  */
 export function useTokenRefresh() {
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activityCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  // Update last activity timestamp
+  const updateActivity = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[TokenRefresh] User activity detected');
+    }
+  }, []);
 
   useEffect(() => {
-    // Only run on client side
     if (typeof window === 'undefined') {
       return;
     }
 
+    // Activity event listeners
+    const activityEvents = [
+      'mousedown',
+      'mousemove',
+      'keydown',
+      'scroll',
+      'touchstart',
+      'click',
+    ];
+
+    // Throttle activity updates to once per 10 seconds
+    let throttleTimer: NodeJS.Timeout | null = null;
+    const throttledUpdateActivity = () => {
+      if (!throttleTimer) {
+        updateActivity();
+        throttleTimer = setTimeout(() => {
+          throttleTimer = null;
+        }, 10000);
+      }
+    };
+
+    // Add activity listeners
+    activityEvents.forEach((event) => {
+      window.addEventListener(event, throttledUpdateActivity, { passive: true });
+    });
+
     const scheduleTokenRefresh = () => {
-      // Clear any existing timeouts
+      // Clear existing timeout
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
-      }
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
       }
 
       const accessToken = localStorage.getItem('quantivahq_access_token');
 
-      // If no token, stop scheduling
       if (!accessToken) {
         return;
       }
@@ -85,9 +124,14 @@ export function useTokenRefresh() {
         console.warn('[TokenRefresh] Token already expired, attempting refresh');
         authService
           .refresh()
-          .then(() => {
+          .then((response) => {
             console.info('[TokenRefresh] Token refreshed successfully');
-            // Reschedule after refresh
+            if (response.accessToken) {
+              localStorage.setItem('quantivahq_access_token', response.accessToken);
+            }
+            if (response.refreshToken) {
+              localStorage.setItem('quantivahq_refresh_token', response.refreshToken);
+            }
             scheduleTokenRefresh();
           })
           .catch((error) => {
@@ -104,17 +148,31 @@ export function useTokenRefresh() {
         return;
       }
 
-      // Refresh when 5 minutes remaining (300000 ms)
-      const REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes
-
       if (timeUntilExpiry <= REFRESH_THRESHOLD) {
-        // Token expires soon, refresh immediately
+        // Token expires soon, check activity before refreshing
+        const timeSinceLastActivity = Date.now() - lastActivityRef.current;
+
+        if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
+          // User has been inactive too long, log them out
+          console.warn(
+            `[TokenRefresh] User inactive for ${Math.round(timeSinceLastActivity / 1000 / 60)} minutes, logging out`
+          );
+          authService.logout();
+          return;
+        }
+
+        // User is active, refresh token
         console.info('[TokenRefresh] Token expiring soon, refreshing now');
         authService
           .refresh()
-          .then(() => {
+          .then((response) => {
             console.info('[TokenRefresh] Token refreshed successfully');
-            // Reschedule after refresh
+            if (response.accessToken) {
+              localStorage.setItem('quantivahq_access_token', response.accessToken);
+            }
+            if (response.refreshToken) {
+              localStorage.setItem('quantivahq_refresh_token', response.refreshToken);
+            }
             scheduleTokenRefresh();
           })
           .catch((error) => {
@@ -123,17 +181,34 @@ export function useTokenRefresh() {
       } else {
         // Schedule refresh for when threshold is reached
         const timeUntilRefresh = timeUntilExpiry - REFRESH_THRESHOLD;
-        console.info(
-          `[TokenRefresh] Token refresh scheduled in ${Math.round(timeUntilRefresh / 1000 / 60)} minutes`
-        );
+        const minutesUntilRefresh = Math.round(timeUntilRefresh / 1000 / 60);
+        console.info(`[TokenRefresh] Scheduled refresh in ${minutesUntilRefresh} minutes`);
 
         refreshTimeoutRef.current = setTimeout(() => {
+          // Check activity before refreshing
+          const timeSinceLastActivity = Date.now() - lastActivityRef.current;
+
+          if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
+            // User has been inactive too long, log them out
+            console.warn(
+              `[TokenRefresh] User inactive for ${Math.round(timeSinceLastActivity / 1000 / 60)} minutes, logging out`
+            );
+            authService.logout();
+            return;
+          }
+
+          // User is active, refresh token
           console.info('[TokenRefresh] Time to refresh token');
           authService
             .refresh()
-            .then(() => {
+            .then((response) => {
               console.info('[TokenRefresh] Token refreshed successfully');
-              // Reschedule after refresh
+              if (response.accessToken) {
+                localStorage.setItem('quantivahq_access_token', response.accessToken);
+              }
+              if (response.refreshToken) {
+                localStorage.setItem('quantivahq_refresh_token', response.refreshToken);
+              }
               scheduleTokenRefresh();
             })
             .catch((error) => {
@@ -143,17 +218,20 @@ export function useTokenRefresh() {
             });
         }, timeUntilRefresh);
       }
-
-      // Also check periodically (every minute) in case localStorage is updated externally
-      refreshIntervalRef.current = setInterval(() => {
-        const currentToken = localStorage.getItem('quantivahq_access_token');
-        if (currentToken !== accessToken) {
-          // Token was updated externally, reschedule
-          console.info('[TokenRefresh] Token was updated externally, rescheduling');
-          scheduleTokenRefresh();
-        }
-      }, 60000); // Check every minute
     };
+
+    // Check for inactivity every minute
+    activityCheckIntervalRef.current = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivityRef.current;
+      const accessToken = localStorage.getItem('quantivahq_access_token');
+
+      if (accessToken && timeSinceLastActivity > INACTIVITY_TIMEOUT) {
+        console.warn(
+          `[TokenRefresh] User inactive for ${Math.round(timeSinceLastActivity / 1000 / 60)} minutes, logging out`
+        );
+        authService.logout();
+      }
+    }, 60000); // Check every minute
 
     scheduleTokenRefresh();
 
@@ -162,11 +240,17 @@ export function useTokenRefresh() {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
       }
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
+      if (activityCheckIntervalRef.current) {
+        clearInterval(activityCheckIntervalRef.current);
       }
+      if (throttleTimer) {
+        clearTimeout(throttleTimer);
+      }
+      activityEvents.forEach((event) => {
+        window.removeEventListener(event, throttledUpdateActivity);
+      });
     };
-  }, []);
+  }, [updateActivity]);
 }
 
 /**
@@ -187,9 +271,7 @@ export function useTokenExpiryMonitor() {
     if (timeUntilExpiry) {
       const minutes = Math.round(timeUntilExpiry / 1000 / 60);
       const seconds = Math.round((timeUntilExpiry / 1000) % 60);
-      console.info(
-        `[TokenMonitor] Token expires in: ${minutes}m ${seconds}s`
-      );
+      console.info(`[TokenMonitor] Token expires in: ${minutes}m ${seconds}s`);
     }
 
     const isExpired = isTokenExpired(accessToken);

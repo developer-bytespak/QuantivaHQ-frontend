@@ -58,7 +58,7 @@ export const authService = {
   },
 
   async refresh() {
-    return apiRequest<never, { message: string }>({
+    return apiRequest<never, { message: string; accessToken?: string; refreshToken?: string }>({
       path: "/auth/refresh",
       method: "POST",
       credentials: "include",
