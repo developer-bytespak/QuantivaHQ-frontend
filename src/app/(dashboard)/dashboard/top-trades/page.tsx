@@ -844,23 +844,14 @@ export default function TopTradesPage() {
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <Link
-            href="/dashboard/my-strategies?from=top-trades"
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 whitespace-nowrap flex items-center gap-1.5 text-white"
-          >
-            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span className="text-white">My Strategies</span>
-          </Link>
-          <Link
-            href="/dashboard/custom-strategies-trading?mode=live"
+            href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 whitespace-nowrap flex items-center gap-1.5 text-green-400"
             title="Trade with your custom strategies (Live)"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Trade Custom</span>
+            <span>Custom Strategy</span>
           </Link>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
@@ -934,16 +925,6 @@ export default function TopTradesPage() {
                   </button>
                 );
               })}
-              {/* Custom Strategy Button */}
-              <Link
-                href="/dashboard/my-strategies/create?from=top-trades"
-                className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all rounded-lg whitespace-nowrap bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 flex items-center gap-1.5 shadow-lg shadow-[#fc4f02]/10"
-              >
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-white">Custom</span>
-              </Link>
             </div>
           </div>
           
@@ -982,7 +963,7 @@ export default function TopTradesPage() {
               <p className="text-xs text-slate-500">Connect an exchange to view trading signals and strategies</p>
             </div>
             <Link 
-              href="/dashboard/settings/exchange-configuration" 
+              href={`/dashboard/settings/exchange-configuration?type=${connectionType || 'crypto'}`}
               className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Configure Exchange

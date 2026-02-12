@@ -93,18 +93,6 @@ export default function Verify2FAPage() {
         }
       }
 
-      // Store tokens from response as fallback if cookies don't work (cross-origin issue)
-      if (response.accessToken) {
-        console.log("[2FA] Storing tokens from response body as fallback");
-        localStorage.setItem("quantivahq_access_token", response.accessToken);
-        if (response.refreshToken) {
-          localStorage.setItem("quantivahq_refresh_token", response.refreshToken);
-        }
-        if (response.sessionId) {
-          localStorage.setItem("quantivahq_session_id", response.sessionId);
-        }
-      }
-
       // Debug: Log cookies to verify they're being set
       if (process.env.NODE_ENV === "development") {
         console.log("[2FA] Cookies after verification:", document.cookie);
