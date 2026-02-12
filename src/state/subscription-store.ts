@@ -17,7 +17,7 @@ import {
 } from '@/mock-data/subscription-dummy-data';
 
 const HARDCODED_USER_ID = '0aa80bcc-2d23-410c-ac4a-061fb932303e';
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
 
 interface CurrentSubscription {
   subscription_id: string;
