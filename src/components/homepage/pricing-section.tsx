@@ -8,12 +8,9 @@ import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
 import useSubscriptionStore from "@/state/subscription-store";
 import {
   SUBSCRIPTION_PLANS,
-  PLAN_FEATURES,
   BillingPeriod,
   PlanTier,
-  FEATURE_DESCRIPTIONS,
   calculatePrice,
-  CURRENT_USER_SUBSCRIPTION,
 } from "@/mock-data/subscription-dummy-data";
 
 interface PricingTier {
@@ -188,7 +185,8 @@ function PricingCard({ tier, delay, index, isCurrentPlan }: { tier: PricingTier;
 
 export function PricingSection() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(BillingPeriod.MONTHLY);
-  const currentTier = CURRENT_USER_SUBSCRIPTION.tier;
+  const { currentSubscription } = useSubscriptionStore();
+  const currentTier = currentSubscription?.tier;
 
   // Generate pricing tiers from dummy data
   const getTierFeatures = (tier: PlanTier): string[] => {
@@ -291,7 +289,7 @@ export function PricingSection() {
               tier={tier}
               delay="animate-fade-in"
               index={index}
-              isCurrentPlan={tier.name.toUpperCase() === currentTier}
+              isCurrentPlan={currentTier ? tier.name.toUpperCase() === currentTier : false}
             />
           ))}
         </div>
