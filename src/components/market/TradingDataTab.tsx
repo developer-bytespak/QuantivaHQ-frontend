@@ -1,63 +1,106 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { exchangesService, OrderBook, RecentTrade } from "@/lib/api/exchanges.service";
+import { useMarketWebSocket } from "@/hooks/useMarketWebSocket";
 
 interface TradingDataTabProps {
   connectionId: string;
   symbol: string;
+  /** Pre-fetched order book from unified endpoint (Phase 5) */
+  initialOrderBook?: OrderBook | null;
+  /** Pre-fetched trades from unified endpoint (Phase 5) */
+  initialTrades?: RecentTrade[];
 }
 
-export default function TradingDataTab({ connectionId, symbol }: TradingDataTabProps) {
-  const [orderBook, setOrderBook] = useState<OrderBook | null>(null);
-  const [trades, setTrades] = useState<RecentTrade[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function TradingDataTab({ connectionId, symbol, initialOrderBook, initialTrades }: TradingDataTabProps) {
+  const [orderBook, setOrderBook] = useState<OrderBook | null>(initialOrderBook || null);
+  const [trades, setTrades] = useState<RecentTrade[]>(initialTrades || []);
+  const [isLoading, setIsLoading] = useState(!initialOrderBook && (!initialTrades || initialTrades.length === 0));
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<"orderbook" | "trades">("orderbook");
+  const [useWebSocket, setUseWebSocket] = useState(true);
 
+  // Phase 6 optimization: Real-time WebSocket data
+  const ws = useMarketWebSocket({
+    connectionId,
+    symbol,
+    enabled: useWebSocket,
+  });
+
+  // Sync WebSocket data to component state
   useEffect(() => {
-    const fetchData = async () => {
-      if (!connectionId || !symbol) return;
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const [orderBookRes, tradesRes] = await Promise.all([
-          exchangesService.getOrderBook(connectionId, symbol, 20),
-          exchangesService.getRecentTrades(connectionId, symbol, 50),
-        ]);
-
-        console.log("Order Book Response:", orderBookRes);
-        console.log("Trades Response:", tradesRes);
-
-        if (orderBookRes.success && orderBookRes.data) {
-          console.log("Order Book Data:", orderBookRes.data);
-          setOrderBook(orderBookRes.data);
-        } else {
-          console.error("Order Book Error:", orderBookRes.message || "Unknown error");
-          setError(orderBookRes.message || "Failed to load order book data");
-        }
-
-        if (tradesRes.success && tradesRes.data) {
-          setTrades(tradesRes.data);
-        } else {
-          console.error("Trades Error:", tradesRes.message || "Unknown error");
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch trading data:", err);
-        setError(err.message || "Failed to load trading data");
-      } finally {
+    if (ws.isConnected) {
+      if (ws.orderBook) {
+        setOrderBook(ws.orderBook);
         setIsLoading(false);
       }
-    };
+      if (ws.trades.length > 0) {
+        setTrades(ws.trades);
+        setIsLoading(false);
+      }
+    }
+  }, [ws.orderBook, ws.trades, ws.isConnected]);
 
-    fetchData();
+  // Handle WebSocket error → fallback to HTTP polling
+  useEffect(() => {
+    if (ws.error && useWebSocket) {
+      console.warn("[TradingDataTab] WebSocket failed, falling back to HTTP polling");
+      setUseWebSocket(false);
+    }
+  }, [ws.error, useWebSocket]);
 
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
+  // HTTP fallback: Fetch via REST API with polling (only when WebSocket is unavailable)
+  const fetchDataViaHTTP = useCallback(async () => {
+    if (!connectionId || !symbol) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [orderBookRes, tradesRes] = await Promise.all([
+        exchangesService.getOrderBook(connectionId, symbol, 20),
+        exchangesService.getRecentTrades(connectionId, symbol, 50),
+      ]);
+
+      if (orderBookRes.success && orderBookRes.data) {
+        setOrderBook(orderBookRes.data);
+      } else {
+        setError(orderBookRes.message || "Failed to load order book data");
+      }
+
+      if (tradesRes.success && tradesRes.data) {
+        setTrades(tradesRes.data);
+      }
+    } catch (err: any) {
+      console.error("Failed to fetch trading data:", err);
+      setError(err.message || "Failed to load trading data");
+    } finally {
+      setIsLoading(false);
+    }
   }, [connectionId, symbol]);
+
+  // HTTP polling fallback (only when WebSocket is disabled)
+  useEffect(() => {
+    if (useWebSocket) return; // WebSocket is active, no need for polling
+
+    fetchDataViaHTTP();
+
+    // Poll every 30 seconds as fallback
+    const interval = setInterval(fetchDataViaHTTP, 30000);
+    return () => clearInterval(interval);
+  }, [useWebSocket, fetchDataViaHTTP]);
+
+  // Initial HTTP fetch if WebSocket hasn't connected within 3 seconds
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading && !orderBook && trades.length === 0) {
+        fetchDataViaHTTP();
+      }
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
   if (isLoading && !orderBook && trades.length === 0) {
     return (

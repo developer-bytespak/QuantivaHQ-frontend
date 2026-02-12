@@ -13,12 +13,15 @@ import {
   HistogramSeries
 } from "lightweight-charts";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import type { CandlesByInterval } from "@/lib/api/exchanges.service";
 
 interface CoinPriceChartProps {
   connectionId: string;
   symbol: string;
   interval: string;
   timeframe: string;
+  /** Pre-fetched candle data from getCoinDetail (backend optimization Phase 2) */
+  candlesByInterval?: CandlesByInterval;
 }
 
 export default function CoinPriceChart({
@@ -26,6 +29,7 @@ export default function CoinPriceChart({
   symbol,
   interval,
   timeframe,
+  candlesByInterval,
 }: CoinPriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -216,22 +220,42 @@ export default function CoinPriceChart({
       try {
         setIsLoading(true);
 
-        // Calculate limit based on timeframe
-        let limit = 100;
-        if (timeframe === "3M" || timeframe === "6M") {
-          limit = 200;
+        let rawCandles: Array<{
+          openTime: number;
+          open: number;
+          high: number;
+          low: number;
+          close: number;
+          volume: number;
+          closeTime: number;
+        }> = [];
+
+        // Phase 2 optimization: Use embedded candle data if available for this interval
+        const embeddedCandles = candlesByInterval?.[interval];
+        if (embeddedCandles && embeddedCandles.length > 0) {
+          rawCandles = embeddedCandles;
+        } else {
+          // Fallback: Fetch from API (for intervals not included in embedded data)
+          let limit = 100;
+          if (timeframe === "3M" || timeframe === "6M") {
+            limit = 200;
+          }
+
+          const response = await exchangesService.getCandlestickData(
+            connectionId,
+            symbol,
+            interval,
+            limit
+          );
+
+          if (response.success && response.data) {
+            rawCandles = response.data;
+          }
         }
 
-        const response = await exchangesService.getCandlestickData(
-          connectionId,
-          symbol,
-          interval,
-          limit
-        );
-
-        if (response.success && response.data) {
+        if (rawCandles.length > 0) {
           // Sort data by time in ascending order (lightweight-charts requirement)
-          const sortedData = [...response.data].sort((a, b) => a.openTime - b.openTime);
+          const sortedData = [...rawCandles].sort((a, b) => a.openTime - b.openTime);
 
           const candles = sortedData.map((c) => ({
             time: (c.openTime / 1000) as any,
@@ -299,7 +323,7 @@ export default function CoinPriceChart({
         clearTimeout(retryTimer);
       }
     };
-  }, [connectionId, symbol, interval, timeframe, chartReady]);
+  }, [connectionId, symbol, interval, timeframe, chartReady, candlesByInterval]);
 
   return (
     <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 relative">

@@ -28,9 +28,23 @@ interface InfoTabProps {
     description?: string;
   };
   connectionType: "crypto" | "stocks" | null;
+  /** Pre-fetched CoinGecko data from getCoinDetail (backend optimization Phase 3) */
+  embeddedMarketData?: {
+    name: string;
+    symbol: string;
+    market_cap_rank: number;
+    description?: { en: string };
+    links?: {
+      homepage?: string[];
+      twitter_screen_name?: string;
+      subreddit_url?: string;
+      repos_url?: { github?: string[] };
+    };
+    market_data: any;
+  };
 }
 
-export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoTabProps) {
+export default function InfoTab({ coinSymbol, stockData, connectionType, embeddedMarketData }: InfoTabProps) {
   const [coinData, setCoinData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,15 +63,21 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
         return;
       }
 
+      // Phase 3 optimization: Use embedded data if available
+      if (embeddedMarketData) {
+        setCoinData(embeddedMarketData);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback: Fetch from CoinGecko API
       setIsLoading(true);
       setError(null);
       try {
-        // getCoinDetails handles symbol to ID mapping automatically
         const data = await getCoinDetails(coinSymbol);
         setCoinData(data);
       } catch (err: any) {
         console.error("Failed to fetch coin info:", err);
-        // Check if it's a "not found" error
         if (err.message?.includes("not found") || err.message?.includes("404")) {
           setError(`Coin "${coinSymbol}" not found. CoinGecko may not have data for this coin.`);
         } else {
@@ -71,7 +91,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
     if (coinSymbol && connectionType) {
       fetchCoinInfo();
     }
-  }, [coinSymbol, connectionType]);
+  }, [coinSymbol, connectionType, embeddedMarketData]);
 
   // Prevent body scroll when overlay is open
   useEffect(() => {
