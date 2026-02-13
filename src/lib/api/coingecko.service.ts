@@ -137,3 +137,44 @@ export async function getCoinDetails(coinIdOrSymbol: string): Promise<any> {
     );
   }
 }
+
+/**
+ * Fetch all coins available on Binance from CoinGecko exchange endpoint
+ * Uses CoinGecko Pro API to get all trading pairs on Binance
+ * Returns a set of coin IDs for easy lookup
+ */
+export async function getBinanceCoins(): Promise<Set<string>> {
+  try {
+    console.log('Calling backend endpoint: /api/market/exchanges/binance/coins');
+    
+    const data = await apiRequest<never, { coins: string[] }>({
+      path: '/api/market/exchanges/binance/coins',
+      method: 'GET',
+      timeout: 30000,
+    });
+    
+    console.log(`✅ Backend response received with ${data.coins.length} coins`);
+    
+    if (!data.coins || data.coins.length === 0) {
+      console.warn('⚠️ Backend returned empty coins array');
+      return new Set();
+    }
+    
+    const coinsSet = new Set(data.coins);
+    console.log(`📊 Created Set with ${coinsSet.size} unique coins`);
+    console.log(`📋 Sample coins from backend:`, Array.from(coinsSet).slice(0, 5));
+    
+    return coinsSet;
+    
+  } catch (error: any) {
+    console.error('❌ Failed to fetch Binance coins from backend');
+    console.error('Error details:', {
+      message: error.message,
+      status: error.status,
+      response: error.response?.data,
+    });
+    throw new Error(
+      error.message || 'Failed to fetch Binance coins. Please ensure the backend is running and endpoint /api/market/exchanges/binance/coins exists.',
+    );
+  }
+}

@@ -413,6 +413,21 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
   const marketData = coinData.market_data || {};
   const links = coinData.links || {};
 
+  // Debug: Log market data structure for price performance troubleshooting
+  console.log('InfoTab Debug - Market Data Keys:', Object.keys(marketData));
+  console.log('InfoTab Debug - Price Change Fields:', {
+    '1h_in_currency': marketData.price_change_percentage_1h_in_currency,
+    '1h': marketData.price_change_percentage_1h,
+    '24h_in_currency': marketData.price_change_percentage_24h_in_currency, 
+    '24h': marketData.price_change_percentage_24h,
+    '7d_in_currency': marketData.price_change_percentage_7d_in_currency,
+    '7d': marketData.price_change_percentage_7d,
+    '30d_in_currency': marketData.price_change_percentage_30d_in_currency,
+    '30d': marketData.price_change_percentage_30d,
+    '1y_in_currency': marketData.price_change_percentage_1y_in_currency,
+    '1y': marketData.price_change_percentage_1y,
+  });
+
   const description = coinData.description?.en || "";
   const isLongDescription = description.length > 500;
   const displayDescription = description.substring(0, 500);
@@ -578,15 +593,16 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
         <h3 className="text-lg font-semibold text-white mb-6">Price Performance</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { label: "1h", key: "price_change_percentage_1h_in_currency", icon: "⏱️" },
-            { label: "24h", key: "price_change_percentage_24h_in_currency", icon: "📊" },
-            { label: "7d", key: "price_change_percentage_7d_in_currency", icon: "📈" },
-            { label: "30d", key: "price_change_percentage_30d_in_currency", icon: "📅" },
-            { label: "1y", key: "price_change_percentage_1y_in_currency", icon: "🗓️" },
-          ].map(({ label, key, icon }) => {
-            const change = marketData[key]?.usd;
+            { label: "1h", key: "price_change_percentage_1h_in_currency", fallbackKey: "price_change_percentage_1h", icon: "⏱️" },
+            { label: "24h", key: "price_change_percentage_24h_in_currency", fallbackKey: "price_change_percentage_24h", icon: "📊" },
+            { label: "7d", key: "price_change_percentage_7d_in_currency", fallbackKey: "price_change_percentage_7d", icon: "📈" },
+            { label: "30d", key: "price_change_percentage_30d_in_currency", fallbackKey: "price_change_percentage_30d", icon: "📅" },
+            { label: "1y", key: "price_change_percentage_1y_in_currency", fallbackKey: "price_change_percentage_1y", icon: "🗓️" },
+          ].map(({ label, key, fallbackKey, icon }) => {
+            // Try main key first, then fallback key, then direct property
+            const change = marketData[key]?.usd || marketData[fallbackKey] || marketData[key.replace('_in_currency', '')];
             const isPositive = change >= 0;
-            const hasData = change !== undefined;
+            const hasData = change !== undefined && change !== null && !isNaN(change);
             
             return (
               <div 

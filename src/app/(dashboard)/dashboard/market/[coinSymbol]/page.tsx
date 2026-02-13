@@ -487,12 +487,30 @@ export default function MarketDetailPage() {
                 <p className="text-2xl font-bold text-white">
                   {connectionType === "stocks" 
                     ? (stockData?.marketCap 
-                        ? `$${(stockData.marketCap / 1e9).toFixed(1)}B` 
+                        ? (() => {
+                            const marketCap = stockData.marketCap;
+                            if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(1)}B`;
+                            if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(1)}M`;
+                            if (marketCap >= 1e3) return `$${(marketCap / 1e3).toFixed(1)}K`;
+                            return `$${marketCap.toFixed(2)}`;
+                          })()
                         : <span className="text-slate-400">N/A</span>)
                     : (coinData?.marketData?.market_cap?.usd 
-                        ? `$${(coinData.marketData.market_cap.usd / 1e9).toFixed(1)}B` 
+                        ? (() => {
+                            const marketCap = coinData.marketData.market_cap.usd;
+                            if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(1)}B`;
+                            if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(1)}M`;
+                            if (marketCap >= 1e3) return `$${(marketCap / 1e3).toFixed(1)}K`;
+                            return `$${marketCap.toFixed(2)}`;
+                          })()
                         : (coinData?.volume24h && coinData.volume24h > 0 
-                            ? `$${(coinData.volume24h * 10 / 1e9).toFixed(1)}B` 
+                            ? (() => {
+                                const marketCap = coinData.volume24h * 10;
+                                if (marketCap >= 1e9) return `$${(marketCap / 1e9).toFixed(1)}B`;
+                                if (marketCap >= 1e6) return `$${(marketCap / 1e6).toFixed(1)}M`;
+                                if (marketCap >= 1e3) return `$${(marketCap / 1e3).toFixed(1)}K`;
+                                return `$${marketCap.toFixed(2)}`;
+                              })()
                             : <span className="text-slate-400">N/A</span>))
                   }
                 </p>
@@ -512,11 +530,31 @@ export default function MarketDetailPage() {
                 </div>
                 <p className="text-2xl font-bold text-white">
                   ${connectionType === "stocks" 
-                    ? (stockData?.volume24h ? (stockData.volume24h / 1e9).toFixed(3) + "B" : "N/A")
+                    ? (stockData?.volume24h 
+                        ? (() => {
+                            const volume = stockData.volume24h;
+                            if (volume >= 1e9) return (volume / 1e9).toFixed(3) + "B";
+                            if (volume >= 1e6) return (volume / 1e6).toFixed(2) + "M";
+                            if (volume >= 1e3) return (volume / 1e3).toFixed(1) + "K";
+                            return volume.toFixed(2);
+                          })()
+                        : "N/A")
                     : (coinData?.marketData?.total_volume?.usd && coinData.marketData.total_volume.usd > 0
-                        ? (coinData.marketData.total_volume.usd / 1e9).toFixed(3) + "B"
+                        ? (() => {
+                            const volume = coinData.marketData.total_volume.usd;
+                            if (volume >= 1e9) return (volume / 1e9).toFixed(3) + "B";
+                            if (volume >= 1e6) return (volume / 1e6).toFixed(2) + "M";
+                            if (volume >= 1e3) return (volume / 1e3).toFixed(1) + "K";
+                            return volume.toFixed(2);
+                          })()
                         : (coinData?.volume24h && coinData.volume24h > 0 
-                            ? (coinData.volume24h / 1e9).toFixed(3) + "B" 
+                            ? (() => {
+                                const volume = coinData.volume24h;
+                                if (volume >= 1e9) return (volume / 1e9).toFixed(3) + "B";
+                                if (volume >= 1e6) return (volume / 1e6).toFixed(2) + "M";
+                                if (volume >= 1e3) return (volume / 1e3).toFixed(1) + "K";
+                                return volume.toFixed(2);
+                              })()
                             : "N/A"))
                   }
                 </p>
