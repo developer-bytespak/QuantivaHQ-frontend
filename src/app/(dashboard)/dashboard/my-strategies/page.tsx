@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiRequest } from "@/lib/api/client";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
 interface StrategyMetrics {
   total_signals: number;
@@ -46,6 +46,9 @@ export default function MyStrategiesPage() {
   };
   const previousPageName = referrer ? pageNames[referrer] || referrer : null;
   
+  // Get connection type from global context
+  const { connectionType } = useExchange();
+  
   const [strategies, setStrategies] = useState<UserStrategy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,21 +56,6 @@ export default function MyStrategiesPage() {
   const [selected, setSelected] = useState<UserStrategy | null>(null);
   const [generatingSignals, setGeneratingSignals] = useState<string | null>(null);
   const [deletingStrategy, setDeletingStrategy] = useState<string | null>(null);
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-
-
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-      }
-    };
-    checkConnection();
-  }, []);
 
   const fetchStrategies = async () => {
     setLoading(true);

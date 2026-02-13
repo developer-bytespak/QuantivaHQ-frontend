@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { alpacaPaperTradingService, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { BalanceOverview } from "../paper-trading/components/balance-overview";
 import { StrategyCard } from "../paper-trading/components/strategy-card";
 import { AutoTradeModal } from "../paper-trading/components/auto-trade-modal";
@@ -105,9 +105,9 @@ export default function CustomStrategiesTradingPage() {
   const mode = searchParams.get("mode") || "paper";
   const isPaperMode = mode === "paper";
 
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Connection type detection - using global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  const isStocksConnection = connectionType === "stocks";
 
   // Account data
   const [balance, setBalance] = useState(0);
@@ -147,40 +147,6 @@ export default function CustomStrategiesTradingPage() {
   // Trade details overlay
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
-
-  const isStocksConnection = connectionType === "stocks";
-
-  // Check connection type on mount
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        if (isMounted) {
-          // ✅ Backend correction: Check exchange.name for type detection
-          const exchangeName = response.data?.exchange?.name;
-          const connType = exchangeName === "Alpaca" ? "stocks" : 
-                          (exchangeName === "Binance" || exchangeName === "Bybit") ? "crypto" : null;
-          setConnectionType(connType);
-        }
-      } catch (error: any) {
-        console.error("Failed to check connection type:", error);
-        if (isMounted) {
-          setConnectionType(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsCheckingConnection(false);
-        }
-      }
-    };
-
-    checkConnection();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Fetch balance based on mode and connection type
   useEffect(() => {

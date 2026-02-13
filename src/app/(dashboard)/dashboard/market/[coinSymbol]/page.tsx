@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { exchangesService, CoinDetailResponse, CandlesByInterval, EmbeddedMarketData, MarketDetailResponse, OrderBook, RecentTrade } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { useRealtimePrice } from "@/hooks/useRealtimePrice";
 import CoinDetailHeader from "@/components/market/CoinDetailHeader";
 import CoinPriceChart from "@/components/market/CoinPriceChart";
@@ -81,12 +82,13 @@ export default function MarketDetailPage() {
   const params = useParams();
   const symbol = params.coinSymbol as string;
 
+  // Get connection from global context (fetched once on app start)
+  const { connectionId, connectionType } = useExchange();
+  
   const [coinData, setCoinData] = useState<CoinDetailData | null>(null);
   const [stockData, setStockData] = useState<StockDetailData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [connectionId, setConnectionId] = useState<string | null>(null);
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
   const [activeTab, setActiveTab] = useState<"Price" | "Info" | "Trading Data">("Price");
   const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1D");
   const [selectedInterval, setSelectedInterval] = useState<string>("1d");
@@ -135,17 +137,12 @@ export default function MarketDetailPage() {
         setIsLoading(true);
         setError(null);
 
-        // Get active connection
-        const connectionResponse = await exchangesService.getActiveConnection();
-        if (!connectionResponse.success || !connectionResponse.data) {
+        // Connection type is available from global context
+        if (!connectionId) {
           throw new Error("No active exchange connection found");
         }
 
-        const activeConnection = connectionResponse.data;
-        setConnectionId(activeConnection.connection_id);
-        setConnectionType(activeConnection.exchange?.type || "crypto");
-
-        if (activeConnection.exchange?.type === "stocks") {
+        if (connectionType === "stocks") {
           // Fetch stock detail data
           const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
           const response = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
@@ -172,7 +169,7 @@ export default function MarketDetailPage() {
 
           try {
             const unifiedResponse = await exchangesService.getMarketDetail(
-              activeConnection.connection_id,
+              connectionId,
               tradingPair,
               ['all']
             );
@@ -211,7 +208,7 @@ export default function MarketDetailPage() {
           // Fallback: Legacy getCoinDetail (if unified failed or unavailable)
           if (!coinDetailData) {
             const response = await exchangesService.getCoinDetail(
-              activeConnection.connection_id,
+              connectionId || '',
               tradingPair
             );
 

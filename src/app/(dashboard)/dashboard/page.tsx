@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData, Connection } from "@/lib/api/exchanges.service";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { getCryptoNews, getGeneralCryptoNews, getGeneralStockNews, CryptoNewsResponse, CryptoNewsItem, StockNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
 import { useStocksMarket } from "@/hooks/useStocksMarket";
@@ -32,6 +33,10 @@ interface Activity {
 
 export default function DashboardPage() {
   const router = useRouter();
+  
+  // Get connection from global context (fetched once on app start)
+  const { connectionType, connectionId, activeConnection, isLoading: isLoadingConnection } = useExchange();
+  
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
@@ -43,12 +48,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  
-  // Store connection ID and type in component state
-  const [connectionId, setConnectionId] = useState<string | null>(null);
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [activeConnection, setActiveConnection] = useState<Connection | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Ref to track if initialization has happened (prevents duplicate calls)
   const hasInitialized = useRef(false);
@@ -184,31 +183,6 @@ export default function DashboardPage() {
     },
   ];
 
-  // Fetch active connection from backend (secure, no localStorage)
-  const fetchActiveConnection = useCallback(async () => {
-    try {
-      const response = await exchangesService.getActiveConnection();
-      const connection = response.data;
-      setConnectionId(connection.connection_id);
-      setActiveConnection(connection as Connection);
-      setConnectionType(connection.exchange?.type || null);
-      return connection.connection_id;
-    } catch (err: any) {
-      // Silently handle 401 (not logged in) and 404 (no connection) - both are expected
-      if (
-        err?.status !== 401 &&
-        err?.statusCode !== 401 &&
-        err?.status !== 404 &&
-        err?.statusCode !== 404
-      ) {
-        console.error("Failed to fetch active connection:", err);
-      }
-      setError("No active connection found. Please connect your exchange account.");
-      setIsLoading(false);
-      return null;
-    }
-  }, []);
-
   // Fetch dashboard data (only uses combined dashboard API)
   const fetchDashboardData = useCallback(async (connId: string, isInitial = false) => {
     try {
@@ -239,43 +213,45 @@ export default function DashboardPage() {
     } finally {
       if (isInitial) {
         setIsLoading(false);
-        setIsInitialLoad(false);
       }
     }
   }, []);
 
-  // Initial load: fetch connection, then fetch data (runs only once on mount)
+  // Initial load: fetch data when connectionId is available
   useEffect(() => {
     // Prevent re-initialization (especially in React Strict Mode)
     if (hasInitialized.current) return;
     
+    // Wait until we have the connection ID from context
+    if (!connectionId) {
+      if (!isLoadingConnection) {
+        // Connection failed to load
+        setError("No active connection found. Please connect your exchange account.");
+        setIsLoading(false);
+      }
+      return;
+    }
+    
     const initializeDashboard = async () => {
       hasInitialized.current = true;
-      const connId = await fetchActiveConnection();
-      if (connId) {
-        await fetchDashboardData(connId, true);
-      }
+      await fetchDashboardData(connectionId, true);
     };
     
     initializeDashboard();
-    // Empty deps - run only once on mount
-  }, []);
+  }, [connectionId, isLoadingConnection, fetchDashboardData]);
 
   // Polling: only update data, no loading state, no connection fetch
   useEffect(() => {
-    if (!connectionId || isInitialLoad) return;
+    if (!connectionId) return;
 
     // Set up polling every 30 seconds (reduced from 8s to save resources)
     // Silent updates - no loading state, smooth transitions
     const pollInterval = setInterval(() => {
-      if (connectionId) {
-        fetchDashboardData(connectionId, false);
-      }
+      fetchDashboardData(connectionId, false);
     }, 30000); // 30 seconds instead of 8 seconds
 
     return () => clearInterval(pollInterval);
-    // Remove fetchDashboardData from deps - it's stable with useCallback
-  }, [connectionId, isInitialLoad]);
+  }, [connectionId, fetchDashboardData]);
 
   // Format currency
   const formatCurrency = (value: number) => {
