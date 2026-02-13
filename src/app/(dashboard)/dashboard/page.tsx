@@ -444,12 +444,6 @@ export default function DashboardPage() {
                 onClick={() => {
                   if (connectionId) {
                     fetchDashboardData(connectionId, true);
-                  } else {
-                    fetchActiveConnection().then((connId) => {
-                      if (connId) {
-                        fetchDashboardData(connId, true);
-                      }
-                    });
                   }
                 }}
                 className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
