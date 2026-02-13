@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCachedMarketData, CoinGeckoCoin, getBinanceCoins } from "@/lib/api/coingecko.service";
-import { exchangesService } from "@/lib/api/exchanges.service"; 
+import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { useStocksMarket } from "@/hooks/useStocksMarket";
 import { formatPrice, formatPercent, formatVolume, formatMarketCap } from "@/lib/utils/format";
 
 export default function MarketPage() {
   const router = useRouter();
   
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Get connection type from global context (fetched once on app start)
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
   
   // Crypto state
   const [coins, setCoins] = useState<CoinGeckoCoin[]>([]);
@@ -40,104 +39,7 @@ export default function MarketPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const coinsPerPage = 50;
 
-  // Cache Binance coins to avoid repeated API calls
-  const [binanceCoinsCache, setBinanceCoinsCache] = useState<Set<string> | null>(null);
-  const [coinsCacheTime, setCoinsCacheTime] = useState<number | null>(null);
-  const CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hour
 
-  // Get cached Binance coins or fetch fresh ones
-  const getCachedBinanceCoins = async (): Promise<Set<string>> => {
-    const now = Date.now();
-    
-    // Use cache if it's still valid (less than 1 hour old)
-    if (binanceCoinsCache && coinsCacheTime && (now - coinsCacheTime) < CACHE_DURATION) {
-      console.log('✅ Using cached Binance coins list');
-      return binanceCoinsCache;
-    }
-    
-    console.log('🔄 Fetching fresh Binance coins list from backend...');
-    try {
-      const binanceCoins = await getBinanceCoins();
-      
-      if (!binanceCoins || binanceCoins.size === 0) {
-        console.warn('⚠️ Backend returned empty Binance coins list');
-        throw new Error('No Binance coins returned from backend');
-      }
-      
-      // Update cache
-      setBinanceCoinsCache(binanceCoins);
-      setCoinsCacheTime(now);
-      
-      console.log(`✅ Successfully cached ${binanceCoins.size} Binance coins for 1 hour`);
-      return binanceCoins;
-      
-    } catch (error: any) {
-      console.error('❌ Error fetching Binance coins:', error.message || error);
-      throw error;
-    }
-  };
-
-  // Filter coins against Binance coins list
-  const filterCoinsByBinance = async (coins: CoinGeckoCoin[]): Promise<CoinGeckoCoin[]> => {
-    try {
-      console.log(`\n🔍 FILTERING MARKET COINS\n📊 Input: ${coins.length} CoinGecko coins`);
-      
-      // Get list of all coins available on Binance
-      const binanceCoins = await getCachedBinanceCoins();
-      console.log(`📈 Binance list size: ${binanceCoins.size} coins`);
-      
-      // Show sample of what we're filtering against
-      const sampleCoins = Array.from(binanceCoins).slice(0, 5);
-      console.log(`📋 Sample Binance coins:`, sampleCoins);
-      
-      // Filter coins by checking if their ID is in the Binance list
-      const validCoins: CoinGeckoCoin[] = [];
-      const rejectedCoins: string[] = [];
-      
-      coins.forEach(coin => {
-        const coinId = coin.id.toLowerCase();
-        if (binanceCoins.has(coinId)) {
-          validCoins.push(coin);
-        } else {
-          rejectedCoins.push(`${coin.symbol} (${coin.id})`);
-        }
-      });
-      
-      const filteredCount = coins.length - validCoins.length;
-      console.log(`\n✅ FILTERING COMPLETE`);
-      console.log(`📊 Result: ${validCoins.length}/${coins.length} coins available on Binance`);
-      console.log(`🚫 Removed: ${filteredCount} coins not on Binance`);
-      
-      if (rejectedCoins.length > 0) {
-        console.log(`📛 First 10 rejected coins:`, rejectedCoins.slice(0, 10));
-      }
-      
-      return validCoins;
-      
-    } catch (error) {
-      console.error('❌ Failed to filter coins against Binance list:', error);
-      console.warn('⚠️ FALLBACK: Using original coin list (without Binance filtering)');
-      // If Binance filtering fails, return original coins to avoid blocking the UI
-      return coins;
-    }
-  };
-
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || "crypto"); // Default to crypto if no connection
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-        // Default to crypto if no active connection found
-        setConnectionType("crypto");
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
 
   useEffect(() => {
     // Fetch crypto data by default (for market overview page)
@@ -150,10 +52,8 @@ export default function MarketPage() {
       setError(null);
       try {
         const result = await getCachedMarketData(500);
-        
-        // Filter coins to only show those available on Binance
-        const validatedCoins = await filterCoinsByBinance(result.coins);
-        setCoins(validatedCoins);
+        // Backend already filters coins for Binance with USDT pairs
+        setCoins(result.coins);
         
         if (result.lastSyncTime) {
           setLastSyncTime(new Date(result.lastSyncTime));
