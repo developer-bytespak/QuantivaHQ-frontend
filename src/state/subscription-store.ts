@@ -16,8 +16,8 @@ import {
   UsageData,
 } from '@/mock-data/subscription-dummy-data';
 
-const HARDCODED_USER_ID = '0aa80bcc-2d23-410c-ac4a-061fb932303e';
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000/api';
+const HARDCODED_USER_ID = '741bd7d7-f365-4a02-b548-75bd37759561';
+const API_BASE_URL =process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 interface CurrentSubscription {
   subscription_id: string;
@@ -41,9 +41,11 @@ interface SubscriptionState {
   // Data
   currentSubscription: CurrentSubscription | null;
   allPlans: SubscriptionPlan[];
+  allSubscriptions: any[]; // Direct frontend API response
   usageStats: UsageData;
   paymentHistory: PaymentRecord[];
   selectedBillingPeriod: BillingPeriod;
+  selectedPlanId: string | null; // Track which plan user is viewing
 
   // UI States
   isLoading: boolean;
@@ -55,9 +57,11 @@ interface SubscriptionState {
   // Actions
   setCurrentSubscription: (sub: CurrentSubscription | null) => void;
   setAllPlans: (plans: SubscriptionPlan[]) => void;
+  setAllSubscriptions: (subs: any[]) => void;
   setUsageStats: (stats: UsageData) => void;
   setPaymentHistory: (history: PaymentRecord[]) => void;
   setSelectedBillingPeriod: (period: BillingPeriod) => void;
+  setSelectedPlanId: (planId: string | null) => void;
   setShowUpgradeModal: (show: boolean) => void;
   setShowCancelModal: (show: boolean) => void;
   setShowPaymentModal: (show: boolean) => void;
@@ -82,9 +86,11 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   // Initial Data
   currentSubscription: CURRENT_USER_SUBSCRIPTION,
   allPlans: SUBSCRIPTION_PLANS,
+  allSubscriptions: SUBSCRIPTION_PLANS,
   usageStats: USER_USAGE_STATS,
   paymentHistory: PAYMENT_HISTORY,
   selectedBillingPeriod: BillingPeriod.MONTHLY,
+  selectedPlanId: null,
 
   // UI States
   isLoading: false,
@@ -98,11 +104,15 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   setAllPlans: (plans) => set({ allPlans: plans }),
 
+  setAllSubscriptions: (subs) => set({ allSubscriptions: subs }),
+
   setUsageStats: (stats) => set({ usageStats: stats }),
 
   setPaymentHistory: (history) => set({ paymentHistory: history }),
 
   setSelectedBillingPeriod: (period) => set({ selectedBillingPeriod: period }),
+
+  setSelectedPlanId: (planId) => set({ selectedPlanId: planId }),
 
   setShowUpgradeModal: (show) => set({ showUpgradeModal: show }),
 
@@ -116,24 +126,36 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   // Helper Functions
   canAccessFeature: (feature: FeatureType) => {
-    const { currentSubscription } = get();
-    if (!currentSubscription) return false;
+    const { currentSubscription, selectedPlanId, allSubscriptions } = get();
     
-    const plan = SUBSCRIPTION_PLANS.find((p) => p.plan_id === currentSubscription.plan_id);
+    // Use selectedPlanId if available (for viewing/comparing plans)
+    const planId = selectedPlanId || currentSubscription?.plan_id;
+    if (!planId) return false;
+    
+    // First try to find in allSubscriptions (from API)
+    const plan = allSubscriptions.find((p: any) => p.plan_id === planId) ||
+                 SUBSCRIPTION_PLANS.find((p) => p.plan_id === planId);
+    
     if (!plan) return false;
     
-    const planFeature = plan.plan_features.find((f) => f.feature_type === feature);
+    const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
     return planFeature?.enabled ?? false;
   },
 
   getFeatureLimitInfo: (feature: FeatureType) => {
-    const { currentSubscription } = get();
-    if (!currentSubscription) return { enabled: false, limit: null };
+    const { currentSubscription, selectedPlanId, allSubscriptions } = get();
     
-    const plan = SUBSCRIPTION_PLANS.find((p) => p.plan_id === currentSubscription.plan_id);
+    // Use selectedPlanId if available (for viewing/comparing plans)
+    const planId = selectedPlanId || currentSubscription?.plan_id;
+    if (!planId) return { enabled: false, limit: null };
+    
+    // First try to find in allSubscriptions (from API)
+    const plan = allSubscriptions.find((p: any) => p.plan_id === planId) ||
+                 SUBSCRIPTION_PLANS.find((p) => p.plan_id === planId);
+    
     if (!plan) return { enabled: false, limit: null };
     
-    const planFeature = plan.plan_features.find((f) => f.feature_type === feature);
+    const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
     return {
       enabled: planFeature?.enabled ?? false,
       limit: planFeature?.limit_value ?? null,
@@ -224,8 +246,16 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   fetchSubscriptionData: async () => {
     set({ isLoading: true, error: null });
     try {
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const response = await fetch(
-        `${API_BASE_URL}/subscriptions/dashboard?userId=${HARDCODED_USER_ID}`
+        `${API_BASE_URL}/subscriptions/dashboard?userId=${HARDCODED_USER_ID}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          }
+        }
       );
 
       console.log('API response status:', response);
@@ -271,6 +301,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       set({
         currentSubscription,
         allPlans: data.allSubscriptions || SUBSCRIPTION_PLANS,
+        allSubscriptions: data.allSubscriptions || SUBSCRIPTION_PLANS,
         usageStats,
         paymentHistory,
         isLoading: false,
