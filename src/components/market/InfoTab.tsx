@@ -28,9 +28,23 @@ interface InfoTabProps {
     description?: string;
   };
   connectionType: "crypto" | "stocks" | null;
+  /** Pre-fetched CoinGecko data from getCoinDetail (backend optimization Phase 3) */
+  embeddedMarketData?: {
+    name: string;
+    symbol: string;
+    market_cap_rank: number;
+    description?: { en: string };
+    links?: {
+      homepage?: string[];
+      twitter_screen_name?: string;
+      subreddit_url?: string;
+      repos_url?: { github?: string[] };
+    };
+    market_data: any;
+  };
 }
 
-export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoTabProps) {
+export default function InfoTab({ coinSymbol, stockData, connectionType, embeddedMarketData }: InfoTabProps) {
   const [coinData, setCoinData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,15 +63,21 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
         return;
       }
 
+      // Phase 3 optimization: Use embedded data if available
+      if (embeddedMarketData) {
+        setCoinData(embeddedMarketData);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback: Fetch from CoinGecko API
       setIsLoading(true);
       setError(null);
       try {
-        // getCoinDetails handles symbol to ID mapping automatically
         const data = await getCoinDetails(coinSymbol);
         setCoinData(data);
       } catch (err: any) {
         console.error("Failed to fetch coin info:", err);
-        // Check if it's a "not found" error
         if (err.message?.includes("not found") || err.message?.includes("404")) {
           setError(`Coin "${coinSymbol}" not found. CoinGecko may not have data for this coin.`);
         } else {
@@ -71,7 +91,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
     if (coinSymbol && connectionType) {
       fetchCoinInfo();
     }
-  }, [coinSymbol, connectionType]);
+  }, [coinSymbol, connectionType, embeddedMarketData]);
 
   // Prevent body scroll when overlay is open
   useEffect(() => {
@@ -393,6 +413,21 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
   const marketData = coinData.market_data || {};
   const links = coinData.links || {};
 
+  // Debug: Log market data structure for price performance troubleshooting
+  console.log('InfoTab Debug - Market Data Keys:', Object.keys(marketData));
+  console.log('InfoTab Debug - Price Change Fields:', {
+    '1h_in_currency': marketData.price_change_percentage_1h_in_currency,
+    '1h': marketData.price_change_percentage_1h,
+    '24h_in_currency': marketData.price_change_percentage_24h_in_currency, 
+    '24h': marketData.price_change_percentage_24h,
+    '7d_in_currency': marketData.price_change_percentage_7d_in_currency,
+    '7d': marketData.price_change_percentage_7d,
+    '30d_in_currency': marketData.price_change_percentage_30d_in_currency,
+    '30d': marketData.price_change_percentage_30d,
+    '1y_in_currency': marketData.price_change_percentage_1y_in_currency,
+    '1y': marketData.price_change_percentage_1y,
+  });
+
   const description = coinData.description?.en || "";
   const isLongDescription = description.length > 500;
   const displayDescription = description.substring(0, 500);
@@ -558,15 +593,16 @@ export default function InfoTab({ coinSymbol, stockData, connectionType }: InfoT
         <h3 className="text-lg font-semibold text-white mb-6">Price Performance</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { label: "1h", key: "price_change_percentage_1h_in_currency", icon: "⏱️" },
-            { label: "24h", key: "price_change_percentage_24h_in_currency", icon: "📊" },
-            { label: "7d", key: "price_change_percentage_7d_in_currency", icon: "📈" },
-            { label: "30d", key: "price_change_percentage_30d_in_currency", icon: "📅" },
-            { label: "1y", key: "price_change_percentage_1y_in_currency", icon: "🗓️" },
-          ].map(({ label, key, icon }) => {
-            const change = marketData[key]?.usd;
+            { label: "1h", key: "price_change_percentage_1h_in_currency", fallbackKey: "price_change_percentage_1h", icon: "⏱️" },
+            { label: "24h", key: "price_change_percentage_24h_in_currency", fallbackKey: "price_change_percentage_24h", icon: "📊" },
+            { label: "7d", key: "price_change_percentage_7d_in_currency", fallbackKey: "price_change_percentage_7d", icon: "📈" },
+            { label: "30d", key: "price_change_percentage_30d_in_currency", fallbackKey: "price_change_percentage_30d", icon: "📅" },
+            { label: "1y", key: "price_change_percentage_1y_in_currency", fallbackKey: "price_change_percentage_1y", icon: "🗓️" },
+          ].map(({ label, key, fallbackKey, icon }) => {
+            // Try main key first, then fallback key, then direct property
+            const change = marketData[key]?.usd || marketData[fallbackKey] || marketData[key.replace('_in_currency', '')];
             const isPositive = change >= 0;
-            const hasData = change !== undefined;
+            const hasData = change !== undefined && change !== null && !isNaN(change);
             
             return (
               <div 

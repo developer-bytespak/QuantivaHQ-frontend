@@ -21,6 +21,10 @@ const axiosInstance: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true, // Include cookies (refresh token)
   timeout: 30000,
+  headers: {
+    // Note: Browsers automatically handle Accept-Encoding for compression
+    // Manual setting causes "unsafe header" warnings in console
+  },
 });
 
 // Add request interceptor to include access token
@@ -140,6 +144,8 @@ export async function apiRequest<TRequest, TResponse = unknown>({
       method: method.toLowerCase() as any,
       data: body,
       timeout: timeout || 30000,
+      // Phase 4: Let browser cache handle Cache-Control headers from backend
+      // Axios adapter uses browser's native fetch cache by default for GET
     });
 
     return response.data as TResponse;
