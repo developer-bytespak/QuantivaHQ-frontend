@@ -166,8 +166,13 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       reason: `User is fully onboarded with ${exchangeType || 'crypto'} exchange connected`,
     };
   } catch (error: any) {
-    // If checks fail, default to proof-upload (KYC start)
-    console.error("[FlowRouter] Could not verify user status:", error);
+    // If checks fail, provide detailed error info
+    console.error("[FlowRouter] Error determining next route:", error);
+    console.error("[FlowRouter] Error details:", {
+      message: error?.message,
+      status: error?.status || error?.statusCode,
+      stack: error?.stack,
+    });
     
     // If it's a 401/unauthorized error, user needs to re-authenticate
     if (error?.status === 401 || error?.statusCode === 401 || 
@@ -181,9 +186,12 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       throw error;
     }
     
+    // For network errors or API failures, default to personal-info as safest starting point
+    // This won't cause issues for KYC-approved users since personal-info page will redirect them
+    console.warn("[FlowRouter] Defaulting to personal-info due to error checking user status");
     return {
       route: "/onboarding/personal-info",
-      reason: "Error checking user status, defaulting to personal info",
+      reason: `Error checking user status: ${error?.message || 'Unknown error'}`,
     };
   }
 }

@@ -68,12 +68,17 @@ export default function ProofUploadPage() {
   
   const targetProgress = calculateTargetProgress();
 
-  // Check KYC status on mount - redirect if already approved
+  // Check authentication and KYC status on mount - consolidated to avoid redirect loops
   useEffect(() => {
-    const checkKycAndRedirect = async () => {
+    let isMounted = true;
+    
+    const checkAuthAndKyc = async () => {
       try {
-        // Check KYC status from user profile first
+        // Check KYC status from user profile - this also validates authentication
         const currentUser = await getCurrentUser();
+        
+        if (!isMounted) return;
+        
         let kycStatus: "pending" | "approved" | "rejected" | "review" | null | undefined = currentUser.kyc_status;
         
         // If not approved from profile, check detailed KYC endpoint
@@ -88,18 +93,30 @@ export default function ProofUploadPage() {
         }
         
         // If KYC is approved, use flow router to determine next step
-        if (kycStatus === "approved") {
+        if (kycStatus === "approved" && isMounted) {
           const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
           await navigateToNextRoute(router);
           return;
         }
-      } catch (error) {
-        // If check fails, continue with proof upload
-        console.log("Could not verify KYC status, continuing with proof upload:", error);
+      } catch (error: any) {
+        // If getCurrentUser fails with 401, user is not authenticated - redirect to login
+        if (error?.status === 401 || error?.statusCode === 401 || 
+            error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
+          if (isMounted) {
+            router.push("/onboarding/sign-up?tab=login");
+          }
+        } else {
+          // Other error - log but allow user to continue
+          console.log("Could not verify KYC status, continuing with proof upload:", error);
+        }
       }
     };
     
-    checkKycAndRedirect();
+    checkAuthAndKyc();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [router]);
 
   // Animate progress bar when component mounts or when file is uploaded
@@ -130,15 +147,6 @@ export default function ProofUploadPage() {
       document.body.style.overflow = 'unset';
     };
   }, [isPreviewModalOpen]);
-
-  // Check authentication on mount
-  useEffect(() => {
-    const isAuthenticated = localStorage.getItem("quantivahq_is_authenticated") === "true";
-    if (!isAuthenticated) {
-      // User needs to authenticate first
-      router.push("/onboarding/sign-up?tab=login");
-    }
-  }, [router]);
 
   // Load saved files from localStorage if available
   useEffect(() => {
@@ -277,20 +285,19 @@ export default function ProofUploadPage() {
       return;
     }
 
-    // Verify authentication
-    const isAuthenticated = localStorage.getItem("quantivahq_is_authenticated") === "true";
-    if (!isAuthenticated) {
-      setError("Authentication required. Please log in first.");
-      router.push("/onboarding/sign-up?tab=login");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
+      console.log('[Proof Upload] Starting document upload...');
+      console.log('[Proof Upload] Document type:', documentType);
+      console.log('[Proof Upload] Front file:', frontUpload.file?.name, 'Already uploaded:', !!frontUpload.documentId);
+      console.log('[Proof Upload] Back file:', backUpload.file?.name, 'Already uploaded:', !!backUpload.documentId);
+      
       // Upload front side if not already uploaded
       if (frontUpload.file && !frontUpload.documentId) {
+        console.log('[Proof Upload] 📤 Uploading FRONT side to backend...');
         const frontResponse = await uploadDocument(frontUpload.file, documentType, 'front');
+        console.log('[Proof Upload] ✅ Front uploaded successfully, document_id:', frontResponse.document_id);
         setFrontUpload(prev => ({ ...prev, documentId: frontResponse.document_id }));
         
         // Store front metadata
@@ -308,7 +315,9 @@ export default function ProofUploadPage() {
       
       // Upload back side if required and not already uploaded
       if (documentReq.requiresBack && backUpload.file && !backUpload.documentId) {
+        console.log('[Proof Upload] 📤 Uploading BACK side to backend...');
         const backResponse = await uploadDocument(backUpload.file, documentType, 'back');
+        console.log('[Proof Upload] ✅ Back uploaded successfully, document_id:', backResponse.document_id);
         setBackUpload(prev => ({ ...prev, documentId: backResponse.document_id }));
         
         // Store back metadata
@@ -324,15 +333,28 @@ export default function ProofUploadPage() {
         localStorage.setItem("quantivahq_proof_upload_back", JSON.stringify(backData));
       }
       
+      console.log('[Proof Upload] ✅ All uploads complete! Navigating to selfie-capture...');
+      
       // Navigate to next step
       router.push("/onboarding/selfie-capture");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Document upload failed:", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to upload document. Please try again."
-      );
+      
+      // Check if error is due to authentication failure
+      if (err?.status === 401 || err?.statusCode === 401 || 
+          err?.message?.includes("401") || err?.message?.includes("Unauthorized")) {
+        setError("Your session has expired. Please log in again.");
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          router.push("/onboarding/sign-up?tab=login");
+        }, 1500);
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to upload document. Please try again."
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -448,6 +470,46 @@ export default function ProofUploadPage() {
                     )}
                   </span>
                 </button>
+              </div>
+
+              {/* Upload Status Indicator for multi-sided documents */}
+              <div className="mt-2 rounded-lg border border-[--color-border] bg-[--color-surface]/60 p-3">
+                <div className="flex items-start gap-2">
+                  <div className="flex-shrink-0">
+                    {frontUpload.file && backUpload.file ? (
+                      <svg className="h-5 w-5 text-[#10b981]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-white mb-1">
+                      {frontUpload.file && backUpload.file 
+                        ? '✓ Both sides uploaded - Ready to submit!' 
+                        : 'Upload both sides required'}
+                    </p>
+                    <ul className="text-[10px] text-slate-400 space-y-0.5">
+                      <li className="flex items-center gap-1.5">
+                        {frontUpload.file ? (
+                          <span className="text-[#10b981]">✓ Front uploaded</span>
+                        ) : (
+                          <span className="text-yellow-500">○ Front needed</span>
+                        )}
+                      </li>
+                      <li className="flex items-center gap-1.5">
+                        {backUpload.file ? (
+                          <span className="text-[#10b981]">✓ Back uploaded</span>
+                        ) : (
+                          <span className="text-yellow-500">○ Back needed</span>
+                        )}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
           )}
