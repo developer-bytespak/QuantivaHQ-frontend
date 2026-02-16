@@ -11,16 +11,21 @@ import type {
 
 /**
  * Upload ID document for KYC verification
+ * @param file - The file to upload
+ * @param documentType - Type of document ('passport' | 'id_card' | 'drivers_license')
+ * @param documentSide - Side of document ('front' | 'back') - optional for passport
  */
 export async function uploadDocument(
   file: File,
-  documentType: string
+  documentType: string,
+  documentSide?: string
 ): Promise<DocumentUploadResponse> {
   return uploadFile<DocumentUploadResponse>({
     path: "/kyc/documents",
     file,
     additionalData: {
       document_type: documentType,
+      document_side: documentSide,
     },
   });
 }
@@ -70,4 +75,34 @@ export async function getVerificationDetails(
     method: "GET",
   });
 }
+
+/**
+ * Check document upload status for a specific document type
+ * @param documentType - Type of document ('passport' | 'id_card' | 'drivers_license')
+ */
+export async function getDocumentStatus(
+  documentType: string
+): Promise<{ frontUploaded: boolean; backUploaded: boolean; isComplete: boolean }> {
+  return apiRequest<void, { frontUploaded: boolean; backUploaded: boolean; isComplete: boolean }>({
+    path: `/kyc/documents/status/${documentType}`,
+    method: "GET",
+  });
+}
+
+/**
+ * Check if all required document sides are uploaded before proceeding
+ */
+export async function checkDocumentCompleteness(): Promise<{
+  isComplete: boolean;
+  missingDocuments: Array<{ type: string; missing: string[] }>;
+}> {
+  return apiRequest<void, {
+    isComplete: boolean;
+    missingDocuments: Array<{ type: string; missing: string[] }>;
+  }>({
+    path: "/kyc/documents/completeness",
+    method: "GET",
+  });
+}
+
 

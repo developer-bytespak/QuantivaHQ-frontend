@@ -4,29 +4,66 @@ import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { AUTH_STEPS } from "@/config/navigation";
-import { uploadDocument } from "@/lib/api/kyc";
+import { uploadDocument, getDocumentStatus } from "@/lib/api/kyc";
 import { getCurrentUser } from "@/lib/api/user";
 import { getKycStatus } from "@/lib/api/kyc";
 import { exchangesService } from "@/lib/api/exchanges.service";
 
+// Document requirements configuration
+const DOCUMENT_REQUIREMENTS = {
+  passport: { sides: 1, requiresBack: false, label: "Passport" },
+  id_card: { sides: 2, requiresBack: true, label: "National ID Card" },
+  drivers_license: { sides: 2, requiresBack: true, label: "Driver's License" },
+} as const;
+
+type DocumentSide = 'front' | 'back';
+
+interface DocumentUploadState {
+  file: File | null;
+  preview: string | null;
+  documentId: string | null;
+}
+
 export default function ProofUploadPage() {
   const router = useRouter();
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  
+  // Document upload state for front and back
+  const [frontUpload, setFrontUpload] = useState<DocumentUploadState>({
+    file: null,
+    preview: null,
+    documentId: null,
+  });
+  const [backUpload, setBackUpload] = useState<DocumentUploadState>({
+    file: null,
+    preview: null,
+    documentId: null,
+  });
+  
+  const [currentSide, setCurrentSide] = useState<DocumentSide>('front');
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [animatedProgress, setAnimatedProgress] = useState(25);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [documentType, setDocumentType] = useState<string>("id_card");
-  const [documentId, setDocumentId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  
+  // Get current upload state based on selected side
+  const currentUpload = currentSide === 'front' ? frontUpload : backUpload;
+  const setCurrentUpload = currentSide === 'front' ? setFrontUpload : setBackUpload;
+  
+  // Get document requirements for current type
+  const documentReq = DOCUMENT_REQUIREMENTS[documentType as keyof typeof DOCUMENT_REQUIREMENTS] || DOCUMENT_REQUIREMENTS.id_card;
 
   // Calculate target progress based on file upload
   const calculateTargetProgress = () => {
-    // Always show 50% on this page (25% from personal info + 25% for reaching this page)
-    return 50;
+    // Count uploaded sides
+    const uploadedSides = (frontUpload.file ? 1 : 0) + (backUpload.file ? 1 : 0);
+    const requiredSides = documentReq.sides;
+    
+    // Base 25% from personal info + 25% for this step + bonus for uploads
+    return 50 + (uploadedSides / requiredSides) * 25;
   };
   
   const targetProgress = calculateTargetProgress();
@@ -103,22 +140,38 @@ export default function ProofUploadPage() {
     }
   }, [router]);
 
-  // Load saved file from localStorage if available
+  // Load saved files from localStorage if available
   useEffect(() => {
-    const savedFileData = localStorage.getItem("quantivahq_proof_upload");
-    if (savedFileData) {
+    const savedFrontData = localStorage.getItem("quantivahq_proof_upload_front");
+    const savedBackData = localStorage.getItem("quantivahq_proof_upload_back");
+    
+    if (savedFrontData) {
       try {
-        const data = JSON.parse(savedFileData);
-        // Preview is no longer stored (to avoid localStorage quota issues)
-        // Just show that a file was uploaded by displaying metadata
+        const data = JSON.parse(savedFrontData);
         if (data.documentId) {
-          // Set a placeholder file object to indicate file was uploaded
-          setUploadedFile(new File([], data.fileName || "uploaded-file", { type: data.fileType || "image/jpeg" }));
-          setDocumentId(data.documentId);
-          // Don't set preview - user will need to re-upload if they come back to this page
+          setFrontUpload({
+            file: new File([], data.fileName || "uploaded-file-front", { type: data.fileType || "image/jpeg" }),
+            preview: null,
+            documentId: data.documentId,
+          });
         }
       } catch (e) {
-        console.error("Failed to load saved proof upload", e);
+        console.error("Failed to load saved front upload", e);
+      }
+    }
+    
+    if (savedBackData) {
+      try {
+        const data = JSON.parse(savedBackData);
+        if (data.documentId) {
+          setBackUpload({
+            file: new File([], data.fileName || "uploaded-file-back", { type: data.fileType || "image/jpeg" }),
+            preview: null,
+            documentId: data.documentId,
+          });
+        }
+      } catch (e) {
+        console.error("Failed to load saved back upload", e);
       }
     }
   }, []);
@@ -140,23 +193,29 @@ export default function ProofUploadPage() {
       return;
     }
 
-    setUploadedFile(file);
-
     // Create preview using FileReader
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreview(reader.result as string);
+        setCurrentUpload({
+          file,
+          preview: reader.result as string,
+          documentId: null,
+        });
       };
       reader.onerror = () => {
         setError("Failed to read file. Please try again.");
       };
       reader.readAsDataURL(file);
     } else if (file.type === 'application/pdf') {
-      // For PDF, show a placeholder
-      setPreview(null);
+      // For PDF, no preview
+      setCurrentUpload({
+        file,
+        preview: null,
+        documentId: null,
+      });
     }
-  }, []);
+  }, [setCurrentUpload]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -189,8 +248,11 @@ export default function ProofUploadPage() {
   }, [handleFileSelect]);
 
   const handleRemoveFile = () => {
-    setUploadedFile(null);
-    setPreview(null);
+    setCurrentUpload({
+      file: null,
+      preview: null,
+      documentId: null,
+    });
     setError("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -201,12 +263,21 @@ export default function ProofUploadPage() {
     e.preventDefault();
     setError("");
 
-    if (!uploadedFile) {
-      setError("Please upload your ID document");
+    // Validate that front is uploaded
+    if (!frontUpload.file) {
+      setError("Please upload the front side of your document");
+      setCurrentSide('front');
       return;
     }
 
-    // Verify authentication (should already be checked on mount, but double-check)
+    // Validate that back is uploaded if required
+    if (documentReq.requiresBack && !backUpload.file) {
+      setError("Please upload the back side of your document");
+      setCurrentSide('back');
+      return;
+    }
+
+    // Verify authentication
     const isAuthenticated = localStorage.getItem("quantivahq_is_authenticated") === "true";
     if (!isAuthenticated) {
       setError("Authentication required. Please log in first.");
@@ -217,23 +288,41 @@ export default function ProofUploadPage() {
     setIsLoading(true);
 
     try {
-      // Upload document to backend
-      const response = await uploadDocument(uploadedFile, documentType);
+      // Upload front side if not already uploaded
+      if (frontUpload.file && !frontUpload.documentId) {
+        const frontResponse = await uploadDocument(frontUpload.file, documentType, 'front');
+        setFrontUpload(prev => ({ ...prev, documentId: frontResponse.document_id }));
+        
+        // Store front metadata
+        const frontData = {
+          fileName: frontUpload.file.name,
+          fileSize: frontUpload.file.size,
+          fileType: frontUpload.file.type,
+          uploadDate: new Date().toISOString(),
+          documentId: frontResponse.document_id,
+          documentType: documentType,
+          side: 'front',
+        };
+        localStorage.setItem("quantivahq_proof_upload_front", JSON.stringify(frontData));
+      }
       
-      // Store document ID for later use
-      setDocumentId(response.document_id);
-      
-      // Store metadata only in localStorage (not the full preview to avoid quota issues)
-      // Base64 previews can be 5MB+ which exceeds localStorage limits
-      const fileData = {
-        fileName: uploadedFile.name,
-        fileSize: uploadedFile.size,
-        fileType: uploadedFile.type,
-        uploadDate: new Date().toISOString(),
-        documentId: response.document_id,
-        documentType: documentType,
-      };
-      localStorage.setItem("quantivahq_proof_upload", JSON.stringify(fileData));
+      // Upload back side if required and not already uploaded
+      if (documentReq.requiresBack && backUpload.file && !backUpload.documentId) {
+        const backResponse = await uploadDocument(backUpload.file, documentType, 'back');
+        setBackUpload(prev => ({ ...prev, documentId: backResponse.document_id }));
+        
+        // Store back metadata
+        const backData = {
+          fileName: backUpload.file.name,
+          fileSize: backUpload.file.size,
+          fileType: backUpload.file.type,
+          uploadDate: new Date().toISOString(),
+          documentId: backResponse.document_id,
+          documentType: documentType,
+          side: 'back',
+        };
+        localStorage.setItem("quantivahq_proof_upload_back", JSON.stringify(backData));
+      }
       
       // Navigate to next step
       router.push("/onboarding/selfie-capture");
@@ -304,14 +393,64 @@ export default function ProofUploadPage() {
             </label>
             <select
               value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
+              onChange={(e) => {
+                setDocumentType(e.target.value);
+                // Reset uploads when document type changes
+                setFrontUpload({ file: null, preview: null, documentId: null });
+                setBackUpload({ file: null, preview: null, documentId: null });
+                setCurrentSide('front');
+              }}
               className="w-5/6 sm:w-full rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface] px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-[#fc4f02] transition-colors"
             >
-              <option value="id_card">National ID Card</option>
-              <option value="passport">Passport</option>
-              <option value="drivers_license">Driver's License</option>
+              <option value="id_card">National ID Card (2 sides required)</option>
+              <option value="passport">Passport (1 side required)</option>
+              <option value="drivers_license">Driver's License (2 sides required)</option>
             </select>
           </div>
+
+          {/* Document Side Tabs (only show for multi-sided documents) */}
+          {documentReq.requiresBack && (
+            <div className="mb-3 sm:mb-4 animate-text-enter" style={{ animationDelay: "0.57s" }}>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentSide('front')}
+                  className={`flex-1 rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                    currentSide === 'front'
+                      ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg'
+                      : 'bg-[--color-surface] text-slate-400 border border-[--color-border] hover:border-[#fc4f02]/50'
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    Front Side
+                    {frontUpload.file && (
+                      <svg className="h-4 w-4 text-[#10b981]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentSide('back')}
+                  className={`flex-1 rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 ${
+                    currentSide === 'back'
+                      ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg'
+                      : 'bg-[--color-surface] text-slate-400 border border-[--color-border] hover:border-[#fc4f02]/50'
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    Back Side
+                    {backUpload.file && (
+                      <svg className="h-4 w-4 text-[#10b981]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Upload Form */}
           <form onSubmit={handleSubmit} className="animate-text-enter flex-1 flex flex-col" style={{ animationDelay: "0.6s" }}>
@@ -329,16 +468,19 @@ export default function ProofUploadPage() {
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <p className="text-sm sm:text-base font-semibold text-[#10b981] mb-1.5 sm:mb-2">Upload Requirements</p>
+                        <p className="text-sm sm:text-base font-semibold text-[#10b981] mb-1.5 sm:mb-2">
+                          Upload Requirements {documentReq.requiresBack && `(${currentSide === 'front' ? 'Front' : 'Back'} Side)`}
+                        </p>
                       </div>
                     </div>
                     <div className="flex-1 flex items-center">
                       <ul className="text-xs sm:text-sm text-slate-300 leading-relaxed space-y-1.5 sm:space-y-2 w-full">
-                        <li>• Acceptable formats: JPEG, PNG, WebP, or PDF</li>
+                        <li>• Document: {documentReq.label}</li>
+                        <li>• Required sides: {documentReq.sides} {documentReq.requiresBack ? '(front & back)' : '(photo page only)'}</li>
+                        <li>• Formats: JPEG, PNG, WebP, or PDF</li>
                         <li>• Maximum file size: 10MB</li>
-                        <li>• Ensure the document is clear and all text is readable</li>
-                        <li>• Upload a valid government-issued ID (passport, driver's license, or national ID)</li>
-                        <li>• The document must not be expired</li>
+                        <li>• Ensure all text is clearly readable</li>
+                        <li>• Document must not be expired</li>
                       </ul>
                     </div>
                   </div>
@@ -351,7 +493,7 @@ export default function ProofUploadPage() {
                 
                 <div className="relative z-10 flex flex-col flex-1 min-h-0">
                   {/* File Upload Area */}
-                {!uploadedFile ? (
+                {!currentUpload.file ? (
                   <div
                     ref={dropZoneRef}
                     onDragOver={handleDragOver}
@@ -392,10 +534,10 @@ export default function ProofUploadPage() {
                   <div className="flex flex-col flex-1 min-h-0 space-y-2 sm:space-y-3">
                     {/* File Preview */}
                     <div className="relative rounded-lg sm:rounded-xl border-2 border-[--color-border] bg-[--color-surface] overflow-hidden flex items-center justify-center h-[200px] sm:h-[220px] md:h-[240px]">
-                      {preview ? (
+                      {currentUpload.preview ? (
                         <div className="relative w-full h-full flex items-center justify-center p-2">
                           <img
-                            src={preview}
+                            src={currentUpload.preview}
                             alt="ID Preview"
                             onClick={() => setIsPreviewModalOpen(true)}
                             className="max-w-full max-h-full w-auto h-auto object-contain cursor-zoom-in transition-transform duration-200 hover:scale-105"
@@ -413,7 +555,7 @@ export default function ProofUploadPage() {
                             </svg>
                           </button>
                         </div>
-                      ) : uploadedFile.type === 'application/pdf' ? (
+                      ) : currentUpload.file && currentUpload.file.type === 'application/pdf' ? (
                         <div 
                           onClick={() => setIsPreviewModalOpen(true)}
                           className="flex flex-col items-center justify-center p-3 sm:p-4 cursor-zoom-in w-full h-full absolute inset-0"
@@ -423,8 +565,8 @@ export default function ProofUploadPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
                           </div>
-                          <p className="text-[10px] sm:text-xs font-medium text-white mb-1 truncate max-w-full px-2">{uploadedFile.name}</p>
-                          <p className="text-[9px] sm:text-xs text-slate-400">{formatFileSize(uploadedFile.size)}</p>
+                          <p className="text-[10px] sm:text-xs font-medium text-white mb-1 truncate max-w-full px-2">{currentUpload.file.name}</p>
+                          <p className="text-[9px] sm:text-xs text-slate-400">{formatFileSize(currentUpload.file.size)}</p>
                         </div>
                       ) : null}
                     </div>
@@ -439,8 +581,8 @@ export default function ProofUploadPage() {
                             </svg>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[10px] sm:text-xs font-semibold text-white truncate">{uploadedFile.name}</p>
-                            <p className="text-[9px] sm:text-[10px] text-slate-400">{formatFileSize(uploadedFile.size)}</p>
+                            <p className="text-[10px] sm:text-xs font-semibold text-white truncate">{currentUpload.file.name}</p>
+                            <p className="text-[9px] sm:text-[10px] text-slate-400">{formatFileSize(currentUpload.file.size)}</p>
                           </div>
                         </div>
                         <button
@@ -478,7 +620,7 @@ export default function ProofUploadPage() {
             </div>
 
             {/* Preview Modal Overlay */}
-            {isPreviewModalOpen && preview && (
+            {isPreviewModalOpen && currentUpload.preview && (
               <div 
                 className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
                 onClick={() => setIsPreviewModalOpen(false)}
@@ -493,7 +635,7 @@ export default function ProofUploadPage() {
                     </svg>
                   </button>
                   <img
-                    src={preview}
+                    src={currentUpload.preview}
                     alt="ID Document - Full View"
                     onClick={(e) => e.stopPropagation()}
                     className="max-w-full max-h-[45vh] w-auto h-auto object-contain shadow-2xl"
@@ -503,7 +645,7 @@ export default function ProofUploadPage() {
             )}
 
             {/* PDF Preview Modal */}
-            {isPreviewModalOpen && uploadedFile && uploadedFile.type === 'application/pdf' && (
+            {isPreviewModalOpen && currentUpload.file && currentUpload.file.type === 'application/pdf' && (
               <div 
                 className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
                 onClick={() => setIsPreviewModalOpen(false)}
@@ -527,8 +669,8 @@ export default function ProofUploadPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <h3 className="text-sm font-semibold text-white mb-1.5 text-center truncate w-full px-2">{uploadedFile.name}</h3>
-                      <p className="text-[10px] text-slate-400 mb-2">{formatFileSize(uploadedFile.size)}</p>
+                      <h3 className="text-sm font-semibold text-white mb-1.5 text-center truncate w-full px-2">{currentUpload.file.name}</h3>
+                      <p className="text-[10px] text-slate-400 mb-2">{formatFileSize(currentUpload.file.size)}</p>
                       <p className="text-[10px] text-slate-500 text-center">
                         PDF preview is not available. Please download the file to view it.
                       </p>
@@ -542,7 +684,7 @@ export default function ProofUploadPage() {
             <div className="mt-3 sm:mt-4 flex-shrink-0 text-center">
               <button
                 type="submit"
-                disabled={isLoading || !uploadedFile}
+                disabled={isLoading || !frontUpload.file || (documentReq.requiresBack && !backUpload.file)}
                 className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 sm:px-8 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
