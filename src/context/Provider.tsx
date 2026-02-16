@@ -1,6 +1,7 @@
 "use client";
 
 import { SubsProvider } from "@/hooks/useSubscription";
+import { TokenRefreshProvider } from "@/context/TokenRefreshProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
 
@@ -10,8 +11,10 @@ export default function Providers({ children }: { children: ReactNode }) {
   return (
       <QueryClientProvider client={queryClient}>
         <SubsProvider>
-        {/* <ThemeProvider> */}
-                {children}
+          <TokenRefreshProvider>
+            {/* <ThemeProvider> */}
+            {children}
+          </TokenRefreshProvider>
         </SubsProvider>
       </QueryClientProvider>
   );
