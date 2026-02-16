@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { getGeneralCryptoNews, getGeneralStockNews, CryptoNewsResponse, CryptoNewsItem, StockNewsItem } from "@/lib/api/news.service";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 
 // Extended news item with AI insights (for both crypto and stocks)
@@ -647,9 +647,8 @@ function DataStreamParticles() {
 }
 
 export default function AIInsightsPage() {
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Connection type detection - using global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
 
   const [selectedNews, setSelectedNews] = useState<AIEnhancedNewsItem | AIEnhancedStockNewsItem | null>(null);
   const [allNewsItems, setAllNewsItems] = useState<AIEnhancedNewsItem[]>([]);
@@ -665,21 +664,6 @@ export default function AIInsightsPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
 
   // Fetch general crypto news (not specific to any coin)
   const fetchAllCryptoNews = useCallback(async () => {

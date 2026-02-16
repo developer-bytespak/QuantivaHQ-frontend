@@ -23,20 +23,16 @@ function getDeviceId(): string {
   return "";
 }
 
-export async function apiRequest<TRequest, TResponse = unknown>({
-  path,
-  method = "GET",
-  body,
-  credentials = "include", // Include cookies in requests
-  timeout, // Optional timeout override
-}: RequestParams<TRequest>): Promise<TResponse> {
-  if (process.env.NODE_ENV === "development") {
-    console.info(`[API] ${method} ${path}`);
-  }
-
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
+// Create axios instance with defaults
+const axiosInstance: AxiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true, // Include cookies (refresh token)
+  timeout: 30000,
+  headers: {
+    // Note: Browsers automatically handle Accept-Encoding for compression
+    // Manual setting causes "unsafe header" warnings in console
+  },
+});
 
   // Add Authorization header from stored client JWT if available
   if (typeof window !== "undefined") {
@@ -160,13 +156,43 @@ export async function apiRequest<TRequest, TResponse = unknown>({
       
       throw new Error(errorMessage);
     }
-    
-    // Re-throw other errors (preserve status if it exists)
-    if (error.status || error.statusCode) {
-      const preservedError = new Error(error.message || 'API request failed') as any;
-      preservedError.status = error.status || error.statusCode;
-      preservedError.statusCode = error.status || error.statusCode;
-      throw preservedError;
+
+    // Refresh failed - just reject, let the caller (AuthGuard) handle redirect
+    return Promise.reject(error);
+  }
+);
+
+// Main API request function
+export async function apiRequest<TRequest, TResponse = unknown>({
+  path,
+  method = "GET",
+  body,
+  timeout,
+}: RequestParams<TRequest>): Promise<TResponse> {
+  if (process.env.NODE_ENV === "development") {
+    console.info(`[API] ${method} ${path}`);
+  }
+
+  try {
+    const response = await axiosInstance({
+      url: path,
+      method: method.toLowerCase() as any,
+      data: body,
+      timeout: timeout || 30000,
+      // Phase 4: Let browser cache handle Cache-Control headers from backend
+      // Axios adapter uses browser's native fetch cache by default for GET
+    });
+
+    return response.data as TResponse;
+  } catch (error: any) {
+    let errorMessage = "API request failed";
+
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message?.includes("timeout")) {
+      errorMessage = "Request timeout. Please try again.";
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     
     throw error;

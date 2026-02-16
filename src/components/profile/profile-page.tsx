@@ -6,6 +6,7 @@ import Image from "next/image";
 import { authService } from "@/lib/auth/auth.service";
 import { getTrendingAssets, getCoinGeckoLogoUrl } from "@/lib/api/trending-assets.service";
 import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
 interface Coin {
   id: string;
@@ -49,28 +50,14 @@ export function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [coinLogos, setCoinLogos] = useState<Record<string, string>>({});
   
+  // Get connection from global context (fetched once on app start)
+  const { connectionId, isLoading: isLoadingConnection } = useExchange();
+  
   // Dashboard data state
-  const [connectionId, setConnectionId] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasInitialized = useRef(false);
-
-  // Fetch active connection
-  const fetchActiveConnection = useCallback(async () => {
-    try {
-      const response = await exchangesService.getActiveConnection();
-      setConnectionId(response.data.connection_id);
-      return response.data.connection_id;
-    } catch (err: any) {
-      if (err?.status !== 401 && err?.statusCode !== 401) {
-        console.error("Failed to fetch active connection:", err);
-      }
-      setError("No active connection found. Please connect your broker.");
-      setIsLoading(false);
-      return null;
-    }
-  }, []);
 
   // Fetch dashboard data (includes positions)
   const fetchDashboardData = useCallback(async (connId: string) => {
@@ -153,20 +140,18 @@ export function ProfilePage() {
     loadUserData();
   }, [mounted]);
 
-  // Fetch dashboard data
+  // Fetch dashboard data when connection ID is available
   useEffect(() => {
-    if (!mounted || hasInitialized.current) return;
+    if (!mounted || hasInitialized.current || !connectionId) return;
+    if (isLoadingConnection) return; // Wait for context to load
     
     const initialize = async () => {
       hasInitialized.current = true;
-      const connId = await fetchActiveConnection();
-      if (connId) {
-        await fetchDashboardData(connId);
-      }
+      await fetchDashboardData(connectionId);
     };
     
     initialize();
-  }, [mounted, fetchActiveConnection, fetchDashboardData]);
+  }, [mounted, connectionId, isLoadingConnection, fetchDashboardData]);
 
   // Fetch coin data from backend database (no CoinGecko API rate limits)
   useEffect(() => {

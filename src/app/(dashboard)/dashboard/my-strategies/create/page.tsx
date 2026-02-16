@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api/client";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
 // Engine-based fields that actually work in the signal generation system
 // These match the pre-built strategies format exactly
@@ -71,13 +71,12 @@ export default function CreateStrategyPage() {
     ? "My Strategies" 
     : pageNames[from] || "My Strategies";
   
+  // Get connection type from global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  
   const [currentStep, setCurrentStep] = useState<Step>("basics");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
 
   // Form state
   const [name, setName] = useState("");
@@ -123,6 +122,43 @@ export default function CreateStrategyPage() {
     };
     checkConnection();
   }, []);
+  // Fetch real assets from your assets API
+  const fetchRealAssets = async (assetType: "stock" | "crypto") => {
+    try {
+      console.log(`🔍 Fetching real ${assetType} assets from API...`);
+      const response = await apiRequest<never, any[]>({
+        path: `/assets?asset_type=${assetType}&limit=1000`,
+        method: "GET",
+      });
+      
+      if (Array.isArray(response) && response.length > 0) {
+        // Take first 8 symbols for popular list
+        const realSymbols = response.slice(0, 8).map((asset: any) => asset.symbol || asset.asset_id);
+        console.log(`✅ Real ${assetType} symbols:`, realSymbols);
+        console.log(`🔄 Old hardcoded ${assetType}:`, assetType === "stock" ? POPULAR_STOCKS : POPULAR_CRYPTO);
+        
+        if (assetType === "stock") {
+          setRealPopularStocks(realSymbols);
+        } else {
+          setRealPopularCrypto(realSymbols);
+        }
+      } else {
+        console.log(`⚠️ No real ${assetType} assets found, keeping hardcoded symbols`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to fetch real ${assetType} assets:`, error);
+      console.log(`Using hardcoded ${assetType} symbols as fallback`);
+    }
+  };
+
+  // Fetch real assets based on connection type when it's loaded
+  useEffect(() => {
+    if (connectionType === "stocks") {
+      fetchRealAssets("stock");
+    } else if (connectionType === "crypto") {
+      fetchRealAssets("crypto");
+    }
+  }, [connectionType]);
 
   // Derived values
   const isStocksConnection = connectionType === "stocks";

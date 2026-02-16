@@ -7,7 +7,7 @@ import { alpacaPaperTradingService, type AlpacaPosition, type AlpacaOrder, type 
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { BalanceOverview } from "./components/balance-overview";
 import { StrategyCard } from "./components/strategy-card";
@@ -93,9 +93,8 @@ type TradeRecord = {
 };
 
 export default function PaperTradingPage() {
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Connection type detection - using global context
+  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
 
   // WebSocket connection for real-time updates (only for crypto, not stocks)
   const [socketKey, setSocketKey] = useState(0);
@@ -110,37 +109,6 @@ export default function PaperTradingPage() {
   
   // Rate limit protection - global lock to prevent any API calls during cooldown
   const [isRateLimited, setIsRateLimited] = useState(false);
-  
-  // Check connection type on mount
-  useEffect(() => {
-    let isMounted = true;
-    
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        if (isMounted) {
-          setConnectionType(response.data?.exchange?.type || null);
-        }
-      } catch (error: any) {
-        // Don't redirect on error - just log and allow page to render
-        console.error("Failed to check connection type:", error);
-        // Set connection type to null so page can still render
-        if (isMounted) {
-          setConnectionType(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsCheckingConnection(false);
-        }
-      }
-    };
-    
-    checkConnection();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Account data
   const [balance, setBalance] = useState(0);

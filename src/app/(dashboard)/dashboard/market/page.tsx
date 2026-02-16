@@ -3,16 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { useStocksMarket } from "@/hooks/useStocksMarket";
 import { formatPrice, formatPercent, formatVolume, formatMarketCap } from "@/lib/utils/format";
 
 export default function MarketPage() {
   const router = useRouter();
   
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Get connection type from global context (fetched once on app start)
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
   
   // Crypto state
   const [coins, setCoins] = useState<CoinGeckoCoin[]>([]);
@@ -40,22 +39,7 @@ export default function MarketPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const coinsPerPage = 50;
 
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || "crypto"); // Default to crypto if no connection
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-        // Default to crypto if no active connection found
-        setConnectionType("crypto");
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
+
 
   useEffect(() => {
     // Fetch crypto data by default (for market overview page)
@@ -68,7 +52,9 @@ export default function MarketPage() {
       setError(null);
       try {
         const result = await getCachedMarketData(500);
+        // Backend already filters coins for Binance with USDT pairs
         setCoins(result.coins);
+        
         if (result.lastSyncTime) {
           setLastSyncTime(new Date(result.lastSyncTime));
         }

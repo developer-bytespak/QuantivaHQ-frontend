@@ -7,6 +7,8 @@ import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { alpacaPaperTradingService, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
+import { BalanceOverview } from "../paper-trading/components/balance-overview";
 import { StrategyCard } from "../paper-trading/components/strategy-card";
 import { AutoTradeModal } from "../paper-trading/components/auto-trade-modal";
 import { ManualTradeModal } from "../paper-trading/components/manual-trade-modal";
@@ -94,9 +96,9 @@ export default function CustomStrategiesTradingPage() {
   const mode = searchParams.get("mode") || "paper";
   const isPaperMode = mode === "paper";
 
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Connection type detection - using global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  const isStocksConnection = connectionType === "stocks";
 
   // Account data
   const [balance, setBalance] = useState(0);
@@ -154,6 +156,15 @@ export default function CustomStrategiesTradingPage() {
       isMounted = false;
     };
   }, []);
+  // UI filters (matching Paper Trading page)
+  const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
+  const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
+  const ITEMS_PER_PAGE = 8;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Trade details overlay
+  const [showTradeOverlay, setShowTradeOverlay] = useState(false);
+  const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
 
   // Fetch balance based on mode and connection type
   useEffect(() => {

@@ -8,7 +8,7 @@ interface TradingPanelProps {
   symbol: string;
   baseSymbol: string;
   currentPrice: number;
-  availableBalance: number;
+  availableBalance?: number; // Make optional
   quoteCurrency: string;
 }
 
@@ -23,7 +23,7 @@ export default function TradingPanel({
   const [orderType, setOrderType] = useState<"MARKET" | "LIMIT">("MARKET");
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [quantity, setQuantity] = useState<string>("");
-  const [price, setPrice] = useState<string>(currentPrice.toFixed(2));
+  const [price, setPrice] = useState<string>(currentPrice ? currentPrice.toFixed(2) : "0.00");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -47,7 +47,9 @@ export default function TradingPanel({
   }, [connectionId]);
 
   useEffect(() => {
-    setPrice(currentPrice.toFixed(2));
+    if (currentPrice) {
+      setPrice(currentPrice.toFixed(2));
+    }
   }, [currentPrice]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,14 +108,19 @@ export default function TradingPanel({
 
   const calculateTotal = () => {
     const qty = parseFloat(quantity) || 0;
-    const prc = orderType === "MARKET" ? currentPrice : parseFloat(price) || 0;
+    const prc = orderType === "MARKET" ? (currentPrice || 0) : parseFloat(price) || 0;
     return (qty * prc).toFixed(2);
   };
 
   const setPercentage = (percent: number) => {
-    const maxAmount = availableBalance;
+    const maxAmount = availableBalance || 0;
     const amount = (maxAmount * percent) / 100;
-    const qty = orderType === "MARKET" ? amount / currentPrice : amount / (parseFloat(price) || currentPrice);
+    const currentPriceValue = currentPrice || 0;
+    const priceValue = parseFloat(price) || currentPriceValue;
+    
+    if (priceValue <= 0) return; // Avoid division by zero
+    
+    const qty = orderType === "MARKET" ? amount / currentPriceValue : amount / priceValue;
     setQuantity(qty.toFixed(8));
   };
 
@@ -348,7 +355,7 @@ export default function TradingPanel({
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Available Balance</span>
             <span className="text-sm font-semibold text-slate-300">
-              {availableBalance.toFixed(2)} <span className="text-slate-500">{quoteCurrency}</span>
+              {(availableBalance || 0).toFixed(2)} <span className="text-slate-500">{quoteCurrency}</span>
             </span>
           </div>
           {orderType === "MARKET" && (

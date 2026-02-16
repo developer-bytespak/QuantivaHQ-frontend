@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 
 // --- Formatting helpers ---
@@ -93,15 +93,19 @@ interface Trade {
 }
 
 export default function TopTradesPage() {
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Connection type detection - using global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  const isStocksConnection = connectionType === "stocks";
+
+  // AI insights state with timestamps
+  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
+  const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // --- Page state ---
   const [trendingTrades, setTrendingTrades] = useState<Trade[]>([]);
   const [loadingTrending, setLoadingTrending] = useState(true);
 
-  // pre-built strategies
+  // Pre-built strategies state
   const [preBuiltStrategies, setPreBuiltStrategies] = useState<Strategy[]>([]);
   const [loadingPreBuilt, setLoadingPreBuilt] = useState(false);
   const [preBuiltError, setPreBuiltError] = useState<string | null>(null);
@@ -118,10 +122,6 @@ export default function TopTradesPage() {
   const [strategySignals, setStrategySignals] = useState<Record<string, any[]>>({});
   const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
   const [signalsError, setSignalsError] = useState<Record<string, string>>({});
-
-  // AI insights state with timestamps
-  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
-  const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // Stock market data state (for stocks connection)
   const [stockMarketData, setStockMarketData] = useState<StockMarketData[]>([]);
@@ -224,25 +224,8 @@ export default function TopTradesPage() {
     });
   };
 
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || "crypto"); // Default to crypto if no connection
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-        // Default to crypto on error to allow viewing strategies
-        setConnectionType("crypto");
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
-
   // Determine if stocks connection
-  const isStocksConnection = connectionType === "stocks";
+  // (moved earlier since connectionType is now from context)
 
   // --- Fetch stock market data from Alpaca (for stocks connection) ---
   const fetchStockMarketData = async () => {
