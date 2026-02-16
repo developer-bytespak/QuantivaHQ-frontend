@@ -108,20 +108,6 @@ export default function CreateStrategyPage() {
   const [assetResults, setAssetResults] = useState<AssetOption[]>([]);
   const [searchingAssets, setSearchingAssets] = useState(false);
 
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || null);
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
   // Fetch real assets from your assets API
   const fetchRealAssets = async (assetType: "stock" | "crypto") => {
     try {
@@ -1000,3 +986,11 @@ export default function CreateStrategyPage() {
     </div>
   );
 }
+function setRealPopularStocks(realSymbols: any[]) {
+  throw new Error("Function not implemented.");
+}
+
+function setRealPopularCrypto(realSymbols: any[]) {
+  throw new Error("Function not implemented.");
+}
+

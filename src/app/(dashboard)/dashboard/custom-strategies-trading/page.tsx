@@ -127,35 +127,6 @@ export default function CustomStrategiesTradingPage() {
   // View modal for signal details
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  const isStocksConnection = connectionType === "stocks";
-
-  // Check connection type on mount
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        if (isMounted) {
-          setConnectionType(response.data?.exchange?.type || null);
-        }
-      } catch (error: any) {
-        console.error("Failed to check connection type:", error);
-        if (isMounted) {
-          setConnectionType(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsCheckingConnection(false);
-        }
-      }
-    };
-
-    checkConnection();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
   // UI filters (matching Paper Trading page)
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
   const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
