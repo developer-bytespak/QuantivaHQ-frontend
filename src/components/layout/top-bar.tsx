@@ -18,6 +18,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/screener": "Market Screener",
   "/dashboard/settings": "Settings",
   "/dashboard/settings/tokenomics": "Tokenomics",
+  "/dashboard/settings/bank-details": "Bank Details",
   "/dashboard/settings/notifications": "Notifications",
   "/dashboard/settings/security": "Security",
   "/dashboard/settings/help-support": "Help and Support",

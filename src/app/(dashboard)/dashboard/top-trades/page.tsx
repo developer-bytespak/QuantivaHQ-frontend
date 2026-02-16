@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 
 // --- Formatting helpers ---
@@ -93,15 +93,19 @@ interface Trade {
 }
 
 export default function TopTradesPage() {
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Connection type detection - using global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  const isStocksConnection = connectionType === "stocks";
+
+  // AI insights state with timestamps
+  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
+  const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // --- Page state ---
   const [trendingTrades, setTrendingTrades] = useState<Trade[]>([]);
   const [loadingTrending, setLoadingTrending] = useState(true);
 
-  // pre-built strategies
+  // Pre-built strategies state
   const [preBuiltStrategies, setPreBuiltStrategies] = useState<Strategy[]>([]);
   const [loadingPreBuilt, setLoadingPreBuilt] = useState(false);
   const [preBuiltError, setPreBuiltError] = useState<string | null>(null);
@@ -118,10 +122,6 @@ export default function TopTradesPage() {
   const [strategySignals, setStrategySignals] = useState<Record<string, any[]>>({});
   const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
   const [signalsError, setSignalsError] = useState<Record<string, string>>({});
-
-  // AI insights state with timestamps
-  const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
-  const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // Stock market data state (for stocks connection)
   const [stockMarketData, setStockMarketData] = useState<StockMarketData[]>([]);
@@ -224,25 +224,8 @@ export default function TopTradesPage() {
     });
   };
 
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        setConnectionType(response.data?.exchange?.type || "crypto"); // Default to crypto if no connection
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-        // Default to crypto on error to allow viewing strategies
-        setConnectionType("crypto");
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
-
   // Determine if stocks connection
-  const isStocksConnection = connectionType === "stocks";
+  // (moved earlier since connectionType is now from context)
 
   // --- Fetch stock market data from Alpaca (for stocks connection) ---
   const fetchStockMarketData = async () => {
@@ -844,14 +827,23 @@ export default function TopTradesPage() {
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <Link
-            href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
+            href="/dashboard/my-strategies?from=top-trades"
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 whitespace-nowrap flex items-center gap-1.5 text-white"
+          >
+            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-white">My Strategies</span>
+          </Link>
+          <Link
+            href="/dashboard/custom-strategies-trading?mode=live"
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 whitespace-nowrap flex items-center gap-1.5 text-green-400"
             title="Trade with your custom strategies (Live)"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Custom Strategy</span>
+            <span>Trade Custom</span>
           </Link>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
@@ -925,6 +917,16 @@ export default function TopTradesPage() {
                   </button>
                 );
               })}
+              {/* Custom Strategy Button */}
+              <Link
+                href="/dashboard/my-strategies/create?from=top-trades"
+                className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all rounded-lg whitespace-nowrap bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 flex items-center gap-1.5 shadow-lg shadow-[#fc4f02]/10"
+              >
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="text-white">Custom</span>
+              </Link>
             </div>
           </div>
           
@@ -963,7 +965,7 @@ export default function TopTradesPage() {
               <p className="text-xs text-slate-500">Connect an exchange to view trading signals and strategies</p>
             </div>
             <Link 
-              href={`/dashboard/settings/exchange-configuration?type=${connectionType || 'crypto'}`}
+              href="/dashboard/settings/exchange-configuration" 
               className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Configure Exchange

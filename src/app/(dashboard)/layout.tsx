@@ -11,7 +11,6 @@ import {
   CancelSubscriptionModal,
   PaymentModal,
 } from "@/components/common/subscription-modals";
-import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 export default function DashboardLayout({
   children,
@@ -31,8 +30,6 @@ export default function DashboardLayout({
   useEffect(() => {
     fetchSubscriptionData();
   }, [fetchSubscriptionData]);
-  // Automatically refresh tokens before they expire (keeps active users logged in)
-  useTokenRefresh();
 
   return (
     <AuthGuard>

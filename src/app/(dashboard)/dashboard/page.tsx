@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData, Connection } from "@/lib/api/exchanges.service";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { getCryptoNews, getGeneralCryptoNews, getGeneralStockNews, CryptoNewsResponse, CryptoNewsItem, StockNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
 import { useStocksMarket } from "@/hooks/useStocksMarket";
@@ -32,6 +33,10 @@ interface Activity {
 
 export default function DashboardPage() {
   const router = useRouter();
+  
+  // Get connection from global context (fetched once on app start)
+  const { connectionType, connectionId, activeConnection, isLoading: isLoadingConnection, refetch: refetchConnection } = useExchange();
+  
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
@@ -44,14 +49,13 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
-  // Store connection ID and type in component state
-  const [connectionId, setConnectionId] = useState<string | null>(null);
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [activeConnection, setActiveConnection] = useState<Connection | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
   // Ref to track if initialization has happened (prevents duplicate calls)
   const hasInitialized = useRef(false);
+  
+  // Refetch connection on dashboard mount to ensure latest state
+  useEffect(() => {
+    refetchConnection();
+  }, [refetchConnection]);
   
   // Market data state - different sources based on type
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
@@ -184,31 +188,6 @@ export default function DashboardPage() {
     },
   ];
 
-  // Fetch active connection from backend (secure, no localStorage)
-  const fetchActiveConnection = useCallback(async () => {
-    try {
-      const response = await exchangesService.getActiveConnection();
-      const connection = response.data;
-      setConnectionId(connection.connection_id);
-      setActiveConnection(connection as Connection);
-      setConnectionType(connection.exchange?.type || null);
-      return connection.connection_id;
-    } catch (err: any) {
-      // Silently handle 401 (not logged in) and 404 (no connection) - both are expected
-      if (
-        err?.status !== 401 &&
-        err?.statusCode !== 401 &&
-        err?.status !== 404 &&
-        err?.statusCode !== 404
-      ) {
-        console.error("Failed to fetch active connection:", err);
-      }
-      setError("No active connection found. Please connect your exchange account.");
-      setIsLoading(false);
-      return null;
-    }
-  }, []);
-
   // Fetch dashboard data (only uses combined dashboard API)
   const fetchDashboardData = useCallback(async (connId: string, isInitial = false) => {
     try {
@@ -239,43 +218,47 @@ export default function DashboardPage() {
     } finally {
       if (isInitial) {
         setIsLoading(false);
-        setIsInitialLoad(false);
       }
     }
   }, []);
 
-  // Initial load: fetch connection, then fetch data (runs only once on mount)
+  // Initial load: fetch data when connectionId is available
   useEffect(() => {
     // Prevent re-initialization (especially in React Strict Mode)
     if (hasInitialized.current) return;
     
+    // Wait until connection check is complete
+    if (isLoadingConnection) {
+      return; // Still loading, don't do anything yet
+    }
+    
+    // Connection check is done - if no connectionId, user has no exchange connected
+    // Dashboard will show the "Connect Exchange" component based on connectionId value
+    if (!connectionId) {
+      setIsLoading(false);
+      return; // Let the UI show "Connect Exchange" component
+    }
+    
     const initializeDashboard = async () => {
       hasInitialized.current = true;
-      const connId = await fetchActiveConnection();
-      if (connId) {
-        await fetchDashboardData(connId, true);
-      }
+      await fetchDashboardData(connectionId, true);
     };
     
     initializeDashboard();
-    // Empty deps - run only once on mount
-  }, []);
+  }, [connectionId, isLoadingConnection, fetchDashboardData]);
 
   // Polling: only update data, no loading state, no connection fetch
   useEffect(() => {
-    if (!connectionId || isInitialLoad) return;
+    if (!connectionId) return;
 
     // Set up polling every 30 seconds (reduced from 8s to save resources)
     // Silent updates - no loading state, smooth transitions
     const pollInterval = setInterval(() => {
-      if (connectionId) {
-        fetchDashboardData(connectionId, false);
-      }
+      fetchDashboardData(connectionId, false);
     }, 30000); // 30 seconds instead of 8 seconds
 
     return () => clearInterval(pollInterval);
-    // Remove fetchDashboardData from deps - it's stable with useCallback
-  }, [connectionId, isInitialLoad]);
+  }, [connectionId, fetchDashboardData]);
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -427,8 +410,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
-      {/* Exchange Account Connection Required */}
-      {error && error.includes("No active connection") && (
+      {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
+      {!isLoadingConnection && !connectionId && (
         <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-orange-500/20 flex-shrink-0">
@@ -468,12 +451,6 @@ export default function DashboardPage() {
                 onClick={() => {
                   if (connectionId) {
                     fetchDashboardData(connectionId, true);
-                  } else {
-                    fetchActiveConnection().then((connId) => {
-                      if (connId) {
-                        fetchDashboardData(connId, true);
-                      }
-                    });
                   }
                 }}
                 className="mt-2 text-xs text-red-300 hover:text-red-200 underline"

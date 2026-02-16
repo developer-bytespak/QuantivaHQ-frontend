@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { authService } from "@/lib/auth/auth.service";
+import { getTrendingAssets, getCoinGeckoLogoUrl } from "@/lib/api/trending-assets.service";
 import { exchangesService, DashboardData } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
 interface Coin {
   id: string;
@@ -46,29 +48,16 @@ export function ProfilePage() {
   const [userName, setUserName] = useState<string>("User");
   const [userEmail, setUserEmail] = useState<string>("user@example.com");
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [coinLogos, setCoinLogos] = useState<Record<string, string>>({});
+  
+  // Get connection from global context (fetched once on app start)
+  const { connectionId, isLoading: isLoadingConnection } = useExchange();
   
   // Dashboard data state
-  const [connectionId, setConnectionId] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const hasInitialized = useRef(false);
-
-  // Fetch active connection
-  const fetchActiveConnection = useCallback(async () => {
-    try {
-      const response = await exchangesService.getActiveConnection();
-      setConnectionId(response.data.connection_id);
-      return response.data.connection_id;
-    } catch (err: any) {
-      if (err?.status !== 401 && err?.statusCode !== 401) {
-        console.error("Failed to fetch active connection:", err);
-      }
-      setError("No active connection found. Please connect your broker.");
-      setIsLoading(false);
-      return null;
-    }
-  }, []);
 
   // Fetch dashboard data (includes positions)
   const fetchDashboardData = useCallback(async (connId: string) => {
@@ -85,38 +74,32 @@ export function ProfilePage() {
     }
   }, []);
 
-  // Convert positions to Coin/Stock format - memoized to prevent unnecessary recalculations
-  // Use asset_types from backend to correctly categorize crypto vs stocks
-  const coins: Coin[] = useMemo(() => {
-    return dashboardData?.positions
-      ?.filter(pos => dashboardData?.asset_types?.[pos.symbol] === 'crypto')
-      .map((pos, idx) => ({
-        id: String(idx + 1),
-        name: pos.symbol,
-        symbol: pos.symbol,
-        amount: pos.quantity,
-        value: pos.quantity * pos.currentPrice,
-        change: pos.pnlPercent,
-        trend: pos.pnlPercent >= 0 ? "up" as const : "down" as const,
-        icon: "🪙",
-        logoUrl: dashboardData?.logos?.[pos.symbol] || null, // Get logo from backend logos object
-      })) || [];
-  }, [dashboardData?.positions, dashboardData?.logos, dashboardData?.asset_types]);
+  // Convert positions to Coin/Stock format
+  const coins: Coin[] = dashboardData?.positions
+    ?.filter(pos => pos.symbol.includes('USD') || ['BTC', 'ETH', 'DOGE', 'ADA', 'TRX'].includes(pos.symbol))
+    .map((pos, idx) => ({
+      id: String(idx + 1),
+      name: pos.symbol,
+      symbol: pos.symbol,
+      amount: pos.quantity,
+      value: pos.quantity * pos.currentPrice,
+      change: pos.pnlPercent,
+      trend: pos.pnlPercent >= 0 ? "up" as const : "down" as const,
+      icon: "🪙",
+    })) || [];
 
-  const stocks: Stock[] = useMemo(() => {
-    return dashboardData?.positions
-      ?.filter(pos => dashboardData?.asset_types?.[pos.symbol] === 'stock')
-      .map((pos, idx) => ({
-        id: String(idx + 1),
-        name: pos.symbol,
-        symbol: pos.symbol,
-        shares: pos.quantity,
-        value: pos.quantity * pos.currentPrice,
-        change: pos.pnlPercent,
-        trend: pos.pnlPercent >= 0 ? "up" as const : "down" as const,
-        icon: "📈",
-      })) || [];
-  }, [dashboardData?.positions, dashboardData?.asset_types]);
+  const stocks: Stock[] = dashboardData?.positions
+    ?.filter(pos => !pos.symbol.includes('USD') && !['BTC', 'ETH', 'DOGE', 'ADA', 'TRX'].includes(pos.symbol))
+    .map((pos, idx) => ({
+      id: String(idx + 1),
+      name: pos.symbol,
+      symbol: pos.symbol,
+      shares: pos.quantity,
+      value: pos.quantity * pos.currentPrice,
+      change: pos.pnlPercent,
+      trend: pos.pnlPercent >= 0 ? "up" as const : "down" as const,
+      icon: "📈",
+    })) || [];
 
   // Calculate portfolio metrics
   const holdingValue = dashboardData?.portfolio?.totalValue || 0;
@@ -157,22 +140,69 @@ export function ProfilePage() {
     loadUserData();
   }, [mounted]);
 
-  // Fetch dashboard data
+  // Fetch dashboard data when connection ID is available
   useEffect(() => {
-    if (!mounted || hasInitialized.current) return;
+    if (!mounted || hasInitialized.current || !connectionId) return;
+    if (isLoadingConnection) return; // Wait for context to load
     
     const initialize = async () => {
       hasInitialized.current = true;
-      const connId = await fetchActiveConnection();
-      if (connId) {
-        await fetchDashboardData(connId);
-      }
+      await fetchDashboardData(connectionId);
     };
     
     initialize();
-  }, [mounted, fetchActiveConnection, fetchDashboardData]);
+  }, [mounted, connectionId, isLoadingConnection, fetchDashboardData]);
 
-  // Logos now come from backend (no separate API call needed)
+  // Fetch coin data from backend database (no CoinGecko API rate limits)
+  useEffect(() => {
+    if (!mounted || coins.length === 0) return;
+
+    const fetchCoinData = async () => {
+      try {
+        // Get trending assets from backend (includes logos and market data)
+        const trendingAssets = await getTrendingAssets(20, true);
+        
+        // Create a map for quick lookup
+        const assetMap = new Map(
+          trendingAssets.map(asset => [asset.symbol.toUpperCase(), asset])
+        );
+        
+        // Set logo map for display
+        const logoMap: Record<string, string> = {};
+        trendingAssets.forEach(asset => {
+          const symbol = asset.symbol.toUpperCase();
+          // Use DB logo if available, otherwise fallback to CoinGecko CDN
+          logoMap[symbol] = asset.logo_url || getCoinGeckoLogoUrl(symbol) || "";
+        });
+        
+        // Also add fallback logos for coins not in trending assets
+        coins.forEach(coin => {
+          const symbol = coin.symbol.toUpperCase();
+          if (!logoMap[symbol]) {
+            const fallbackLogo = getCoinGeckoLogoUrl(symbol);
+            if (fallbackLogo) {
+              logoMap[symbol] = fallbackLogo;
+            }
+          }
+        });
+        
+        setCoinLogos(logoMap);
+      } catch (error) {
+        console.error("Failed to fetch coin data:", error);
+        // Fallback to CDN URLs
+        const fallbackLogos: Record<string, string> = {};
+        coins.forEach(coin => {
+          const logo = getCoinGeckoLogoUrl(coin.symbol);
+          if (logo) {
+            fallbackLogos[coin.symbol.toUpperCase()] = logo;
+          }
+        });
+        setCoinLogos(fallbackLogos);
+      }
+    };
+
+    fetchCoinData();
+  }, [mounted, coins]);
 
   // Trend Graph Component using PNG images
   const TrendGraph = ({ trend }: { trend: "up" | "down" }) => {
@@ -289,10 +319,10 @@ export function ProfilePage() {
                 className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
               >
                 <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                  {coin.logoUrl ? (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                  {coinLogos[coin.symbol.toUpperCase()] ? (
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
                       <Image
-                        src={coin.logoUrl}
+                        src={coinLogos[coin.symbol.toUpperCase()]}
                         alt={coin.name}
                         width={48}
                         height={48}
@@ -301,7 +331,7 @@ export function ProfilePage() {
                       />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#fc4f02]/40 border border-[#fc4f02]/50 flex items-center justify-center text-lg sm:text-2xl flex-shrink-0 shadow-sm">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center text-lg sm:text-2xl flex-shrink-0 shadow-sm">
                       {coin.icon}
                     </div>
                   )}

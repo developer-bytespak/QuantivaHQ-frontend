@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api/client";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
 // Engine-based fields that actually work in the signal generation system
 // These match the pre-built strategies format exactly
@@ -24,9 +24,9 @@ const OPERATORS = [
   { value: "<=", label: "Less or equal (≤)" },
 ];
 
-// Popular crypto symbols for quick add - TO BE REPLACED WITH REAL API DATA
+// Popular crypto symbols for quick add
 const POPULAR_CRYPTO = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"];
-// Popular stock symbols for quick add - TO BE REPLACED WITH REAL API DATA
+// Popular stock symbols for quick add
 const POPULAR_STOCKS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD"];
 
 interface Rule {
@@ -61,28 +61,22 @@ export default function CreateStrategyPage() {
     "paper-trading": "Paper Trading",
     "top-trades": "Top Trades",
     "my-strategies": "My Strategies",
-    "custom-strategies-trading": "Custom Trading",
   };
   
   // Determine back navigation
   const backUrl = via === "my-strategies" 
     ? `/dashboard/my-strategies?from=${from}` 
-    : via === "custom-strategies-trading"
-    ? `/dashboard/custom-strategies-trading?from=${from}`
     : `/dashboard/${from}`;
   const backPageName = via === "my-strategies" 
     ? "My Strategies" 
-    : via === "custom-strategies-trading"
-    ? "Custom Trading"
     : pageNames[from] || "My Strategies";
+  
+  // Get connection type from global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
   
   const [currentStep, setCurrentStep] = useState<Step>("basics");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
 
   // Form state
   const [name, setName] = useState("");
@@ -113,34 +107,6 @@ export default function CreateStrategyPage() {
   const [assetSearch, setAssetSearch] = useState("");
   const [assetResults, setAssetResults] = useState<AssetOption[]>([]);
   const [searchingAssets, setSearchingAssets] = useState(false);
-  const [realPopularStocks, setRealPopularStocks] = useState<string[]>(POPULAR_STOCKS);
-  const [realPopularCrypto, setRealPopularCrypto] = useState<string[]>(POPULAR_CRYPTO);
-
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        // ✅ Backend correction: Check exchange.name for type detection
-        const exchangeName = response.data?.exchange?.name;
-        const connType = exchangeName === "Alpaca" ? "stocks" : 
-                        (exchangeName === "Binance" || exchangeName === "Bybit") ? "crypto" : null;
-        setConnectionType(connType);
-
-        // Fetch real assets based on connection type
-        if (connType === "stocks") {
-          fetchRealAssets("stock");
-        } else if (connType === "crypto") {
-          fetchRealAssets("crypto");
-        }
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
 
   // Fetch real assets from your assets API
   const fetchRealAssets = async (assetType: "stock" | "crypto") => {
@@ -171,45 +137,47 @@ export default function CreateStrategyPage() {
     }
   };
 
+  // Fetch real assets based on connection type when it's loaded
+  useEffect(() => {
+    if (connectionType === "stocks") {
+      fetchRealAssets("stock");
+    } else if (connectionType === "crypto") {
+      fetchRealAssets("crypto");
+    }
+  }, [connectionType]);
+
   // Derived values
   const isStocksConnection = connectionType === "stocks";
   const assetTypeLabel = isStocksConnection ? "Stocks" : "Crypto Assets";
-  const popularAssets = isStocksConnection ? realPopularStocks : realPopularCrypto;
+  const popularAssets = isStocksConnection ? POPULAR_STOCKS : POPULAR_CRYPTO;
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
   const weightsValid = Math.abs(totalWeight - 1.0) < 0.01;
 
-  // Search assets from backend - debounced to prevent excessive API calls
+  // Search assets from backend
   useEffect(() => {
-    if (assetSearch.length < 2) { // Require at least 2 characters before searching
+    if (assetSearch.length < 1) {
       setAssetResults([]);
       return;
     }
     
-    // Debounce API calls - only search after user stops typing for 800ms
     const timer = setTimeout(async () => {
       setSearchingAssets(true);
       try {
-        // Use the universal assets endpoint with search parameter
-        const assetType = isStocksConnection ? "stock" : "crypto";
-        const searchEndpoint = `/assets?asset_type=${assetType}&limit=50&search=${encodeURIComponent(assetSearch)}`;
+        // Use different endpoint based on connection type
+        const searchEndpoint = isStocksConnection
+          ? `/strategies/available-stocks?search=${encodeURIComponent(assetSearch)}`
+          : `/strategies/available-crypto?search=${encodeURIComponent(assetSearch)}`;
         
-        const results = await apiRequest<never, any[]>({
+        const results = await apiRequest<never, AssetOption[]>({
           path: searchEndpoint,
           method: "GET",
         });
-        
-        // Transform API response to AssetOption format
-        const assetOptions = (results || []).map((asset: any) => ({
-          symbol: asset.symbol || asset.asset_id,
-          name: asset.name || asset.display_name || asset.symbol || asset.asset_id
-        }));
-        
-        setAssetResults(assetOptions);
+        setAssetResults(results || []);
       } catch (err) {
         console.error("Asset search error:", err);
-        // Fallback: allow manual entry for crypto, empty for stocks
+        // For crypto, if endpoint doesn't exist, allow manual entry
         if (!isStocksConnection) {
           setAssetResults([{ symbol: assetSearch.toUpperCase(), name: assetSearch.toUpperCase() }]);
         } else {
@@ -218,7 +186,7 @@ export default function CreateStrategyPage() {
       } finally {
         setSearchingAssets(false);
       }
-    }, 800); // Debounce search API calls - wait 0.8 seconds after user stops typing
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [assetSearch, isStocksConnection]);
@@ -1018,3 +986,11 @@ export default function CreateStrategyPage() {
     </div>
   );
 }
+function setRealPopularStocks(realSymbols: any[]) {
+  throw new Error("Function not implemented.");
+}
+
+function setRealPopularCrypto(realSymbols: any[]) {
+  throw new Error("Function not implemented.");
+}
+

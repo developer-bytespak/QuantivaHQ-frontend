@@ -137,3 +137,5 @@ export async function getCoinDetails(coinIdOrSymbol: string): Promise<any> {
     );
   }
 }
+
+

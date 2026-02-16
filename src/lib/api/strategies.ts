@@ -157,16 +157,10 @@ export async function getStrategySignals(strategyId: string): Promise<StrategySi
 /**
  * Get signals for a pre-built strategy (latest only, one per asset)
  * Fetches system-generated signals from database with realtime OHLCV data
- * For stock strategies, realtime=true is not needed (backend handles gracefully)
  */
-export async function getPreBuiltStrategySignals(strategyId: string, assetType?: 'crypto' | 'stock'): Promise<StrategySignal[]> {
-  // For stock strategies: don't send realtime=true (backend now handles gracefully but not needed)
-  const queryParams = assetType === 'stock' 
-    ? "latest_only=true" 
-    : "latest_only=true&realtime=true";
-  
+export async function getPreBuiltStrategySignals(strategyId: string): Promise<StrategySignal[]> {
   return apiRequest<unknown, StrategySignal[]>({ 
-    path: `/strategies/pre-built/${strategyId}/signals?${queryParams}`,
+    path: `/strategies/pre-built/${strategyId}/signals?latest_only=true&realtime=true`,
     method: 'GET',
   });
 }
@@ -229,14 +223,14 @@ export async function generateAssetInsight(strategyId: string, assetId: string):
 }
 
 /**
- * Update a strategy (using backend-specified path)
+ * Update a strategy
  */
 export async function updateStrategy(
   strategyId: string,
   data: Partial<CreateStrategyDto>
 ): Promise<Strategy> {
   return apiRequest<Partial<CreateStrategyDto>, Strategy>({
-    path: `/strategies/my-strategies/${strategyId}`,
+    path: `/strategies/${strategyId}`,
     method: 'PUT',
     body: data,
   });
@@ -244,24 +238,12 @@ export async function updateStrategy(
 
 /**
  * Delete a strategy
- * Enhanced error handling for pre-built strategy protection and dependencies
  */
 export async function deleteStrategy(strategyId: string): Promise<void> {
-  try {
-    return await apiRequest<unknown, void>({
-      path: `/strategies/${strategyId}`,
-      method: 'DELETE',
-    });
-  } catch (error: any) {
-    // Handle enhanced backend error responses
-    if (error.status === 403) {
-      throw new Error('Cannot delete pre-built strategies. Only custom strategies can be deleted.');
-    }
-    if (error.message?.includes('template')) {
-      throw new Error('Cannot delete strategy: it is being used as a template by other strategies.');
-    }
-    throw error;
-  }
+  return apiRequest<unknown, void>({
+    path: `/strategies/${strategyId}`,
+    method: 'DELETE',
+  });
 }
 
 /**
