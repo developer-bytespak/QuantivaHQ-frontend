@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const router = useRouter();
   
   // Get connection from global context (fetched once on app start)
-  const { connectionType, connectionId, activeConnection, isLoading: isLoadingConnection } = useExchange();
+  const { connectionType, connectionId, activeConnection, isLoading: isLoadingConnection, refetch: refetchConnection } = useExchange();
   
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
@@ -51,6 +51,11 @@ export default function DashboardPage() {
   
   // Ref to track if initialization has happened (prevents duplicate calls)
   const hasInitialized = useRef(false);
+  
+  // Refetch connection on dashboard mount to ensure latest state
+  useEffect(() => {
+    refetchConnection();
+  }, [refetchConnection]);
   
   // Market data state - different sources based on type
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
@@ -222,14 +227,16 @@ export default function DashboardPage() {
     // Prevent re-initialization (especially in React Strict Mode)
     if (hasInitialized.current) return;
     
-    // Wait until we have the connection ID from context
+    // Wait until connection check is complete
+    if (isLoadingConnection) {
+      return; // Still loading, don't do anything yet
+    }
+    
+    // Connection check is done - if no connectionId, user has no exchange connected
+    // Dashboard will show the "Connect Exchange" component based on connectionId value
     if (!connectionId) {
-      if (!isLoadingConnection) {
-        // Connection failed to load
-        setError("No active connection found. Please connect your exchange account.");
-        setIsLoading(false);
-      }
-      return;
+      setIsLoading(false);
+      return; // Let the UI show "Connect Exchange" component
     }
     
     const initializeDashboard = async () => {
@@ -403,8 +410,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
-      {/* Exchange Account Connection Required */}
-      {error && error.includes("No active connection") && (
+      {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
+      {!isLoadingConnection && !connectionId && (
         <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-orange-500/20 flex-shrink-0">
