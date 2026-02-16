@@ -8,6 +8,7 @@ import { changePasswordSchema } from "@/lib/validation/onboarding";
 
 export default function SecurityPage() {
   const { notification, showNotification, hideNotification } = useNotification();
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -18,9 +19,7 @@ export default function SecurityPage() {
   const [isRequestingCode, setIsRequestingCode] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   const handleRequest2FACode = async () => {
     // Validate password fields first
@@ -41,11 +40,6 @@ export default function SecurityPage() {
     setFormErrors({});
 
     try {
-      // First verify the current password
-      const { verifyPassword } = await import("@/lib/api/auth");
-      await verifyPassword(passwordData.currentPassword);
-      
-      // If password is correct, request 2FA code
       await requestPasswordChangeCode();
       setTwoFactorCodeRequested(true);
       showNotification("2FA code sent to your email", "success");
@@ -53,11 +47,7 @@ export default function SecurityPage() {
       console.error("Failed to request 2FA code:", error);
       let errorMessage = "Failed to request 2FA code. Please try again.";
       
-      // Check for invalid password error
-      if (error.message?.includes("Invalid password") || error.message?.includes("correct password")) {
-        errorMessage = "Current password is incorrect";
-        setFormErrors({ currentPassword: "Current password is incorrect" });
-      } else if (error.message?.includes("Unauthorized") || error.message?.includes("401")) {
+      if (error.message?.includes("Unauthorized") || error.message?.includes("401")) {
         errorMessage = "Your session has expired. Please log out and log in again.";
       } else if (error.message) {
         errorMessage = error.message;
@@ -70,7 +60,6 @@ export default function SecurityPage() {
   };
 
   const handleChangePassword = async () => {
-    // Clear all errors first
     setFormErrors({});
 
     // Validate form using Zod schema
@@ -80,19 +69,9 @@ export default function SecurityPage() {
       const errors: Record<string, string> = {};
       validationResult.error.errors.forEach((error) => {
         const field = error.path[0] as string;
-        // Only show 2FA error if we're actually in the 2FA step
-        if (field === "twoFactorCode" && !twoFactorCodeRequested) {
-          return; // Skip this error if we haven't requested code yet
-        }
         errors[field] = error.message;
       });
       setFormErrors(errors);
-      
-      // Show a user-friendly notification for the first error
-      const firstError = Object.values(errors)[0];
-      if (firstError) {
-        showNotification(firstError, "error");
-      }
       return;
     }
 
@@ -120,33 +99,45 @@ export default function SecurityPage() {
         twoFactorCode: "",
       });
       setTwoFactorCodeRequested(false);
+      setShowChangePassword(false);
       setFormErrors({});
     } catch (error: any) {
       console.error("Failed to change password:", error);
       let errorMessage = "Failed to change password. Please try again.";
       
-      // Extract the actual error message from backend
-      const backendMessage = error.message || "";
-      
-      // Check for specific error messages from backend
-      if (backendMessage.includes("Invalid 2FA code")) {
-        errorMessage = "Invalid 2FA code. Please check your email and try again.";
-        setFormErrors({ twoFactorCode: "Invalid 2FA code" });
-        // Clear the 2FA code so user needs to re-enter
-        setPasswordData({ ...passwordData, twoFactorCode: "" });
-      } else if (backendMessage.includes("Invalid current password")) {
+      if (error.message?.includes("Invalid current password")) {
         errorMessage = "Current password is incorrect";
         setFormErrors({ currentPassword: "Current password is incorrect" });
-      } else if (backendMessage.includes("Session expired") || backendMessage.includes("log in again")) {
+      } else if (error.message?.includes("Invalid 2FA code") || error.message?.includes("2FA")) {
+        errorMessage = "Invalid 2FA code. Please check your email and try again.";
+        setFormErrors({ twoFactorCode: "Invalid 2FA code" });
+      } else if (error.message?.includes("Unauthorized") || error.message?.includes("401")) {
         errorMessage = "Your session has expired. Please log out and log in again.";
-      } else if (backendMessage) {
-        errorMessage = backendMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
       showNotification(errorMessage, "error");
     } finally {
       setIsChangingPassword(false);
     }
+  };
+
+  const handleCancelPasswordChange = () => {
+    setPasswordData({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+      twoFactorCode: "",
+    });
+    setTwoFactorCodeRequested(false);
+    setShowChangePassword(false);
+    setFormErrors({});
+  };
+
+  const toggleTwoFactor = () => {
+    setTwoFactorEnabled(!twoFactorEnabled);
+    // Here you would typically make an API call to enable/disable 2FA
   };
 
   // Auto-focus first OTP input when 2FA code is requested
@@ -195,23 +186,38 @@ export default function SecurityPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
-          <h1 className="text-xl sm:text-3xl font-bold text-white">Change Password</h1>
+          <h1 className="text-xl sm:text-3xl font-bold text-white">Security</h1>
         </div>
 
         <div className="space-y-4 sm:space-y-6">
           {/* Password Section */}
-          <div className="bg-gradient-to-br from-[--color-surface]/60 to-[--color-surface]/30 border border-[--color-border]/50 rounded-xl sm:rounded-2xl p-6 sm:p-8 shadow-xl">
-            <div className="mb-6">
-              <p className="text-sm text-slate-400">Enter your current password and choose a new secure password</p>
+          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4">
+              <div>
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">{showChangePassword ? "Change Password" : "Password"}</h2>
+                <p className="text-xs sm:text-sm text-slate-400">Change your account password</p>
+              </div>
+              <button
+                onClick={() => {
+                  if (showChangePassword) {
+                    handleCancelPasswordChange();
+                  } else {
+                    setShowChangePassword(true);
+                  }
+                }}
+                className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 transition-all duration-200"
+              >
+                {showChangePassword ? "Cancel" : "Change Password"}
+              </button>
             </div>
 
-            <div className="space-y-5 sm:space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2.5">Current Password</label>
-                <div className="relative">
+            {showChangePassword && (
+              <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Current Password</label>
                   <input
                     id="current-password-input"
-                    type={showCurrentPassword ? "text" : "password"}
+                    type="password"
                     value={passwordData.currentPassword}
                     onChange={(e) => {
                       setPasswordData({ ...passwordData, currentPassword: e.target.value });
@@ -221,38 +227,20 @@ export default function SecurityPage() {
                     }}
                     onKeyDown={(e) => handleKeyDown(e, "next", "new-password-input")}
                     disabled={isRequestingCode || isChangingPassword}
-                    className={`w-full px-4 py-3 pr-12 rounded-xl bg-[--color-surface]/80 border-2 ${
-                      formErrors.currentPassword ? "border-red-500" : "border-[--color-border]/50"
-                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:border-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
-                    placeholder="Enter your current password"
+                    className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
+                      formErrors.currentPassword ? "border-red-500" : "border-[--color-border]"
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    placeholder="Enter current password"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
-                  >
-                    {showCurrentPassword ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
                   {formErrors.currentPassword && (
                     <p className="text-red-500 text-xs mt-1">{formErrors.currentPassword}</p>
                   )}
                 </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2.5">New Password</label>
-                <div className="relative">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">New Password</label>
                   <input
                     id="new-password-input"
-                    type={showNewPassword ? "text" : "password"}
+                    type="password"
                     value={passwordData.newPassword}
                     onChange={(e) => {
                       setPasswordData({ ...passwordData, newPassword: e.target.value });
@@ -262,38 +250,20 @@ export default function SecurityPage() {
                     }}
                     onKeyDown={(e) => handleKeyDown(e, "next", "confirm-password-input")}
                     disabled={isRequestingCode || isChangingPassword}
-                    className={`w-full px-4 py-3 pr-12 rounded-xl bg-[--color-surface]/80 border-2 ${
-                      formErrors.newPassword ? "border-red-500" : "border-[--color-border]/50"
-                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:border-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+                    className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
+                      formErrors.newPassword ? "border-red-500" : "border-[--color-border]"
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Enter new password (min 8 characters)"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
-                  >
-                    {showNewPassword ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
                   {formErrors.newPassword && (
                     <p className="text-red-500 text-xs mt-1">{formErrors.newPassword}</p>
                   )}
                 </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-200 mb-2.5">Confirm New Password</label>
-                <div className="relative">
+                <div>
+                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Confirm New Password</label>
                   <input
                     id="confirm-password-input"
-                    type={showConfirmPassword ? "text" : "password"}
+                    type="password"
                     value={passwordData.confirmPassword}
                     onChange={(e) => {
                       setPasswordData({ ...passwordData, confirmPassword: e.target.value });
@@ -315,39 +285,22 @@ export default function SecurityPage() {
                       }
                     }}
                     disabled={isRequestingCode || isChangingPassword}
-                    className={`w-full px-4 py-3 pr-12 rounded-xl bg-[--color-surface]/80 border-2 ${
-                      formErrors.confirmPassword ? "border-red-500" : "border-[--color-border]/50"
-                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:border-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
-                    placeholder="Confirm your new password"
+                    className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
+                      formErrors.confirmPassword ? "border-red-500" : "border-[--color-border]"
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    placeholder="Confirm new password"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors"
-                  >
-                    {showConfirmPassword ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                      </svg>
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                  </button>
+                  {formErrors.confirmPassword && (
+                    <p className="text-red-500 text-xs mt-1">{formErrors.confirmPassword}</p>
+                  )}
                 </div>
-                {formErrors.confirmPassword && (
-                  <p className="text-red-500 text-xs mt-1">{formErrors.confirmPassword}</p>
-                )}
-              </div>
 
-              {!twoFactorCodeRequested ? (
-                <button
-                  onClick={handleRequest2FACode}
-                  disabled={isRequestingCode || isChangingPassword}
-                  className="w-full px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm font-semibold hover:from-[#fd6a00] hover:to-[#fd8a00] hover:shadow-lg hover:shadow-[#fc4f02]/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
+                {!twoFactorCodeRequested ? (
+                  <button
+                    onClick={handleRequest2FACode}
+                    disabled={isRequestingCode || isChangingPassword}
+                    className="w-full px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
                     {isRequestingCode ? (
                       <>
                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -360,9 +313,9 @@ export default function SecurityPage() {
                       "Request 2FA Code"
                     )}
                   </button>
-              ) : (
-                <>
-                  <div className="p-5 sm:p-6 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/30 rounded-xl shadow-lg backdrop-blur-sm">
+                ) : (
+                  <>
+                    <div className="p-3 sm:p-5 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent border border-blue-500/30 rounded-lg sm:rounded-xl shadow-lg backdrop-blur-sm">
                       <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4">
                         <div className="flex-shrink-0 w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center">
                           <svg className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -401,13 +354,6 @@ export default function SecurityPage() {
                                   const updatedCode = newCode.join("").slice(0, 6);
                                   setPasswordData({ ...passwordData, twoFactorCode: updatedCode });
                                   
-                                  // Clear 2FA error when user is typing
-                                  if (formErrors.twoFactorCode) {
-                                    const newErrors = { ...formErrors };
-                                    delete newErrors.twoFactorCode;
-                                    setFormErrors(newErrors);
-                                  }
-                                  
                                   // Auto-focus next input
                                   if (index < 5 && value) {
                                     const nextInput = document.getElementById(`otp-digit-${index + 1}`);
@@ -416,8 +362,8 @@ export default function SecurityPage() {
                                     }
                                   }
                                   
-                                  // Auto-submit when 6 digits are entered (only if no other errors)
-                                  if (updatedCode.length === 6 && !formErrors.currentPassword && !formErrors.newPassword && !formErrors.confirmPassword) {
+                                  // Auto-submit when 6 digits are entered
+                                  if (updatedCode.length === 6) {
                                     setTimeout(() => {
                                       handleChangePassword();
                                     }, 100);
@@ -427,13 +373,10 @@ export default function SecurityPage() {
                                   newCode[index] = "";
                                   const updatedCode = newCode.join("");
                                   setPasswordData({ ...passwordData, twoFactorCode: updatedCode });
-                                  
-                                  // Clear 2FA error when user is editing
-                                  if (formErrors.twoFactorCode) {
-                                    const newErrors = { ...formErrors };
-                                    delete newErrors.twoFactorCode;
-                                    setFormErrors(newErrors);
-                                  }
+                                }
+                                
+                                if (formErrors.twoFactorCode) {
+                                  setFormErrors({ ...formErrors, twoFactorCode: "" });
                                 }
                               }}
                               onKeyDown={(e) => {
@@ -463,12 +406,6 @@ export default function SecurityPage() {
                                 const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
                                 if (pastedData) {
                                   setPasswordData({ ...passwordData, twoFactorCode: pastedData });
-                                  // Clear 2FA error when pasting
-                                  if (formErrors.twoFactorCode) {
-                                    const newErrors = { ...formErrors };
-                                    delete newErrors.twoFactorCode;
-                                    setFormErrors(newErrors);
-                                  }
                                   if (pastedData.length === 6) {
                                     const lastInput = document.getElementById(`otp-digit-5`);
                                     if (lastInput) {
@@ -484,13 +421,13 @@ export default function SecurityPage() {
                               }}
                               disabled={isChangingPassword}
                               id={`otp-digit-${index}`}
-                              className={`w-12 sm:w-14 h-14 sm:h-16 rounded-xl bg-[--color-surface]/80 border-2 ${
+                              className={`w-10 sm:w-12 h-12 sm:h-14 rounded-lg bg-[--color-surface] border-2 ${
                                 formErrors.twoFactorCode 
                                   ? "border-red-500" 
                                   : passwordData.twoFactorCode[index]
-                                    ? "border-blue-500/70 shadow-lg shadow-blue-500/20"
-                                    : "border-[--color-border]/50"
-                              } text-white text-center text-xl sm:text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
+                                    ? "border-blue-500/50"
+                                    : "border-[--color-border]"
+                              } text-white text-center text-lg sm:text-2xl font-bold tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
                             />
                           ))}
                         </div>
@@ -502,19 +439,19 @@ export default function SecurityPage() {
                         </p>
                       </div>
                     </div>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={handleRequest2FACode}
-                      disabled={isRequestingCode || isChangingPassword}
-                      className="flex-1 px-4 py-3 rounded-xl bg-[--color-surface]/80 border-2 border-[--color-border]/50 text-white text-sm font-medium hover:border-[#fc4f02]/50 hover:bg-[--color-surface] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Resend Code
-                    </button>
-                    <button
-                      onClick={handleChangePassword}
-                      disabled={isChangingPassword || isRequestingCode || passwordData.twoFactorCode.length !== 6}
-                      className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm font-semibold hover:from-[#fd6a00] hover:to-[#fd8a00] hover:shadow-lg hover:shadow-[#fc4f02]/25 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                    >
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                      <button
+                        onClick={handleRequest2FACode}
+                        disabled={isRequestingCode || isChangingPassword}
+                        className="flex-1 px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-xs sm:text-sm hover:border-[#fc4f02]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Resend Code
+                      </button>
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={isChangingPassword || isRequestingCode}
+                        className="flex-1 px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-xs sm:text-sm font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
                         {isChangingPassword ? (
                           <>
                             <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -526,10 +463,81 @@ export default function SecurityPage() {
                         ) : (
                           "Update Password"
                         )}
-                    </button>
-                  </div>
-                </>
-              )}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Two-Factor Authentication */}
+          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex-1">
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">Two-Factor Authentication</h2>
+                <p className="text-xs sm:text-sm text-slate-400">Add an extra layer of security to your account</p>
+              </div>
+              <button
+                onClick={toggleTwoFactor}
+                className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-[--color-surface] flex-shrink-0 ${
+                  twoFactorEnabled ? "bg-[#fc4f02]" : "bg-slate-600"
+                }`}
+              >
+                <span
+                  className={`inline-block h-3 sm:h-4 w-3 sm:w-4 transform rounded-full bg-white transition-transform ${
+                    twoFactorEnabled ? "translate-x-5 sm:translate-x-6" : "translate-x-0.5 sm:translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+            {twoFactorEnabled && (
+              <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-xs sm:text-sm text-green-300">Two-factor authentication is enabled</p>
+              </div>
+            )}
+          </div>
+
+          {/* Active Sessions */}
+          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Active Sessions</h2>
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-[--color-surface] border border-[--color-border]/50 rounded-lg">
+                <div className="min-w-0">
+                  <p className="text-white font-medium text-sm sm:text-base">Current Session</p>
+                  <p className="text-xs sm:text-sm text-slate-400">Windows • Chrome • Last active: Now</p>
+                </div>
+                <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-500/20 text-green-400 border border-green-500/30 flex-shrink-0 w-fit">
+                  Active
+                </span>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-[--color-surface] border border-[--color-border]/50 rounded-lg">
+                <div className="min-w-0">
+                  <p className="text-white font-medium text-sm sm:text-base">Mobile Device</p>
+                  <p className="text-xs sm:text-sm text-slate-400">iOS • Safari • Last active: 2 hours ago</p>
+                </div>
+                <button className="w-full sm:w-auto px-3 py-1 text-xs sm:text-sm rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 hover:bg-red-500/30 transition-all duration-200 flex-shrink-0">
+                  Revoke
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Security Tips */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <svg className="w-4 sm:w-5 h-4 sm:h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <div>
+                <p className="text-xs sm:text-sm text-blue-300 font-medium mb-2">Security Tips</p>
+                <ul className="text-xs text-blue-400/80 space-y-1">
+                  <li>• Use a strong, unique password</li>
+                  <li>• Enable two-factor authentication for better security</li>
+                  <li>• Review and revoke access from unknown devices</li>
+                  <li>• Never share your password with anyone</li>
+                </ul>
+              </div>
             </div>
           </div>
         </div>

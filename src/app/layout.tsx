@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
+import Providers from "@/context/Provider";
 import { ExchangeProvider } from "@/context/ExchangeContext";
 
 const geistSans = Geist({
@@ -35,6 +36,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} bg-[--color-background] text-[--color-foreground]`}
         suppressHydrationWarning
       >
+        <div className="min-h-screen bg-black">
+          <Providers>
+            {children}
+          </Providers>
+        </div>
         <ExchangeProvider>
           <div className="min-h-screen bg-black">
             {children}

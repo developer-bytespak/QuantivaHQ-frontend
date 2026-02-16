@@ -60,8 +60,6 @@ export interface Position {
   currentPrice: number;
   unrealizedPnl: number;
   pnlPercent: number;
-  asset_type?: "crypto" | "stock";
-  logoUrl?: string; // Logo URL returned from backend
 }
 
 export interface Order {
@@ -103,8 +101,6 @@ export interface DashboardData {
   orders: Order[];
   portfolio: Portfolio;
   prices: TickerPrice[];
-  logos: Record<string, string>;
-  asset_types?: Record<string, "crypto" | "stock">;
 }
 
 export interface ApiResponse<T> {
