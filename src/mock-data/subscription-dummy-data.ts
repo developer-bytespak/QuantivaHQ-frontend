@@ -138,6 +138,81 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
         updated_at: "2026-02-12T19:15:50.796Z"
       }
     ]
+  },
+  {
+    plan_id: "56d591a0-1de9-4454-9118-2f7fbb063e49",
+    tier: PlanTier.ELITE,
+    billing_period: BillingPeriod.MONTHLY,
+    price: "79.99",
+    base_price: "79.99",
+    discount_percent: "0",
+    name: "ELITE Plan",
+    description: "Unlimited strategies and premium features",
+    is_active: true,
+    display_order: 3,
+    created_at: "2026-02-12T19:15:49.478Z",
+    updated_at: "2026-02-12T19:15:49.478Z",
+    plan_features: [
+      {
+        feature_id: "elite-1",
+        plan_id: "56d591a0-1de9-4454-9118-2f7fbb063e49",
+        feature_type: FeatureType.CUSTOM_STRATEGIES,
+        enabled: true,
+        limit_value: -1,
+        created_at: "2026-02-12T19:15:49.705Z",
+        updated_at: "2026-02-12T19:15:49.705Z"
+      }
+    ]
+  },
+  {
+    plan_id: "c342772e-db6f-4ab5-ba20-0416c8211a31",
+    tier: PlanTier.ELITE,
+    billing_period: BillingPeriod.QUARTERLY,
+    price: "203.97",
+    base_price: "79.99",
+    discount_percent: "15",
+    name: "ELITE Plan",
+    description: "Unlimited strategies and premium features",
+    is_active: true,
+    display_order: 3,
+    created_at: "2026-02-12T19:15:50.257Z",
+    updated_at: "2026-02-12T19:15:50.257Z",
+    plan_features: [
+      {
+        feature_id: "elite-2",
+        plan_id: "c342772e-db6f-4ab5-ba20-0416c8211a31",
+        feature_type: FeatureType.CUSTOM_STRATEGIES,
+        enabled: true,
+        limit_value: -1,
+        created_at: "2026-02-12T19:15:50.366Z",
+        updated_at: "2026-02-12T19:15:50.366Z"
+      }
+    ]
+  },
+  {
+    plan_id: "c7d44ef5-3366-4780-8f74-769ac2b6c4a6",
+    tier: PlanTier.ELITE,
+    billing_period: BillingPeriod.YEARLY,
+    price: "767.9",
+    base_price: "79.99",
+    discount_percent: "20",
+    name: "ELITE Plan",
+    description: "Unlimited strategies and premium features",
+    is_active: true,
+    display_order: 3,
+    created_at: "2026-02-12T19:15:50.689Z",
+    updated_at: "2026-02-12T19:15:50.689Z",
+    plan_features: [
+      {
+        feature_id: "elite-3",
+        plan_id: "c7d44ef5-3366-4780-8f74-769ac2b6c4a6",
+        feature_type: FeatureType.CUSTOM_STRATEGIES,
+        enabled: true,
+        limit_value: -1,
+        created_at: "2026-02-12T19:15:50.796Z",
+        updated_at: "2026-02-12T19:15:50.796Z"
+      }
+    ]
   }
 ];
 

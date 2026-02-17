@@ -42,9 +42,11 @@ export default function RootLayout({
           </Providers>
         </div>
         <ExchangeProvider>
+          <Providers>
           <div className="min-h-screen bg-black">
             {children}
           </div>
+          </Providers>
         </ExchangeProvider>
       </body>
     </html>

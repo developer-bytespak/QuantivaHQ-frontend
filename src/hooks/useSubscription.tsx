@@ -15,16 +15,11 @@ export const SubsProvider = ({ children }: { children: ReactNode }) => {
     const updateSubscription = useMutation({
         mutationFn: async (data: any) => {
             console.log('Updating subscription with data:', data);
-            const accessToken = typeof window !== 'undefined' ? 
-            localStorage.getItem('quantivahq_access_token') : null;
             const response = await axios.put(
                 `${process.env.NEXT_PUBLIC_API_URL}/subscriptions/update`, 
                 data,
                 {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
-                    }
+                    withCredentials: true,
                 }
             );
             return response.data;

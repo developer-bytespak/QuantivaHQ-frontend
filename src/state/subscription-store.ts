@@ -6,18 +6,16 @@ import {
   CURRENT_USER_SUBSCRIPTION,
   USER_USAGE_STATS,
   PAYMENT_HISTORY,
-  SUBSCRIPTION_PLANS,
-  getFeatureFromPlan,
-  getPlansByTier,
-  getPriceInfo,
   SubscriptionPlan,
   PlanFeature,
   PaymentRecord,
   UsageData,
 } from '@/mock-data/subscription-dummy-data';
 
-const HARDCODED_USER_ID = '741bd7d7-f365-4a02-b548-75bd37759561';
-const API_BASE_URL =process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+  if (!API_BASE_URL) {
+    throw new Error('API_BASE_URL is not set');
+  }
 
 interface CurrentSubscription {
   subscription_id: string;
@@ -54,6 +52,8 @@ interface SubscriptionState {
   showCancelModal: boolean;
   showPaymentModal: boolean;
 
+  
+
   // Actions
   setCurrentSubscription: (sub: CurrentSubscription | null) => void;
   setAllPlans: (plans: SubscriptionPlan[]) => void;
@@ -79,14 +79,15 @@ interface SubscriptionState {
   getAvailableUpgradePlans: () => SubscriptionPlan[];
   getCurrentPlan: () => SubscriptionPlan | null;
   getPlansByPeriod: (period: BillingPeriod) => SubscriptionPlan[];
+  getPlansGroupedByTier: () => Record<PlanTier, SubscriptionPlan[]>;
   fetchSubscriptionData: () => Promise<void>;
 }
 
 const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
-  // Initial Data
+  // Initial Data - populated from backend API
   currentSubscription: CURRENT_USER_SUBSCRIPTION,
-  allPlans: SUBSCRIPTION_PLANS,
-  allSubscriptions: SUBSCRIPTION_PLANS,
+  allPlans: [],
+  allSubscriptions: [],
   usageStats: USER_USAGE_STATS,
   paymentHistory: PAYMENT_HISTORY,
   selectedBillingPeriod: BillingPeriod.MONTHLY,
@@ -126,16 +127,10 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   // Helper Functions
   canAccessFeature: (feature: FeatureType) => {
-    const { currentSubscription, selectedPlanId, allSubscriptions } = get();
+    const { currentSubscription, allPlans } = get();
+    if (!currentSubscription) return false;
     
-    // Use selectedPlanId if available (for viewing/comparing plans)
-    const planId = selectedPlanId || currentSubscription?.plan_id;
-    if (!planId) return false;
-    
-    // First try to find in allSubscriptions (from API)
-    const plan = allSubscriptions.find((p: any) => p.plan_id === planId) ||
-                 SUBSCRIPTION_PLANS.find((p) => p.plan_id === planId);
-    
+    const plan = allPlans.find((p) => p.plan_id === currentSubscription.plan_id);
     if (!plan) return false;
     
     const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
@@ -143,16 +138,10 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   },
 
   getFeatureLimitInfo: (feature: FeatureType) => {
-    const { currentSubscription, selectedPlanId, allSubscriptions } = get();
+    const { currentSubscription, allPlans } = get();
+    if (!currentSubscription) return { enabled: false, limit: null };
     
-    // Use selectedPlanId if available (for viewing/comparing plans)
-    const planId = selectedPlanId || currentSubscription?.plan_id;
-    if (!planId) return { enabled: false, limit: null };
-    
-    // First try to find in allSubscriptions (from API)
-    const plan = allSubscriptions.find((p: any) => p.plan_id === planId) ||
-                 SUBSCRIPTION_PLANS.find((p) => p.plan_id === planId);
-    
+    const plan = allPlans.find((p) => p.plan_id === currentSubscription.plan_id);
     if (!plan) return { enabled: false, limit: null };
     
     const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
@@ -207,40 +196,64 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   },
 
   getAvailableUpgradePlans: () => {
-    const { currentSubscription } = get();
+    const { currentSubscription, allPlans } = get();
     if (!currentSubscription) {
-      return SUBSCRIPTION_PLANS.filter((p) => p.tier !== PlanTier.FREE);
+      return allPlans.filter((p) => p.tier !== PlanTier.FREE);
     }
 
     const currentTier = currentSubscription.tier;
 
     // FREE can upgrade to PRO or ELITE
     if (currentTier === PlanTier.FREE) {
-      return SUBSCRIPTION_PLANS.filter((p) => p.tier !== PlanTier.FREE);
+      return allPlans.filter((p) => p.tier !== PlanTier.FREE);
     }
 
-    // PRO can upgrade to ELITE or downgrade to FREE
+    // PRO can upgrade to ELITE or downgrade
     if (currentTier === PlanTier.PRO) {
-      return SUBSCRIPTION_PLANS;
+      return allPlans;
     }
 
-    // ELITE can downgrade to PRO or FREE
+    // ELITE can downgrade to PRO
     if (currentTier === PlanTier.ELITE) {
-      return SUBSCRIPTION_PLANS;
+      return allPlans;
     }
 
     return [];
   },
 
   getCurrentPlan: () => {
-    const { currentSubscription } = get();
+    const { currentSubscription, allPlans } = get();
     if (!currentSubscription) return null;
     
-    return SUBSCRIPTION_PLANS.find((p) => p.plan_id === currentSubscription.plan_id) || null;
+    return allPlans.find((p) => p.plan_id === currentSubscription.plan_id) || null;
   },
 
   getPlansByPeriod: (period: BillingPeriod) => {
-    return SUBSCRIPTION_PLANS.filter((p) => p.billing_period === period);
+    const { allPlans } = get();
+    return allPlans.filter((p) => p.billing_period === period);
+  },
+
+  getPlansGroupedByTier: () => {
+    const { allPlans } = get();
+    const grouped: Record<PlanTier, SubscriptionPlan[]> = {
+      [PlanTier.FREE]: [],
+      [PlanTier.PRO]: [],
+      [PlanTier.ELITE]: [],
+    };
+    allPlans.forEach((plan) => {
+      if (grouped[plan.tier]) {
+        grouped[plan.tier].push(plan);
+      }
+    });
+    // Sort each group by billing period: MONTHLY, QUARTERLY, YEARLY
+    const billingOrder = [BillingPeriod.MONTHLY, BillingPeriod.QUARTERLY, BillingPeriod.YEARLY];
+    (Object.keys(grouped) as PlanTier[]).forEach((tier) => {
+      grouped[tier].sort(
+        (a, b) =>
+          billingOrder.indexOf(a.billing_period) - billingOrder.indexOf(b.billing_period)
+      );
+    });
+    return grouped;
   },
 
   fetchSubscriptionData: async () => {
@@ -248,14 +261,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     try {
       const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const response = await fetch(
-        `${API_BASE_URL}/subscriptions/dashboard?userId=${HARDCODED_USER_ID}`,
-        {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          }
-        }
+        `${API_BASE_URL}/subscriptions/dashboard`
       );
 
       console.log('API response status:', response);
@@ -300,8 +306,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       // Map API response to store state
       set({
         currentSubscription,
-        allPlans: data.allSubscriptions || SUBSCRIPTION_PLANS,
-        allSubscriptions: data.allSubscriptions || SUBSCRIPTION_PLANS,
+        allPlans: data.allSubscriptions || [],
         usageStats,
         paymentHistory,
         isLoading: false,
