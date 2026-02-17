@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import { ExchangeProvider } from "@/context/ExchangeContext";
+import Providers from "@/context/Provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,9 +37,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ExchangeProvider>
+          <Providers>
           <div className="min-h-screen bg-black">
             {children}
           </div>
+          </Providers>
         </ExchangeProvider>
       </body>
     </html>

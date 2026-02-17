@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import useSubscriptionStore from "@/state/subscription-store";
-import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { PlanTier, BillingPeriod } from "@/mock-data/subscription-dummy-data";
+import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
+import { useSubscription } from "@/hooks/useSubscription";
+import { toast } from "react-toastify";
 
 export function SubscriptionSettings() {
   const [activeTab, setActiveTab] = useState<"current" | "billing" | "usage" | "change">("current");
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const hasFetchedRef = useRef(false);
   const {
     currentSubscription,
     paymentHistory,
@@ -13,7 +18,96 @@ export function SubscriptionSettings() {
     getDaysUntilNextBilling,
     isTrialActive,
     getFeatureLimitInfo,
+    getPlansGroupedByTier,
+    fetchSubscriptionData,
   } = useSubscriptionStore();
+
+  const { updateSubscription } = useSubscription();
+
+  // Fetch subscription data once when user lands on this page
+  useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+    fetchSubscriptionData();
+  }, [fetchSubscriptionData]);
+
+  const getBillingLabel = (period: BillingPeriod) => {
+    switch (period) {
+      case BillingPeriod.MONTHLY:
+        return "/month";
+      case BillingPeriod.QUARTERLY:
+        return "/3 months";
+      case BillingPeriod.YEARLY:
+        return "/year";
+      default:
+        return "";
+    }
+  };
+
+  const renderPlanCard = (plan: SubscriptionPlan) => {
+    const isCurrentPlan = currentSubscription?.plan_id === plan.plan_id;
+    const isUpgrade =
+      !currentSubscription ||
+      currentSubscription.tier === PlanTier.FREE ||
+      (currentSubscription.tier === PlanTier.PRO && plan.tier === PlanTier.ELITE);
+    const isDowngrade = !isUpgrade && !isCurrentPlan;
+    const isThisPlanLoading = loadingPlanId === plan.plan_id;
+
+    // Different colors for PRO vs ELITE
+    const isElite = plan.tier === PlanTier.ELITE;
+    const borderColor = isCurrentPlan
+      ? isElite
+        ? "border-blue-400 bg-blue-500/10"
+        : "border-[#fc4f02] bg-[#fc4f02]/10"
+      : isElite
+      ? "border-[--color-border] hover:border-blue-400/50 bg-blue-500/5"
+      : "border-[--color-border] hover:border-[#fc4f02]/50";
+    
+    const buttonColor = isElite
+      ? "bg-blue-500 text-white hover:bg-blue-600"
+      : "bg-[#fc4f02] text-white hover:bg-[#e04502]";
+
+    return (
+      <div
+        key={plan.plan_id}
+        className={`flex flex-col min-h-[260px] h-full rounded-lg border-2 p-4 cursor-pointer transition-all ${borderColor}`}
+      >
+        <h4 className="text-sm font-medium text-slate-400 mb-1">{plan.billing_period}</h4>
+        <p className="text-xl sm:text-2xl font-bold text-white mb-2">
+          ${plan.price}
+          <span className="text-sm text-slate-400 font-normal">{getBillingLabel(plan.billing_period)}</span>
+        </p>
+        <div className="min-h-[20px] mb-2">
+          {plan.discount_percent !== "0" && (
+            <p className="text-xs text-green-400">Save {plan.discount_percent}%</p>
+          )}
+        </div>
+        <div className="flex-grow flex flex-col justify-end">
+          {isCurrentPlan ? (
+            <button
+              disabled
+              className="w-full px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold cursor-not-allowed"
+            >
+              Current Plan
+            </button>
+          ) : (
+            <button 
+              className={`w-full px-4 py-2 ${buttonColor} rounded-lg transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
+              onClick={() => handleUpgradePlan(plan.plan_id)}
+              disabled={isThisPlanLoading || updateSubscription.isPending}
+            >
+              {isThisPlanLoading ? "Upgrading..." : isUpgrade ? "Upgrade" : "Downgrade"}
+            </button>
+          )}
+          {!isCurrentPlan && (
+            <p className="text-xs text-slate-400 mt-3 text-center">
+              {isUpgrade ? "Add features & increase limits" : "Reduce features & limits"}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   const getTierColor = (tier: PlanTier) => {
     switch (tier) {
@@ -41,12 +135,36 @@ export function SubscriptionSettings() {
     }
   };
 
+  const handleUpgradePlan = (planId: string) => {
+    setLoadingPlanId(planId);
+    const data = {
+      plan_id: planId,
+      status: "active",
+      auto_renew: true,
+      billing_provider: "stripe",
+    };
+    updateSubscription.mutate(data, {
+      onSuccess: () => {
+        fetchSubscriptionData();
+        setLoadingPlanId(null);
+        console.log("Plan upgraded successfully");
+        toast.success("Plan upgraded successfully");
+        // Refresh subscription data after successful upgrade
+      },
+      onError: (error) => {
+        console.error("Failed to upgrade plan:", error);
+        toast.error("Failed to upgrade plan. Please try again.");
+        setLoadingPlanId(null);
+      }
+    });
+  };
+
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full overflow-x-hidden">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Subscription Settings</h1>
-        <p className="text-slate-400">Manage your subscription plan, billing, and payment methods</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Subscription Settings</h1>
+        <p className="text-sm sm:text-base text-slate-400">Manage your subscription plan, billing, and payment methods</p>
       </div>
 
       {!currentSubscription ? (
@@ -55,8 +173,8 @@ export function SubscriptionSettings() {
         </div>
       ) : (
         <>
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-[--color-border]">
+      {/* Tabs - scrollable on mobile */}
+      <div className="flex gap-2 mb-6 border-b border-[--color-border] overflow-x-auto scrollbar-hide pb-px">
         {[
           { id: "current", label: "Current Plan" },
           { id: "billing", label: "Billing History" },
@@ -66,7 +184,7 @@ export function SubscriptionSettings() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-4 py-3 font-medium transition-all border-b-2 ${
+            className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm sm:text-base font-medium transition-all border-b-2 whitespace-nowrap ${
               activeTab === tab.id
                 ? "text-[#fc4f02] border-[#fc4f02]"
                 : "text-slate-400 border-transparent hover:text-slate-300"
@@ -78,7 +196,7 @@ export function SubscriptionSettings() {
       </div>
 
       {/* Tab Content */}
-      <div className="rounded-lg border border-[--color-border] bg-[--color-surface-alt]/50 p-6">
+      <div className="rounded-lg border border-[--color-border] bg-[--color-surface-alt]/50 p-4 sm:p-6 overflow-x-hidden">
         {/* Current Plan Tab */}
         {activeTab === "current" && (
           <div className="space-y-6">
@@ -95,40 +213,39 @@ export function SubscriptionSettings() {
                 </div>
               </div>
 
-              {/* Plan Details */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Billing Cycle</p>
-                  <p className="text-white font-semibold">{currentSubscription.billing_period}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Auto-Renewal</p>
-                  <p className="text-white font-semibold">
-                    {currentSubscription.auto_renew ? "Enabled ✓" : "Disabled"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Current Period Start</p>
-                  <p className="text-white font-semibold">
-                    {currentSubscription.current_period_start.toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Current Period End</p>
-                  <p className="text-white font-semibold">
-                    {currentSubscription.current_period_end.toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Next Billing Date</p>
-                  <p className="text-white font-semibold">
-                    {currentSubscription.next_billing_date.toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 mb-1">Days Until Next Billing</p>
-                  <p className="text-white font-semibold">{getDaysUntilNextBilling()} days</p>
-                </div>
+              {/* Plan Details - equal div sizes, aligned content */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
+                {[
+                  { label: "Billing Cycle", value: currentSubscription.billing_period },
+                  {
+                    label: "Auto-Renewal",
+                    value: currentSubscription.auto_renew ? "Enabled ✓" : "Disabled",
+                  },
+                  {
+                    label: "Current Period Start",
+                    value: currentSubscription.current_period_start.toLocaleDateString(),
+                  },
+                  {
+                    label: "Current Period End",
+                    value: currentSubscription.current_period_end.toLocaleDateString(),
+                  },
+                  {
+                    label: "Next Billing Date",
+                    value: currentSubscription.next_billing_date.toLocaleDateString(),
+                  },
+                  {
+                    label: "Days Until Next Billing",
+                    value: `${getDaysUntilNextBilling()} days`,
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="min-h-[56px] flex flex-col justify-center border border-[--color-border]/50 rounded-lg px-3 py-3 bg-[--color-surface]/30"
+                  >
+                    <p className="text-xs text-slate-500 mb-1">{item.label}</p>
+                    <p className="text-white font-semibold">{item.value}</p>
+                  </div>
+                ))}
               </div>
 
               {/* Trial Badge */}
@@ -141,14 +258,19 @@ export function SubscriptionSettings() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button className="px-4 py-2 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-medium">
+              <div className="flex flex-wrap gap-3">
+                {/* <button className="px-4 py-2 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-medium">
                   Upgrade Plan
                 </button>
                 <button className="px-4 py-2 border border-[--color-border] text-white rounded-lg hover:bg-[--color-surface] transition-colors text-sm font-medium">
                   Manage Auto-Renewal
-                </button>
-                <button className="px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium">
+                </button> */}
+                <button 
+                
+                onClick={()=>{
+                  toast.error("This feature is not available yet");
+                }}
+                className="px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium">
                   Cancel Subscription
                 </button>
               </div>
@@ -158,8 +280,8 @@ export function SubscriptionSettings() {
 
         {/* Billing History Tab */}
         {activeTab === "billing" && (
-          <div className="space-y-4">
-            <table className="w-full">
+          <div className="space-y-4 overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+            <table className="w-full min-w-[500px]">
               <thead>
                 <tr className="border-b border-[--color-border]">
                   <th className="text-left py-3 px-4 font-semibold text-slate-300 text-sm">Date</th>
@@ -272,70 +394,38 @@ export function SubscriptionSettings() {
               );
             })}
 
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+            {/* <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
               <p className="text-sm text-blue-300">
                 <span className="font-semibold">📊 Billing Period:</span>{" "}
                 {usageStats[Object.keys(usageStats)[0]].period_start.toLocaleDateString()} to{" "}
                 {usageStats[Object.keys(usageStats)[0]].period_end.toLocaleDateString()}
               </p>
-            </div>
+            </div> */}
           </div>
         )}
 
         {/* Change Plan Tab */}
         {activeTab === "change" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { tier: PlanTier.FREE, name: "Free", price: "$0" },
-                { tier: PlanTier.PRO, name: "PRO", price: "$19.99" },
-                { tier: PlanTier.ELITE, name: "ELITE", price: "$79.99" },
-              ].map((plan) => (
-                <div
-                  key={plan.tier}
-                  className={`rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                    currentSubscription.tier === plan.tier
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10"
-                      : "border-[--color-border] hover:border-[#fc4f02]/50"
-                  }`}
-                >
-                  <h3 className="text-lg font-semibold text-white mb-2">{plan.name}</h3>
-                  <p className="text-2xl font-bold text-white mb-4">
-                    {plan.price}
-                    <span className="text-sm text-slate-400 font-normal">/month</span>
-                  </p>
+          <div className="space-y-6">
+            {/* PRO Plan Group - 3 plans */}
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-3">PRO Plan</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+                {getPlansGroupedByTier()[PlanTier.PRO].map((plan) => renderPlanCard(plan))}
+              </div>
+            </div>
 
-                  {currentSubscription.tier === plan.tier ? (
-                    <button
-                      disabled
-                      className="w-full px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold cursor-not-allowed"
-                    >
-                      Current Plan
-                    </button>
-                  ) : (
-                    <button className="w-full px-4 py-2 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-semibold">
-                      {currentSubscription.tier === PlanTier.FREE ||
-                      (currentSubscription.tier === PlanTier.PRO &&
-                        plan.tier === PlanTier.ELITE)
-                        ? "Upgrade"
-                        : "Downgrade"}
-                    </button>
-                  )}
-
-                  {currentSubscription.tier !== plan.tier && (
-                    <p className="text-xs text-slate-400 mt-3 text-center">
-                      {currentSubscription.tier === PlanTier.FREE
-                        ? "Add features & increase limits"
-                        : "Reduce features & limits"}
-                    </p>
-                  )}
-                </div>
-              ))}
+            {/* ELITE Plan Group - 3 plans */}
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-3">ELITE Plan</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+                {getPlansGroupedByTier()[PlanTier.ELITE].map((plan) => renderPlanCard(plan))}
+              </div>
             </div>
 
             {currentSubscription.tier !== PlanTier.FREE &&
               currentSubscription.tier !== PlanTier.ELITE && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mt-6">
+                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                   <p className="text-sm text-blue-300">
                     <span className="font-semibold">💡 Tip:</span> If you upgrade mid-cycle, we'll
                     prorate your payment based on your remaining days.

@@ -10,6 +10,7 @@
     "postinstall": "npm rebuild lightningcss --update-binary || true"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.5",
     "framer-motion": "^12.23.24",
     "i18n-iso-countries": "^7.14.0",
@@ -19,6 +20,7 @@
     "next": "^16.0.7",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-toastify": "^11.0.5",
     "socket.io-client": "^4.8.3",
     "zod": "^3.23.8",
     "zustand": "^4.5.5"

@@ -54,7 +54,7 @@ export function VCPoolSection() {
           <div className="grid grid-cols-3 gap-4">
             <div className="border border-[--color-border] rounded-lg p-4">
               <p className="text-xs text-slate-500 mb-1">Total Invested</p>
-              <p className="text-2xl font-bold text-[#fc4f02]">$45,000</p>
+              <p className="text-2xl font-bold text-[#fc4f02]">$45</p>
             </div>
             <div className="border border-[--color-border] rounded-lg p-4">
               <p className="text-xs text-slate-500 mb-1">Active Pools</p>
