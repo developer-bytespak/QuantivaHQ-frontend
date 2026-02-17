@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { exchangesService, Connection } from "@/lib/api/exchanges.service";
 
 interface ExchangeContextType {
@@ -8,7 +8,6 @@ interface ExchangeContextType {
   connectionId: string | null;
   activeConnection: Connection | null;
   isLoading: boolean;
-  error: string | null;
   refetch: () => Promise<void>;
 }
 
@@ -19,15 +18,9 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
   const [connectionId, setConnectionId] = useState<string | null>(null);
   const [activeConnection, setActiveConnection] = useState<Connection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isFetched, setIsFetched] = useState(false);
 
-  const fetchConnectionInfo = async () => {
-    // Prevent multiple fetches
-    if (isFetched) return;
-    
+  const fetchConnectionInfo = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
     try {
       console.log("🔄 Fetching active connection...");
       const response = await exchangesService.getActiveConnection();
@@ -37,7 +30,6 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
       setActiveConnection(connection);
       setConnectionType(connection.exchange?.type || "crypto");
       console.log(`✅ Connection loaded: ${connection.exchange?.type || "crypto"}`);
-      setIsFetched(true);
     } catch (err: any) {
       // Silently handle 401 (not logged in) and 404 (no connection) - both are expected
       if (
@@ -48,13 +40,14 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
       ) {
         console.error("❌ Failed to fetch active connection:", err);
       }
-      // Default to crypto on error
+      // When no connection: explicitly set connectionId to null, default to crypto
+      setConnectionId(null);
+      setActiveConnection(null);
       setConnectionType("crypto");
-      setIsFetched(true);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // Fetch connection info once on mount
   useEffect(() => {
@@ -66,7 +59,6 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
     connectionId,
     activeConnection,
     isLoading,
-    error,
     refetch: fetchConnectionInfo,
   };
 

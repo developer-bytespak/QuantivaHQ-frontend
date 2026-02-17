@@ -39,9 +39,11 @@ interface SubscriptionState {
   // Data
   currentSubscription: CurrentSubscription | null;
   allPlans: SubscriptionPlan[];
+  allSubscriptions: any[]; // Direct frontend API response
   usageStats: UsageData;
   paymentHistory: PaymentRecord[];
   selectedBillingPeriod: BillingPeriod;
+  selectedPlanId: string | null; // Track which plan user is viewing
 
   // UI States
   isLoading: boolean;
@@ -55,9 +57,11 @@ interface SubscriptionState {
   // Actions
   setCurrentSubscription: (sub: CurrentSubscription | null) => void;
   setAllPlans: (plans: SubscriptionPlan[]) => void;
+  setAllSubscriptions: (subs: any[]) => void;
   setUsageStats: (stats: UsageData) => void;
   setPaymentHistory: (history: PaymentRecord[]) => void;
   setSelectedBillingPeriod: (period: BillingPeriod) => void;
+  setSelectedPlanId: (planId: string | null) => void;
   setShowUpgradeModal: (show: boolean) => void;
   setShowCancelModal: (show: boolean) => void;
   setShowPaymentModal: (show: boolean) => void;
@@ -86,6 +90,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   usageStats: USER_USAGE_STATS,
   paymentHistory: PAYMENT_HISTORY,
   selectedBillingPeriod: BillingPeriod.MONTHLY,
+  selectedPlanId: null,
 
   // UI States
   isLoading: false,
@@ -99,11 +104,15 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   setAllPlans: (plans) => set({ allPlans: plans }),
 
+  setAllSubscriptions: (subs) => set({ allSubscriptions: subs }),
+
   setUsageStats: (stats) => set({ usageStats: stats }),
 
   setPaymentHistory: (history) => set({ paymentHistory: history }),
 
   setSelectedBillingPeriod: (period) => set({ selectedBillingPeriod: period }),
+
+  setSelectedPlanId: (planId) => set({ selectedPlanId: planId }),
 
   setShowUpgradeModal: (show) => set({ showUpgradeModal: show }),
 
@@ -123,7 +132,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     const plan = allPlans.find((p) => p.plan_id === currentSubscription.plan_id);
     if (!plan) return false;
     
-    const planFeature = plan.plan_features.find((f) => f.feature_type === feature);
+    const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
     return planFeature?.enabled ?? false;
   },
 
@@ -134,7 +143,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     const plan = allPlans.find((p) => p.plan_id === currentSubscription.plan_id);
     if (!plan) return { enabled: false, limit: null };
     
-    const planFeature = plan.plan_features.find((f) => f.feature_type === feature);
+    const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
     return {
       enabled: planFeature?.enabled ?? false,
       limit: planFeature?.limit_value ?? null,
@@ -249,6 +258,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   fetchSubscriptionData: async () => {
     set({ isLoading: true, error: null });
     try {
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const response = await fetch(
         `${API_BASE_URL}/subscriptions/dashboard`
       );

@@ -20,19 +20,6 @@ export function AuthGuard({ children, redirectTo = "/onboarding/sign-up?tab=logi
 
     const checkAuth = async () => {
       try {
-        // First check if access token exists in localStorage
-        const token = typeof window !== "undefined" ? localStorage.getItem("quantivahq_access_token") : null;
-        
-        if (!token) {
-          // No token = not authenticated
-          if (isMounted) {
-            setIsAuthenticated(false);
-            setIsChecking(false);
-            router.push(redirectTo);
-          }
-          return;
-        }
-        
         // Check if user has active session by calling /auth/me
         await authService.getCurrentUser();
         

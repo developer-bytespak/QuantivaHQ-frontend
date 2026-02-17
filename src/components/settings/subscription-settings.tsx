@@ -15,6 +15,7 @@ export function SubscriptionSettings() {
     currentSubscription,
     paymentHistory,
     usageStats,
+    allSubscriptions,
     getDaysUntilNextBilling,
     isTrialActive,
     getFeatureLimitInfo,
@@ -431,7 +432,15 @@ export function SubscriptionSettings() {
                     prorate your payment based on your remaining days.
                   </p>
                 </div>
-              )}
+              </div>
+            ))}
+
+            {/* Info Box */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <p className="text-sm text-blue-300">
+                <span className="font-semibold">💡 Tip:</span> Yearly plans offer the best savings with up to 20% discount. Subscribe today and start trading smarter!
+              </p>
+            </div>
           </div>
         )}
       </div>

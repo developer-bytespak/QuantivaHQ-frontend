@@ -22,15 +22,6 @@ export default function SignUpPage() {
     
     const checkAuth = async () => {
       try {
-        // First check if access token exists - if not, user is clearly not authenticated
-        const token = typeof window !== "undefined" ? localStorage.getItem("quantivahq_access_token") : null;
-        if (!token) {
-          if (isMounted) {
-            setIsCheckingAuth(false);
-          }
-          return;
-        }
-        
         // Try to get current user - if successful, user is authenticated (validates session via cookies)
         await getCurrentUser();
         
@@ -191,8 +182,9 @@ export default function SignUpPage() {
               await navigateToNextRoute(router);
             } catch (navError: any) {
               console.error("[Signup] Navigation error:", navError);
-              // If navigation fails, default to proof upload
-              router.push("/onboarding/proof-upload");
+              // If navigation fails, show error - don't assume they need proof upload
+              setError("Registration successful but couldn't determine next step. This may be a temporary issue. Please refresh the page.");
+              setIsLoading(false);
             }
           }
         } catch (loginError: any) {
@@ -288,8 +280,9 @@ export default function SignUpPage() {
               setError("Login succeeded but session couldn't be established. This may be a cookie/CORS issue. Please try again or contact support.");
               setIsLoading(false);
             } else {
-              // For other errors, default to proof upload
-              router.push("/onboarding/proof-upload");
+              // For other errors, show error and let user try again
+              setError("Login successful but couldn't determine next step. Please refresh the page or try again.");
+              setIsLoading(false);
             }
           }
         }
