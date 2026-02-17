@@ -509,6 +509,18 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       },
     },
     {
+      id: "bank-details",
+      label: "Bank Details",
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      ),
+      onClick: () => {
+        router.push("/dashboard/settings/bank-details");
+      },
+    },
+    {
       id: "notifications",
       label: "Notifications",
       icon: (
@@ -521,15 +533,15 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       },
     },
     {
-      id: "password",
-      label: "Account Password",
+      id: "security",
+      label: "Security",
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       ),
       onClick: () => {
-        router.push("/dashboard/settings/password");
+        router.push("/dashboard/settings/security");
       },
     },
     {
@@ -566,28 +578,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        // Detect connection type from localStorage or fetch it
-        const getConnectionType = async () => {
-          try {
-            const { exchangesService } = await import("@/lib/api/exchanges.service");
-            const connections = await exchangesService.getConnections();
-            let connectionsArray: any[] = [];
-            
-            if (Array.isArray(connections)) {
-              connectionsArray = connections;
-            } else if (connections && typeof connections === 'object' && 'data' in connections) {
-              connectionsArray = (connections as any).data || [];
-            }
-            
-            const activeConn = connectionsArray.find((c: any) => c.status === 'active');
-            const type = activeConn?.exchange?.type || 'crypto';
-            router.push(`/dashboard/settings/exchange-configuration?type=${type}`);
-          } catch (error) {
-            // Fallback to crypto if we can't detect
-            router.push("/dashboard/settings/exchange-configuration?type=crypto");
-          }
-        };
-        getConnectionType();
+        router.push("/dashboard/settings/exchange-configuration");
       },
     },
     {
@@ -1067,6 +1058,27 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   </svg>
                   <span className="text-xs sm:text-sm font-medium text-white">Capture Photo</span>
                 </button>
+                {profileImage && (
+                  <button
+                    onClick={handleRemoveImage}
+                    className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-red-500/20 transition-colors text-red-400 border-t border-slate-700"
+                  >
+                    <svg
+                      className="w-4 sm:w-5 h-4 sm:h-5 text-red-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    <span className="text-xs sm:text-sm font-medium text-red-400">Remove Photo</span>
+                  </button>
+                )}
               </div>
             )}
 

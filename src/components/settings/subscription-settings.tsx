@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { useSubscription } from "@/hooks/useSubscription";
 
 export function SubscriptionSettings() {
   const [activeTab, setActiveTab] = useState<"current" | "billing" | "usage" | "change">("current");
@@ -10,10 +11,26 @@ export function SubscriptionSettings() {
     currentSubscription,
     paymentHistory,
     usageStats,
+    allSubscriptions,
     getDaysUntilNextBilling,
     isTrialActive,
     getFeatureLimitInfo,
+    fetchSubscriptionData,
+    setSelectedPlanId,
   } = useSubscriptionStore();
+
+  const {updateSubscription} = useSubscription();
+
+  useEffect(() => {
+    fetchSubscriptionData();
+  }, []);
+
+  useEffect(() => {
+    // Cleanup: clear selectedPlanId when component unmounts
+    return () => {
+      setSelectedPlanId(null);
+    };
+  }, [setSelectedPlanId]);
 
   const getTierColor = (tier: PlanTier) => {
     switch (tier) {
@@ -40,6 +57,27 @@ export function SubscriptionSettings() {
         return "bg-slate-500/10";
     }
   };
+
+  const handleUpgradePlan = (planId: string) => {
+    // Implement plan upgrade logic here, e.g. call API to update subscription
+    console.log("Upgrading to plan ID:", planId);
+    const data = {
+      plan_id:planId,
+      billing_provider :"stripe",
+      auto_renew: true,
+    }
+    updateSubscription.mutate(data,{
+      onSuccess: (response) => {
+        console.log("Subscription updated successfully:", response);
+        fetchSubscriptionData(); // Refresh subscription data after successful update
+      },
+      onError: (error) => {
+        console.error("Error updating subscription:", error);
+        // toast.error("Failed to update subscription. Please try again.");
+        // Optionally show an error message to the user
+      },
+    });
+  }
 
   return (
     <div className="w-full h-full">
@@ -284,64 +322,128 @@ export function SubscriptionSettings() {
 
         {/* Change Plan Tab */}
         {activeTab === "change" && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                { tier: PlanTier.FREE, name: "Free", price: "$0" },
-                { tier: PlanTier.PRO, name: "PRO", price: "$19.99" },
-                { tier: PlanTier.ELITE, name: "ELITE", price: "$79.99" },
-              ].map((plan) => (
-                <div
-                  key={plan.tier}
-                  className={`rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                    currentSubscription.tier === plan.tier
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10"
-                      : "border-[--color-border] hover:border-[#fc4f02]/50"
-                  }`}
-                >
-                  <h3 className="text-lg font-semibold text-white mb-2">{plan.name}</h3>
-                  <p className="text-2xl font-bold text-white mb-4">
-                    {plan.price}
-                    <span className="text-sm text-slate-400 font-normal">/month</span>
+          <div className="space-y-8">
+            {/* Group plans by tier */}
+            {["PRO", "ELITE"].map((tierName) => (
+              <div key={tierName}>
+                <div className="mb-4">
+                  <h3 className={`text-2xl font-bold mb-2 ${tierName === "ELITE" ? "text-blue-400" : "text-[#fc4f02]"}`}>
+                    {tierName} Plan
+                  </h3>
+                  <p className="text-slate-400 text-sm">
+                    {tierName === "PRO"
+                      ? "Perfect for active traders with custom strategies"
+                      : "Unlimited access with early features and VC pool"}
                   </p>
-
-                  {currentSubscription.tier === plan.tier ? (
-                    <button
-                      disabled
-                      className="w-full px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold cursor-not-allowed"
-                    >
-                      Current Plan
-                    </button>
-                  ) : (
-                    <button className="w-full px-4 py-2 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-semibold">
-                      {currentSubscription.tier === PlanTier.FREE ||
-                      (currentSubscription.tier === PlanTier.PRO &&
-                        plan.tier === PlanTier.ELITE)
-                        ? "Upgrade"
-                        : "Downgrade"}
-                    </button>
-                  )}
-
-                  {currentSubscription.tier !== plan.tier && (
-                    <p className="text-xs text-slate-400 mt-3 text-center">
-                      {currentSubscription.tier === PlanTier.FREE
-                        ? "Add features & increase limits"
-                        : "Reduce features & limits"}
-                    </p>
-                  )}
                 </div>
-              ))}
+
+                {/* Billing Period Options */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {["MONTHLY", "QUARTERLY", "YEARLY"].map((billingPeriod) => {
+                    const plan = allSubscriptions?.find(
+                      (p: any) => p.tier === tierName && p.billing_period === billingPeriod
+                    );
+
+                    if (!plan) return null;
+
+                    const basePrice = parseFloat(plan.base_price);
+                    const currentPrice = parseFloat(plan.price);
+                    const discount = parseInt(plan.discount_percent);
+                    const isCurrentPlan =
+                      currentSubscription?.tier === tierName &&
+                      currentSubscription?.billing_period === billingPeriod;
+
+                    return (
+                      <div
+                        key={`${tierName}-${billingPeriod}`}
+                        onClick={() => setSelectedPlanId(plan.plan_id)}
+                        className={`rounded-lg border-2 p-6 cursor-pointer transition-all relative ${
+                          isCurrentPlan
+                            ? tierName === "ELITE"
+                              ? "border-blue-500/50 bg-blue-500/10"
+                              : "border-[#fc4f02]/50 bg-[#fc4f02]/10"
+                            : "border-[--color-border] hover:border-[--color-border]/50"
+                        }`}
+                      >
+                        {/* Discount Badge */}
+                        {discount > 0 && (
+                          <div className={`absolute -top-3 right-4 px-3 py-1 rounded-full text-xs font-bold text-white ${tierName === "ELITE" ? "bg-blue-500" : "bg-[#fc4f02]"}`}>
+                            Save {discount}%
+                          </div>
+                        )}
+
+                        {/* Plan Title */}
+                        <h4 className="text-lg font-semibold text-white mb-2">
+                          {billingPeriod === "MONTHLY" && "Monthly"}
+                          {billingPeriod === "QUARTERLY" && "Quarterly"}
+                          {billingPeriod === "YEARLY" && "Yearly"}
+                        </h4>
+
+                        {/* Pricing */}
+                        <div className="mb-4">
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-3xl font-bold text-white">
+                              ${currentPrice}
+                            </p>
+                            {discount > 0 && (
+                              <p className="text-sm text-slate-400 line-through">
+                                ${basePrice}
+                              </p>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {billingPeriod === "MONTHLY" && "per month"}
+                            {billingPeriod === "QUARTERLY" && "per 3 months"}
+                            {billingPeriod === "YEARLY" && "per year"}
+                          </p>
+                        </div>
+
+                        {/* Features List */}
+                        <div className="mb-6 space-y-2">
+                          {plan.plan_features?.map((feature: any) => (
+                            <div key={feature.feature_id} className="flex items-center gap-2 text-sm text-slate-300">
+                              <span className="text-green-400">✓</span>
+                              <span>
+                                {feature.feature_type === "CUSTOM_STRATEGIES"
+                                  ? `Custom Strategies ${feature.limit_value ? `(Limit: ${feature.limit_value})` : "(Unlimited)"}`
+                                  : feature.feature_type === "EARLY_ACCESS"
+                                  ? "Early Access to Features"
+                                  : "VC Pool Access"}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Action Button */}
+                        {isCurrentPlan ? (
+                          <button
+                            disabled
+                            className="w-full px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold cursor-not-allowed"
+                          >
+                            ✓ Current Plan
+                          </button>
+                        ) : (
+                          <button className={`w-full px-4 py-2 rounded-lg text-white font-semibold transition-colors text-sm ${tierName === "ELITE" ? "bg-blue-600 hover:bg-blue-700" : "bg-[#fc4f02] hover:bg-[#e04502]"}`}
+                          onClick={()=>{
+                            handleUpgradePlan(plan?.plan_id)
+                          }}
+                          >
+                            Select Plan
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Info Box */}
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <p className="text-sm text-blue-300">
+                <span className="font-semibold">💡 Tip:</span> Yearly plans offer the best savings with up to 20% discount. Subscribe today and start trading smarter!
+              </p>
             </div>
-
-            {currentSubscription.tier !== PlanTier.FREE &&
-              currentSubscription.tier !== PlanTier.ELITE && (
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mt-6">
-                  <p className="text-sm text-blue-300">
-                    <span className="font-semibold">💡 Tip:</span> If you upgrade mid-cycle, we'll
-                    prorate your payment based on your remaining days.
-                  </p>
-                </div>
-              )}
           </div>
         )}
       </div>

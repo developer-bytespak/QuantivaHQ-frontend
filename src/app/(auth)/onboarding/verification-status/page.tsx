@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect, useRef } from "react";
-import { getKycStatus, submitVerification } from "@/lib/api/kyc";
+import { getKycStatus } from "@/lib/api/kyc";
 import type { KycStatus } from "@/lib/api/types/kyc";
 
 type VerificationStatus = KycStatus;
@@ -19,9 +19,11 @@ export default function VerificationStatusPage() {
     liveness_confidence?: number;
     face_match_score?: number;
     doc_authenticity_score?: number;
+    review_reject_type?: string | null;
+    rejection_reasons?: string[];
   } | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const maxPollingAttempts = 60; // Poll for up to 5 minutes (60 * 5 seconds)
+  const maxPollingAttempts = 30; // Poll for up to 5 minutes (30 * 10 seconds)
   const pollingAttemptsRef = useRef(0);
 
   const checkStatus = async () => {
@@ -36,6 +38,8 @@ export default function VerificationStatusPage() {
         liveness_confidence: response.liveness_confidence,
         face_match_score: response.face_match_score,
         doc_authenticity_score: response.doc_authenticity_score,
+        review_reject_type: response.review_reject_type,
+        rejection_reasons: response.rejection_reasons,
       });
 
       // Stop polling if status is not pending
@@ -70,8 +74,11 @@ export default function VerificationStatusPage() {
     // Check if verification data exists
     const selfieData = localStorage.getItem("quantivahq_selfie");
     const proofData = localStorage.getItem("quantivahq_proof_upload");
+    const proofFrontData = localStorage.getItem("quantivahq_proof_upload_front");
+    const proofBackData = localStorage.getItem("quantivahq_proof_upload_back");
     
-    if (!selfieData || !proofData) {
+    // Check if proof upload data exists (either combined or separate front/back)
+    if (!selfieData || (!proofData && !proofFrontData)) {
       // If data is missing, redirect back to proof upload
       router.push("/onboarding/proof-upload");
       return;
@@ -107,7 +114,7 @@ export default function VerificationStatusPage() {
             pollingIntervalRef.current = null;
           }
         }
-      }, 5000); // Poll every 5 seconds
+      }, 10000); // Poll every 10 seconds (backend caches Sumsub responses for 30s)
     };
 
     // Start polling if status is pending
@@ -139,18 +146,7 @@ export default function VerificationStatusPage() {
     router.push("/onboarding/proof-upload");
   };
 
-  const handleSubmitVerification = async () => {
-    try {
-      setIsLoading(true);
-      await submitVerification();
-      // Refresh status after submission
-      await checkStatus();
-    } catch (err) {
-      console.error("Failed to submit verification:", err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isRetryRejection = status === "rejected" && kycData?.review_reject_type === "RETRY";
 
   const getStatusConfig = () => {
     switch (status) {
@@ -168,28 +164,44 @@ export default function VerificationStatusPage() {
           description: "You can now proceed to set up your trading account.",
           progress: 100,
         };
-      case "rejected":
-        // Show user-friendly message instead of technical similarity details
+      case "rejected": {
         const getUserFriendlyMessage = () => {
+          if (kycData?.rejection_reasons && kycData.rejection_reasons.length > 0) {
+            return kycData.rejection_reasons.length === 1
+              ? kycData.rejection_reasons[0]
+              : kycData.rejection_reasons.join(" ");
+          }
+          if (isRetryRejection) {
+            return "There was an issue with your documents or selfie. Please re-upload clearer photos and try again.";
+          }
           const reason = kycData?.decision_reason?.toLowerCase() || "";
           if (reason.includes("face match") || reason.includes("similarity")) {
             return "Please upload a clear, well-lit document and take a proper selfie with your face clearly visible.";
           }
-          return kycData?.decision_reason || "Please review the requirements and try again with clearer documents.";
+          return kycData?.decision_reason || "Your verification could not be completed. Please contact support for assistance.";
         };
         return {
-          badge: "Rejected",
-          badgeColor: "bg-gradient-to-r from-red-500 to-red-600",
+          badge: isRetryRejection ? "Resubmission Required" : "Rejected",
+          badgeColor: isRetryRejection
+            ? "bg-gradient-to-r from-yellow-500 to-yellow-600"
+            : "bg-gradient-to-r from-red-500 to-red-600",
           badgeText: "text-white",
-          icon: (
+          icon: isRetryRejection ? (
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          ) : (
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           ),
-          message: "Verification was not successful",
+          message: isRetryRejection
+            ? "Please resubmit your documents"
+            : "Verification was not successful",
           description: getUserFriendlyMessage(),
           progress: 0,
         };
+      }
       case "review":
         return {
           badge: "Under Review",
@@ -301,6 +313,13 @@ export default function VerificationStatusPage() {
                   <p className="text-[10px] sm:text-xs text-slate-400">
                     {statusConfig.description}
                   </p>
+                  {status === "rejected" && kycData?.rejection_reasons && kycData.rejection_reasons.length > 1 && (
+                    <ul className="mt-2 text-left text-[10px] sm:text-xs text-slate-400 list-disc list-inside space-y-1 max-w-md mx-auto">
+                      {kycData.rejection_reasons.map((reason, i) => (
+                        <li key={i}>{reason}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
 
                 {/* Progress Bar */}
@@ -474,24 +493,26 @@ export default function VerificationStatusPage() {
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  {status === "rejected" && (
+                  {status === "rejected" && isRetryRejection && (
                     <button
                       onClick={handleRetry}
-                      className="flex-1 rounded-lg sm:rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
-                    >
-                      Retry Upload
-                    </button>
-                  )}
-                  {status === "pending" && (
-                    <button
-                      onClick={handleSubmitVerification}
-                      disabled={isLoading}
-                      className="group relative overflow-hidden flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="group relative overflow-hidden flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
                     >
                       <span className="relative z-10 flex items-center justify-center gap-2">
-                        {isLoading ? "Submitting..." : "Submit Verification"}
+                        <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Retry Verification
                       </span>
+                      <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                     </button>
+                  )}
+                  {status === "rejected" && !isRetryRejection && (
+                    <div className="flex-1 text-center">
+                      <p className="text-xs sm:text-sm text-slate-400">
+                        Please contact support for further assistance.
+                      </p>
+                    </div>
                   )}
                   {status === "approved" && (
                     <button

@@ -17,13 +17,6 @@ interface ExchangeConnection {
   updated_at: string;
   account_type?: string;
   verified: boolean;
-  exchange?: {
-    exchange_id: string;
-    name: string;
-    type: "crypto" | "stocks";
-    supports_oauth: boolean;
-    created_at: string;
-  };
 }
 
 const getExchangeIcon = (exchangeName: string) => {
@@ -47,8 +40,7 @@ export default function ExchangeConfigurationPage() {
   const [mounted, setMounted] = useState(false);
   const [exchangeType, setExchangeType] = useState<"crypto" | "stocks">("crypto");
   const [cryptoToggle, setCryptoToggle] = useState<"binance" | "bybit">("binance");
-  const [hasActiveConnection, setHasActiveConnection] = useState(false);
-  const [activeExchange, setActiveExchange] = useState<string | null>(null);
+  const [stocksToggle, setStocksToggle] = useState<"alpaca" | "ibkr">("alpaca");
 
   // Form states
   const [formData, setFormData] = useState({
@@ -68,54 +60,14 @@ export default function ExchangeConfigurationPage() {
   useEffect(() => {
     setMounted(true);
     loadConnections();
-  }, []);
-
-  useEffect(() => {
-    // First priority: Check URL params for explicit type
+    
+    // Detect exchange type from existing connections or URL params
     const params = new URLSearchParams(window.location.search);
     const typeParam = params.get('type');
-    
     if (typeParam === 'stocks' || typeParam === 'crypto') {
       setExchangeType(typeParam);
-      
-      // Find matching connection if exists
-      if (connections.length > 0) {
-        const matchingConn = connections.find(c => 
-          c.status === 'active' && 
-          c.exchange?.type === typeParam &&
-          c.exchange_name
-        );
-        
-        if (matchingConn) {
-          const exchangeName = matchingConn.exchange_name.toLowerCase();
-          setHasActiveConnection(true);
-          setActiveExchange(exchangeName);
-          
-          if (typeParam === 'crypto' && (exchangeName === 'binance' || exchangeName === 'bybit')) {
-            setCryptoToggle(exchangeName as 'binance' | 'bybit');
-          }
-        } else {
-          setHasActiveConnection(false);
-          setActiveExchange(null);
-        }
-      }
-    } else if (connections.length > 0) {
-      // Fallback: Detect from connections if no URL param
-      const activeConn = connections.find(c => c.status === 'active');
-      if (activeConn && activeConn.exchange_name) {
-        const connType = activeConn.exchange?.type || 'crypto';
-        const exchangeName = activeConn.exchange_name.toLowerCase();
-        
-        setExchangeType(connType);
-        setHasActiveConnection(true);
-        setActiveExchange(exchangeName);
-        
-        if (connType === 'crypto' && (exchangeName === 'binance' || exchangeName === 'bybit')) {
-          setCryptoToggle(exchangeName as 'binance' | 'bybit');
-        }
-      }
     }
-  }, [connections]);
+  }, []);
 
   const loadConnections = async () => {
     try {
@@ -251,40 +203,11 @@ export default function ExchangeConfigurationPage() {
       localStorage.setItem("quantivahq_selected_exchange", newExchange);
       router.push("/onboarding/crypto-exchange");
     } else {
-      // For stocks, always go to Alpaca
-      localStorage.setItem("quantivahq_selected_stocks_exchange", "alpaca");
+      const newExchange = stocksToggle === "alpaca" ? "ibkr" : "alpaca";
+      setStocksToggle(newExchange);
+      localStorage.setItem("quantivahq_selected_stocks_exchange", newExchange);
       router.push("/onboarding/stock-exchange");
     }
-  };
-
-  const handleSwitchPlatform = () => {
-    if (exchangeType === "crypto") {
-      const newExchange = activeExchange === "binance" ? "bybit" : "binance";
-      localStorage.setItem("quantivahq_selected_exchange", newExchange);
-      router.push("/onboarding/crypto-exchange");
-    } else {
-      // For stocks, always go to Alpaca (only platform)
-      localStorage.setItem("quantivahq_selected_stocks_exchange", "alpaca");
-      router.push("/onboarding/stock-exchange");
-    }
-  };
-
-  const getActiveCryptoConnection = () => {
-    return connections.find(c => 
-      c.status === 'active' && 
-      c.exchange?.type === 'crypto'
-    );
-  };
-
-  const getActiveStocksConnection = () => {
-    return connections.find(c => 
-      c.status === 'active' && 
-      c.exchange?.type === 'stocks'
-    );
-  };
-
-  const getFilteredConnections = () => {
-    return connections.filter(c => c.exchange?.type === exchangeType);
   };
 
   return (
@@ -367,6 +290,27 @@ export default function ExchangeConfigurationPage() {
                   <p className="text-base sm:text-lg font-semibold text-white font-mono text-xs truncate">{selectedConnection.connection_id.substring(0, 12)}...</p>
                 </div>
               </div>
+
+              {/* Actions */}
+              <div className="pt-4 sm:pt-6 border-t border-[--color-border]/50 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  onClick={() => {
+                    handleSelectConnection(selectedConnection);
+                  }}
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
+                >
+                  Update Credentials
+                </button>
+                <button
+                  onClick={() => {
+                    setShowUpdateForm(false);
+                    handleDeleteConnection(selectedConnection.connection_id);
+                  }}
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm sm:text-base hover:bg-red-500/30 transition-all duration-200 font-medium"
+                >
+                  Delete Connection
+                </button>
+              </div>
             </div>
           </div>
         </div>,
@@ -387,159 +331,139 @@ export default function ExchangeConfigurationPage() {
 
         {/* Exchange Switch Section */}
         <div className="bg-gradient-to-br from-[#fc4f02]/10 to-[#fc4f02]/5 border border-[#fc4f02]/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
-          {/* Exchange Type Header - Show current type */}
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#fc4f02]/20 border border-[#fc4f02]/30">
-              <svg className="w-4 h-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-              <span className="text-sm font-semibold text-[#fc4f02]">
-                {exchangeType === 'crypto' ? 'Crypto Exchanges' : 'Stock Brokers'}
-              </span>
-            </div>
+          {/* Exchange Type Tabs */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setExchangeType("crypto")}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                exchangeType === "crypto"
+                  ? "bg-[#fc4f02] text-white"
+                  : "bg-slate-800/50 text-slate-400 hover:bg-slate-800"
+              }`}
+            >
+              Crypto Exchanges
+            </button>
+            <button
+              onClick={() => setExchangeType("stocks")}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                exchangeType === "stocks"
+                  ? "bg-[#fc4f02] text-white"
+                  : "bg-slate-800/50 text-slate-400 hover:bg-slate-800"
+              }`}
+            >
+              Stock Brokers
+            </button>
           </div>
 
           <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 flex items-center gap-2">
             <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
-            {hasActiveConnection ? 'Connected Exchange' : 'Connect Exchange'}
+            Switch Exchange
           </h2>
           <p className="text-sm text-slate-400 mb-6">
-            {hasActiveConnection
-              ? exchangeType === "crypto"
-                ? `You're connected to ${activeExchange?.charAt(0).toUpperCase()}${activeExchange?.slice(1)}. Update credentials or switch to ${activeExchange === 'binance' ? 'Bybit' : 'Binance'}.`
-                : "You're connected to Alpaca for stock trading."
-              : exchangeType === "crypto" 
-                ? "Toggle between Binance and Bybit to connect your preferred exchange"
-                : "Connect your Alpaca account for stock trading"}
+            {exchangeType === "crypto" 
+              ? "Toggle between Binance and Bybit to connect your preferred exchange"
+              : "Toggle between Alpaca and Interactive Brokers to connect your preferred broker"}
           </p>
           
-          {hasActiveConnection ? (
-            <div className="space-y-4">
-              {/* Current Connection Display */}
-              <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5">
-                <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                    exchangeType === "crypto"
-                      ? activeExchange === "binance"
-                        ? "bg-[#f7931a] text-white"
-                        : "bg-[#f0b90b] text-white"
-                      : "bg-[#fcda03] text-slate-900"
-                  }`}>
-                    <span className="text-xl font-bold">
-                      {exchangeType === "crypto"
-                        ? activeExchange === "binance" ? "B" : "₿"
-                        : "A"}
-                    </span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-white font-bold text-lg capitalize">{activeExchange}</p>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-900/30 border border-green-500/30 text-green-400">
-                        Active
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-400 capitalize">{exchangeType} Exchange</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={() => {
-                    const conn = exchangeType === 'crypto' ? getActiveCryptoConnection() : getActiveStocksConnection();
-                    if (conn) handleSelectConnection(conn);
-                  }}
-                  className="flex-1 px-4 py-3 rounded-lg bg-[--color-surface] border border-[--color-border] text-white font-medium hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 flex items-center justify-center gap-2"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Reconnect / Update Credentials
-                </button>
-                {exchangeType === "crypto" && (
-                  <button
-                    onClick={handleSwitchPlatform}
-                    className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                    </svg>
-                    Switch to {activeExchange === "binance" ? "Bybit" : "Binance"}
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                {exchangeType === "crypto" ? (
-                  <>
-                    <div className="flex items-center gap-3">
-                      {/* Binance Icon */}
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
-                        cryptoToggle === "binance" 
-                          ? "bg-[#f7931a] text-white" 
-                          : "bg-[#f7931a]/20 text-[#f7931a]"
-                      }`}>
-                        <span className="text-lg font-bold">B</span>
-                      </div>
-                      <span className="text-sm sm:text-base font-medium text-white">Binance</span>
-                    </div>
-
-                    {/* Toggle Switch */}
-                    <button
-                      onClick={() => setCryptoToggle(cryptoToggle === "binance" ? "bybit" : "binance")}
-                      className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 flex-shrink-0 ${
-                        cryptoToggle === "bybit"
-                          ? "bg-gradient-to-r from-[#f0b90b] to-[#ffc53d]"
-                          : "bg-slate-700"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
-                          cryptoToggle === "bybit" ? "translate-x-7 sm:translate-x-9" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
-
-                    {/* Bybit Icon */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm sm:text-base font-medium text-white">Bybit</span>
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
-                        cryptoToggle === "bybit" 
-                          ? "bg-[#f0b90b] text-white" 
-                          : "bg-[#f0b90b]/20 text-[#f0b90b]"
-                      }`}>
-                        <span className="text-lg font-bold">₿</span>
-                      </div>
-                    </div>
-                  </>
-                ) : (
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              {exchangeType === "crypto" ? (
+                <>
                   <div className="flex items-center gap-3">
-                    {/* Alpaca Icon - Only option for stocks */}
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#fcda03] text-slate-900 flex-shrink-0">
+                    {/* Binance Icon */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      cryptoToggle === "binance" 
+                        ? "bg-[#f7931a] text-white" 
+                        : "bg-[#f7931a]/20 text-[#f7931a]"
+                    }`}>
+                      <span className="text-lg font-bold">B</span>
+                    </div>
+                    <span className="text-sm sm:text-base font-medium text-white">Binance</span>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <button
+                    onClick={handleExchangeSwitch}
+                    className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 flex-shrink-0 ${
+                      cryptoToggle === "bybit"
+                        ? "bg-gradient-to-r from-[#f0b90b] to-[#ffc53d]"
+                        : "bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        cryptoToggle === "bybit" ? "translate-x-7 sm:translate-x-9" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+
+                  {/* Bybit Icon */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm sm:text-base font-medium text-white">Bybit</span>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      cryptoToggle === "bybit" 
+                        ? "bg-[#f0b90b] text-white" 
+                        : "bg-[#f0b90b]/20 text-[#f0b90b]"
+                    }`}>
+                      <span className="text-lg font-bold">₿</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3">
+                    {/* Alpaca Icon */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      stocksToggle === "alpaca" 
+                        ? "bg-[#fcda03] text-slate-900" 
+                        : "bg-[#fcda03]/20 text-[#fcda03]"
+                    }`}>
                       <span className="text-lg font-bold">A</span>
                     </div>
-                    <div>
-                      <span className="text-sm sm:text-base font-medium text-white block">Alpaca</span>
-                      <span className="text-xs text-slate-400">Stock Trading Platform</span>
+                    <span className="text-sm sm:text-base font-medium text-white">Alpaca</span>
+                  </div>
+
+                  {/* Toggle Switch */}
+                  <button
+                    onClick={handleExchangeSwitch}
+                    className={`relative inline-flex h-7 w-14 sm:h-8 sm:w-16 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 flex-shrink-0 ${
+                      stocksToggle === "ibkr"
+                        ? "bg-gradient-to-r from-[#c7292a] to-[#e84343]"
+                        : "bg-slate-700"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 sm:h-6 sm:w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300 ${
+                        stocksToggle === "ibkr" ? "translate-x-7 sm:translate-x-9" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+
+                  {/* IBKR Icon */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm sm:text-base font-medium text-white">IBKR</span>
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 flex-shrink-0 ${
+                      stocksToggle === "ibkr" 
+                        ? "bg-[#c7292a] text-white" 
+                        : "bg-[#c7292a]/20 text-[#c7292a]"
+                    }`}>
+                      <span className="text-lg font-bold">I</span>
                     </div>
                   </div>
-                )}
-              </div>
-
-              {/* Connect Button */}
-              <button
-                onClick={handleExchangeSwitch}
-                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
-              >
-                Connect
-              </button>
+                </>
+              )}
             </div>
-          )}
+
+            {/* Connect Button */}
+            <button
+              onClick={handleExchangeSwitch}
+              className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
+            >
+              Connect
+            </button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -562,7 +486,7 @@ export default function ExchangeConfigurationPage() {
           </div>
         ) : (
           <div className="space-y-3 sm:space-y-4">
-            {getFilteredConnections().map((connection) => (
+            {connections.map((connection) => (
               <div
                 key={connection.connection_id}
                 onClick={() => {
@@ -585,8 +509,8 @@ export default function ExchangeConfigurationPage() {
                       </span>
                     </div>
                     <div className="mt-3 sm:mt-4">
-                      <p className="text-xs sm:text-sm text-slate-400 mb-1">Type</p>
-                      <p className="text-sm sm:text-base text-white font-medium capitalize">{connection.exchange?.type || 'crypto'}</p>
+                      <p className="text-xs sm:text-sm text-slate-400 mb-1">Status</p>
+                      <p className="text-sm sm:text-base text-white font-medium capitalize">{connection.status}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-2 flex-shrink-0">
