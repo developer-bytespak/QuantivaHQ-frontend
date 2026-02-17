@@ -87,6 +87,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   // Initial Data - populated from backend API
   currentSubscription: CURRENT_USER_SUBSCRIPTION,
   allPlans: [],
+  allSubscriptions: [],
   usageStats: USER_USAGE_STATS,
   paymentHistory: PAYMENT_HISTORY,
   selectedBillingPeriod: BillingPeriod.MONTHLY,

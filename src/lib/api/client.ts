@@ -36,6 +36,21 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
+// Attach Authorization header + device ID on every request.
+// Cookies may be blocked cross-origin (Chrome third-party cookie restrictions),
+// so we always send the Bearer token from localStorage as a reliable fallback.
+// Backend accepts both cookie and Authorization header (jwt.strategy.ts).
+axiosInstance.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const accessToken = localStorage.getItem("quantivahq_access_token");
+    if (accessToken) {
+      config.headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+    config.headers["x-device-id"] = getDeviceId();
+  }
+  return config;
+});
+
 // Main API request function
 export async function apiRequest<TRequest, TResponse = unknown>({
   path,

@@ -432,8 +432,7 @@ export function SubscriptionSettings() {
                     prorate your payment based on your remaining days.
                   </p>
                 </div>
-              </div>
-            ))}
+            )}
 
             {/* Info Box */}
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
