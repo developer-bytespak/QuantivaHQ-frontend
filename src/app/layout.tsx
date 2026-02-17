@@ -38,16 +38,11 @@ export default function RootLayout({
       >
         <div className="min-h-screen bg-black">
           <Providers>
-            {children}
+            <ExchangeProvider>
+              {children}
+            </ExchangeProvider>
           </Providers>
         </div>
-        <ExchangeProvider>
-          <Providers>
-          <div className="min-h-screen bg-black">
-            {children}
-          </div>
-          </Providers>
-        </ExchangeProvider>
       </body>
     </html>
   );

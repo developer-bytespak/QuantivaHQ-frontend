@@ -13,17 +13,16 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const SubsProvider = ({ children }: { children: ReactNode }) => {
 
     const updateSubscription = useMutation({
+        
         mutationFn: async (data: any) => {
-            console.log('Updating subscription with data:', data);
-            const response = await axios.put(
-                `${process.env.NEXT_PUBLIC_API_URL}/subscriptions/update`, 
-                data,
-                {
-                    withCredentials: true,
-                }
-            );
+            const response = await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/subscriptions/update`, data, {
+                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
+                },
+            });
             return response.data;
-        }
+        },
     })
 
     return (
