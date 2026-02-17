@@ -25,7 +25,7 @@ export async function uploadDocument(
     file,
     additionalData: {
       document_type: documentType,
-      document_side: documentSide,
+      ...(documentSide && { document_side: documentSide }),
     },
   });
 }

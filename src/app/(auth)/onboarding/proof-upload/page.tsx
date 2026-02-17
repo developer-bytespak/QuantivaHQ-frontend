@@ -201,6 +201,16 @@ export default function ProofUploadPage() {
       return;
     }
 
+    // After setting the file, auto-switch to the back tab if:
+    // - current side is front
+    // - document type requires back side
+    // - back side hasn't been uploaded yet
+    const autoSwitchToBack = () => {
+      if (currentSide === 'front' && documentReq.requiresBack && !backUpload.file) {
+        setTimeout(() => setCurrentSide('back'), 600);
+      }
+    };
+
     // Create preview using FileReader
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -210,6 +220,7 @@ export default function ProofUploadPage() {
           preview: reader.result as string,
           documentId: null,
         });
+        autoSwitchToBack();
       };
       reader.onerror = () => {
         setError("Failed to read file. Please try again.");
@@ -222,8 +233,9 @@ export default function ProofUploadPage() {
         preview: null,
         documentId: null,
       });
+      autoSwitchToBack();
     }
-  }, [setCurrentUpload]);
+  }, [setCurrentUpload, currentSide, documentReq.requiresBack, backUpload.file]);
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -334,6 +346,16 @@ export default function ProofUploadPage() {
       }
       
       console.log('[Proof Upload] ✅ All uploads complete! Navigating to selfie-capture...');
+      
+      // Set the main proof_upload flag that verification-status checks for
+      const proofData = {
+        documentType: documentType,
+        frontDocumentId: frontUpload.documentId,
+        backDocumentId: backUpload.documentId,
+        uploadDate: new Date().toISOString(),
+        completed: true,
+      };
+      localStorage.setItem("quantivahq_proof_upload", JSON.stringify(proofData));
       
       // Navigate to next step
       router.push("/onboarding/selfie-capture");

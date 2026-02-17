@@ -19,6 +19,10 @@ export interface KycStatusResponse {
   liveness_confidence?: number;
   face_match_score?: number;
   doc_authenticity_score?: number;
+  /** Sumsub rejection type: "RETRY" (temporary, user can resubmit) or "FINAL" (permanent) */
+  review_reject_type?: string | null;
+  /** Human-readable rejection reasons from Sumsub */
+  rejection_reasons?: string[];
 }
 
 export interface VerificationDetails {
