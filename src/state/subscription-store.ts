@@ -261,7 +261,12 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     try {
       const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const response = await fetch(
-        `${API_BASE_URL}/subscriptions/dashboard`
+        `${API_BASE_URL}/subscriptions/dashboard`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
+          },
+        }
       );
 
       console.log('API response status:', response);
