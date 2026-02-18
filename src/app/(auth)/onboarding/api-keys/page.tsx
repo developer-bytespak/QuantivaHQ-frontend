@@ -8,7 +8,7 @@ import { exchangesService } from "@/lib/api/exchanges.service";
 
 export default function ApiKeysPage() {
   const router = useRouter();
-  const [selectedExchange, setSelectedExchange] = useState<"binance" | "bybit" | "ibkr" | "alpaca" | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<"binance" | "binance.us" | "bybit" | "ibkr" | "alpaca" | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [passphrase, setPassphrase] = useState("");
@@ -25,6 +25,7 @@ export default function ApiKeysPage() {
     const exchange = localStorage.getItem("quantivahq_selected_exchange");
     if (
       exchange === "binance" ||
+      exchange === "binance.us" ||
       exchange === "bybit" ||
       exchange === "ibkr" ||
       exchange === "alpaca"
@@ -41,13 +42,15 @@ export default function ApiKeysPage() {
         const exchangeName =
           exchange === "binance"
             ? "Binance"
+            : exchange === "binance.us"
+            ? "Binance.US"
             : exchange === "bybit"
             ? "Bybit"
             : exchange === "alpaca"
             ? "Alpaca"
             : "Interactive Brokers";
-            const exchangeType =
-              exchange === "ibkr" || exchange === "alpaca" ? "stocks" : "crypto";
+        const exchangeType =
+          exchange === "ibkr" || exchange === "alpaca" ? "stocks" : "crypto";
         
         // Ensure exchange exists in database (creates if doesn't exist)
         const exchangeData = await exchangesService.ensureExchange(exchangeName, exchangeType);
@@ -69,13 +72,26 @@ export default function ApiKeysPage() {
     fetchExchangeId();
   }, []);
 
-  const exchangeInfo = {
+  const exchangeInfo: Record<string, { name: string; logo: React.ReactNode; requiresPassphrase: boolean }> = {
     binance: {
       name: "Binance",
       logo: (
         <Image
           src="/binance logo.png"
           alt="Binance"
+          width={48}
+          height={48}
+          className="h-12 w-12 object-contain"
+        />
+      ),
+      requiresPassphrase: false,
+    },
+    "binance.us": {
+      name: "Binance.US",
+      logo: (
+        <Image
+          src="/binance logo.png"
+          alt="Binance.US"
           width={48}
           height={48}
           className="h-12 w-12 object-contain"
@@ -129,7 +145,7 @@ export default function ApiKeysPage() {
   };
 
   const currentExchange = selectedExchange ? exchangeInfo[selectedExchange] : exchangeInfo.binance;
-  const exchangeName = selectedExchange ? exchangeInfo[selectedExchange].name : "Binance";
+  const exchangeName = selectedExchange ? exchangeInfo[selectedExchange]?.name ?? "Binance" : "Binance";
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -188,14 +204,15 @@ export default function ApiKeysPage() {
       // Extract specific error message
       let errorMessage = error.message || "Failed to create connection. Please check your API keys and try again.";
       
-      if (error.message?.includes("Invalid API Key") || error.message?.includes("invalid")) {
-        errorMessage = "Invalid API Key. Please check and try again.";
-      } else if (error.message?.includes("permission") || error.message?.includes("Permission")) {
+      if (error.message?.includes("permission") || error.message?.includes("Permission")) {
         errorMessage = "Insufficient permissions. Please ensure your API key has trading permissions enabled.";
-      } else if (error.message?.includes("whitelist") || error.message?.includes("IP")) {
-        errorMessage = "IP address not whitelisted. Please add your IP to the exchange API key settings.";
+      } else if (error.message?.includes("whitelist") || error.message?.includes("IP") || error.message?.includes("403")) {
+        // Use backend message if it's detailed (e.g. Binance.US IP restriction guidance)
+        errorMessage = error.message?.length > 60 ? error.message : "IP address not whitelisted. In your exchange API settings, add this server's IP to the whitelist or disable IP restriction.";
       } else if (error.message?.includes("rate") || error.message?.includes("429")) {
         errorMessage = "Too many requests. Please wait a moment and try again.";
+      } else if (error.message?.includes("Invalid API Key") || error.message?.includes("invalid")) {
+        errorMessage = "Invalid API Key. Please check and try again.";
       }
       
       setErrors({

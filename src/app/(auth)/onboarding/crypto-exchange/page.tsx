@@ -56,8 +56,17 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect, disa
 
         {/* Shine effect (only if not disabled) */}
         {!disabled && (
-          <div
+          <div className="absolute inset-0 opacity-0 pointer-events-none" aria-hidden />
+        )}
+      </button>
+    </div>
+  );
+}
+
+export default function CryptoExchangePage() {
+  const router = useRouter();
   const { nationality, isUS, loading } = useUserNationality();
+  const [showFAQModal, setShowFAQModal] = useState(false);
 
   const handleExchangeSelect = (exchange: "binance" | "bybit" | "binance.us") => {
     // Get existing selected exchanges
@@ -125,8 +134,8 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect, disa
       ),
       onSelect: () => handleExchangeSelect("binance.us"),
       code: "binance.us",
-      disabled: !isUS, // Disable Binance.US for non-US nationals
-      disabledReason: !isUS ? "Only available for US residents" : undefined,
+      disabled: false, // Allowed for non-US too (e.g. when using a US client's API keys)
+      disabledReason: undefined,
     },
     {
       name: "Bybit",
@@ -147,59 +156,17 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect, disa
     },
   ];
 
-  // Filter exchanges based on nationality - only show available exchanges
+  // Filter exchanges: US must use Binance.US only; non-US can use Binance, Binance.US (e.g. US client keys), or Bybit
   const exchanges = allExchanges.filter(exchange => {
     if (isUS) {
-      // US users: show Binance.US and Bybit only
       return exchange.code === "binance.us" || exchange.code === "bybit";
-    } else {
-      // Non-US users: show Binance and Bybit only
-      return exchange.code === "binance" || exchange.code === "bybit";
     }
-  })       width={48}
-          height={48}
-          className="h-9 w-9 sm:h-12 sm:w-12 md:h-16 md:w-16 object-contain"
-        />
-      ),
-      onSelect: () => handleExchangeSelect("binance"),
-    },
-    {
-      name: "Bybit",
-      description: "Fast-growing derivatives exchange with competitive fees. Perfect for both spot trading and advanced derivatives strategies.",
-      gradient: "from-[#f59e0b] to-[#d97706]",
-      logo:   {isUS && (
-                <span className="block mt-2 text-[#fc4f02] font-medium">
-                  🇺🇸 US Residents: Only Binance.US is available for regulatory compliance
-                </span>
-              )}
-            </p>
-          </div>
+    return exchange.code === "binance" || exchange.code === "binance.us" || exchange.code === "bybit";
+  });
 
-          {/* Loading State */}
-          {loading && (
-            <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fc4f02]"></div>
-            </div>
-          )}
-
-          {/* Exchange Cards */}
-          {!loading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 animate-text-enter mb-4 sm:mb-6 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
-              {exchanges.map((exchange, index) => (
-                <ExchangeCard
-                  key={exchange.name}
-                  name={exchange.name}
-                  description={exchange.description}
-                  logo={exchange.logo}
-                  gradient={exchange.gradient}
-                  delay={`${index * 0.1}s`}
-                  onSelect={exchange.onSelect}
-                  disabled={exchange.disabled}
-                  disabledReason={exchange.disabledReason}
-                />
-              ))}
-            </div>
-          kground matching design */}
+  return (
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Background matching design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
@@ -220,23 +187,39 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect, disa
             </h1>
             <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 animate-text-enter px-3 sm:px-2 leading-tight" style={{ animationDelay: "0.4s" }}>
               Select the platform you want to connect to your trading account.
+              {isUS && (
+                <span className="block mt-2 text-[#fc4f02] font-medium">
+                  🇺🇸 US Residents: Only Binance.US is available for regulatory compliance
+                </span>
+              )}
             </p>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fc4f02]" />
+            </div>
+          )}
+
           {/* Exchange Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 animate-text-enter mb-4 sm:mb-6 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
-            {exchanges.map((exchange, index) => (
-              <ExchangeCard
-                key={exchange.name}
-                name={exchange.name}
-                description={exchange.description}
-                logo={exchange.logo}
-                gradient={exchange.gradient}
-                delay={`${index * 0.1}s`}
-                onSelect={exchange.onSelect}
-              />
-            ))}
-          </div>
+          {!loading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 animate-text-enter mb-4 sm:mb-6 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
+              {exchanges.map((exchange, index) => (
+                <ExchangeCard
+                  key={exchange.name}
+                  name={exchange.name}
+                  description={exchange.description}
+                  logo={exchange.logo}
+                  gradient={exchange.gradient}
+                  delay={`${index * 0.1}s`}
+                  onSelect={exchange.onSelect}
+                  disabled={exchange.disabled}
+                  disabledReason={exchange.disabledReason}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Help Link Section */}
           <div className="w-full flex-shrink-0 text-center animate-text-enter px-3" style={{ animationDelay: "0.8s" }}>
