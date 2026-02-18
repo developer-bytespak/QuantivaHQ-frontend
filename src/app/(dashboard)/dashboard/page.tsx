@@ -51,12 +51,7 @@ export default function DashboardPage() {
   
   // Ref to track if initialization has happened (prevents duplicate calls)
   const hasInitialized = useRef(false);
-  
-  // Refetch connection on dashboard mount to ensure latest state
-  useEffect(() => {
-    refetchConnection();
-  }, [refetchConnection]);
-  
+
   // Market data state - different sources based on type
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
   const [isLoadingMarket, setIsLoadingMarket] = useState(false);
