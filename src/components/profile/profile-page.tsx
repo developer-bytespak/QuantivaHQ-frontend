@@ -31,7 +31,7 @@ interface Stock {
   icon: string;
 }
 
-// Helper function for consistent number formatting
+// Helper function for consistent number formatting (yesyesyes)
 const formatNumber = (num: number, decimals: number = 2): string => {
   return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 };
