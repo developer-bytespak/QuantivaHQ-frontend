@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { exchangesService } from '@/lib/api/exchanges.service';
 import {
   createChart,
   ColorType,
@@ -24,6 +25,8 @@ interface StockPriceChartProps {
   interval?: string;
   timeframe?: string;
   bars?: Bar[];
+  /** When provided (Alpaca), bars are fetched using the user's connection. */
+  connectionId?: string | null;
 }
 
 // Map frontend timeframe to Alpaca API timeframe
@@ -52,7 +55,7 @@ const getLimitForTimeframe = (timeframe: string): number => {
   return limits[timeframe] || 30;
 };
 
-export default function StockPriceChart({ symbol, interval, timeframe = '1D', bars }: StockPriceChartProps) {
+export default function StockPriceChart({ symbol, interval, timeframe = '1D', bars, connectionId }: StockPriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -78,11 +81,25 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
           return;
         }
 
-        // Fetch real data from the backend API
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
         const alpacaTimeframe = mapTimeframeToAlpaca(timeframe);
         const limit = getLimitForTimeframe(timeframe);
-        
+
+        if (connectionId) {
+          const result = await exchangesService.getStockBars(connectionId, symbol.toUpperCase(), alpacaTimeframe, limit);
+          const barsData: Bar[] = (result.bars || []).map((bar: any) => ({
+            timestamp: bar.timestamp,
+            open: bar.open,
+            high: bar.high,
+            low: bar.low,
+            close: bar.close,
+            volume: bar.volume,
+          }));
+          if (barsData.length === 0) setError('No chart data available for this stock');
+          else setData(barsData);
+          return;
+        }
+
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
         const response = await fetch(
           `${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}/bars?timeframe=${alpacaTimeframe}&limit=${limit}`
         );
@@ -92,8 +109,6 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
         }
 
         const result = await response.json();
-        
-        // Transform API response to Bar format
         const barsData: Bar[] = (result.bars || []).map((bar: any) => ({
           timestamp: bar.timestamp,
           open: bar.open,
@@ -123,7 +138,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
     } else if (symbol) {
       fetchStockChartData();
     }
-  }, [symbol, interval, timeframe, bars]);
+  }, [symbol, interval, timeframe, bars, connectionId]);
 
   useEffect(() => {
     if (!chartContainerRef.current || !data || data.length === 0) return;
