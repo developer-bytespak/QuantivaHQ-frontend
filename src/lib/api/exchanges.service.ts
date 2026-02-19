@@ -51,6 +51,8 @@ export interface AccountBalance {
     total: string;
   }>;
   totalValueUSD: number;
+  /** Alpaca: buying power (when present, use for stock trading panel) */
+  buyingPower?: number;
 }
 
 export interface Position {
@@ -438,6 +440,38 @@ export const exchangesService = {
   ): Promise<ApiResponse<RecentTrade[]>> {
     return apiRequest<never, ApiResponse<RecentTrade[]>>({
       path: `/exchanges/connections/${connectionId}/trades/${symbol}?limit=${limit}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Get stock detail using the user's Alpaca connection (rate limits are per user).
+   * Only for Alpaca connections.
+   */
+  async getStockDetail(connectionId: string, symbol: string) {
+    return apiRequest<never, any>({
+      path: `/exchanges/connections/${connectionId}/stock/${symbol.toUpperCase()}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Get stock historical bars using the user's Alpaca connection.
+   */
+  async getStockBars(
+    connectionId: string,
+    symbol: string,
+    timeframe?: string,
+    limit?: number,
+  ) {
+    const params = new URLSearchParams();
+    if (timeframe) params.set("timeframe", timeframe);
+    if (limit != null) params.set("limit", String(limit));
+    const qs = params.toString();
+    return apiRequest<never, any>({
+      path: `/exchanges/connections/${connectionId}/stock/${symbol.toUpperCase()}/bars${qs ? `?${qs}` : ""}`,
       method: "GET",
       credentials: "include",
     });

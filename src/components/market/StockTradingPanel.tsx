@@ -2,17 +2,21 @@
 
 import { useState, useEffect } from "react";
 import { alpacaPaperTradingService, PlaceOrderParams, AlpacaBalance } from "@/lib/api/alpaca-paper-trading.service";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 interface StockTradingPanelProps {
   symbol: string;
   currentPrice: number;
   stockName?: string;
+  /** When provided, orders use this Alpaca connection (paper or live by user's key). Omit to use app paper trading. */
+  connectionId?: string | null;
 }
 
 export default function StockTradingPanel({
   symbol,
   currentPrice,
   stockName,
+  connectionId,
 }: StockTradingPanelProps) {
   const [orderType, setOrderType] = useState<"market" | "limit">("market");
   const [side, setSide] = useState<"buy" | "sell">("buy");
@@ -26,14 +30,35 @@ export default function StockTradingPanel({
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [marketOpen, setMarketOpen] = useState<boolean | null>(null);
 
-  // Fetch account balance
+  // Fetch account balance (connection = user's Alpaca, else app paper trading)
   useEffect(() => {
     const fetchBalance = async () => {
       try {
         setIsLoadingBalance(true);
-        const dashboard = await alpacaPaperTradingService.getDashboard();
-        setBalance(dashboard.balance);
-        setMarketOpen(dashboard.clock?.isOpen ?? null);
+        if (connectionId) {
+          const res = await exchangesService.getBalance(connectionId);
+          const data = res?.data;
+          if (data) {
+            const buyingPower =
+              (data as { buyingPower?: number }).buyingPower ??
+              (parseFloat(data.assets?.find((a: { symbol: string }) => a.symbol === "USD")?.free ?? "0") || 0);
+            setBalance({
+              buyingPower,
+              cash: buyingPower,
+              portfolioValue: data.totalValueUSD ?? 0,
+              equity: data.totalValueUSD ?? 0,
+              longMarketValue: 0,
+              shortMarketValue: 0,
+              dailyChange: 0,
+              dailyChangePercent: 0,
+            });
+          }
+          setMarketOpen(null);
+        } else {
+          const dashboard = await alpacaPaperTradingService.getDashboard();
+          setBalance(dashboard.balance);
+          setMarketOpen(dashboard.clock?.isOpen ?? null);
+        }
       } catch (err: any) {
         console.error("Failed to fetch balance:", err);
       } finally {
@@ -42,7 +67,7 @@ export default function StockTradingPanel({
     };
 
     fetchBalance();
-  }, []);
+  }, [connectionId]);
 
   useEffect(() => {
     setLimitPrice(currentPrice.toFixed(2));
@@ -77,28 +102,44 @@ export default function StockTradingPanel({
     try {
       setIsSubmitting(true);
 
-      const orderParams: PlaceOrderParams = {
-        symbol: symbol.toUpperCase(),
-        qty: quantityNum,
-        side,
-        type: orderType,
-        time_in_force: timeInForce,
-      };
-
-      if (orderType === "limit") {
-        orderParams.limit_price = parseFloat(limitPrice);
+      if (connectionId) {
+        const response = await exchangesService.placeOrder(connectionId, {
+          symbol: symbol.toUpperCase(),
+          side: side.toUpperCase() as "BUY" | "SELL",
+          type: orderType.toUpperCase() as "MARKET" | "LIMIT",
+          quantity: quantityNum,
+          price: orderType === "limit" ? parseFloat(limitPrice) : undefined,
+        });
+        if (!response?.data) throw new Error("No order data returned");
+        setSuccess(`Order placed successfully! ${side.toUpperCase()} ${quantityNum} shares of ${symbol}`);
+        setQuantity("");
+        const res = await exchangesService.getBalance(connectionId);
+        const data = res?.data;
+        if (data) {
+          const buyingPower =
+            (data as { buyingPower?: number }).buyingPower ??
+            (parseFloat(data.assets?.find((a: { symbol: string }) => a.symbol === "USD")?.free ?? "0") || 0);
+          setBalance((prev) =>
+            prev
+              ? { ...prev, buyingPower, cash: buyingPower, portfolioValue: data.totalValueUSD ?? prev.portfolioValue }
+              : null
+          );
+        }
+      } else {
+        const orderParams: PlaceOrderParams = {
+          symbol: symbol.toUpperCase(),
+          qty: quantityNum,
+          side,
+          type: orderType,
+          time_in_force: timeInForce,
+        };
+        if (orderType === "limit") orderParams.limit_price = parseFloat(limitPrice);
+        const result = await alpacaPaperTradingService.placeOrder(orderParams);
+        setSuccess(`Order placed successfully! ${side.toUpperCase()} ${quantityNum} shares of ${symbol}`);
+        setQuantity("");
+        const dashboard = await alpacaPaperTradingService.getDashboard();
+        setBalance(dashboard.balance);
       }
-
-      console.log(" Placing stock order:", orderParams);
-      const result = await alpacaPaperTradingService.placeOrder(orderParams);
-      console.log(" Order placed:", result);
-
-      setSuccess(`Order placed successfully! ${side.toUpperCase()} ${quantityNum} shares of ${symbol}`);
-      setQuantity("");
-
-      // Refresh balance after order
-      const dashboard = await alpacaPaperTradingService.getDashboard();
-      setBalance(dashboard.balance);
     } catch (err: any) {
       console.error("Failed to place order:", err);
       setError(err.message || "Failed to place order");
@@ -137,7 +178,9 @@ export default function StockTradingPanel({
       <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <div className="rounded-lg border-l-4 border-yellow-500/50 bg-yellow-500/10 p-4">
           <p className="text-sm text-yellow-200">
-            Unable to connect to Alpaca paper trading. Please check your API configuration in Settings.
+            {connectionId
+              ? "Unable to load Alpaca account. Check your connection in Settings."
+              : "Unable to connect to Alpaca paper trading. Please check your API configuration in Settings."}
           </p>
         </div>
       </div>
@@ -161,7 +204,9 @@ export default function StockTradingPanel({
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-lg font-semibold text-white">Paper Trade {symbol}</h3>
+            <h3 className="text-lg font-semibold text-white">
+              {connectionId ? `Trade ${symbol}` : `Paper Trade ${symbol}`}
+            </h3>
             <div className="flex items-center gap-2">
               {marketOpen !== null && (
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -182,7 +227,7 @@ export default function StockTradingPanel({
             </div>
           </div>
           <p className="text-xs text-slate-400">
-            {stockName || symbol} • Paper Trading via Alpaca
+            {stockName || symbol} • {connectionId ? "Trading via Alpaca" : "Paper Trading via Alpaca"}
           </p>
         </div>
 

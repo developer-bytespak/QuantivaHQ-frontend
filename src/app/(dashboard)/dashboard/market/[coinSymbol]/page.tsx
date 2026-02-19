@@ -143,21 +143,11 @@ export default function MarketDetailPage() {
         }
 
         if (connectionType === "stocks") {
-          // Fetch stock detail data
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-          const response = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
-          
-          if (!response.ok) {
-            throw new Error(`Failed to fetch stock data: ${response.status} ${response.statusText}`);
-          }
-          
-          const result = await response.json();
-          // Handle both wrapped and unwrapped responses
-          const stockInfo = result.success ? result.data : result;
+          // Fetch stock detail from user's Alpaca connection (rate limits per user)
+          const stockInfo = await exchangesService.getStockDetail(connectionId, symbol.toUpperCase());
           if (stockInfo && stockInfo.symbol) {
             setStockData(stockInfo as StockDetailData);
           } else {
-            console.error("Stock API response:", result);
             throw new Error("Invalid stock data received");
           }
         } else {
@@ -455,6 +445,7 @@ export default function MarketDetailPage() {
               symbol={symbol.toUpperCase()}
               interval={selectedInterval}
               timeframe={selectedTimeframe}
+              connectionId={connectionId}
             />
           ) : (
             connectionId && coinData && (
@@ -657,6 +648,7 @@ export default function MarketDetailPage() {
         <StockTradingDataTab 
           symbol={stockData.symbol} 
           currentPrice={stockData.price}
+          connectionId={connectionId}
         />
       )}
 
@@ -678,6 +670,7 @@ export default function MarketDetailPage() {
           symbol={stockData.symbol}
           currentPrice={stockData.price}
           stockName={stockData.name}
+          connectionId={connectionId}
         />
       )}
     </div>

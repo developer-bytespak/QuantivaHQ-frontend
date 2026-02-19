@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 interface StockQuoteData {
   symbol: string;
@@ -27,9 +28,11 @@ interface RecentBar {
 interface StockTradingDataTabProps {
   symbol: string;
   currentPrice?: number;
+  /** When provided (Alpaca), stock data is fetched using the user's connection (rate limits per user). */
+  connectionId?: string | null;
 }
 
-export default function StockTradingDataTab({ symbol, currentPrice }: StockTradingDataTabProps) {
+export default function StockTradingDataTab({ symbol, currentPrice, connectionId }: StockTradingDataTabProps) {
   const [quoteData, setQuoteData] = useState<StockQuoteData | null>(null);
   const [recentBars, setRecentBars] = useState<RecentBar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,23 +47,20 @@ export default function StockTradingDataTab({ symbol, currentPrice }: StockTradi
       setError(null);
 
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-        
-        // Fetch stock detail which includes quote data
-        const detailResponse = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
-        
-        if (!detailResponse.ok) {
-          throw new Error(`Failed to fetch stock data: ${detailResponse.status}`);
+        let detailData: { symbol: string; price: number; volume24h: number; timestamp?: string };
+        if (connectionId) {
+          detailData = await exchangesService.getStockDetail(connectionId, symbol.toUpperCase());
+        } else {
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+          const detailResponse = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
+          if (!detailResponse.ok) throw new Error(`Failed to fetch stock data: ${detailResponse.status}`);
+          detailData = await detailResponse.json();
         }
 
-        const detailData = await detailResponse.json();
-        
-        // Create quote data from detail response
-        // Note: Alpaca free tier provides bid/ask in snapshot quotes
         const quote: StockQuoteData = {
           symbol: detailData.symbol,
-          askPrice: detailData.price * 1.0001, // Estimate if not available
-          bidPrice: detailData.price * 0.9999, // Estimate if not available
+          askPrice: detailData.price * 1.0001,
+          bidPrice: detailData.price * 0.9999,
           askSize: 100,
           bidSize: 100,
           spread: detailData.price * 0.0002,
@@ -69,17 +69,20 @@ export default function StockTradingDataTab({ symbol, currentPrice }: StockTradi
           volume: detailData.volume24h,
           timestamp: detailData.timestamp || new Date().toISOString(),
         };
-        
         setQuoteData(quote);
 
-        // Fetch recent bars for activity
-        const barsResponse = await fetch(
-          `${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}/bars?timeframe=1Hour&limit=10`
-        );
-        
-        if (barsResponse.ok) {
-          const barsData = await barsResponse.json();
+        if (connectionId) {
+          const barsData = await exchangesService.getStockBars(connectionId, symbol.toUpperCase(), "1Hour", 10);
           setRecentBars(barsData.bars || []);
+        } else {
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+          const barsResponse = await fetch(
+            `${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}/bars?timeframe=1Hour&limit=10`
+          );
+          if (barsResponse.ok) {
+            const barsData = await barsResponse.json();
+            setRecentBars(barsData.bars || []);
+          }
         }
       } catch (err: any) {
         console.error("Failed to fetch trading data:", err);
@@ -94,7 +97,7 @@ export default function StockTradingDataTab({ symbol, currentPrice }: StockTradi
     // Refresh data every 30 seconds
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [symbol]);
+  }, [symbol, connectionId]);
 
   if (isLoading && !quoteData) {
     return (
