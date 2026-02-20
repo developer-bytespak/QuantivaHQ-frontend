@@ -13,6 +13,7 @@ import StockTradingPanel from "@/components/market/StockTradingPanel";
 import InfoTab from "@/components/market/InfoTab";
 import TradingDataTab from "@/components/market/TradingDataTab";
 import StockTradingDataTab from "@/components/market/StockTradingDataTab";
+import { getCoinDetails } from "@/lib/api/coingecko.service";
 
 interface CoinDetailData {
   symbol: string;
@@ -96,6 +97,10 @@ export default function MarketDetailPage() {
   const [initialOrderBook, setInitialOrderBook] = useState<OrderBook | null>(null);
   const [initialTrades, setInitialTrades] = useState<RecentTrade[]>([]);
   const [tradingPermissions, setTradingPermissions] = useState<{ canTrade: boolean; reason?: string } | null>(null);
+  // Pre-fetched stock trading data (quote + bars) so Trading Data tab doesn't refetch on tab switch
+  const [initialStockBars, setInitialStockBars] = useState<Array<{ timestamp: string; open: number; high: number; low: number; close: number; volume: number }> | null>(null);
+  // Pre-fetched CoinGecko data when exchange response has none, so Info tab doesn't refetch on tab switch
+  const [coinGeckoDataFallback, setCoinGeckoDataFallback] = useState<Awaited<ReturnType<typeof getCoinDetails>> | null>(null);
 
   // Phase 6: Real-time price streaming via WebSocket
   const realtimePrice = useRealtimePrice({
@@ -136,6 +141,8 @@ export default function MarketDetailPage() {
       try {
         setIsLoading(true);
         setError(null);
+        setCoinGeckoDataFallback(null);
+        setInitialStockBars(null);
 
         // Connection type is available from global context
         if (!connectionId) {
@@ -143,12 +150,20 @@ export default function MarketDetailPage() {
         }
 
         if (connectionType === "stocks") {
-          // Fetch stock detail from user's Alpaca connection (rate limits per user)
-          const stockInfo = await exchangesService.getStockDetail(connectionId, symbol.toUpperCase());
+          // Fetch stock detail + bars once (Trading Data tab will use this, no refetch on tab switch)
+          const [stockInfo, barsResponse] = await Promise.all([
+            exchangesService.getStockDetail(connectionId, symbol.toUpperCase()),
+            exchangesService.getStockBars(connectionId, symbol.toUpperCase(), "1Hour", 10),
+          ]);
           if (stockInfo && stockInfo.symbol) {
             setStockData(stockInfo as StockDetailData);
           } else {
             throw new Error("Invalid stock data received");
+          }
+          if (barsResponse?.bars && Array.isArray(barsResponse.bars)) {
+            setInitialStockBars(barsResponse.bars);
+          } else {
+            setInitialStockBars([]);
           }
         } else {
           // Crypto logic
@@ -209,6 +224,9 @@ export default function MarketDetailPage() {
 
           if (coinDetailData) {
             setCoinData(coinDetailData);
+            if (!coinDetailData.coinGeckoData) {
+              getCoinDetails(symbol).then(setCoinGeckoDataFallback).catch(() => {});
+            }
           } else {
             throw new Error("Failed to fetch coin data");
           }
@@ -224,10 +242,10 @@ export default function MarketDetailPage() {
       }
     };
 
-    if (symbol) {
+    if (symbol && connectionId) {
       fetchData();
     }
-  }, [symbol]);
+  }, [symbol, connectionId]);
 
   const handleTimeframeChange = (timeframe: string) => {
     setSelectedTimeframe(timeframe);
@@ -631,7 +649,7 @@ export default function MarketDetailPage() {
             description: stockData.description,
           } : undefined}
           connectionType={connectionType}
-          embeddedMarketData={coinData?.coinGeckoData || undefined}
+          embeddedMarketData={coinData?.coinGeckoData || coinGeckoDataFallback || undefined}
         />
       )}
 
@@ -649,6 +667,8 @@ export default function MarketDetailPage() {
           symbol={stockData.symbol} 
           currentPrice={stockData.price}
           connectionId={connectionId}
+          initialStockDetail={stockData}
+          initialBars={initialStockBars ?? undefined}
         />
       )}
 
