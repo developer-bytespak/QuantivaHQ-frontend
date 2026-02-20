@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from "axios";
+import { toast } from "react-toastify";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
@@ -76,14 +77,11 @@ export async function apiRequest<TRequest, TResponse = unknown>({
   } catch (error: any) {
     let errorMessage = "API request failed";
 
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    } else if (error.message?.includes("timeout")) {
-      errorMessage = "Request timeout. Please try again.";
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
+    // console.log("[API] Error:", error.response?.data.message);
+    // toast.error(error.response?.data.message);
+
+    // So callers see backend message (e.g. "Password is incorrect") not Axios generic "Request failed with status code 401"
+    error.message = error.response?.data?.message; 
     throw error;
   }
 }

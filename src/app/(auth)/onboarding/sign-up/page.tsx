@@ -7,14 +7,33 @@ import GoogleSignInButton from "@/components/common/google-signin-button";
 import { apiRequest } from "@/lib/api/client";
 import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
 import { getCurrentUser } from "@/lib/api/user";
+import { useNotification, Notification } from "@/components/common/notification";
+import {
+  sendForgotPasswordOtp,
+  verifyForgotPasswordOtp,
+  resetPasswordForgot,
+} from "@/lib/api/auth";
 
 type AuthTab = "signup" | "login";
 
 export default function SignUpPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { notification, showNotification, hideNotification } = useNotification();
   const [activeTab, setActiveTab] = useState<AuthTab>("signup");
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Forgot password popup
+  const [showForgotPopup, setShowForgotPopup] = useState(false);
+  const [forgotStep, setForgotStep] = useState<"email" | "otp" | "password">("email");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotError, setForgotError] = useState("");
+  /** Show "Forgot password?" only when login failed with password incorrect error */
+  const [showForgotPasswordLink, setShowForgotPasswordLink] = useState(false);
   
   // Check if user is already authenticated and redirect if so
   useEffect(() => {
@@ -84,6 +103,7 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setShowForgotPasswordLink(false);
 
     if (activeTab === "signup") {
       if (!fullName || !email || !password || !confirmPassword) {
@@ -150,6 +170,8 @@ export default function SignUpPage() {
             },
             credentials: "include",
           });
+
+          console.log("[Signup] Login response:", loginResponse);
 
           // Debug: Log cookies and response
           console.log("[Signup] Cookies after auto-login:", document.cookie);
@@ -231,6 +253,8 @@ export default function SignUpPage() {
           credentials: "include",
         });
 
+        console.log("[Login] Response:", response);
+
         // Debug: Log cookies and response
         console.log("[Login] Cookies after login:", document.cookie);
         console.log("[Login] Login response:", response);
@@ -288,7 +312,11 @@ export default function SignUpPage() {
         }
       } catch (error: any) {
         console.error("[Login] Login error:", error);
-        setError(error.message || "Login failed. Please check your credentials.");
+        const errMsg = error.message || "Login failed. Please check your credentials.";
+        setError(errMsg);
+        const isPasswordIncorrect =
+          /password/i.test(errMsg) && /incorrect|invalid|wrong/i.test(errMsg);
+        setShowForgotPasswordLink(!!isPasswordIncorrect);
         setIsLoading(false);
       }
     }
@@ -312,6 +340,77 @@ export default function SignUpPage() {
     }
   };
 
+  const openForgotPopup = () => {
+    setShowForgotPopup(true);
+    setForgotStep("email");
+    setForgotEmail("");
+    setForgotOtp("");
+    setForgotNewPassword("");
+    setForgotConfirmPassword("");
+    setForgotError("");
+  };
+
+  const handleForgotSendOtp = async () => {
+    const trimmed = forgotEmail.trim();
+    if (!trimmed) {
+      setForgotError("Please enter your email");
+      return;
+    }
+    setForgotError("");
+    setForgotLoading(true);
+    try {
+      await sendForgotPasswordOtp(trimmed);
+      setForgotStep("otp");
+    } catch (e: any) {
+      setForgotError(e?.message || "Something went wrong. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleForgotVerifyOtp = async () => {
+    if (!forgotOtp.trim()) {
+      setForgotError("Please enter the OTP");
+      return;
+    }
+    setForgotError("");
+    setForgotLoading(true);
+    try {
+      await verifyForgotPasswordOtp(forgotEmail.trim(), forgotOtp.trim());
+      setForgotStep("password");
+    } catch (e: any) {
+      setForgotError(e?.message || "Invalid or expired OTP. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleForgotChangePassword = async () => {
+    if (!forgotNewPassword || forgotNewPassword.length < 8) {
+      setForgotError("Password must be at least 8 characters");
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError("Passwords do not match");
+      return;
+    }
+    setForgotError("");
+    setForgotLoading(true);
+    try {
+      await resetPasswordForgot(forgotEmail.trim(), forgotOtp.trim(), forgotNewPassword);
+      console.log("[Forgot Password] Password changed successfully", {
+        email: forgotEmail.trim(),
+        step: "reset_done",
+      });
+      setShowForgotPopup(false);
+      showNotification("Password changed successfully. You can sign in with your new password.", "success");
+    } catch (e: any) {
+      setForgotError(e?.message || "Failed to reset password. Please try again.");
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   // Show loading state while checking authentication
   if (isCheckingAuth) {
     return (
@@ -328,6 +427,119 @@ export default function SignUpPage() {
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={hideNotification}
+        />
+      )}
+
+      {/* Forgot password popup */}
+      {showForgotPopup && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-xl bg-[--color-surface] border border-[--color-border] shadow-xl p-5 sm:p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-white">
+                {forgotStep === "email" && "Forgot password"}
+                {forgotStep === "otp" && "Enter OTP"}
+                {forgotStep === "password" && "New password"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowForgotPopup(false)}
+                className="text-slate-400 hover:text-white transition-colors p-1"
+                aria-label="Close"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {forgotStep === "email" && (
+              <>
+                <label className="block text-xs font-medium text-slate-300 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  disabled={forgotLoading}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-4"
+                />
+                <button
+                  type="button"
+                  onClick={handleForgotSendOtp}
+                  disabled={forgotLoading || !forgotEmail.trim()}
+                  className="w-full rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {forgotLoading ? "Checking..." : "Send OTP"}
+                </button>
+              </>
+            )}
+
+            {forgotStep === "otp" && (
+              <>
+                <p className="text-xs text-slate-400 mb-2">OTP sent to {forgotEmail}</p>
+                <input
+                  type="text"
+                  value={forgotOtp}
+                  onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="Enter 6-digit OTP"
+                  maxLength={6}
+                  disabled={forgotLoading}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-4 text-center tracking-widest"
+                />
+                <button
+                  type="button"
+                  onClick={handleForgotVerifyOtp}
+                  disabled={forgotLoading || forgotOtp.trim().length !== 6}
+                  className="w-full rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {forgotLoading ? "Verifying..." : "Verify OTP"}
+                </button>
+              </>
+            )}
+
+            {forgotStep === "password" && (
+              <>
+                <label className="block text-xs font-medium text-slate-300 mb-2">New password</label>
+                <input
+                  type="password"
+                  value={forgotNewPassword}
+                  onChange={(e) => setForgotNewPassword(e.target.value)}
+                  placeholder="Min 8 characters"
+                  disabled={forgotLoading}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-3"
+                />
+                <label className="block text-xs font-medium text-slate-300 mb-2">Confirm password</label>
+                <input
+                  type="password"
+                  value={forgotConfirmPassword}
+                  onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  disabled={forgotLoading}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-4"
+                />
+                <button
+                  type="button"
+                  onClick={handleForgotChangePassword}
+                  disabled={forgotLoading}
+                  className="w-full rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {forgotLoading ? "Updating..." : "Change password"}
+                </button>
+              </>
+            )}
+
+            {forgotError && (
+              <p className="mt-3 text-xs text-red-400">{forgotError}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
@@ -387,6 +599,7 @@ export default function SignUpPage() {
                       onClick={() => {
                         setActiveTab("signup");
                         setError("");
+                        setShowForgotPasswordLink(false);
                         setShowPassword(false);
                         setShowConfirmPassword(false);
                       }}
@@ -402,6 +615,7 @@ export default function SignUpPage() {
                       onClick={() => {
                         setActiveTab("login");
                         setError("");
+                        setShowForgotPasswordLink(false);
                         setShowPassword(false);
                         setShowConfirmPassword(false);
                       }}
@@ -415,15 +629,15 @@ export default function SignUpPage() {
                     </button>
                   </div>
 
-                      {/* OAuth Buttons */}
-                      {activeTab === "login" && (
+                      {/* OAuth Buttons - show Google on both Sign Up and Login */}
+                      {(activeTab === "signup" || activeTab === "login") && (
                         <div className="grid grid-cols-1 gap-2.5">
                           {/* Google Sign-In button (GSI) */}
                           <div>
                             {/* lazy-loaded Google button component */}
                             {/* eslint-disable-next-line @next/next/no-before-interactive-script-load */}
                             {/* @ts-ignore */}
-                            <GoogleSignInButton />
+                            <GoogleSignInButton mode={activeTab === "signup" ? "signup" : "login"} />
                           </div>
                         </div>
                       )}
@@ -431,8 +645,7 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            {/* Middle: Divider (horizontal on mobile, vertical on desktop) - hidden on mobile for signup */}
-            {!(activeTab === "signup") && (
+            {/* Middle: Divider (horizontal on mobile, vertical on desktop) */}
             <div className="relative flex items-center justify-center lg:items-center lg:justify-center lg:self-stretch my-4 lg:my-0 w-full lg:w-auto">
               <div className="w-0.5 h-0.5 lg:h-auto lg:w-0.5 bg-[--color-border] lg:absolute lg:inset-y-0 lg:left-1/2 lg:-translate-x-1/2" />
               <div className="relative z-10 px-3 lg:px-0 lg:bg-transparent bg-black">
@@ -449,7 +662,6 @@ export default function SignUpPage() {
                 </span>
               </div>
             </div>
-            )}
 
             {/* Right Side: Email Form (shows first on mobile, second on desktop) */}
             <div className="flex-1 flex items-center justify-center">
@@ -623,9 +835,15 @@ export default function SignUpPage() {
                           <input type="checkbox" className="rounded border-[--color-border] bg-[--color-surface] text-[#fc4f02] focus:ring-[#fc4f02]" />
                           <span>Remember me</span>
                         </label>
-                        <button type="button" className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors">
-                          Forgot password?
-                        </button>
+                        {showForgotPasswordLink && (
+                          <button
+                            type="button"
+                            onClick={openForgotPopup}
+                            className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors"
+                          >
+                            Forgot password?
+                          </button>
+                        )}
                       </div>
                     )}
 

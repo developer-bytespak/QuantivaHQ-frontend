@@ -34,7 +34,7 @@ export interface FlowCheckResult {
  */
 export async function determineNextRoute(): Promise<FlowCheckResult> {
   try {
-    // Check if this is a new signup (always show personal-info for new signups)
+    // Check if this is a new signup (isNewUser: true → personal-info)
     const isNewSignup = typeof window !== "undefined" && 
                         localStorage.getItem("quantivahq_is_new_signup") === "true";
     

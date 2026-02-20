@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { SettingsBackButton } from "@/components/settings/settings-back-button";
 import { useNotification, Notification } from "@/components/common/notification";
-import { requestPasswordChangeCode, changePassword } from "@/lib/api/auth";
+import { requestPasswordChangeCode, changePassword, verifyGoogleEmail } from "@/lib/api/auth";
 import { changePasswordSchema } from "@/lib/validation/onboarding";
 
 export default function SecurityPage() {
   const { notification, showNotification, hideNotification } = useNotification();
+  /** null = loading, true = Google sign-in (show popup on Change Password click), false = normal form */
+  const [isGoogleEmail, setIsGoogleEmail] = useState<boolean | null>(null);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -140,6 +142,22 @@ export default function SecurityPage() {
     // Here you would typically make an API call to enable/disable 2FA
   };
 
+  // On Security page load, check if user is Google sign-in (no Change Password for them)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await verifyGoogleEmail();
+        if (!cancelled) setIsGoogleEmail(result.google_email);
+      } catch {
+        if (!cancelled) setIsGoogleEmail(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Auto-focus first OTP input when 2FA code is requested
   useEffect(() => {
     if (twoFactorCodeRequested) {
@@ -175,8 +193,9 @@ export default function SecurityPage() {
           message={notification.message}
           type={notification.type}
           onClose={hideNotification}
-        />
+          />
       )}
+
       <SettingsBackButton />
       
       <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
@@ -190,7 +209,19 @@ export default function SecurityPage() {
         </div>
 
         <div className="space-y-4 sm:space-y-6">
-          {/* Password Section */}
+          {/* Password Section - for Google users, button shows popup instead of form */}
+          {isGoogleEmail === null && (
+            <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
+              <div className="flex items-center gap-2 text-slate-400 text-sm">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Loading security options...
+              </div>
+            </div>
+          )}
+          {(isGoogleEmail === true || isGoogleEmail === false) && (
           <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4">
               <div>
@@ -199,7 +230,12 @@ export default function SecurityPage() {
               </div>
               <button
                 onClick={() => {
-                  if (showChangePassword) {
+                  if (isGoogleEmail === true) {
+                    showNotification(
+                      "This account uses Google sign-in. There is no password to change — sign in with Google.",
+                      "info"
+                    );
+                  } else if (showChangePassword) {
                     handleCancelPasswordChange();
                   } else {
                     setShowChangePassword(true);
@@ -470,6 +506,7 @@ export default function SecurityPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Two-Factor Authentication */}
           <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">

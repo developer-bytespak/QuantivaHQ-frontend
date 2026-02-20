@@ -41,11 +41,13 @@ export const authService = {
   },
 
   async login(data: LoginData) {
-    return apiRequest<LoginData, { requires2FA: boolean; message: string }>({
+    const response = await apiRequest<LoginData, { requires2FA: boolean; message: string }>({
       path: "/auth/login",
       method: "POST",
       body: data,
     });
+    console.log("[Login] Response:", response);
+    return response;
   },
 
   async verify2FA(data: Verify2FAData, deviceId?: string) {
