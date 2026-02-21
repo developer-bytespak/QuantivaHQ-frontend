@@ -251,6 +251,8 @@ export default function PersonalInfoPage() {
       phoneNumber: phoneNumber || undefined,
     };
 
+    console.log("[Personal Info] Form data:", formData);
+
     // Validate using schema
     const result = personalInfoSchema.safeParse(formData);
 

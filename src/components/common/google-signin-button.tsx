@@ -6,12 +6,18 @@ import { useRouter } from "next/navigation";
 import { useNotification, Notification } from "./notification";
 import { getCurrentUser } from "@/lib/api/user";
 
-type Props = { onSuccess?: (data: any) => void };
+type Props = {
+  onSuccess?: (data: any) => void;
+  /** "login" → POST /auth/google (existing account only). "signup" → POST /auth/signup/google (new account only). */
+  mode?: "login" | "signup";
+};
 
-export default function GoogleSignInButton({ onSuccess }: Props) {
+export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props) {
   const router = useRouter();
   const { notification, showNotification, hideNotification } = useNotification();
   const isProcessingRef = React.useRef(false);
+  const modeRef = React.useRef(mode);
+  modeRef.current = mode;
 
   // Initialize GSI button on mount and whenever this component re-mounts
   React.useEffect(() => {
@@ -91,9 +97,10 @@ export default function GoogleSignInButton({ onSuccess }: Props) {
       return;
     }
     try {
-      // Post idToken to backend
+      const isSignup = modeRef.current === "signup";
+      const path = isSignup ? "/auth/signup/google" : "/auth/google";
       const data = await apiRequest<{ idToken: string }, any>({
-        path: "/auth/google",
+        path,
         method: "POST",
         body: { idToken: response.credential },
         credentials: "include",
@@ -118,9 +125,15 @@ export default function GoogleSignInButton({ onSuccess }: Props) {
           "quantivahq_is_authenticated",
           data?.accessToken ? "true" : "false"
         );
-        // Set new signup flag if this is a new user
-        if (data?.isNewUser) {
+        // Backend may send isNewUser at top level or as user.isNewUser. Only new users get redirect to personal-info; existing users go through normal flow (KYC, etc.)
+        const isNewUser = data?.isNewUser === true || data?.user?.isNewUser === true;
+        if (isNewUser) {
           localStorage.setItem("quantivahq_is_new_signup", "true");
+        }
+        // Google signup only: save userId so personal-info etc. have it (no verify-2fa step for Google signup)
+        if (isSignup) {
+          const userId = data?.user?.user_id ?? data?.user_id;
+          if (userId) localStorage.setItem("quantivahq_user_id", String(userId));
         }
       } catch {}
 
