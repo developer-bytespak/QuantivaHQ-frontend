@@ -306,9 +306,9 @@ export default function SignUpPage() {
       // Use flow router to determine next step
       await navigateToNextRoute(router);
     } catch (error) {
-      // If checks fail, go to proof-upload (KYC start)
+      // If checks fail, go to KYC verification
       console.log("Error checking user status:", error);
-      router.push("/onboarding/proof-upload");
+      router.push("/onboarding/kyc-verification");
     }
   };
 

@@ -281,8 +281,8 @@ export default function PersonalInfoPage() {
       localStorage.setItem("quantivahq_personal_info", JSON.stringify(formData));
       
       setIsLoading(false);
-      // After personal info, always go to KYC proof upload (first KYC step)
-      router.push("/onboarding/proof-upload");
+      // After personal info, go to KYC verification (SumSub SDK)
+      router.push("/onboarding/kyc-verification");
     } catch (error) {
       console.error("Failed to update personal info:", error);
       setErrors({

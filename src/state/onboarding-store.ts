@@ -11,7 +11,7 @@ type OnboardingStep =
   | "account-type"
   | "sign-up"
   | "personal-info"
-  | "proof-upload"
+  | "kyc-verification"
   | "verification-status"
   | "experience"
   | "api-setup";

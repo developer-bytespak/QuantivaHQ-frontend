@@ -10,7 +10,7 @@ import { exchangesService } from "../api/exchanges.service";
 
 export type FlowRoute =
   | "/onboarding/personal-info"
-  | "/onboarding/proof-upload"
+  | "/onboarding/kyc-verification"
   | "/onboarding/verification-status"
   | "/onboarding/account-type"
   | "/dashboard";
@@ -25,7 +25,7 @@ export interface FlowCheckResult {
  * Flow logic:
  * 1. Check KYC status:
  *    - No KYC record → Check personal info, if missing go to /onboarding/personal-info
- *    - No KYC record + has personal info → /onboarding/proof-upload (start KYC)
+ *    - No KYC record + has personal info → /onboarding/kyc-verification (start KYC)
  *    - KYC pending/review → /onboarding/verification-status
  *    - KYC approved → Continue to step 2
  * 2. Check exchange connection:
@@ -93,44 +93,22 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     const isKycApproved = kycStatus === "approved";
 
     if (!isKycApproved) {
-      // KYC is not approved, check if KYC record exists
-      if (hasKycRecord && kycId) {
-        // Check if documents have been uploaded
-        try {
-          const { getVerificationDetails } = await import("../api/kyc");
-          const verification = await getVerificationDetails(kycId);
-          
-          const hasDocuments = verification.documents && verification.documents.length > 0;
-          const hasFaceMatch = verification.face_matches && verification.face_matches.length > 0;
-          
-          if (!hasDocuments || !hasFaceMatch) {
-            // KYC record exists but no documents uploaded yet
-            return {
-              route: "/onboarding/proof-upload",
-              reason: "KYC record exists but documents not uploaded",
-            };
-          }
-          
-          // Documents uploaded, show verification status
-          return {
-            route: "/onboarding/verification-status",
-            reason: "KYC documents uploaded, pending verification",
-          };
-        } catch (verifyError) {
-          console.log("Error checking verification details:", verifyError);
-          // If we can't get verification details, default to proof upload
-          return {
-            route: "/onboarding/proof-upload",
-            reason: "Cannot verify document upload status",
-          };
-        }
-      } else {
-        // No KYC record, start KYC flow
+      // If KYC is pending/review and was submitted to SumSub, show status page
+      if (
+        hasKycRecord &&
+        (kycStatus === "pending" || kycStatus === "review")
+      ) {
         return {
-          route: "/onboarding/proof-upload",
-          reason: "No KYC record found, starting KYC process",
+          route: "/onboarding/verification-status",
+          reason: "KYC submitted, awaiting verification result",
         };
       }
+
+      // Otherwise launch the SumSub SDK verification flow
+      return {
+        route: "/onboarding/kyc-verification",
+        reason: "KYC not started or rejected, launching SDK verification",
+      };
     }
 
     // Step 2: Check exchange connection (only if KYC is approved)
