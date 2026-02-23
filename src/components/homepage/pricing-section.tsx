@@ -192,16 +192,15 @@ export function PricingSection() {
   const getTierFeatures = (tier: PlanTier): string[] => {
     const tiers: Record<PlanTier, string[]> = {
       [PlanTier.FREE]: [
-        "✓ AI Trading",
-        "✓ Auto Execution",
         "✓ Real-Time Data",
         "✓ Mobile Access",
         "✓ Web Access",
-        "✓ Community Access",
         "✓ Multi-Exchange Support",
       ],
       [PlanTier.PRO]: [
         "✓ Everything in FREE, PLUS:",
+        "✓ AI Trading",
+        "✓ Auto Execution",
         "✓ Up to 5 Custom Strategies",
       ],
       [PlanTier.ELITE]: [
