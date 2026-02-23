@@ -8,6 +8,8 @@ import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
 import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
+import useSubscriptionStore from "@/state/subscription-store";
+import { PlanTier } from "@/mock-data/subscription-dummy-data";
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -96,6 +98,8 @@ export default function TopTradesPage() {
   // Connection type detection - using global context
   const { connectionType, isLoading: isCheckingConnection } = useExchange();
   const isStocksConnection = connectionType === "stocks";
+  const { currentSubscription } = useSubscriptionStore();
+  const canAccessTopTrades = currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE);
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -229,8 +233,8 @@ export default function TopTradesPage() {
 
   // --- Fetch stock market data from Alpaca (for stocks connection) ---
   const fetchStockMarketData = async () => {
-    if (!isStocksConnection) return;
-    
+    if (!isStocksConnection || !canAccessTopTrades) return;
+
     setLoadingMarketData(true);
     try {
       // Fetch all stocks from market page (500 limit to match market page)
@@ -302,9 +306,10 @@ export default function TopTradesPage() {
 
   // --- Fetch trending assets (DISCOVERY) ---
   useEffect(() => {
+    if (!canAccessTopTrades) return;
     // Fetch for both crypto and stocks connections
     if (connectionType !== "crypto" && connectionType !== "stocks") return;
-    
+
     let mounted = true;
     (async () => {
       try {
@@ -339,10 +344,11 @@ export default function TopTradesPage() {
       }
     })();
     return () => { mounted = false; };
-  }, [connectionType, isStocksConnection]);
+  }, [connectionType, isStocksConnection, canAccessTopTrades]);
 
   // --- Fetch pre-built strategies ---
   useEffect(() => {
+    if (!canAccessTopTrades) return;
     // Load strategies for both crypto and stocks connections
     if (connectionType !== "crypto" && connectionType !== "stocks") return;
 
@@ -368,7 +374,7 @@ export default function TopTradesPage() {
       }
     })();
     return () => { mounted = false; };
-  }, [connectionType]);
+  }, [connectionType, canAccessTopTrades]);
 
   // --- Fetch signals for a strategy with AI insights ---
   const fetchStrategySignals = async (strategyId: string) => {
@@ -508,6 +514,7 @@ export default function TopTradesPage() {
   // --- Fetch signals for ONLY the active strategy (lazy loading) ---
   // This dramatically improves performance by only loading data for the currently viewed tab
   useEffect(() => {
+    if (!canAccessTopTrades) return;
     if (connectionType !== "crypto" && connectionType !== "stocks") return;
     if (preBuiltStrategies.length > 0) {
       const activeStrategy = preBuiltStrategies[activeTab];
@@ -515,10 +522,11 @@ export default function TopTradesPage() {
         fetchStrategySignals(activeStrategy.strategy_id);
       }
     }
-  }, [preBuiltStrategies, connectionType, activeTab]);
+  }, [preBuiltStrategies, connectionType, activeTab, canAccessTopTrades]);
 
   // --- Auto-refresh signals every 60 seconds (only for active strategy) ---
   useEffect(() => {
+    if (!canAccessTopTrades) return;
     if (connectionType !== "crypto" && connectionType !== "stocks") return;
     if (preBuiltStrategies.length === 0) return;
 
@@ -531,7 +539,7 @@ export default function TopTradesPage() {
     }, 60000); // 60 seconds
 
     return () => clearInterval(interval);
-  }, [preBuiltStrategies, connectionType, activeTab]);
+  }, [preBuiltStrategies, connectionType, activeTab, canAccessTopTrades]);
 
   // --- Map signals to trades for display ---
   const mapSignalsToTrades = (signals: any[]): Trade[] => {
@@ -741,7 +749,32 @@ export default function TopTradesPage() {
     );
   }
 
-  // Stocks connection - no longer show coming soon, show stock strategies
+  // Top Trades is PRO and ELITE only
+  if (!currentSubscription) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+      </div>
+    );
+  }
+  if (!canAccessTopTrades) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur p-8">
+        <div className="text-center max-w-md">
+          <h3 className="text-lg font-semibold text-white mb-2">Top Trades is for PRO and ELITE</h3>
+          <p className="text-sm text-slate-400 mb-6">
+            Generate stock signals and view trading opportunities. Upgrade to access Top Trades.
+          </p>
+          <Link
+            href="/dashboard/settings/subscription"
+            className="inline-block px-6 py-2.5 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-semibold"
+          >
+            Upgrade Now
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // --- UI Rendering (reuse existing layout and style) ---
   return (
