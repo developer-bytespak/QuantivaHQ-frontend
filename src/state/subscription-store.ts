@@ -289,9 +289,13 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         cancelled_at: data.current.cancelled_at ? new Date(data.current.cancelled_at) : null,
       } : null;
 
-      // Convert date strings in payment history
+      // Convert date strings in payment history and normalize amount
       const paymentHistory = (data.payments || []).map((payment: any) => ({
         ...payment,
+        amount:
+          typeof payment.amount === 'string'
+            ? parseFloat(payment.amount)
+            : payment.amount,
         paid_at: payment.paid_at ? new Date(payment.paid_at) : null,
         created_at: new Date(payment.created_at),
       }));

@@ -4,8 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier, BillingPeriod } from "@/mock-data/subscription-dummy-data";
 import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
+
+type SubscriptionPlanWithPriceId = SubscriptionPlan & { priceId: string };
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
+import { PRICE_IDS } from "@/constant";
 
 export function SubscriptionSettings() {
   const [activeTab, setActiveTab] = useState<"current" | "billing" | "usage" | "change">("current");
@@ -23,7 +26,7 @@ export function SubscriptionSettings() {
     fetchSubscriptionData,
   } = useSubscriptionStore();
 
-  const { updateSubscription } = useSubscription();
+  const {  createCheckout, cancelSubscription } = useSubscription();
 
   // Fetch subscription data once when user lands on this page
   useEffect(() => {
@@ -45,7 +48,25 @@ export function SubscriptionSettings() {
     }
   };
 
-  const renderPlanCard = (plan: SubscriptionPlan) => {
+  const handleCancelSubscription = () => {
+    cancelSubscription.mutate({
+      subscription_id: currentSubscription?.subscription_id || "",
+    },{
+      onSuccess: (data: any) => {
+        console.log("data", data);
+        console.log("Subscription cancelled successfully");
+        toast.success("Subscription cancelled successfully");
+        fetchSubscriptionData();
+      },
+      onError: (error) => {
+        console.log("error", error);
+        console.error("Failed to cancel subscription:", error);
+        toast.error("Failed to cancel subscription. Please try again.");
+      },
+    });
+  };
+
+  const renderPlanCard = (plan: SubscriptionPlanWithPriceId) => {
     const isCurrentPlan = currentSubscription?.plan_id === plan.plan_id;
     const isUpgrade =
       !currentSubscription ||
@@ -94,8 +115,8 @@ export function SubscriptionSettings() {
           ) : (
             <button 
               className={`w-full px-4 py-2 ${buttonColor} rounded-lg transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
-              onClick={() => handleUpgradePlan(plan.plan_id)}
-              disabled={isThisPlanLoading || updateSubscription.isPending}
+              onClick={() => handleUpgradePlan({planId: plan.plan_id, priceId: plan.priceId})}
+              disabled={isThisPlanLoading || createCheckout.isPending}
             >
               {isThisPlanLoading ? "Upgrading..." : isUpgrade ? "Upgrade" : "Downgrade"}
             </button>
@@ -136,27 +157,47 @@ export function SubscriptionSettings() {
     }
   };
 
-  const handleUpgradePlan = (planId: string) => {
+  const handleUpgradePlan = ({planId, priceId="123"}: {planId: string, priceId?: string}) => {
     setLoadingPlanId(planId);
     const data = {
       plan_id: planId,
-      status: "active",
-      auto_renew: true,
-      billing_provider: "stripe",
+      price_id: priceId || "price_1QXQ52EzYvKYlo2C0986b63e",
+      cancel_url: `http://localhost:3001/dashboard/settings/subscription`,
+      success_url: `http://localhost:3001/dashboard/settings/subscription`,
     };
-    updateSubscription.mutate(data, {
-      onSuccess: () => {
-        fetchSubscriptionData();
-        setLoadingPlanId(null);
-        console.log("Plan upgraded successfully");
-        toast.success("Plan upgraded successfully");
-        // Refresh subscription data after successful upgrade
+
+    console.log(data);
+
+    // return 
+    
+
+    createCheckout.mutate(data, {
+      onSuccess: (data: any) => {
+        console.log("createCheckout success data", data);
+        console.log("Checkout created successfully");
+        toast.success("Checkout created successfully");
+        window.location.href = data.url;
       },
-      onError: (error) => {
-        console.error("Failed to upgrade plan:", error);
-        toast.error("Failed to upgrade plan. Please try again.");
-        setLoadingPlanId(null);
-      }
+      onError: (error: any) => {
+        console.log("createCheckout error in component (raw):", error);
+
+        const backendMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          error?.response?.data;
+
+        if (error?.response) {
+          console.log("createCheckout error status:", error.response.status);
+          console.log("createCheckout error data:", error.response.data);
+        }
+
+        console.error("Failed to create checkout:", error);
+        toast.error(
+          backendMessage
+            ? `${backendMessage}`
+            : "Failed to create checkout. Please try again."
+        );
+      },
     });
   };
 
@@ -267,12 +308,11 @@ export function SubscriptionSettings() {
                   Manage Auto-Renewal
                 </button> */}
                 <button 
-                
-                onClick={()=>{
-                  toast.error("This feature is not available yet");
-                }}
+                type="button"
+                onClick={handleCancelSubscription}
+                disabled={cancelSubscription.isPending}
                 className="px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium">
-                  Cancel Subscription
+                  {cancelSubscription.isPending ? "Cancelling..." : "Cancel Subscription"}
                 </button>
               </div>
             </div>
@@ -412,7 +452,15 @@ export function SubscriptionSettings() {
             <div>
               <h3 className="text-base sm:text-lg font-semibold text-white mb-3">PRO Plan</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                {getPlansGroupedByTier()[PlanTier.PRO].map((plan) => renderPlanCard(plan))}
+                {getPlansGroupedByTier()[PlanTier.PRO].map((plan) => {
+                  let priceId = PRICE_IDS.PRO_PLAN_MONTHLY;
+                  if (plan.billing_period === BillingPeriod.QUARTERLY) {
+                    priceId = PRICE_IDS.PRO_PLAN_QUARTERLY;
+                  } else if (plan.billing_period === BillingPeriod.YEARLY) {
+                    priceId = PRICE_IDS.PRO_PLAN_YEARLY;
+                  }
+                  return renderPlanCard({ ...plan, priceId });
+                })}
               </div>
             </div>
 
@@ -420,7 +468,15 @@ export function SubscriptionSettings() {
             <div>
               <h3 className="text-base sm:text-lg font-semibold text-white mb-3">ELITE Plan</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                {getPlansGroupedByTier()[PlanTier.ELITE].map((plan) => renderPlanCard(plan))}
+                {getPlansGroupedByTier()[PlanTier.ELITE].map((plan) => {
+                  let priceId = PRICE_IDS.ELITE_PLAN_MONTHLY;
+                  if (plan.billing_period === BillingPeriod.QUARTERLY) {
+                    priceId = PRICE_IDS.ELITE_PLAN_QUARTERLY;
+                  } else if (plan.billing_period === BillingPeriod.YEARLY) {
+                    priceId = PRICE_IDS.ELITE_PLAN_YEARLY;
+                  }
+                  return renderPlanCard({ ...plan, priceId });
+                })}
               </div>
             </div>
 
