@@ -420,7 +420,7 @@ export default function DashboardPage() {
                 To start trading and accessing your portfolio, please connect your Binance or Bybit exchange account. You'll need to provide your API keys.
               </p>
               <button
-                onClick={() => router.push("/onboarding/crypto-exchange")}
+                onClick={() => router.push("/onboarding/account-type")}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#fc4f02] hover:bg-[#ff5f12] text-white font-medium text-sm transition-colors duration-200"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

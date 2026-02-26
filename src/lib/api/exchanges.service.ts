@@ -198,6 +198,31 @@ export const exchangesService = {
   },
 
   /**
+   * Get active connection for a specific exchange type (crypto or stocks)
+   */
+  async getActiveConnectionByType(type: "crypto" | "stocks"): Promise<{
+    success: boolean;
+    data: {
+      connection_id: string;
+      exchange: Exchange;
+      status: string;
+    };
+  }> {
+    return apiRequest<never, {
+      success: boolean;
+      data: {
+        connection_id: string;
+        exchange: Exchange;
+        status: string;
+      };
+    }>({
+      path: `/exchanges/connections/active?type=${type}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
    * Create a new exchange connection
    */
   async createConnection(data: CreateConnectionDto): Promise<ApiResponse<{
@@ -501,7 +526,10 @@ export const exchangesService = {
       console.warn("Unexpected response format for getConnections:", response);
       return [];
     } catch (error: any) {
-      console.error("Failed to fetch connections:", error);
+      const status = error?.status || error?.statusCode || error?.response?.status;
+      if (status !== 401 && status !== 404) {
+        console.error("Failed to fetch connections:", error);
+      }
       return [];
     }
   },
