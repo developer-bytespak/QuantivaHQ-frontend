@@ -138,6 +138,26 @@ export default function DashboardPage() {
   }>>([]);
   const [isLoadingStockSignals, setIsLoadingStockSignals] = useState(false);
 
+  // Crypto: 1 actual signal (same API as stocks, different strategy filter)
+  const [cryptoSignals, setCryptoSignals] = useState<Array<{
+    id: number;
+    pair: string;
+    type: "BUY" | "SELL";
+    confidence: "HIGH" | "MEDIUM" | "LOW";
+    ext: string;
+    entryShort: string;
+    stopLossShort: string;
+    progressMin: string;
+    progressMax: string;
+    progressPercent: number;
+    entry: string;
+    stopLoss: string;
+    takeProfit1: string;
+    additionalInfo: string;
+    reasons: string[];
+  }>>([]);
+  const [isLoadingCryptoSignals, setIsLoadingCryptoSignals] = useState(false);
+
   const trades = [
     {
       id: 1,
@@ -390,6 +410,61 @@ export default function DashboardPage() {
     };
 
     fetchStockSignals();
+  }, [connectionType]);
+
+  // Fetch crypto signals for dashboard (1 actual trade, same pattern as stocks)
+  useEffect(() => {
+    if (connectionType !== "crypto") return;
+
+    const fetchCryptoSignals = async () => {
+      setIsLoadingCryptoSignals(true);
+      try {
+        const strategies = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
+        const cryptoStrategies = (strategies || []).filter((s: Strategy) => s?.type === "admin" && !s?.name?.includes("(Stocks)"));
+        if (cryptoStrategies.length === 0) {
+          setCryptoSignals([]);
+          return;
+        }
+        const strategyId = cryptoStrategies[0].strategy_id;
+        const response = await getTrendingAssetsWithInsights(strategyId, 10);
+        const assets = response.assets || [];
+        const mapped = assets.slice(0, 1).map((asset, idx) => {
+          const price = asset.price_usd || 0;
+          const score = asset.signal?.final_score ?? asset.trend_score ?? 0;
+          const confidence = score >= 70 ? "HIGH" : score >= 40 ? "MEDIUM" : "LOW";
+          const action = asset.signal?.action?.toUpperCase() === "SELL" ? "SELL" : "BUY";
+          const stopLossPct = asset.signal?.stop_loss_pct ?? 5;
+          const takeProfitPct = asset.signal?.take_profit_pct ?? 10;
+          const stopLoss = action === "BUY" ? price * (1 - stopLossPct / 100) : price * (1 + stopLossPct / 100);
+          const takeProfit = action === "BUY" ? price * (1 + takeProfitPct / 100) : price * (1 - takeProfitPct / 100);
+          const pair = `${asset.symbol} / USDT`;
+          return {
+            id: idx + 1,
+            pair,
+            type: action as "BUY" | "SELL",
+            confidence: confidence as "HIGH" | "MEDIUM" | "LOW",
+            ext: price.toFixed(2),
+            entryShort: price.toFixed(2),
+            stopLossShort: `${stopLoss.toFixed(2)} $`,
+            progressMin: `$${stopLoss.toFixed(0)}`,
+            progressMax: `$${takeProfit.toFixed(0)}`,
+            progressPercent: Math.min(100, Math.max(0, Math.floor(score))),
+            entry: `$${price.toFixed(2)}`,
+            stopLoss: `$${stopLoss.toFixed(2)}`,
+            takeProfit1: `$${takeProfit.toFixed(2)}`,
+            additionalInfo: asset.price_change_24h != null ? `${asset.price_change_24h >= 0 ? "+" : ""}${asset.price_change_24h.toFixed(2)}% 24h` : "-",
+            reasons: asset.aiInsight ? [asset.aiInsight] : [],
+          };
+        });
+        setCryptoSignals(mapped);
+      } catch (err) {
+        console.error("Failed to fetch crypto signals:", err);
+        setCryptoSignals([]);
+      } finally {
+        setIsLoadingCryptoSignals(false);
+      }
+    };
+    fetchCryptoSignals();
   }, [connectionType]);
 
   // Auto-refresh news every 5 minutes
@@ -818,7 +893,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Trade Cards - For both Crypto and Stocks */}
+            {/* Trade Cards - For both Crypto and Stocks (1 actual trade each) */}
             {connectionType === "stocks" ? (
               isLoadingStockSignals ? (
                 <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
@@ -894,72 +969,90 @@ export default function DashboardPage() {
                 </div>
               )
             ) : (
-              <div className="space-y-2 sm:space-y-3">
-                {trades.map((trade, index) => (
-                 <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
-                  {/* Top Trade Opportunity */}
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
-                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                        : "bg-gradient-to-r from-red-500 to-red-600"
-                        }`}>
-                        {trade.type}
-                      </span>
-                      <span className="text-xs sm:text-sm font-medium text-white">{trade.pair}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
-                        }`}>{trade.confidence}</span>
-                    </div>
-
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <p className="text-[10px] sm:text-xs text-slate-400">Ext. {trade.ext}</p>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <span className="text-slate-400">Entry</span>
-                        <span className="font-medium text-white">{trade.entryShort}</span>
-                        <span className="text-slate-500">&gt;</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <span className="text-slate-400">Stop Loss</span>
-                        <span className="font-medium text-white">{trade.stopLossShort}</span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-400">
-                        <span>{trade.progressMin}</span>
-                        <span>{trade.progressMax}</span>
-                      </div>
-                      <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                        <div
-                          className={`h-full bg-gradient-to-r ${trade.type === "BUY"
-                            ? "from-green-500 to-emerald-500"
-                            : "from-red-500 to-red-600"
-                            }`}
-                          style={{ width: `${trade.progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-1.5 sm:gap-2 pt-2">
-                      <button className="flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
-                        Auto Trade
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedTrade(index);
-                          setShowTradeOverlay(true);
-                        }}
-                         className="rounded-lg sm:rounded-xl bg-[--color-surface] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-300 transition-all duration-300  hover:text-white"
-                      >
-                        View Trade
-                      </button>
-                    </div>
+              isLoadingCryptoSignals ? (
+                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 border-2 border-[#fc4f02] border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm text-slate-400">Loading crypto signal...</p>
                   </div>
                 </div>
-              ))}
-              </div>
+              ) : cryptoSignals.length > 0 ? (
+                <div className="space-y-2 sm:space-y-3">
+                  {cryptoSignals.map((trade) => (
+                    <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
+                            ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                            : "bg-gradient-to-r from-red-500 to-red-600"
+                            }`}>
+                            {trade.type}
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium text-white">{trade.pair}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
+                            }`}>{trade.confidence}</span>
+                        </div>
+
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <p className="text-[10px] sm:text-xs text-slate-400">Price: ${trade.ext}</p>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <span className="text-slate-400">Entry</span>
+                            <span className="font-medium text-white">${trade.entryShort}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <span className="text-slate-400">Stop Loss</span>
+                            <span className="font-medium text-white">{trade.stopLossShort}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-400">
+                            <span>{trade.progressMin}</span>
+                            <span>{trade.progressMax}</span>
+                          </div>
+                          <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                            <div
+                              className={`h-full bg-gradient-to-r ${trade.type === "BUY"
+                                ? "from-green-500 to-emerald-500"
+                                : "from-red-500 to-red-600"
+                                }`}
+                              style={{ width: `${trade.progressPercent}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1.5 sm:gap-2 pt-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTrade(0);
+                              setShowTradeOverlay(true);
+                            }}
+                            className="rounded-lg sm:rounded-xl bg-[--color-surface] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white"
+                          >
+                            View Trade
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-white">No Signals Available</h3>
+                    <p className="text-sm text-slate-400 max-w-md">Visit Top Trades to generate crypto signals and view trading opportunities.</p>
+                    <button
+                      onClick={() => router.push("/dashboard/top-trades")}
+                      className="mt-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:scale-105"
+                    >
+                      Go to Top Trades
+                    </button>
+                  </div>
+                </div>
+              )
             )}
           </div>
 
@@ -1048,88 +1141,87 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Trade Details Overlay */}
-      {showTradeOverlay && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={() => setShowTradeOverlay(false)}
-        >
+      {/* Trade Details Overlay (crypto: uses cryptoSignals) */}
+      {showTradeOverlay && (() => {
+        const overlayTrade = connectionType === "crypto" && cryptoSignals.length > 0
+          ? cryptoSignals[selectedTrade]
+          : connectionType === "stocks"
+            ? null
+            : trades[selectedTrade];
+        if (!overlayTrade) return null;
+        return (
           <div
-             className="relative w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowTradeOverlay(false)}
           >
-            {/* Header */}
-            <div className="mb-4 sm:mb-6 flex items-center justify-between">
-              <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
-              <button
-                onClick={() => setShowTradeOverlay(false)}
-                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
-                aria-label="Close"
-              >
-                <svg
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+            <div
+              className="relative w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 sm:mb-6 flex items-center justify-between">
+                <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
+                <button
+                  onClick={() => setShowTradeOverlay(false)}
+                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                  aria-label="Close"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
 
-            {/* Trade Info */}
-            <div className="space-y-4 sm:space-y-6">
-              {/* Pair and Type */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-semibold text-white ${trades[selectedTrade].type === "BUY"
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-semibold text-white ${overlayTrade.type === "BUY"
                     ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
                     : "bg-gradient-to-r from-red-500 to-red-600"
                   }`}>
-                  {trades[selectedTrade].type}
-                </span>
-                <span className="text-base sm:text-lg font-medium text-white">{trades[selectedTrade].pair}</span>
-                <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{trades[selectedTrade].confidence}</span>
-              </div>
+                    {overlayTrade.type}
+                  </span>
+                  <span className="text-base sm:text-lg font-medium text-white">{overlayTrade.pair}</span>
+                  <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{overlayTrade.confidence}</span>
+                </div>
 
-              {/* Trade Details */}
-               <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Entry</span>
-                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].entry}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Stop-Loss</span>
-                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].stopLoss}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Take Profit 1</span>
-                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].takeProfit1}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Additional Info</span>
-                  <span className="text-sm sm:text-base font-medium text-slate-300">{trades[selectedTrade].additionalInfo}</span>
-                </div>
-              </div>
-
-              {/* Reasons */}
-              <div className="space-y-2 sm:space-y-3">
-                <h3 className="text-sm sm:text-base font-semibold text-white">Reasons</h3>
-                {trades[selectedTrade].reasons.map((reason: string, index: number) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <span className="mt-1 sm:mt-1.5 h-1 w-1 sm:h-1.5 sm:w-1.5 flex-shrink-0 rounded-full bg-green-400" />
-                    <p className="text-xs sm:text-sm text-slate-300">{reason}</p>
+                <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-slate-400">Entry</span>
+                    <span className="text-sm sm:text-base font-medium text-white">{"entry" in overlayTrade ? overlayTrade.entry : `$${(overlayTrade as { entryShort: string }).entryShort}`}</span>
                   </div>
-                ))}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-slate-400">Stop-Loss</span>
+                    <span className="text-sm sm:text-base font-medium text-white">{"stopLoss" in overlayTrade ? overlayTrade.stopLoss : (overlayTrade as { stopLossShort: string }).stopLossShort}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-slate-400">Take Profit 1</span>
+                    <span className="text-sm sm:text-base font-medium text-white">{"takeProfit1" in overlayTrade ? overlayTrade.takeProfit1 : "-"}</span>
+                  </div>
+                  {"additionalInfo" in overlayTrade && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm text-slate-400">Additional Info</span>
+                      <span className="text-sm sm:text-base font-medium text-slate-300">{overlayTrade.additionalInfo}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-sm sm:text-base font-semibold text-white">Reasons</h3>
+                  {"reasons" in overlayTrade && overlayTrade.reasons.length > 0
+                    ? overlayTrade.reasons.map((reason: string, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <span className="mt-1 sm:mt-1.5 h-1 w-1 sm:h-1.5 sm:w-1.5 flex-shrink-0 rounded-full bg-green-400" />
+                          <p className="text-xs sm:text-sm text-slate-300">{reason}</p>
+                        </div>
+                      ))
+                    : (
+                      <p className="text-xs sm:text-sm text-slate-400">No insight available for this signal.</p>
+                    )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* News Overlay */}
       {showNewsOverlay && (

@@ -53,8 +53,8 @@ export function ProfilePage() {
     <div className="space-y-4 sm:space-y-6 p-4 sm:p-0">
       {/* Portfolio Summary Card */}
       <div className="relative overflow-hidden rounded-lg sm:rounded-2xl bg-gradient-to-br from-[#c93d02] via-[#d45a00] to-[#d46a00] p-4 sm:p-8 shadow-xl">
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-0">
-          <div className="flex-1">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-0 pr-12 sm:pr-14">
+          <div className="flex-1 min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Portfolio</h1>
             <div className="space-y-3 sm:space-y-4">
               <div>
@@ -80,11 +80,12 @@ export function ProfilePage() {
           </div>
         </div>
         <button
+          type="button"
           onClick={() => router.push("/dashboard/settings")}
-          className="absolute top-3 sm:top-4 right-3 sm:right-4 p-2 sm:p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-105"
+          className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 p-2 sm:p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-105 min-w-[2.5rem] min-h-[2.5rem] sm:min-w-[3rem] sm:min-h-[3rem] flex items-center justify-center touch-manipulation"
           aria-label="Settings"
         >
-          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white pointer-events-none shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
