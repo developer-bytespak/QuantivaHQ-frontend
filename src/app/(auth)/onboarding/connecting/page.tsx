@@ -59,11 +59,6 @@ export default function ConnectingPage() {
             sessionStorage.setItem("quantivahq_stocks_connected", "true");
           }
 
-          // Navigate to dashboard after successful connection for all account types
-          // Small delay before navigation to show success message
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 1000);
         } else {
           // Invalid API keys
           setErrorType("invalid_api_key");

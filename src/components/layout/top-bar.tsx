@@ -7,6 +7,7 @@ import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile } from "@/lib/api/user";
 import { useMobileNav } from "@/hooks/useMobileNav";
 import { SubscriptionBadge } from "@/components/common/subscription-badge";
+import { useExchange } from "@/context/ExchangeContext";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -288,137 +289,40 @@ function UserProfileSection() {
 }
 
 function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHeadingElement | null> }) {
-  const router = useRouter();
   const pathname = usePathname();
+  const { hasBothConnections, selectedDashboardType, setSelectedDashboardType } = useExchange();
   const [isOpen, setIsOpen] = useState(false);
-  const [hasBothAccounts, setHasBothAccounts] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
 
-  const checkBothAccounts = () => {
-    if (typeof window !== "undefined") {
-      // Use sessionStorage for UI state flags (cleared on browser close, more secure)
-      const cryptoConnected = sessionStorage.getItem("quantivahq_crypto_connected") === "true";
-      const stocksConnected = sessionStorage.getItem("quantivahq_stocks_connected") === "true";
-      setHasBothAccounts(cryptoConnected && stocksConnected);
-    }
-  };
+  // Only show on dashboard routes
+  const isDashboardRoute = pathname?.startsWith("/dashboard") ?? false;
+  const shouldShow = hasBothConnections && isDashboardRoute;
 
-  useEffect(() => {
-    // Check if both accounts are connected
-    checkBothAccounts();
-
-    // Listen for storage changes (works for sessionStorage too)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "quantivahq_crypto_connected" || e.key === "quantivahq_stocks_connected") {
-        checkBothAccounts();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
-  // Re-check when pathname changes (in case flag was set just before navigation)
-  useEffect(() => {
-    checkBothAccounts();
-  }, [pathname]);
-
-  // Calculate dropdown position - position it below the heading and adjust for sidebar
   useEffect(() => {
     if (isOpen && headingRef.current) {
       const updatePosition = () => {
         if (headingRef.current) {
           const headingRect = headingRef.current.getBoundingClientRect();
-          
-          // Check if sidebar is expanded by looking for the sidebar element
-          const sidebar = document.querySelector('aside[class*="w-[280px]"]');
-          const sidebarCollapsed = document.querySelector('aside[class*="w-[80px]"]');
-          
-          // Determine sidebar width (80px collapsed, 280px expanded)
-          let sidebarWidth = 80;
-          if (sidebar && !sidebarCollapsed) {
-            sidebarWidth = 280;
-          }
-          
-          // Position dropdown just below the heading, aligned with the left edge of the heading
-          // Ensure it doesn't collide with sidebar by checking if it would overlap
-          const dropdownWidth = 224; // w-56 = 14rem = 224px
-          const minLeftPosition = sidebarWidth + 16; // Add some padding
-          
-          let leftPosition = headingRect.left;
-          
-          // If dropdown would overlap with sidebar, adjust position
-          if (leftPosition < minLeftPosition) {
-            leftPosition = minLeftPosition;
-          }
-          
           setDropdownPosition({
             top: headingRect.bottom + 8,
-            left: leftPosition,
+            left: headingRect.left,
           });
         }
       };
-      
-      // Update position immediately
       updatePosition();
-      
-      // Use MutationObserver to watch for sidebar class changes (when it expands/collapses)
-      const observer = new MutationObserver(() => {
-        updatePosition();
-      });
-      
-      // Observe sidebar element for class changes
-      const sidebarElement = document.querySelector('aside');
-      if (sidebarElement) {
-        observer.observe(sidebarElement, {
-          attributes: true,
-          attributeFilter: ['class'],
-        });
-      }
-      
-      // Also observe the document body for any layout changes
-      if (document.body) {
-        observer.observe(document.body, {
-          childList: false,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['class'],
-        });
-      }
-      
-      // Update position on window resize or scroll
-      window.addEventListener('resize', updatePosition);
-      window.addEventListener('scroll', updatePosition, true);
-      
-      // Use requestAnimationFrame for smooth updates during sidebar hover
-      let animationFrameId: number;
-      const continuousUpdate = () => {
-        updatePosition();
-        if (isOpen) {
-          animationFrameId = requestAnimationFrame(continuousUpdate);
-        }
-      };
-      animationFrameId = requestAnimationFrame(continuousUpdate);
-      
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
       return () => {
-        observer.disconnect();
-        window.removeEventListener('resize', updatePosition);
-        window.removeEventListener('scroll', updatePosition, true);
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
-        }
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
       };
     } else {
       setDropdownPosition(null);
     }
   }, [isOpen, headingRef]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -430,32 +334,51 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
         setIsOpen(false);
       }
     };
-
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
 
-  // Show switcher only on the main dashboard pages (not sub-pages) when both accounts are connected
-  const isCryptoDashboard = pathname === "/dashboard";
-  const isStocksDashboard = pathname === "/dashboard"; // Now unified
-  
-  // Dashboard switcher removed - unified dashboard adapts automatically
-  return null;
+  if (!shouldShow) return null;
+
+  const options: { type: "crypto" | "stocks"; label: string; icon: React.ReactNode }[] = [
+    {
+      type: "crypto",
+      label: "Crypto",
+      icon: (
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.5 8h4a1.5 1.5 0 010 3H9.5V8zM9.5 11h5a1.5 1.5 0 010 3H9.5v-3zM12 6v2M12 16v2M9 17h6M9 7h6" />
+        </svg>
+      ),
+    },
+    {
+      type: "stocks",
+      label: "Stocks",
+      icon: (
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+          <polyline points="16 7 22 7 22 13" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
     <>
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 sm:gap-2 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2 sm:px-3 py-1 sm:py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
+        className="flex items-center gap-1.5 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
       >
+        <span className="text-xs sm:text-sm font-medium text-slate-300">
+          {selectedDashboardType === "stocks" ? "Stocks" : "Crypto"}
+        </span>
         <svg
-          className={`h-3 w-3 sm:h-4 sm:w-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          className={`h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -464,18 +387,40 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
         </svg>
       </button>
 
-      {/* Dashboard switcher removed - unified dashboard adapts automatically */}
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-48 sm:w-56 rounded-lg sm:rounded-xl border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-1.5 sm:p-2 shadow-2xl shadow-black/50 backdrop-blur"
+          className="fixed z-[100] w-44 sm:w-48 rounded-xl border border-[#fc4f02]/20 bg-[--color-surface-alt] p-1 shadow-2xl shadow-black/50 backdrop-blur-xl"
           style={{
-            top: `${dropdownPosition?.top ?? 0}px`,
-            left: `${dropdownPosition?.left ?? 0}px`,
-            position: 'fixed',
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
           }}
         >
-          {/* Removed stocks/crypto switcher - dashboard now unified */}
+          {options.map((option) => {
+            const isActive = selectedDashboardType === option.type;
+            return (
+              <button
+                key={option.type}
+                onClick={() => {
+                  setSelectedDashboardType(option.type);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+                  isActive
+                    ? "bg-[#fc4f02]/15 text-[#fc4f02]"
+                    : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
+                }`}
+              >
+                <span className={isActive ? "text-[#fc4f02]" : "text-slate-400"}>{option.icon}</span>
+                <span>{option.label}</span>
+                {isActive && (
+                  <svg className="ml-auto h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            );
+          })}
         </div>,
         document.body
       )}
