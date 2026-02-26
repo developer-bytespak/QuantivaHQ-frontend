@@ -7,25 +7,41 @@ import {
   adminPublishPool,
   adminClonePool,
   adminUpdatePool,
+  adminListPayments,
+  adminListReservations,
+  adminListMembers,
+  adminApprovePayment,
+  adminRejectPayment,
   type AdminPoolDetails,
+  type AdminPaymentSubmission,
+  type AdminReservation,
+  type AdminPoolMember,
 } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
+
+type Tab = "payments" | "reservations" | "members";
 
 export default function AdminPoolDetailsPage() {
   const params = useParams<{ poolId: string }>();
   const router = useRouter();
+  const poolId = String(params.poolId ?? "");
   const { notification, showNotification, hideNotification } = useNotification();
   const [pool, setPool] = useState<AdminPoolDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("payments");
+  const [payments, setPayments] = useState<AdminPaymentSubmission[]>([]);
+  const [reservations, setReservations] = useState<AdminReservation[]>([]);
+  const [members, setMembers] = useState<AdminPoolMember[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+  const [actionSubmitting, setActionSubmitting] = useState<string | null>(null);
 
   const isDraft = pool?.status === "draft";
 
   const load = () => {
-    const id = params.poolId;
-    if (!id) return;
+    if (!poolId) return;
     setLoading(true);
-    adminGetPool(String(id))
+    adminGetPool(poolId)
       .then(setPool)
       .catch((err: unknown) => {
         showNotification((err as { message?: string })?.message ?? "Failed to load pool", "error");
@@ -33,10 +49,35 @@ export default function AdminPoolDetailsPage() {
       .finally(() => setLoading(false));
   };
 
+  const loadPayments = () => {
+    if (!poolId) return;
+    setPaymentsLoading(true);
+    adminListPayments(poolId, { page: 1, limit: 50 })
+      .then((r) => setPayments(r.submissions))
+      .catch(() => setPayments([]))
+      .finally(() => setPaymentsLoading(false));
+  };
+
+  const loadReservations = () => {
+    if (!poolId) return;
+    adminListReservations(poolId).then((r) => setReservations(r.reservations)).catch(() => setReservations([]));
+  };
+
+  const loadMembers = () => {
+    if (!poolId) return;
+    adminListMembers(poolId).then((r) => setMembers(r.members)).catch(() => setMembers([]));
+  };
+
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.poolId]);
+  }, [poolId]);
+
+  useEffect(() => {
+    if (!poolId || !pool || pool.status === "draft") return;
+    loadPayments();
+    loadReservations();
+    loadMembers();
+  }, [poolId, pool?.status]);
 
   const handlePublish = async () => {
     if (!pool) return;
@@ -63,6 +104,42 @@ export default function AdminPoolDetailsPage() {
       showNotification(err?.message || "Failed to clone pool", "error");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleApprove = async (submissionId: string) => {
+    if (!poolId) return;
+    setActionSubmitting(submissionId);
+    try {
+      await adminApprovePayment(poolId, submissionId);
+      showNotification("Payment approved. User is now a member.", "success");
+      load();
+      loadPayments();
+      loadReservations();
+      loadMembers();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to approve", "error");
+    } finally {
+      setActionSubmitting(null);
+    }
+  };
+
+  const handleReject = async (submissionId: string) => {
+    const reason = window.prompt("Rejection reason (shown to user):", "Screenshot unclear or invalid");
+    if (reason === null) return;
+    if (!poolId) return;
+    setActionSubmitting(submissionId);
+    try {
+      await adminRejectPayment(poolId, submissionId, { rejection_reason: reason.trim() || "Rejected by admin" });
+      showNotification("Payment rejected. Seat released.", "success");
+      load();
+      loadPayments();
+      loadReservations();
+      loadMembers();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to reject", "error");
+    } finally {
+      setActionSubmitting(null);
     }
   };
 
@@ -222,6 +299,142 @@ export default function AdminPoolDetailsPage() {
               </div>
             </div>
           </div>
+
+          {/* Phase 1C: Payments, Reservations, Members (only for non-draft pools) */}
+          {!isDraft && (
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
+              <div className="flex border-b border-[--color-border]">
+                {(["payments", "reservations", "members"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${
+                      activeTab === tab
+                        ? "bg-[#fc4f02]/20 text-[#fc4f02] border-b-2 border-[#fc4f02]"
+                        : "text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="p-4">
+                {activeTab === "payments" && (
+                  <>
+                    {paymentsLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+                        Loading…
+                      </div>
+                    ) : payments.length === 0 ? (
+                      <p className="text-sm text-slate-400 py-4">No payment submissions yet.</p>
+                    ) : (
+                      <div className="space-y-3 overflow-x-auto">
+                        {payments.map((p) => (
+                          <div
+                            key={p.submission_id}
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[--color-surface-alt] p-3 text-sm"
+                          >
+                            <div>
+                              <p className="font-medium text-white">
+                                {p.user_email ?? p.user_username ?? p.user_id}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {p.payment_method} · {p.total_amount} ·{" "}
+                                <span className="capitalize">{p.status}</span>
+                              </p>
+                              {p.screenshot_url && (
+                                <a
+                                  href={p.screenshot_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-[#fc4f02] hover:underline mt-1 inline-block"
+                                >
+                                  View screenshot
+                                </a>
+                              )}
+                              {p.rejection_reason && (
+                                <p className="text-xs text-red-400 mt-1">Rejected: {p.rejection_reason}</p>
+                              )}
+                            </div>
+                            {p.status === "processing" && (
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprove(p.submission_id)}
+                                  disabled={actionSubmitting !== null}
+                                  className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500 disabled:opacity-60"
+                                >
+                                  {actionSubmitting === p.submission_id ? "…" : "Approve"}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReject(p.submission_id)}
+                                  disabled={actionSubmitting !== null}
+                                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60"
+                                >
+                                  {actionSubmitting === p.submission_id ? "…" : "Reject"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                {activeTab === "reservations" && (
+                  <>
+                    {reservations.length === 0 ? (
+                      <p className="text-sm text-slate-400 py-4">No active reservations.</p>
+                    ) : (
+                      <div className="space-y-2 overflow-x-auto">
+                        {reservations.map((r) => (
+                          <div
+                            key={r.reservation_id}
+                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
+                          >
+                            <span className="font-medium text-white">
+                              {r.user_email ?? r.user_username ?? r.user_id}
+                            </span>
+                            <span className="text-xs capitalize">{r.status}</span>
+                            <span className="text-xs text-slate-400">
+                              Expires: {new Date(r.expires_at).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                {activeTab === "members" && (
+                  <>
+                    {members.length === 0 ? (
+                      <p className="text-sm text-slate-400 py-4">No members yet.</p>
+                    ) : (
+                      <div className="space-y-2 overflow-x-auto">
+                        {members.map((m) => (
+                          <div
+                            key={m.member_id}
+                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
+                          >
+                            <span className="font-medium text-white">
+                              {m.user_email ?? m.user_username ?? m.user_id}
+                            </span>
+                            <span className="text-xs">Share: {m.share_percent}%</span>
+                            <span className="text-xs text-slate-400">
+                              Joined {new Date(m.joined_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

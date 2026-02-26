@@ -8,6 +8,8 @@ import { useMobileNav } from "@/hooks/useMobileNav";
 
 const PAGE_TITLES: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
+  "/admin/pools": "Pools",
+  "/admin/pools/create": "Create pool",
   "/admin/settings": "Settings",
   "/admin/settings/binance": "Binance UID",
   "/admin/settings/fees": "Default Fees",
@@ -16,6 +18,8 @@ const PAGE_TITLES: Record<string, string> = {
 function getPageTitle(pathname: string | null): string {
   if (!pathname) return "Dashboard";
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.startsWith("/admin/pools/") && pathname !== "/admin/pools/create")
+    return "Pool details";
   if (pathname.startsWith("/admin/settings")) return "Settings";
   return "Dashboard";
 }

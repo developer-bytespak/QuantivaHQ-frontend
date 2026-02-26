@@ -18,6 +18,12 @@ import type {
   AdminPoolDetails,
   CreatePoolRequest,
   UpdatePoolRequest,
+  AdminPaymentsListResponse,
+  AdminReservationsListResponse,
+  AdminMembersListResponse,
+  AdminApprovePaymentResponse,
+  AdminRejectPaymentResponse,
+  AdminRejectPaymentRequest,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -229,6 +235,70 @@ export async function adminClonePool(id: string): Promise<AdminPoolDetails> {
   const { data } = await adminAxios.post<AdminPoolDetails>(
     `/admin/pools/${id}/clone`,
     {}
+  );
+  return data;
+}
+
+// ---- Phase 1C: Admin payments, reservations, members ----
+
+/** GET /admin/pools/:poolId/payments */
+export async function adminListPayments(
+  poolId: string,
+  params?: { status?: string; payment_method?: string; page?: number; limit?: number }
+): Promise<AdminPaymentsListResponse> {
+  const search = new URLSearchParams();
+  if (params?.status) search.set("status", params.status);
+  if (params?.payment_method) search.set("payment_method", params.payment_method);
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const { data } = await adminAxios.get<AdminPaymentsListResponse>(
+    `/admin/pools/${poolId}/payments${query ? `?${query}` : ""}`
+  );
+  return data;
+}
+
+/** GET /admin/pools/:poolId/reservations */
+export async function adminListReservations(
+  poolId: string
+): Promise<AdminReservationsListResponse> {
+  const { data } = await adminAxios.get<AdminReservationsListResponse>(
+    `/admin/pools/${poolId}/reservations`
+  );
+  return data;
+}
+
+/** GET /admin/pools/:poolId/members */
+export async function adminListMembers(
+  poolId: string
+): Promise<AdminMembersListResponse> {
+  const { data } = await adminAxios.get<AdminMembersListResponse>(
+    `/admin/pools/${poolId}/members`
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:poolId/payments/:submissionId/approve */
+export async function adminApprovePayment(
+  poolId: string,
+  submissionId: string
+): Promise<AdminApprovePaymentResponse> {
+  const { data } = await adminAxios.put<AdminApprovePaymentResponse>(
+    `/admin/pools/${poolId}/payments/${submissionId}/approve`,
+    {}
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:poolId/payments/:submissionId/reject */
+export async function adminRejectPayment(
+  poolId: string,
+  submissionId: string,
+  body: AdminRejectPaymentRequest
+): Promise<AdminRejectPaymentResponse> {
+  const { data } = await adminAxios.put<AdminRejectPaymentResponse>(
+    `/admin/pools/${poolId}/payments/${submissionId}/reject`,
+    body
   );
   return data;
 }

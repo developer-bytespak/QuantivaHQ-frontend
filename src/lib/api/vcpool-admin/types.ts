@@ -136,3 +136,76 @@ export interface CreatePoolRequest {
 // All fields optional in update; backend validates draft status
 export type UpdatePoolRequest = Partial<CreatePoolRequest>;
 
+// ---- Phase 1C: Admin payments, reservations, members ----
+
+export interface AdminPaymentSubmission {
+  submission_id: string;
+  user_id: string;
+  reservation_id: string;
+  payment_method: string;
+  status: string;
+  total_amount: string;
+  investment_amount: string;
+  pool_fee_amount: string;
+  screenshot_url: string | null;
+  rejection_reason: string | null;
+  payment_deadline: string;
+  verified_at: string | null;
+  created_at: string;
+  user_email?: string;
+  user_username?: string;
+}
+
+export interface AdminPaymentsListResponse {
+  submissions: AdminPaymentSubmission[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface AdminReservation {
+  reservation_id: string;
+  user_id: string;
+  status: string;
+  expires_at: string;
+  payment_method: string;
+  created_at: string;
+  user_email?: string;
+  user_username?: string;
+}
+
+export interface AdminReservationsListResponse {
+  reservations: AdminReservation[];
+  pagination?: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface AdminPoolMember {
+  member_id: string;
+  user_id: string;
+  payment_method: string;
+  share_percent: string;
+  joined_at: string;
+  user_email?: string;
+  user_username?: string;
+}
+
+export interface AdminMembersListResponse {
+  members: AdminPoolMember[];
+  pagination?: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface AdminApprovePaymentResponse {
+  message: string;
+  submission_id: string;
+  member_id: string;
+  status: string;
+}
+
+export interface AdminRejectPaymentResponse {
+  message: string;
+  submission_id: string;
+  status: string;
+}
+
+export interface AdminRejectPaymentRequest {
+  rejection_reason: string;
+}
+
