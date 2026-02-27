@@ -9,10 +9,12 @@ type SubscriptionPlanWithPriceId = SubscriptionPlan & { priceId: string };
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
 import { PRICE_IDS } from "@/constant";
+import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 
 export function SubscriptionSettings() {
   const [activeTab, setActiveTab] = useState<"current" | "billing" | "usage" | "change">("current");
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const hasFetchedRef = useRef(false);
   const {
     currentSubscription,
@@ -49,21 +51,31 @@ export function SubscriptionSettings() {
   };
 
   const handleCancelSubscription = () => {
-    cancelSubscription.mutate({
-      subscription_id: currentSubscription?.subscription_id || "",
-    },{
-      onSuccess: (data: any) => {
-        console.log("data", data);
-        console.log("Subscription cancelled successfully");
-        toast.success("Subscription cancelled successfully");
-        fetchSubscriptionData();
+    setShowCancelModal(false);
+    cancelSubscription.mutate(
+      {
+        subscription_id: currentSubscription?.subscription_id || "",
       },
-      onError: (error) => {
-        console.log("error", error);
-        console.error("Failed to cancel subscription:", error);
-        toast.error("Failed to cancel subscription. Please try again.");
-      },
-    });
+      {
+        onSuccess: (data: any) => {
+          console.log("data", data);
+          console.log("Subscription cancelled successfully");
+          toast.success("Subscription cancelled successfully");
+          fetchSubscriptionData();
+        },
+        onError: (error: unknown) => {
+          const msg =
+            typeof error === "object" &&
+            error !== null &&
+            "response" in error &&
+            typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
+              ? (error as { response: { data: { message: string } } }).response.data.message
+              : "Failed to cancel subscription. Please try again.";
+          console.error("Failed to cancel subscription:", msg);
+          toast.error(msg);
+        },
+      }
+    );
   };
 
   const renderPlanCard = (plan: SubscriptionPlanWithPriceId) => {
@@ -307,11 +319,12 @@ export function SubscriptionSettings() {
                 <button className="px-4 py-2 border border-[--color-border] text-white rounded-lg hover:bg-[--color-surface] transition-colors text-sm font-medium">
                   Manage Auto-Renewal
                 </button> */}
-                <button 
-                type="button"
-                onClick={handleCancelSubscription}
-                disabled={cancelSubscription.isPending}
-                className="px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={() => setShowCancelModal(true)}
+                  disabled={cancelSubscription.isPending}
+                  className="px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium"
+                >
                   {cancelSubscription.isPending ? "Cancelling..." : "Cancel Subscription"}
                 </button>
               </div>
@@ -501,6 +514,17 @@ export function SubscriptionSettings() {
       </div>
         </>
       )}
+
+      <ConfirmationDialog
+        isOpen={showCancelModal}
+        title="Cancel Subscription"
+        message="This action will immediately cancel your current subscription. Do you want to continue?"
+        confirmText="Continue"
+        cancelText="Go Back"
+        type="danger"
+        onConfirm={handleCancelSubscription}
+        onCancel={() => setShowCancelModal(false)}
+      />
     </div>
   );
 }
