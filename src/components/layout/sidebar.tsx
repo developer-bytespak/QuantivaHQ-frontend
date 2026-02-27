@@ -105,23 +105,24 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
     <aside
       onMouseEnter={() => setCollapsed(false)}
       onMouseLeave={() => setCollapsed(true)}
-      className={`group/dashboard relative hidden sm:flex h-screen flex-col border-r border-[#fc4f02]/30 bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
+      className={`group/dashboard relative hidden sm:flex h-screen flex-col border-r border-white/[0.08] bg-[--color-surface] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
+      style={{ fontFamily: "var(--font-outfit), var(--font-geist-sans), sans-serif" }}
     >
       {/* Header */}
-      <div className="flex h-16 sm:h-24 items-center justify-center bg-[--color-surface-alt]/50 px-2 sm:px-8">
+      <div className="flex h-16 sm:h-24 items-center justify-center border-b border-white/[0.06] bg-[--color-surface-alt]/30 px-2 sm:px-8">
         <Logo collapsed={collapsed} />
       </div>
 
       {/* Navigation */}
-      <nav className={`flex-1 space-y-1 overflow-y-auto py-4 ${collapsed ? "px-2" : "px-3"}`}>
+      <nav className={`flex-1 space-y-0.5 overflow-y-auto py-5 ${collapsed ? "px-2" : "px-3"}`}>
         {sections.map((section) => (
-          <div key={section.title} className="space-y-1">
+          <div key={section.title} className="space-y-0.5">
             {!collapsed && section.title && (
-              <p className="px-3 pb-2 text-[8px] sm:text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              <p className="px-3 pb-2.5 pt-1 text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
                 {section.title}
               </p>
             )}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {section.items.map((item) => {
                 let isActive = false;
                 if (item.href === "/dashboard") {
@@ -134,14 +135,14 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`group relative flex items-center ${collapsed ? "justify-center" : "gap-3"} rounded-lg sm:rounded-xl ${collapsed ? "px-2" : "px-3"} py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 ${isActive
-                        ? "bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-[#fc4f02] shadow-lg shadow-[#fc4f02]/10"
-                        : "text-slate-300 hover:bg-[--color-surface-alt] hover:text-white"
+                    className={`group relative flex items-center ${collapsed ? "justify-center" : "gap-3"} rounded-xl ${collapsed ? "px-2" : "px-3"} py-2.5 sm:py-3 text-sm sm:text-base font-medium tracking-tight transition-all duration-200 ease-out ${isActive
+                        ? "bg-[#fc4f02]/12 text-[#fc4f02] shadow-[inset_0_0_0_1px_rgba(252,79,2,0.2)]"
+                        : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                       }`}
                   >
                     {isActive && (
                       <div
-                        className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]"
+                        className="absolute left-0 top-1/2 h-7 w-0.5 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]"
                       />
                     )}
                     <div className="flex-shrink-0 flex items-center justify-center">
@@ -153,7 +154,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                       <span className="truncate font-medium">{item.label}</span>
                     )}
                     {isActive && !collapsed && (
-                      <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#fc4f02]" />
+                      <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[#fc4f02]" />
                     )}
                   </Link>
                 );
@@ -180,21 +181,24 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
           )}
           
           {/* Menu Bar - slides down from top */}
-          <div className={`fixed left-0 top-16 z-40 w-full border-b border-[#fc4f02]/30 bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 sm:hidden overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ease-out transform ${
-            mobileOpen 
-              ? "translate-y-0 opacity-100 visible" 
-              : "-translate-y-full opacity-0 invisible"
-          }`}>
+          <div
+            className={`fixed left-0 top-16 z-40 w-full border-b border-white/[0.08] bg-[--color-surface] text-slate-100 sm:hidden overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ease-out transform ${
+              mobileOpen
+                ? "translate-y-0 opacity-100 visible"
+                : "-translate-y-full opacity-0 invisible"
+            }`}
+            style={{ fontFamily: "var(--font-outfit), var(--font-geist-sans), sans-serif" }}
+          >
             {/* Navigation */}
-            <nav className="space-y-1 py-3 px-3">
+            <nav className="space-y-0.5 py-4 px-3">
               {sections.map((section) => (
-                <div key={section.title} className="space-y-1">
+                <div key={section.title} className="space-y-0.5">
                   {section.title && (
-                    <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                      {section.title}
-                    </p>
+<p className="px-3 pb-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    {section.title}
+                  </p>
                   )}
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     {section.items.map((item) => {
                       let isActive = false;
                       if (item.href === "/dashboard") {
@@ -208,14 +212,14 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                           key={item.href}
                           href={item.href}
                           onClick={() => setMobileOpen(false)}
-                          className={`group relative flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${isActive
-                              ? "bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-[#fc4f02] shadow-lg shadow-[#fc4f02]/10"
-                              : "text-slate-300 hover:bg-[--color-surface-alt] hover:text-white"
+                          className={`group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium tracking-tight transition-all duration-200 ease-out ${isActive
+                              ? "bg-[#fc4f02]/12 text-[#fc4f02] shadow-[inset_0_0_0_1px_rgba(252,79,2,0.2)]"
+                              : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                             }`}
                         >
                           {isActive && (
                             <div
-                              className="absolute left-0 top-1/2 h-8 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]"
+                              className="absolute left-0 top-1/2 h-7 w-0.5 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]"
                             />
                           )}
                           <div className="flex-shrink-0 flex items-center justify-center">
@@ -225,7 +229,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                           </div>
                           <span className="truncate font-medium">{item.label}</span>
                           {isActive && (
-                            <div className="ml-auto h-1.5 w-1.5 rounded-full bg-[#fc4f02]" />
+                            <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[#fc4f02]" />
                           )}
                         </Link>
                       );

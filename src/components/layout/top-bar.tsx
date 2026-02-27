@@ -372,13 +372,11 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1.5 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2.5 py-1 sm:px-3 sm:py-1.5 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
+        className="flex items-center justify-center rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-1.5 sm:p-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
+        aria-label="Switch dashboard type"
       >
-        <span className="text-xs sm:text-sm font-medium text-slate-300">
-          {selectedDashboardType === "stocks" ? "Stocks" : "Crypto"}
-        </span>
         <svg
-          className={`h-3 w-3 sm:h-3.5 sm:w-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 sm:h-5 sm:w-5 text-slate-300 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -430,8 +428,17 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
 
 export function TopBar() {
   const pathname = usePathname();
-  const pageTitle = getPageTitle(pathname);
+  const { hasBothConnections, selectedDashboardType, connectionType } = useExchange();
   const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // On dashboard route: show "Crypto Dashboard" or "Stocks Dashboard" based on current type
+  const effectiveType = hasBothConnections ? selectedDashboardType : connectionType;
+  const pageTitle =
+    pathname === "/dashboard" && effectiveType
+      ? effectiveType === "stocks"
+        ? "Stocks Dashboard"
+        : "Crypto Dashboard"
+      : getPageTitle(pathname);
 
   return (
     <header className="sticky top-0 z-50 flex h-16 sm:h-20 lg:h-24 items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-b border-[#fc4f02]/30 bg-[--color-surface-alt] px-3 sm:px-6 lg:px-8">
