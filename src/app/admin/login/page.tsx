@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[--color-background] px-4 py-8">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-black via-[--color-background] to-black px-4 py-8">
       {notification && (
         <Notification
           message={notification.message}
@@ -48,10 +48,10 @@ export default function AdminLoginPage() {
         />
       )}
 
-      {/* Centered card - orange gradient like Profile/Settings reference */}
-      <div className="w-full max-w-md rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-8 shadow-xl border border-[#fc4f02]/30">
+      {/* Centered card - dark surface with subtle accent */}
+      <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] p-8 shadow-2xl shadow-black/60">
         {/* Logo */}
-        <div className="mb-8 flex justify-center">
+        <div className="mb-6 flex justify-center">
           <div className="relative h-14 w-14">
             {logoError ? (
               <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 text-2xl font-bold text-white">
@@ -70,12 +70,18 @@ export default function AdminLoginPage() {
             )}
           </div>
         </div>
-        <h1 className="mb-1 text-center text-2xl font-bold text-white">VC Pool Admin</h1>
-        <p className="mb-8 text-center text-sm text-white/80">Sign in to manage pools and settings</p>
+        <div className="mb-4 flex justify-center">
+          <span className="inline-flex items-center gap-2 rounded-full bg-[#fc4f02]/10 px-3 py-1 text-[11px] font-medium text-[#fc4f02]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#fc4f02] animate-pulse" />
+            VC Pool Admin Panel
+          </span>
+        </div>
+        <h1 className="mb-1 text-center text-2xl font-bold text-white">Admin sign in</h1>
+        <p className="mb-8 text-center text-sm text-slate-400">Sign in to manage VC pools and settings.</p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-white/90">
+            <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-slate-200">
               Email
             </label>
             <input
@@ -84,13 +90,13 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@quantiva.io"
-              className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/60 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/30"
               autoComplete="email"
               disabled={loading}
             />
           </div>
           <div>
-            <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium text-white/90">
+            <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium text-slate-200">
               Password
             </label>
             <div className="relative">
@@ -100,14 +106,14 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-white/20 bg-white/10 px-4 py-3 pr-12 text-white placeholder:text-white/50 focus:border-white/40 focus:outline-none focus:ring-2 focus:ring-white/20"
+                className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-4 py-3 pr-12 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/60 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/30"
                 autoComplete="current-password"
                 disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((p) => !p)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200"
                 tabIndex={-1}
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
@@ -127,9 +133,9 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-white px-4 py-3 font-semibold text-[#fc4f02] shadow-lg hover:bg-white/95 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            className="w-full rounded-xl bg-[#fc4f02] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 hover:bg-[#e04502] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? "Signing in…" : "Sign in as admin"}
           </button>
         </form>
       </div>

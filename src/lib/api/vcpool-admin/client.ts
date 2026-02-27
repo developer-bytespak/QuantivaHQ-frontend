@@ -24,6 +24,11 @@ import type {
   AdminApprovePaymentResponse,
   AdminRejectPaymentResponse,
   AdminRejectPaymentRequest,
+  AdminStartPoolResponse,
+  AdminPoolTrade,
+  AdminOpenTradeRequest,
+  AdminCloseTradeRequest,
+  AdminTradesListResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -221,6 +226,14 @@ export async function adminUpdatePool(
   return data;
 }
 
+/** DELETE /admin/pools/:id — Soft delete (draft pools only) */
+export async function adminDeletePool(poolId: string): Promise<{ message: string }> {
+  const { data } = await adminAxios.delete<{ message: string }>(
+    `/admin/pools/${poolId}`
+  );
+  return data;
+}
+
 /** PUT /admin/pools/:id/publish */
 export async function adminPublishPool(id: string): Promise<AdminPoolDetails> {
   const { data } = await adminAxios.put<AdminPoolDetails>(
@@ -298,6 +311,58 @@ export async function adminRejectPayment(
 ): Promise<AdminRejectPaymentResponse> {
   const { data } = await adminAxios.put<AdminRejectPaymentResponse>(
     `/admin/pools/${poolId}/payments/${submissionId}/reject`,
+    body
+  );
+  return data;
+}
+
+// ---- Phase 1D: Start pool + trades ----
+
+/** PUT /admin/pools/:id/start — Transition full pool to active */
+export async function adminStartPool(poolId: string): Promise<AdminStartPoolResponse> {
+  const { data } = await adminAxios.put<AdminStartPoolResponse>(
+    `/admin/pools/${poolId}/start`,
+    {}
+  );
+  return data;
+}
+
+/** POST /admin/pools/:poolId/trades — Open a new trade */
+export async function adminCreateTrade(
+  poolId: string,
+  body: AdminOpenTradeRequest
+): Promise<AdminPoolTrade> {
+  const { data } = await adminAxios.post<AdminPoolTrade>(
+    `/admin/pools/${poolId}/trades`,
+    body
+  );
+  return data;
+}
+
+/** GET /admin/pools/:poolId/trades?status=&page=&limit= */
+export async function adminListTrades(
+  poolId: string,
+  params?: { status?: "open" | "closed"; page?: number; limit?: number }
+): Promise<AdminTradesListResponse> {
+  const search = new URLSearchParams();
+  if (params?.status) search.set("status", params.status);
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const { data } = await adminAxios.get<AdminTradesListResponse>(
+    `/admin/pools/${poolId}/trades${query ? `?${query}` : ""}`
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:poolId/trades/:tradeId/close — Close trade with exit price */
+export async function adminCloseTrade(
+  poolId: string,
+  tradeId: string,
+  body: AdminCloseTradeRequest
+): Promise<AdminPoolTrade> {
+  const { data } = await adminAxios.put<AdminPoolTrade>(
+    `/admin/pools/${poolId}/trades/${tradeId}/close`,
     body
   );
   return data;

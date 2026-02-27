@@ -209,3 +209,60 @@ export interface AdminRejectPaymentRequest {
   rejection_reason: string;
 }
 
+// ---- Phase 1D: Start pool + manual trades ----
+
+export interface AdminStartPoolResponse {
+  pool_id: string;
+  status: PoolStatus;
+  started_at: string;
+  end_date: string;
+  total_invested_usdt: string;
+  current_pool_value_usdt: string;
+  total_profit_usdt: string;
+  verified_members_count: number;
+  max_members: number;
+}
+
+export type TradeAction = "BUY" | "SELL";
+
+export interface AdminPoolTrade {
+  trade_id: string;
+  pool_id: string;
+  admin_id?: string;
+  asset_pair: string;
+  action: TradeAction;
+  quantity: string;
+  entry_price_usdt: string;
+  exit_price_usdt: string | null;
+  pnl_usdt: string | null;
+  is_open: boolean;
+  notes: string | null;
+  traded_at: string;
+  closed_at: string | null;
+}
+
+export interface AdminTradesSummary {
+  open_trades: number;
+  closed_trades: number;
+  realized_pnl: number;
+}
+
+export interface AdminOpenTradeRequest {
+  asset_pair: string;
+  action: TradeAction;
+  quantity: number;
+  entry_price_usdt: number;
+  strategy_id?: string | null;
+  notes?: string | null;
+}
+
+export interface AdminCloseTradeRequest {
+  exit_price_usdt: number;
+}
+
+export interface AdminTradesListResponse {
+  trades: AdminPoolTrade[];
+  summary: AdminTradesSummary;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
