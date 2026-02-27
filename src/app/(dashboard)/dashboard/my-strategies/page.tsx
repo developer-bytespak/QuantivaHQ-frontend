@@ -5,6 +5,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiRequest } from "@/lib/api/client";
 import { useExchange } from "@/context/ExchangeContext";
+import { toast } from "react-toastify";
+import useSubscriptionStore from "@/state/subscription-store";
+import { PlanTier } from "@/mock-data/subscription-dummy-data";
 
 interface StrategyMetrics {
   total_signals: number;
@@ -48,6 +51,7 @@ export default function MyStrategiesPage() {
   
   // Get connection type from global context
   const { connectionType } = useExchange();
+  const { currentSubscription } = useSubscriptionStore();
   
   const [strategies, setStrategies] = useState<UserStrategy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,10 +99,10 @@ export default function MyStrategiesPage() {
         path: `/strategies/my-strategies/${strategyId}/generate-signals`,
         method: "POST",
       });
-      alert(`Generated ${result.signals?.length || 0} signals successfully!`);
+      toast.success(`Generated ${result.signals?.length || 0} signals successfully!`);
       fetchStrategies(); // Refresh to show new signal counts
     } catch (err: any) {
-      alert(`Failed to generate signals: ${err?.message || err}`);
+      toast.error(`Failed to generate signals: ${err?.message || err}`);
     } finally {
       setGeneratingSignals(null);
     }
@@ -366,6 +370,22 @@ export default function MyStrategiesPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Show more strategies — for PRO users: CTA to upgrade for more */}
+      {!loading && !error && strategies.length > 0 && currentSubscription?.tier === PlanTier.PRO && (
+        <div className="rounded-2xl bg-gradient-to-br from-[#fc4f02]/15 via-[#fda300]/10 to-transparent p-6 border border-[#fc4f02]/25 text-center">
+          <p className="text-slate-300 mb-3">Want more strategies? Upgrade to Elite for unlimited custom strategies.</p>
+          <Link
+            href="/dashboard/settings/subscription"
+            className="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 transition-all duration-200 group"
+          >
+            <span>Show more strategies</span>
+            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       )}
 
