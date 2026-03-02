@@ -378,7 +378,7 @@ export default function MyStrategiesPage() {
         <div className="rounded-2xl bg-gradient-to-br from-[#fc4f02]/15 via-[#fda300]/10 to-transparent p-6 border border-[#fc4f02]/25 text-center">
           <p className="text-slate-300 mb-3">Want more strategies? Upgrade to Elite for unlimited custom strategies.</p>
           <Link
-            href="/dashboard/settings/subscription"
+            href="/dashboard/settings/subscription?tab=change"
             className="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 transition-all duration-200 group"
           >
             <span>Show more strategies</span>

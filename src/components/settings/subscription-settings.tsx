@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier, BillingPeriod } from "@/mock-data/subscription-dummy-data";
 import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
@@ -11,8 +12,18 @@ import { toast } from "react-toastify";
 import { PRICE_IDS } from "@/constant";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 
+const TAB_IDS = ["current", "billing", "usage", "change"] as const;
+type TabId = (typeof TAB_IDS)[number];
+
 export function SubscriptionSettings() {
-  const [activeTab, setActiveTab] = useState<"current" | "billing" | "usage" | "change">("current");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const initialTab: TabId =
+    tabParam === "change" || tabParam === "billing" || tabParam === "usage" || tabParam === "current"
+      ? tabParam
+      : "current";
+
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const hasFetchedRef = useRef(false);
@@ -29,6 +40,11 @@ export function SubscriptionSettings() {
   } = useSubscriptionStore();
 
   const {  createCheckout, cancelSubscription } = useSubscription();
+
+  // Open Change Plan tab when coming from Upgrade Now (?tab=change)
+  useEffect(() => {
+    if (tabParam === "change") setActiveTab("change");
+  }, [tabParam]);
 
   // Fetch subscription data once when user lands on this page
   useEffect(() => {
@@ -72,7 +88,11 @@ export function SubscriptionSettings() {
               ? (error as { response: { data: { message: string } } }).response.data.message
               : "Failed to cancel subscription. Please try again.";
           console.error("Failed to cancel subscription:", msg);
+          setLoadingPlanId(null);
           toast.error(msg);
+        },
+        onSettled: () => {
+          setLoadingPlanId(null);
         },
       }
     );
@@ -80,11 +100,7 @@ export function SubscriptionSettings() {
 
   const renderPlanCard = (plan: SubscriptionPlanWithPriceId) => {
     const isCurrentPlan = currentSubscription?.plan_id === plan.plan_id;
-    const isUpgrade =
-      !currentSubscription ||
-      currentSubscription.tier === PlanTier.FREE ||
-      (currentSubscription.tier === PlanTier.PRO && plan.tier === PlanTier.ELITE);
-    const isDowngrade = !isUpgrade && !isCurrentPlan;
+    const isUpgrade = !isCurrentPlan;
     const isThisPlanLoading = loadingPlanId === plan.plan_id;
 
     // Different colors for PRO vs ELITE
@@ -101,6 +117,15 @@ export function SubscriptionSettings() {
       ? "bg-blue-500 text-white hover:bg-blue-600"
       : "bg-[#fc4f02] text-white hover:bg-[#e04502]";
 
+    const benefits =
+      plan.tier === PlanTier.PRO
+        ? ["5 custom strategies", "Real-time news"]
+        : [
+            "Unlimited custom strategies",
+            "Real-time news",
+            "Early access to new upgrades",
+          ];
+
     return (
       <div
         key={plan.plan_id}
@@ -116,28 +141,38 @@ export function SubscriptionSettings() {
             <p className="text-xs text-green-400">Save {plan.discount_percent}%</p>
           )}
         </div>
-        <div className="flex-grow flex flex-col justify-end">
-          {isCurrentPlan ? (
-            <button
-              disabled
-              className="w-full px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold cursor-not-allowed"
-            >
-              Current Plan
-            </button>
-          ) : (
-            <button 
-              className={`w-full px-4 py-2 ${buttonColor} rounded-lg transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
-              onClick={() => handleUpgradePlan({planId: plan.plan_id, priceId: plan.priceId})}
-              disabled={isThisPlanLoading || createCheckout.isPending}
-            >
-              {isThisPlanLoading ? "Upgrading..." : isUpgrade ? "Upgrade" : "Downgrade"}
-            </button>
-          )}
-          {!isCurrentPlan && (
-            <p className="text-xs text-slate-400 mt-3 text-center">
-              {isUpgrade ? "Add features & increase limits" : "Reduce features & limits"}
-            </p>
-          )}
+        <div className="flex-grow flex flex-col justify-between mt-2">
+          <ul className="space-y-1 text-xs text-slate-300 mb-3">
+            {benefits.map((benefit) => (
+              <li key={benefit} className="flex items-start gap-1">
+                <span className="text-green-400 mt-[1px]">•</span>
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-col justify-end">
+            {isCurrentPlan ? (
+              <button
+                disabled
+                className="w-full px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold cursor-not-allowed"
+              >
+                Current Plan
+              </button>
+            ) : (
+              <button 
+                className={`w-full px-4 py-2 ${buttonColor} rounded-lg transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
+                onClick={() => handleUpgradePlan({planId: plan.plan_id, priceId: plan.priceId})}
+                disabled={isThisPlanLoading || createCheckout.isPending}
+              >
+                {isThisPlanLoading ? "Upgrading..." : "Upgrade"}
+              </button>
+            )}
+            {!isCurrentPlan && plan.discount_percent !== "0" && (
+              <p className="text-xs text-slate-400 mt-3 text-center">
+                Save {plan.discount_percent}% with this plan
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -210,6 +245,9 @@ export function SubscriptionSettings() {
             : "Failed to create checkout. Please try again."
         );
       },
+      onSettled: () => {
+        setLoadingPlanId(null);
+      },
     });
   };
 
@@ -268,29 +306,25 @@ export function SubscriptionSettings() {
               </div>
 
               {/* Plan Details - equal div sizes, aligned content */}
+              {(() => {
+                const isFreePlan = currentSubscription.tier === PlanTier.FREE;
+                const na = "—";
+                const periodStart = isFreePlan ? na : currentSubscription.current_period_start.toLocaleDateString();
+                const periodEnd = isFreePlan ? na : currentSubscription.current_period_end.toLocaleDateString();
+                const nextBilling = isFreePlan ? na : currentSubscription.next_billing_date.toLocaleDateString();
+                const daysUntil = isFreePlan ? na : `${getDaysUntilNextBilling()} days`;
+                return (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
                 {[
-                  { label: "Billing Cycle", value: currentSubscription.billing_period },
+                  { label: "Billing Cycle", value: isFreePlan ? na : currentSubscription.billing_period },
                   {
                     label: "Auto-Renewal",
-                    value: currentSubscription.auto_renew ? "Enabled ✓" : "Disabled",
+                    value: isFreePlan ? na : (currentSubscription.auto_renew ? "Enabled ✓" : "Disabled"),
                   },
-                  {
-                    label: "Current Period Start",
-                    value: currentSubscription.current_period_start.toLocaleDateString(),
-                  },
-                  {
-                    label: "Current Period End",
-                    value: currentSubscription.current_period_end.toLocaleDateString(),
-                  },
-                  {
-                    label: "Next Billing Date",
-                    value: currentSubscription.next_billing_date.toLocaleDateString(),
-                  },
-                  {
-                    label: "Days Until Next Billing",
-                    value: `${getDaysUntilNextBilling()} days`,
-                  },
+                  { label: "Current Period Start", value: periodStart },
+                  { label: "Current Period End", value: periodEnd },
+                  { label: "Next Billing Date", value: nextBilling },
+                  { label: "Days Until Next Billing", value: daysUntil },
                 ].map((item) => (
                   <div
                     key={item.label}
@@ -301,6 +335,8 @@ export function SubscriptionSettings() {
                   </div>
                 ))}
               </div>
+                );
+              })()}
 
               {/* Trial Badge */}
               {isTrialActive() && (
