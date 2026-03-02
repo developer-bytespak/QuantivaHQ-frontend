@@ -60,11 +60,27 @@ export const authService = {
   },
 
   async refresh() {
-    return apiRequest<never, { message: string }>({
+    // Send refresh token in body so refresh works when cookies aren't sent (e.g. cross-origin).
+    // Backend accepts either cookie (refresh_token) or body (refreshToken).
+    const refreshToken =
+      typeof window !== "undefined" ? localStorage.getItem("quantivahq_refresh_token") : null;
+    const result = await apiRequest<
+      { refreshToken?: string | null },
+      { message: string; accessToken?: string; refreshToken?: string }
+    >({
       path: "/auth/refresh",
       method: "POST",
+      body: refreshToken ? { refreshToken } : {},
       credentials: "include",
     });
+    // Store new tokens so subsequent requests use the new access token.
+    if (typeof window !== "undefined" && result?.accessToken) {
+      localStorage.setItem("quantivahq_access_token", result.accessToken);
+      if (result.refreshToken) {
+        localStorage.setItem("quantivahq_refresh_token", result.refreshToken);
+      }
+    }
+    return result;
   },
 
   async getCurrentUser() {
