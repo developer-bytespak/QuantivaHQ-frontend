@@ -174,8 +174,8 @@ export function SubscriptionSettings() {
     const data = {
       plan_id: planId,
       price_id: priceId || "price_1QXQ52EzYvKYlo2C0986b63e",
-      cancel_url: `http://localhost:3001/dashboard/settings/subscription`,
-      success_url: `http://localhost:3001/dashboard/settings/subscription`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/subscription`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/subscription`,
     };
 
     console.log(data);
