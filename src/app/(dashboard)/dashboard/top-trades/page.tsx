@@ -1022,7 +1022,6 @@ export default function TopTradesPage() {
             >
               <option value="profit">Profit</option>
               <option value="volume">Volume</option>
-              <option value="winrate">Win Rate</option>
             </select>
           </div>
         </div>
@@ -1108,7 +1107,6 @@ export default function TopTradesPage() {
                         <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
                         <div><span className="text-slate-400">Profit: </span><span className="font-medium text-green-400">{trade.profitValue ? formatPercent(trade.profitValue) : trade.profit ?? '—'}</span></div>
                         <div><span className="text-slate-400">Volume: </span><span className="font-medium text-white">{formatNumberCompact(trade.volumeValue ?? trade.volume)}</span></div>
-                        <div><span className="text-slate-400">Win Rate: </span><span className="font-medium text-green-400">{formatPercent(trade.winRateValue ?? trade.winRate)}</span></div>
                       </div>
                       
                       {/* NEW: Trend Score and Score Change */}

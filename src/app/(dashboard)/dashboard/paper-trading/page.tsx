@@ -1642,10 +1642,6 @@ export default function PaperTradingPage() {
                         <span className="text-slate-400">Volume</span>
                         <span className="font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].volume}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Win Rate</span>
-                        <span className="font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].winRate}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
