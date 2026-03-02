@@ -8,6 +8,8 @@ import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
 import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
+import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
+import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 
@@ -96,7 +98,7 @@ interface Trade {
 
 export default function TopTradesPage() {
   // Connection type detection - using global context
-  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
   const isStocksConnection = connectionType === "stocks";
   const { currentSubscription } = useSubscriptionStore();
   const canAccessTopTrades = currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE);
@@ -142,6 +144,8 @@ export default function TopTradesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
+  const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
+  const [selectedSignal, setSelectedSignal] = useState<any>(null);
 
   // Create strategy modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -740,6 +744,17 @@ export default function TopTradesPage() {
     setShowTradeOverlay(true);
   };
 
+  const handleAutoTrade = (trade: any) => {
+    setSelectedSignal(trade);
+    setShowAutoTradeModal(true);
+  };
+
+  const handleAutoTradeSuccess = () => {
+    setShowAutoTradeModal(false);
+    setSelectedSignal(null);
+    if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
+  };
+
   // Show loading while checking connection
   if (isCheckingConnection) {
     return (
@@ -1205,8 +1220,13 @@ export default function TopTradesPage() {
                     })()}
 
                     <div className="flex gap-2 pt-2">
-                      {!isStocksConnection && (
-                        <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">Auto Trade</button>
+                      {connectionId && (
+                        <button
+                          onClick={() => handleAutoTrade(trade)}
+                          className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                        >
+                          Auto Trade
+                        </button>
                       )}
                       <button
                         onClick={() => handleViewTrade(index)}
@@ -1458,6 +1478,28 @@ export default function TopTradesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Crypto Auto Trade: uses user's Binance/Bybit connection */}
+      {showAutoTradeModal && selectedSignal && !isStocksConnection && connectionId && (
+        <ExchangeAutoTradeModal
+          connectionId={connectionId}
+          signal={selectedSignal}
+          onClose={() => { setShowAutoTradeModal(false); setSelectedSignal(null); }}
+          onSuccess={handleAutoTradeSuccess}
+          strategy={currentStrategy ?? undefined}
+        />
+      )}
+
+      {/* Stocks Auto Trade: uses user's Alpaca connection */}
+      {showAutoTradeModal && selectedSignal && isStocksConnection && connectionId && (
+        <StockExchangeAutoTradeModal
+          connectionId={connectionId}
+          signal={selectedSignal}
+          onClose={() => { setShowAutoTradeModal(false); setSelectedSignal(null); }}
+          onSuccess={handleAutoTradeSuccess}
+          strategy={currentStrategy ?? undefined}
+        />
       )}
     </div>
   );
