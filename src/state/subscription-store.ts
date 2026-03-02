@@ -127,28 +127,34 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   // Helper Functions
   canAccessFeature: (feature: FeatureType) => {
-    const { currentSubscription, allPlans } = get();
-    if (!currentSubscription) return false;
-    
-    const plan = allPlans.find((p) => p.plan_id === currentSubscription.plan_id);
-    if (!plan) return false;
-    
-    const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
-    return planFeature?.enabled ?? false;
+    try {
+      const { currentSubscription, allPlans } = get();
+      if (!currentSubscription) return false;
+      const plan = allPlans?.find((p) => p.plan_id === currentSubscription.plan_id);
+      if (!plan) return false;
+      const features = plan.plan_features ?? [];
+      const planFeature = features.find((f: any) => f.feature_type === feature);
+      return planFeature?.enabled ?? false;
+    } catch {
+      return false;
+    }
   },
 
   getFeatureLimitInfo: (feature: FeatureType) => {
-    const { currentSubscription, allPlans } = get();
-    if (!currentSubscription) return { enabled: false, limit: null };
-    
-    const plan = allPlans.find((p) => p.plan_id === currentSubscription.plan_id);
-    if (!plan) return { enabled: false, limit: null };
-    
-    const planFeature = plan.plan_features.find((f: any) => f.feature_type === feature);
-    return {
-      enabled: planFeature?.enabled ?? false,
-      limit: planFeature?.limit_value ?? null,
-    };
+    try {
+      const { currentSubscription, allPlans } = get();
+      if (!currentSubscription) return { enabled: false, limit: null };
+      const plan = allPlans?.find((p) => p.plan_id === currentSubscription.plan_id);
+      if (!plan) return { enabled: false, limit: null };
+      const features = plan.plan_features ?? [];
+      const planFeature = features.find((f: any) => f.feature_type === feature);
+      return {
+        enabled: planFeature?.enabled ?? false,
+        limit: planFeature?.limit_value ?? null,
+      };
+    } catch {
+      return { enabled: false, limit: null };
+    }
   },
 
   getUsagePercentage: (feature: FeatureType) => {

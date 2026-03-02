@@ -9,6 +9,8 @@ import {
   adminUpdatePool,
   adminDeletePool,
   adminStartPool,
+  adminCompletePool,
+  adminCancelPool,
   adminListPayments,
   adminListReservations,
   adminListMembers,
@@ -17,6 +19,12 @@ import {
   adminListTrades,
   adminCreateTrade,
   adminCloseTrade,
+  adminListCancellations,
+  adminApproveCancellation,
+  adminRejectCancellation,
+  adminMarkRefunded,
+  adminListPayouts,
+  adminMarkPayoutPaid,
   type AdminPoolDetails,
   type AdminPaymentSubmission,
   type AdminReservation,
@@ -25,11 +33,13 @@ import {
   type AdminTradesSummary,
   type AdminOpenTradeRequest,
   type UpdatePoolRequest,
+  type AdminCancellation,
+  type AdminPayout,
 } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
 import { PoolTradesFlow } from "@/components/vcpool/pool-trades-flow";
 
-type Tab = "payments" | "reservations" | "members" | "trades";
+type Tab = "payments" | "reservations" | "members" | "trades" | "cancellations" | "payouts";
 
 function EditPoolModal({
   pool,
@@ -166,10 +176,20 @@ export default function AdminPoolDetailsPage() {
   const [tradeStatusFilter, setTradeStatusFilter] = useState<"open" | "closed" | "all">("open");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  // Phase 1E: cancellations + payouts
+  const [cancellations, setCancellations] = useState<AdminCancellation[]>([]);
+  const [cancellationsLoading, setCancellationsLoading] = useState(false);
+  const [payouts, setPayouts] = useState<AdminPayout[]>([]);
+  const [payoutsLoading, setPayoutsLoading] = useState(false);
+  const [showCancelPoolConfirm, setShowCancelPoolConfirm] = useState(false);
+  const [showCompletePoolConfirm, setShowCompletePoolConfirm] = useState(false);
 
   const isDraft = pool?.status === "draft";
   const isFull = pool?.status === "full";
   const isActive = pool?.status === "active";
+  const isOpen = pool?.status === "open";
+  const isCompleted = pool?.status === "completed";
+  const isCancelled = pool?.status === "cancelled";
 
   const load = () => {
     if (!poolId) return;
@@ -236,6 +256,124 @@ export default function AdminPoolDetailsPage() {
     if (!poolId || !isActive) return;
     loadTrades();
   }, [poolId, isActive, tradeStatusFilter]);
+
+  const loadCancellations = () => {
+    if (!poolId) return;
+    setCancellationsLoading(true);
+    adminListCancellations(poolId)
+      .then((r) => setCancellations(r.cancellations))
+      .catch(() => setCancellations([]))
+      .finally(() => setCancellationsLoading(false));
+  };
+
+  const loadPayouts = () => {
+    if (!poolId) return;
+    setPayoutsLoading(true);
+    adminListPayouts(poolId)
+      .then((r) => setPayouts(r.payouts))
+      .catch(() => setPayouts([]))
+      .finally(() => setPayoutsLoading(false));
+  };
+
+  useEffect(() => {
+    if (!poolId || !pool || pool.status === "draft") return;
+    loadCancellations();
+    loadPayouts();
+  }, [poolId, pool?.status]);
+
+  const handleCompletePool = async () => {
+    if (!poolId) return;
+    setSaving(true);
+    try {
+      await adminCompletePool(poolId);
+      showNotification("Pool completed. Payouts created. Mark each as paid after transfer.", "success");
+      setShowCompletePoolConfirm(false);
+      load();
+      loadPayouts();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to complete pool", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelPool = async () => {
+    if (!poolId) return;
+    setSaving(true);
+    try {
+      await adminCancelPool(poolId);
+      showNotification("Pool cancelled. Full refund payouts created. Mark each as paid after transfer.", "success");
+      setShowCancelPoolConfirm(false);
+      load();
+      loadPayouts();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to cancel pool", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApproveCancellation = async (cancellationId: string) => {
+    if (!poolId) return;
+    setActionSubmitting(cancellationId);
+    try {
+      await adminApproveCancellation(poolId, cancellationId);
+      showNotification("Cancellation approved. Transfer refund, then mark as refunded.", "success");
+      load();
+      loadCancellations();
+      loadMembers();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to approve", "error");
+    } finally {
+      setActionSubmitting(null);
+    }
+  };
+
+  const handleRejectCancellation = async (cancellationId: string) => {
+    const reason = window.prompt("Rejection reason (shown to user):", "Please reconsider. Pool is performing well.");
+    if (reason === null) return;
+    if (!poolId) return;
+    setActionSubmitting(cancellationId);
+    try {
+      await adminRejectCancellation(poolId, cancellationId, { rejection_reason: reason.trim() || "Rejected by admin" });
+      showNotification("Cancellation rejected. Member remains active.", "success");
+      loadCancellations();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to reject", "error");
+    } finally {
+      setActionSubmitting(null);
+    }
+  };
+
+  const handleMarkRefunded = async (cancellationId: string, binanceTxId?: string, notes?: string) => {
+    if (!poolId) return;
+    setActionSubmitting(cancellationId);
+    try {
+      await adminMarkRefunded(poolId, cancellationId, { binance_tx_id: binanceTxId || undefined, notes: notes || undefined });
+      showNotification("Refund marked as completed. Member deactivated.", "success");
+      load();
+      loadCancellations();
+      loadMembers();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to mark refunded", "error");
+    } finally {
+      setActionSubmitting(null);
+    }
+  };
+
+  const handleMarkPayoutPaid = async (payoutId: string, binanceTxId?: string, notes?: string) => {
+    if (!poolId) return;
+    setActionSubmitting(payoutId);
+    try {
+      await adminMarkPayoutPaid(poolId, payoutId, { binance_tx_id: binanceTxId || undefined, notes: notes || undefined });
+      showNotification("Payout marked as paid.", "success");
+      loadPayouts();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to mark paid", "error");
+    } finally {
+      setActionSubmitting(null);
+    }
+  };
 
   const handlePublish = async () => {
     if (!pool) return;
@@ -449,6 +587,26 @@ export default function AdminPoolDetailsPage() {
                   Start pool
                 </button>
               )}
+              {isActive && tradesSummary?.open_trades === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowCompletePoolConfirm(true)}
+                  disabled={saving}
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                >
+                  Complete pool
+                </button>
+              )}
+              {(isOpen || isFull) && (
+                <button
+                  type="button"
+                  onClick={() => setShowCancelPoolConfirm(true)}
+                  disabled={saving}
+                  className="rounded-xl border border-red-500/50 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60"
+                >
+                  Cancel pool
+                </button>
+              )}
               {isDraft && (
                 <button
                   type="button"
@@ -551,7 +709,7 @@ export default function AdminPoolDetailsPage() {
           {!isDraft && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
               <div className="flex flex-wrap border-b border-[--color-border]">
-                {(["payments", "reservations", "members", ...(isActive ? (["trades"] as const) : [])] as Tab[]).map((tab) => (
+                {(["payments", "reservations", "members", ...(isActive ? (["trades"] as const) : []), "cancellations", "payouts"] as Tab[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
@@ -693,6 +851,139 @@ export default function AdminPoolDetailsPage() {
                     actionSubmitting={actionSubmitting}
                   />
                 )}
+                {activeTab === "cancellations" && (
+                  <>
+                    {cancellationsLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-400 py-6">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+                        Loading…
+                      </div>
+                    ) : cancellations.length === 0 ? (
+                      <p className="text-sm text-slate-400 py-6">No cancellation requests.</p>
+                    ) : (
+                      <div className="space-y-3 py-2">
+                        {cancellations.map((c) => (
+                          <div key={c.cancellation_id} className="rounded-lg bg-[--color-surface-alt] p-4 text-sm">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-white">
+                                  {c.member?.user?.email ?? c.member?.user?.full_name ?? c.member?.member_id}
+                                </p>
+                                <p className="text-xs text-slate-400 mt-1">
+                                  Value at exit: {c.member_value_at_exit} · Fee: {c.fee_amount} · Refund: {c.refund_amount} · Status: <span className="capitalize">{c.status}</span>
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Requested {new Date(c.requested_at).toLocaleString()}</p>
+                                {c.rejection_reason && <p className="text-xs text-amber-400 mt-1">Rejected: {c.rejection_reason}</p>}
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {c.status === "pending" && (
+                                  <>
+                                    <button type="button" onClick={() => handleApproveCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500 disabled:opacity-60">
+                                      {actionSubmitting === c.cancellation_id ? "…" : "Approve"}
+                                    </button>
+                                    <button type="button" onClick={() => handleRejectCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
+                                      {actionSubmitting === c.cancellation_id ? "…" : "Reject"}
+                                    </button>
+                                  </>
+                                )}
+                                {c.status === "approved" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const txId = window.prompt("Binance TX ID (optional):");
+                                      const notes = window.prompt("Notes (optional):");
+                                      if (txId !== null && notes !== null) handleMarkRefunded(c.cancellation_id, txId.trim() || undefined, notes.trim() || undefined);
+                                    }}
+                                    disabled={actionSubmitting !== null}
+                                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-60"
+                                  >
+                                    {actionSubmitting === c.cancellation_id ? "…" : "Mark refunded"}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                {activeTab === "payouts" && (
+                  <>
+                    {payoutsLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-slate-400 py-6">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+                        Loading…
+                      </div>
+                    ) : payouts.length === 0 ? (
+                      <p className="text-sm text-slate-400 py-6">No payouts yet. Complete or cancel the pool to create payouts.</p>
+                    ) : (
+                      <div className="space-y-3 py-2">
+                        {payouts.map((p) => (
+                          <div key={p.payout_id} className="rounded-lg bg-[--color-surface-alt] p-4 text-sm">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-white">
+                                  {p.member?.user?.email ?? p.member?.user?.full_name ?? p.member?.member_id}
+                                </p>
+                                <p className="text-xs text-slate-400 mt-1">
+                                  Type: <span className="capitalize">{p.payout_type.replace("_", " ")}</span> · Net: {p.net_payout} · P/L: {p.profit_loss} · Status: <span className="capitalize">{p.status}</span>
+                                </p>
+                                <p className="text-xs text-slate-500 mt-1">Created {new Date(p.created_at).toLocaleString()}</p>
+                              </div>
+                              {p.status === "pending" && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const txId = window.prompt("Binance TX ID (optional):");
+                                    const notes = window.prompt("Notes (optional):");
+                                    if (txId !== null && notes !== null) handleMarkPayoutPaid(p.payout_id, txId.trim() || undefined, notes.trim() || undefined);
+                                  }}
+                                  disabled={actionSubmitting !== null}
+                                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                                >
+                                  {actionSubmitting === p.payout_id ? "…" : "Mark paid"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Complete pool confirmation */}
+          {showCompletePoolConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Complete pool?</h3>
+                <p className="mt-2 text-sm text-slate-400">
+                  Close all trades first. This will calculate final payouts for all members. You will need to transfer funds and mark each payout as paid.
+                </p>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setShowCompletePoolConfirm(false)} disabled={saving} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={handleCompletePool} disabled={saving} className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60">{saving ? "Completing…" : "Complete"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Cancel pool confirmation */}
+          {showCancelPoolConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Cancel pool?</h3>
+                <p className="mt-2 text-sm text-slate-400">
+                  This will cancel the pool and create full refund payouts for all members (no fee). Transfer refunds externally, then mark each as paid.
+                </p>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setShowCancelPoolConfirm(false)} disabled={saving} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={handleCancelPool} disabled={saving} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60">{saving ? "Cancelling…" : "Cancel pool"}</button>
+                </div>
               </div>
             </div>
           )}

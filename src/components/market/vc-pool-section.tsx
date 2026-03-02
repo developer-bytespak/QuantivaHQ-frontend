@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
@@ -64,11 +65,21 @@ export function VCPoolSection() {
       )}
 
       <div className="space-y-6">
-        <div>
-          <h2 className="mb-1 text-2xl font-bold text-white">VC Pool Access</h2>
-          <p className="text-sm text-slate-400">
-            Browse curated trading pools created by Quantiva admins.
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="mb-1 text-2xl font-bold text-white">VC Pool Access</h2>
+            <p className="text-sm text-slate-400">
+              Browse curated trading pools created by Quantiva admins.
+            </p>
+          </div>
+          {canAccessVCPool && (
+            <Link
+              href="/dashboard/vc-pool/my-pools"
+              className="rounded-xl border border-[--color-border] px-4 py-2 text-sm font-medium text-slate-200 hover:bg-[--color-surface-alt] hover:text-white transition-colors"
+            >
+              My pools
+            </Link>
+          )}
         </div>
 
         {canAccessVCPool && (

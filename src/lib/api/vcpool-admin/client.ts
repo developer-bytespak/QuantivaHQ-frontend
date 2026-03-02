@@ -29,6 +29,17 @@ import type {
   AdminOpenTradeRequest,
   AdminCloseTradeRequest,
   AdminTradesListResponse,
+  AdminCancellationsListResponse,
+  AdminApproveCancellationResponse,
+  AdminRejectCancellationRequest,
+  AdminRejectCancellationResponse,
+  AdminMarkRefundedRequest,
+  AdminMarkRefundedResponse,
+  AdminCompletePoolResponse,
+  AdminPayoutsListResponse,
+  AdminMarkPayoutPaidRequest,
+  AdminMarkPayoutPaidResponse,
+  AdminCancelPoolResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -364,6 +375,93 @@ export async function adminCloseTrade(
   const { data } = await adminAxios.put<AdminPoolTrade>(
     `/admin/pools/${poolId}/trades/${tradeId}/close`,
     body
+  );
+  return data;
+}
+
+// ---- Phase 1E: Cancellations, Payouts, Complete, Cancel pool ----
+
+/** GET /admin/pools/:id/cancellations */
+export async function adminListCancellations(poolId: string): Promise<AdminCancellationsListResponse> {
+  const { data } = await adminAxios.get<AdminCancellationsListResponse>(
+    `/admin/pools/${poolId}/cancellations`
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:id/cancellations/:cid/approve */
+export async function adminApproveCancellation(
+  poolId: string,
+  cancellationId: string
+): Promise<AdminApproveCancellationResponse> {
+  const { data } = await adminAxios.put<AdminApproveCancellationResponse>(
+    `/admin/pools/${poolId}/cancellations/${cancellationId}/approve`,
+    {}
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:id/cancellations/:cid/reject */
+export async function adminRejectCancellation(
+  poolId: string,
+  cancellationId: string,
+  body: AdminRejectCancellationRequest
+): Promise<AdminRejectCancellationResponse> {
+  const { data } = await adminAxios.put<AdminRejectCancellationResponse>(
+    `/admin/pools/${poolId}/cancellations/${cancellationId}/reject`,
+    body
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:id/cancellations/:cid/mark-refunded */
+export async function adminMarkRefunded(
+  poolId: string,
+  cancellationId: string,
+  body: AdminMarkRefundedRequest
+): Promise<AdminMarkRefundedResponse> {
+  const { data } = await adminAxios.put<AdminMarkRefundedResponse>(
+    `/admin/pools/${poolId}/cancellations/${cancellationId}/mark-refunded`,
+    body
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:id/complete */
+export async function adminCompletePool(poolId: string): Promise<AdminCompletePoolResponse> {
+  const { data } = await adminAxios.put<AdminCompletePoolResponse>(
+    `/admin/pools/${poolId}/complete`,
+    {}
+  );
+  return data;
+}
+
+/** GET /admin/pools/:id/payouts */
+export async function adminListPayouts(poolId: string): Promise<AdminPayoutsListResponse> {
+  const { data } = await adminAxios.get<AdminPayoutsListResponse>(
+    `/admin/pools/${poolId}/payouts`
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:id/payouts/:pid/mark-paid */
+export async function adminMarkPayoutPaid(
+  poolId: string,
+  payoutId: string,
+  body: AdminMarkPayoutPaidRequest
+): Promise<AdminMarkPayoutPaidResponse> {
+  const { data } = await adminAxios.put<AdminMarkPayoutPaidResponse>(
+    `/admin/pools/${poolId}/payouts/${payoutId}/mark-paid`,
+    body
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:id/cancel — Cancel open/full pool (full refund) */
+export async function adminCancelPool(poolId: string): Promise<AdminCancelPoolResponse> {
+  const { data } = await adminAxios.put<AdminCancelPoolResponse>(
+    `/admin/pools/${poolId}/cancel`,
+    {}
   );
   return data;
 }

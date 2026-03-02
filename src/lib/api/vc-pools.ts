@@ -144,3 +144,86 @@ export async function getVcPoolById(id: string): Promise<VcPoolDetails> {
   });
 }
 
+// ---- Phase 1E: User cancellation + my pools ----
+
+export interface CancelMembershipResponse {
+  cancellation_id: string;
+  pool_status_at_request: string;
+  member_value_at_exit: number;
+  fee_amount: number;
+  refund_amount: number;
+  status: string;
+  message: string;
+}
+
+export async function cancelMembership(poolId: string): Promise<CancelMembershipResponse> {
+  return apiRequest<never, CancelMembershipResponse>({
+    path: `/api/vc-pools/${poolId}/cancel-membership`,
+    method: "POST",
+    body: undefined as never,
+  });
+}
+
+export interface MyCancellationItem {
+  cancellation_id: string;
+  status: string;
+  requested_at: string;
+  member_value_at_exit: number;
+  fee_amount: number;
+  refund_amount: number;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  rejection_reason: string | null;
+  refunded_at: string | null;
+}
+
+export interface MyCancellationResponse {
+  has_cancellation: boolean;
+  cancellation?: MyCancellationItem;
+}
+
+export async function getMyCancellation(poolId: string): Promise<MyCancellationResponse> {
+  return apiRequest<never, MyCancellationResponse>({
+    path: `/api/vc-pools/${poolId}/my-cancellation`,
+    method: "GET",
+  });
+}
+
+export interface MyPoolMembership {
+  membership: {
+    member_id: string;
+    pool_id: string;
+    pool_name: string;
+    pool_status: string;
+    coin_type: string;
+    started_at: string | null;
+    end_date: string | null;
+    payment_method: string;
+  };
+  my_investment: {
+    invested_amount: number;
+    share_percent: number;
+  };
+  pool_performance: {
+    current_pool_value: number;
+    total_profit: number;
+    total_invested: number;
+  };
+  my_value: {
+    current_value: number;
+    profit_loss: number;
+  };
+  cancellation: MyCancellationItem | null;
+}
+
+export interface MyPoolsResponse {
+  pools: MyPoolMembership[];
+}
+
+export async function getMyPools(): Promise<MyPoolsResponse> {
+  return apiRequest<never, MyPoolsResponse>({
+    path: `/api/vc-pools/my-pools`,
+    method: "GET",
+  });
+}
+

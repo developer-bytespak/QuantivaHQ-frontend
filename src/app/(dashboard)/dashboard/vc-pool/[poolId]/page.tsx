@@ -7,10 +7,13 @@ import {
   getPaymentStatus,
   joinPool,
   uploadPoolScreenshot,
+  cancelMembership,
+  getMyCancellation,
   type VcPoolDetails,
   type PaymentStatusResponse,
   type JoinPoolResponse,
   type PaymentMethod,
+  type MyCancellationResponse,
 } from "@/lib/api/vc-pools";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
@@ -33,8 +36,18 @@ export default function VcPoolDetailPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("binance");
   const [userBinanceUid, setUserBinanceUid] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [myCancellation, setMyCancellation] = useState<MyCancellationResponse | null>(null);
+  const [requestingExit, setRequestingExit] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const isMember = Boolean(paymentStatus?.membership?.exists);
+  const hasReservation = Boolean(paymentStatus?.reservation);
+  const payment = paymentStatus?.payment ?? null;
+  const canUpload = hasReservation && payment?.payment_method === "binance" && payment?.status !== "verified" && payment?.status !== "rejected";
+  const isRejected = payment?.status === "rejected";
+  const availableSeats = Number(pool?.available_seats ?? 0);
+  const poolStatus = pool?.status ?? "";
 
   const loadPool = () => {
     if (!poolId) return;
@@ -48,6 +61,13 @@ export default function VcPoolDetailPage() {
     getPaymentStatus(poolId)
       .then(setPaymentStatus)
       .catch(() => setPaymentStatus(null));
+  };
+
+  const loadMyCancellation = () => {
+    if (!poolId || !canAccessVCPool) return;
+    getMyCancellation(poolId)
+      .then(setMyCancellation)
+      .catch(() => setMyCancellation(null));
   };
 
   useEffect(() => {
@@ -75,6 +95,29 @@ export default function VcPoolDetailPage() {
       if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
     };
   }, [poolId, paymentStatus?.reservation?.reservation_id, paymentStatus?.membership?.exists]);
+
+  // Load my-cancellation when user is member and pool allows cancellation
+  useEffect(() => {
+    if (!poolId || !canAccessVCPool || !isMember || !pool) return;
+    const status = pool?.status ?? "";
+    const allowCancel = status === "open" || status === "full" || status === "active";
+    if (allowCancel) loadMyCancellation();
+  }, [poolId, canAccessVCPool, isMember, pool?.status]);
+
+  const handleRequestExit = async () => {
+    if (!poolId) return;
+    setRequestingExit(true);
+    try {
+      await cancelMembership(poolId);
+      showNotification("Cancellation request submitted. Awaiting admin approval.", "success");
+      loadMyCancellation();
+      loadPaymentStatus();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to request exit", "error");
+    } finally {
+      setRequestingExit(false);
+    }
+  };
 
   const handleJoin = async () => {
     if (!poolId || !pool) return;
@@ -110,12 +153,6 @@ export default function VcPoolDetailPage() {
       e.target.value = "";
     }
   };
-
-  const isMember = paymentStatus?.membership?.exists;
-  const hasReservation = !!paymentStatus?.reservation;
-  const payment = paymentStatus?.payment;
-  const canUpload = hasReservation && payment?.payment_method === "binance" && payment?.status !== "verified" && payment?.status !== "rejected";
-  const isRejected = payment?.status === "rejected";
 
   return (
     <div className="relative">
@@ -173,16 +210,51 @@ export default function VcPoolDetailPage() {
               </div>
               <div>
                 <p className="mb-1 text-white/70">Available seats</p>
-                <p className="text-lg font-semibold">{pool.available_seats}</p>
+                <p className="text-lg font-semibold">{availableSeats}</p>
               </div>
             </div>
           </div>
 
           {/* Already a member */}
           {isMember && (
-            <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-6 text-center">
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
               <p className="text-lg font-semibold text-green-200">You are a member of this pool.</p>
-              <p className="text-sm text-green-200/80 mt-1">Your share is locked. Pool activity will appear here when the pool is active.</p>
+              <p className="text-sm text-slate-400">Your share is locked. Pool activity will appear here when the pool is active.</p>
+              {/* Phase 1E: Request to exit (open/full/active) */}
+              {(poolStatus === "open" || poolStatus === "full" || poolStatus === "active") && (
+                <div className="pt-4 border-t border-[--color-border]">
+                  {myCancellation?.has_cancellation ? (
+                    <div className="rounded-lg bg-[--color-surface-alt] p-4 text-sm">
+                      <p className="font-medium text-white capitalize">Cancellation status: {myCancellation.cancellation?.status}</p>
+                      {myCancellation.cancellation?.status === "pending" && (
+                        <p className="mt-1 text-slate-400">Awaiting admin approval. Refund amount: {myCancellation.cancellation?.refund_amount} {pool.coin_type}</p>
+                      )}
+                      {myCancellation.cancellation?.status === "approved" && (
+                        <p className="mt-1 text-slate-400">Approved. Admin will process the refund. Refund: {myCancellation.cancellation?.refund_amount} {pool.coin_type}</p>
+                      )}
+                      {myCancellation.cancellation?.status === "rejected" && myCancellation.cancellation?.rejection_reason && (
+                        <p className="mt-1 text-amber-400">Rejected: {myCancellation.cancellation.rejection_reason}</p>
+                      )}
+                      {myCancellation.cancellation?.status === "processed" && (
+                        <p className="mt-1 text-green-400">Refund completed. You have exited the pool.</p>
+                      )}
+                      <p className="mt-2 text-xs text-slate-500">Requested at {myCancellation.cancellation?.requested_at ? new Date(myCancellation.cancellation.requested_at).toLocaleString() : "—"}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-slate-400 mb-2">Need to exit? Request cancellation. A fee may apply based on pool rules.</p>
+                      <button
+                        type="button"
+                        onClick={handleRequestExit}
+                        disabled={requestingExit}
+                        className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/20 disabled:opacity-60"
+                      >
+                        {requestingExit ? "Submitting…" : "Request to exit pool"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -210,7 +282,7 @@ export default function VcPoolDetailPage() {
                   <>
                     <p className="mt-2 font-medium text-white">Send to Admin Binance UID: {pool.admin_binance_uid || "—"}</p>
                     <p className="text-slate-400">
-                      Time remaining: <span className="font-mono text-white">{paymentStatus.reservation?.minutes_remaining ?? 0} minutes</span>
+                      Time remaining: <span className="font-mono text-white">{paymentStatus?.reservation?.minutes_remaining ?? 0} minutes</span>
                       {" "}(deadline: {new Date(payment.payment_deadline).toLocaleString()})
                     </p>
                   </>
@@ -256,7 +328,7 @@ export default function VcPoolDetailPage() {
           )}
 
           {/* No reservation: show Join form (only if pool is open and has seats) */}
-          {!isMember && !hasReservation && pool.status === "open" && pool.available_seats > 0 && (
+          {!isMember && !hasReservation && poolStatus === "open" && availableSeats > 0 && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
               <h2 className="text-lg font-semibold text-white">Join this pool</h2>
               <div className="space-y-3">
@@ -295,9 +367,9 @@ export default function VcPoolDetailPage() {
             </div>
           )}
 
-          {!isMember && !hasReservation && (pool.status !== "open" || pool.available_seats <= 0) && (
+          {!isMember && !hasReservation && (poolStatus !== "open" || availableSeats <= 0) && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 text-center text-slate-400 text-sm">
-              {pool.status !== "open"
+              {poolStatus !== "open"
                 ? "This pool is not open for new members right now."
                 : "No seats available. The pool is full."}
             </div>
@@ -309,7 +381,7 @@ export default function VcPoolDetailPage() {
               <dl className="space-y-2">
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Status</dt>
-                  <dd className="font-medium capitalize">{pool.status}</dd>
+                  <dd className="font-medium capitalize">{poolStatus || "—"}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Max members</dt>
@@ -317,11 +389,11 @@ export default function VcPoolDetailPage() {
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Pool fee</dt>
-                  <dd className="font-medium">{pool.pool_fee_percent}%</dd>
+                  <dd className="font-medium">{pool.pool_fee_percent ?? "—"}%</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Payment window</dt>
-                  <dd className="font-medium">{pool.payment_window_minutes} min</dd>
+                  <dd className="font-medium">{pool.payment_window_minutes ?? "—"} min</dd>
                 </div>
               </dl>
             </div>
