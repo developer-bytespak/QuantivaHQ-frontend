@@ -542,7 +542,7 @@ export const exchangesService = {
     data: {
       api_key: string;
       api_secret: string;
-      password: string;
+      password?: string;
       passphrase?: string;
     }
   ): Promise<any> {
