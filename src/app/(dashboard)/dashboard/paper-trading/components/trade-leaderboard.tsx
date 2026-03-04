@@ -237,10 +237,6 @@ export default function TradeLeaderboard({ trades, onClose, onClear, portfolioMe
                   </div>
                 </div>
                 <div className="rounded-lg bg-white/5 p-2 text-center">
-                  <div className="text-xs text-slate-400">Win Rate</div>
-                  <div className="text-sm font-bold text-white">{summary.winRate.toFixed(1)}%</div>
-                </div>
-                <div className="rounded-lg bg-white/5 p-2 text-center">
                   <div className="text-xs text-slate-400">Avg Profit</div>
                   <div className={`text-sm font-bold ${summary.avgProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {summary.avgProfit >= 0 ? '+' : ''}${summary.avgProfit.toFixed(2)}

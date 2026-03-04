@@ -531,11 +531,7 @@ export function CryptoAIAutoTradePanel({ isOpen, onClose, onTradeExecuted }: Cry
                 <p className="text-gray-500 text-xs mb-1">Volume</p>
                 <p className="text-xl font-bold text-blue-400">{formatCurrency(status?.stats?.totalVolume || 0)}</p>
               </div>
-              <div className="bg-[#1a1a2a] rounded-lg p-3">
-                <p className="text-gray-500 text-xs mb-1">Win Rate</p>
-                <p className="text-xl font-bold text-purple-400">{(status?.stats?.winRate || 0).toFixed(1)}%</p>
-                <p className="text-xs text-gray-400">{status?.stats?.successfulTrades || 0} / {status?.stats?.totalTrades || 0}</p>
-              </div>
+              
             </div>
 
             {/* P&L Performance Chart */}

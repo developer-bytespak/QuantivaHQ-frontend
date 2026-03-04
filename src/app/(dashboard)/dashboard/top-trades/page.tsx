@@ -8,6 +8,8 @@ import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
 import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
+import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
+import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 
@@ -96,7 +98,7 @@ interface Trade {
 
 export default function TopTradesPage() {
   // Connection type detection - using global context
-  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
   const isStocksConnection = connectionType === "stocks";
   const { currentSubscription } = useSubscriptionStore();
   const canAccessTopTrades = currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE);
@@ -142,6 +144,8 @@ export default function TopTradesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
+  const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
+  const [selectedSignal, setSelectedSignal] = useState<any>(null);
 
   // Create strategy modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -740,6 +744,17 @@ export default function TopTradesPage() {
     setShowTradeOverlay(true);
   };
 
+  const handleAutoTrade = (trade: any) => {
+    setSelectedSignal(trade);
+    setShowAutoTradeModal(true);
+  };
+
+  const handleAutoTradeSuccess = () => {
+    setShowAutoTradeModal(false);
+    setSelectedSignal(null);
+    if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
+  };
+
   // Show loading while checking connection
   if (isCheckingConnection) {
     return (
@@ -860,23 +875,14 @@ export default function TopTradesPage() {
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <Link
-            href="/dashboard/my-strategies?from=top-trades"
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 whitespace-nowrap flex items-center gap-1.5 text-white"
-          >
-            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span className="text-white">My Strategies</span>
-          </Link>
-          <Link
-            href="/dashboard/custom-strategies-trading?mode=live"
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 hover:border-green-500/50 whitespace-nowrap flex items-center gap-1.5 text-green-400"
-            title="Trade with your custom strategies (Live)"
+            href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 whitespace-nowrap flex items-center gap-1.5 text-white"
+            title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Trade Custom</span>
+            <span>Custom Strategy</span>
           </Link>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
@@ -950,16 +956,6 @@ export default function TopTradesPage() {
                   </button>
                 );
               })}
-              {/* Custom Strategy Button */}
-              <Link
-                href="/dashboard/my-strategies/create?from=top-trades"
-                className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all rounded-lg whitespace-nowrap bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 flex items-center gap-1.5 shadow-lg shadow-[#fc4f02]/10"
-              >
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                <span className="text-white">Custom</span>
-              </Link>
             </div>
           </div>
           
@@ -1022,7 +1018,6 @@ export default function TopTradesPage() {
             >
               <option value="profit">Profit</option>
               <option value="volume">Volume</option>
-              <option value="winrate">Win Rate</option>
             </select>
           </div>
         </div>
@@ -1108,7 +1103,6 @@ export default function TopTradesPage() {
                         <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
                         <div><span className="text-slate-400">Profit: </span><span className="font-medium text-green-400">{trade.profitValue ? formatPercent(trade.profitValue) : trade.profit ?? '—'}</span></div>
                         <div><span className="text-slate-400">Volume: </span><span className="font-medium text-white">{formatNumberCompact(trade.volumeValue ?? trade.volume)}</span></div>
-                        <div><span className="text-slate-400">Win Rate: </span><span className="font-medium text-green-400">{formatPercent(trade.winRateValue ?? trade.winRate)}</span></div>
                       </div>
                       
                       {/* NEW: Trend Score and Score Change */}
@@ -1207,8 +1201,13 @@ export default function TopTradesPage() {
                     })()}
 
                     <div className="flex gap-2 pt-2">
-                      {!isStocksConnection && (
-                        <button className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">Auto Trade</button>
+                      {connectionId && (
+                        <button
+                          onClick={() => handleAutoTrade(trade)}
+                          className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                        >
+                          Auto Trade
+                        </button>
                       )}
                       <button
                         onClick={() => handleViewTrade(index)}
@@ -1460,6 +1459,28 @@ export default function TopTradesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Crypto Auto Trade: uses user's Binance/Bybit connection */}
+      {showAutoTradeModal && selectedSignal && !isStocksConnection && connectionId && (
+        <ExchangeAutoTradeModal
+          connectionId={connectionId}
+          signal={selectedSignal}
+          onClose={() => { setShowAutoTradeModal(false); setSelectedSignal(null); }}
+          onSuccess={handleAutoTradeSuccess}
+          strategy={currentStrategy ?? undefined}
+        />
+      )}
+
+      {/* Stocks Auto Trade: uses user's Alpaca connection */}
+      {showAutoTradeModal && selectedSignal && isStocksConnection && connectionId && (
+        <StockExchangeAutoTradeModal
+          connectionId={connectionId}
+          signal={selectedSignal}
+          onClose={() => { setShowAutoTradeModal(false); setSelectedSignal(null); }}
+          onSuccess={handleAutoTradeSuccess}
+          strategy={currentStrategy ?? undefined}
+        />
       )}
     </div>
   );

@@ -76,14 +76,9 @@ export default function CryptoExchangePage() {
     // Also save current selection for immediate use
     localStorage.setItem("quantivahq_selected_exchange", exchange);
     
-    // Check if user selected "both" - if so, allow selecting stock exchange next
-    const accountType = localStorage.getItem("quantivahq_account_type");
-    if (accountType === "both") {
-      // After crypto, go to stocks
-      router.push("/onboarding/stock-exchange");
-    } else {
-      router.push("/onboarding/api-key-tutorial");
-    }
+    // Always go to api-key-tutorial so user enters crypto API keys first.
+    // When account type is "both", the connecting page will prompt for stocks next.
+    router.push("/onboarding/api-key-tutorial");
   };
 
   const exchanges = [
