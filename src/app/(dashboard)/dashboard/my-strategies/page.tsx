@@ -181,65 +181,32 @@ export default function MyStrategiesPage() {
               </div>
               <p className="text-sm sm:text-base text-slate-400 max-w-md">Build powerful custom trading strategies with AI-powered signals and automated execution</p>
             </div>
-            <Link
-              href={`/dashboard/my-strategies/create${referrer ? `?from=${referrer}&via=my-strategies` : ""}`}
-              className="rounded-xl px-5 py-3 bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 transition-all duration-200 flex items-center gap-2 group"
-            >
-              <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create Strategy
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              {/* Custom Trading Button */}
+              <Link
+                href={`/dashboard/custom-strategies-trading?mode=${referrer === "top-trades" ? "live" : "paper"}&from=${referrer || "paper-trading"}`}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 hover:border-slate-500/50 shadow-lg shadow-slate-900/30"
+                title="Trade using your custom strategies"
+              >
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-white">Custom Trading</span>
+              </Link>
+              {/* Create Strategy Button */}
+              <Link
+                href={`/dashboard/my-strategies/create${referrer ? `?from=${referrer}&via=my-strategies` : ""}`}
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 transition-all duration-200 group"
+              >
+                <svg className="w-5 h-5 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Create Strategy
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Trading Action Buttons */}
-      {strategies.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Link
-            href="/dashboard/custom-strategies-trading?mode=paper"
-            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/20 via-blue-600/10 to-transparent p-5 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500"></div>
-            <div className="relative flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">Paper Trading</h3>
-                <p className="text-sm text-slate-400">Trade with testnet money • No real risk</p>
-              </div>
-              <svg className="w-5 h-5 text-slate-400 ml-auto group-hover:text-blue-400 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-
-          <Link
-            href="/dashboard/custom-strategies-trading?mode=live"
-            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500/20 via-green-600/10 to-transparent p-5 border border-green-500/20 hover:border-green-500/40 transition-all duration-300"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/20 to-transparent rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500"></div>
-            <div className="relative flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg shadow-green-500/30">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-green-400 transition-colors">Live Trading</h3>
-                <p className="text-sm text-slate-400">Trade with real money • Main exchange</p>
-              </div>
-              <svg className="w-5 h-5 text-slate-400 ml-auto group-hover:text-green-400 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </Link>
-        </div>
-      )}
 
       {loading ? (
         <div className="rounded-2xl bg-gradient-to-br from-white/[0.05] to-transparent p-12 text-center border border-white/5">

@@ -95,6 +95,14 @@ export default function CustomStrategiesTradingPage() {
   // Mode: "paper" for testnet/paper trading, "live" for real trading
   const mode = searchParams.get("mode") || "paper";
   const isPaperMode = mode === "paper";
+  
+  // Referrer tracking - where did the user come from?
+  const referrer = searchParams.get("from") || (isPaperMode ? "paper-trading" : "top-trades");
+  const pageNames: Record<string, string> = {
+    "paper-trading": "Paper Trading",
+    "top-trades": "Top Trades",
+  };
+  const previousPageName = pageNames[referrer] || "Dashboard";
 
   // Connection type detection - using global context
   const { connectionType, isLoading: isCheckingConnection } = useExchange();
@@ -449,7 +457,7 @@ export default function CustomStrategiesTradingPage() {
           Create your first custom strategy to start generating signals and trading.
         </p>
         <Link
-          href="/dashboard/my-strategies/create?from=custom-strategies-trading"
+          href={`/dashboard/my-strategies/create?from=${referrer}&via=custom-strategies-trading`}
           className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 transition-all"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,9 +476,9 @@ export default function CustomStrategiesTradingPage() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative">
-          {/* Back Button */}
+          {/* Back Button - Goes to Paper Trading or Top Trades */}
           <Link
-            href={`/dashboard/my-strategies?from=${isPaperMode ? "paper-trading" : "top-trades"}`}
+            href={referrer === "top-trades" ? "/dashboard/top-trades" : "/dashboard/paper-trading"}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors mb-3 group"
           >
             <svg
@@ -481,7 +489,7 @@ export default function CustomStrategiesTradingPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-white/90 group-hover:text-[#fda300]">Back to My Strategies</span>
+            <span className="text-white/90 group-hover:text-[#fda300]">Back to {previousPageName}</span>
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -517,21 +525,46 @@ export default function CustomStrategiesTradingPage() {
               </p>
             </div>
 
-            {/* Balance Display */}
-            <div className="bg-white/5 rounded-xl px-5 py-3 border border-white/10">
-              <p className="text-xs text-slate-400 mb-1">Available Balance</p>
-              <p className="text-2xl font-bold text-white">
-                {loadingBalance ? (
-                  <span className="inline-block w-24 h-7 bg-white/10 rounded animate-pulse"></span>
-                ) : (
-                  formatCurrency(balance)
-                )}
-              </p>
-              {isStocksConnection && (
-                <p className={`text-xs mt-1 ${marketOpen ? "text-green-400" : "text-yellow-400"}`}>
-                  Market {marketOpen ? "Open" : "Closed"}
+            {/* Action Buttons + Balance */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              {/* My Strategies Button */}
+              <Link
+                href={`/dashboard/my-strategies?from=${referrer}`}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 hover:border-slate-500/50 shadow-lg shadow-slate-900/30"
+                title="View and manage your strategies"
+              >
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span className="text-white">My Strategies</span>
+              </Link>
+              {/* Create Strategy Button */}
+              <Link
+                href={`/dashboard/my-strategies/create?from=${referrer}&via=custom-strategies-trading`}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:shadow-xl hover:shadow-[#fc4f02]/30 transition-all"
+                title="Create a new custom strategy"
+              >
+                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span className="text-white">Create Strategy</span>
+              </Link>
+              {/* Balance Display */}
+              <div className="bg-white/5 rounded-xl px-5 py-3 border border-white/10">
+                <p className="text-xs text-slate-400 mb-1">Available Balance</p>
+                <p className="text-2xl font-bold text-white">
+                  {loadingBalance ? (
+                    <span className="inline-block w-24 h-7 bg-white/10 rounded animate-pulse"></span>
+                  ) : (
+                    formatCurrency(balance)
+                  )}
                 </p>
-              )}
+                {isStocksConnection && (
+                  <p className={`text-xs mt-1 ${marketOpen ? "text-green-400" : "text-yellow-400"}`}>
+                    Market {marketOpen ? "Open" : "Closed"}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
