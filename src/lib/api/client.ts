@@ -89,6 +89,8 @@ export async function apiRequest<TRequest, TResponse = unknown>({
 type UploadParams = {
   path: string;
   file: File;
+  /** Form field name for the file (default "file"). Backend may expect e.g. "screenshot". */
+  fieldName?: string;
   additionalData?: Record<string, string>;
   timeout?: number; // Timeout in milliseconds (default: 60000, use 180000+ for KYC operations with ML processing)
 };
@@ -100,6 +102,7 @@ type UploadParams = {
 export async function uploadFile<TResponse = unknown>({
   path,
   file,
+  fieldName = "file",
   additionalData,
   timeout,
 }: UploadParams): Promise<TResponse> {
@@ -108,7 +111,7 @@ export async function uploadFile<TResponse = unknown>({
   }
 
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append(fieldName, file);
 
   // Add any additional form fields
   if (additionalData) {
