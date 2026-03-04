@@ -465,3 +465,62 @@ export async function adminCancelPool(poolId: string): Promise<AdminCancelPoolRe
   );
   return data;
 }
+
+// ---- Admin strategy APIs (same as Top Trades, using admin JWT for Signals tab) ----
+
+export interface AdminPreBuiltStrategy {
+  strategy_id: string;
+  name: string;
+  type: string;
+  asset_type?: string;
+  description?: string;
+}
+
+/** GET /strategies/pre-built?asset_type=crypto — List pre-built strategies for admin */
+export async function adminGetPreBuiltStrategies(
+  assetType: "crypto" | "stock" = "crypto"
+): Promise<AdminPreBuiltStrategy[]> {
+  const { data } = await adminAxios.get<AdminPreBuiltStrategy[]>(
+    `/strategies/pre-built?asset_type=${assetType}`
+  );
+  return Array.isArray(data) ? data : [];
+}
+
+export interface AdminTrendingAssetSignal {
+  signal_id: string;
+  action: string;
+  confidence: number;
+  final_score: number;
+  entry_price?: number;
+  stop_loss?: number;
+  take_profit_1?: number;
+}
+
+export interface AdminTrendingAsset {
+  asset_id: string;
+  symbol: string;
+  display_name: string;
+  asset_type?: string;
+  price_usd: number;
+  price_change_24h?: number;
+  volume_24h?: number;
+  trend_score?: number;
+  signal?: AdminTrendingAssetSignal;
+}
+
+export interface AdminTrendingWithInsightsResponse {
+  strategy: { id: string; name: string; description?: string };
+  assets: AdminTrendingAsset[];
+}
+
+/** GET /strategies/pre-built/:id/trending-with-insights — Trending assets with signals for admin */
+export async function adminGetTrendingAssetsWithInsights(
+  strategyId: string,
+  limit: number = 500
+): Promise<AdminTrendingWithInsightsResponse> {
+  const { data } = await adminAxios.get<AdminTrendingWithInsightsResponse>(
+    `/strategies/pre-built/${strategyId}/trending-with-insights?limit=${limit}`,
+    { timeout: 120000 }
+  );
+  return data;
+}

@@ -38,8 +38,9 @@ import {
 } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
 import { PoolTradesFlow } from "@/components/vcpool/pool-trades-flow";
+import { PoolSignalsTab } from "@/components/vcpool/pool-signals-tab";
 
-type Tab = "payments" | "reservations" | "members" | "trades" | "cancellations" | "payouts";
+type Tab = "payments" | "reservations" | "members" | "trades" | "signals" | "cancellations" | "payouts";
 
 function EditPoolModal({
   pool,
@@ -709,7 +710,7 @@ export default function AdminPoolDetailsPage() {
           {!isDraft && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
               <div className="flex flex-wrap border-b border-[--color-border]">
-                {(["payments", "reservations", "members", ...(isActive ? (["trades"] as const) : []), "cancellations", "payouts"] as Tab[]).map((tab) => (
+                {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "signals", "cancellations", "payouts"] as Tab[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
@@ -849,6 +850,16 @@ export default function AdminPoolDetailsPage() {
                     onCloseTrade={handleCloseTrade}
                     saving={saving}
                     actionSubmitting={actionSubmitting}
+                  />
+                )}
+                {activeTab === "signals" && (
+                  <PoolSignalsTab
+                    poolId={poolId}
+                    pool={pool}
+                    onTradePlaced={() => {
+                      load();
+                      loadTrades();
+                    }}
                   />
                 )}
                 {activeTab === "cancellations" && (

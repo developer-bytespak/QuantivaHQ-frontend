@@ -158,12 +158,6 @@ export function StrategyCard({
               {formatNumberCompact(signal.volumeValue ?? signal.volume)}
             </span>
           </div>
-          <div>
-            <span className="text-slate-400">Win Rate: </span>
-            <span className="font-medium text-green-400">
-              {formatPercent(signal.winRateValue ?? signal.winRate)}
-            </span>
-          </div>
         </div>
 
         {/* Trend Score */}
