@@ -20,6 +20,29 @@ import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
 import { useNotification, Notification } from "@/components/common/notification";
 
+/* ── Helpers ────────────────────────────────────────────── */
+function formatUsd(n: number | string): string {
+  const v = typeof n === "string" ? Number(n) : n;
+  return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { bg: string; text: string; dot: string }> = {
+    open: { bg: "bg-emerald-500/15 border-emerald-500/20", text: "text-emerald-400", dot: "bg-emerald-400 animate-pulse" },
+    full: { bg: "bg-amber-500/15 border-amber-500/20", text: "text-amber-400", dot: "bg-amber-400" },
+    active: { bg: "bg-blue-500/15 border-blue-500/20", text: "text-blue-400", dot: "bg-blue-400 animate-pulse" },
+    completed: { bg: "bg-slate-500/15 border-slate-500/20", text: "text-slate-300", dot: "bg-slate-400" },
+    cancelled: { bg: "bg-red-500/15 border-red-500/20", text: "text-red-400", dot: "bg-red-400" },
+  };
+  const s = map[status] ?? map.open;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${s.bg} ${s.text}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+}
+
 export default function VcPoolDetailPage() {
   const params = useParams<{ poolId: string }>();
   const router = useRouter();
@@ -71,37 +94,26 @@ export default function VcPoolDetailPage() {
   };
 
   useEffect(() => {
-    if (!canAccessVCPool) {
-      setLoading(false);
-      return;
-    }
+    if (!canAccessVCPool) { setLoading(false); return; }
     if (!poolId) return;
     setLoading(true);
     setError(null);
     Promise.all([getVcPoolById(poolId), getPaymentStatus(poolId)])
-      .then(([p, ps]) => {
-        setPool(p);
-        setPaymentStatus(ps);
-      })
+      .then(([p, ps]) => { setPool(p); setPaymentStatus(ps); })
       .catch((err: unknown) => setError((err as { message?: string })?.message ?? "Failed to load"))
       .finally(() => setLoading(false));
   }, [poolId, canAccessVCPool]);
 
-  // Poll payment status when user has an active reservation (to update timer)
   useEffect(() => {
     if (!poolId || !paymentStatus?.reservation || paymentStatus.membership?.exists) return;
     statusIntervalRef.current = setInterval(() => getPaymentStatus(poolId).then(setPaymentStatus), 30000);
-    return () => {
-      if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
-    };
+    return () => { if (statusIntervalRef.current) clearInterval(statusIntervalRef.current); };
   }, [poolId, paymentStatus?.reservation?.reservation_id, paymentStatus?.membership?.exists]);
 
-  // Load my-cancellation when user is member and pool allows cancellation
   useEffect(() => {
     if (!poolId || !canAccessVCPool || !isMember || !pool) return;
-    const status = pool?.status ?? "";
-    const allowCancel = status === "open" || status === "full" || status === "active";
-    if (allowCancel) loadMyCancellation();
+    const s = pool?.status ?? "";
+    if (s === "open" || s === "full" || s === "active") loadMyCancellation();
   }, [poolId, canAccessVCPool, isMember, pool?.status]);
 
   const handleRequestExit = async () => {
@@ -114,9 +126,7 @@ export default function VcPoolDetailPage() {
       loadPaymentStatus();
     } catch (err: unknown) {
       showNotification((err as { message?: string })?.message ?? "Failed to request exit", "error");
-    } finally {
-      setRequestingExit(false);
-    }
+    } finally { setRequestingExit(false); }
   };
 
   const handleJoin = async () => {
@@ -125,17 +135,13 @@ export default function VcPoolDetailPage() {
     try {
       await joinPool(poolId, {
         payment_method: paymentMethod,
-        ...(paymentMethod === "binance" && userBinanceUid.trim()
-          ? { user_binance_uid: userBinanceUid.trim() }
-          : {}),
+        ...(paymentMethod === "binance" && userBinanceUid.trim() ? { user_binance_uid: userBinanceUid.trim() } : {}),
       });
       showNotification("Seat reserved. Complete payment before the deadline.", "success");
       loadPaymentStatus();
     } catch (err: unknown) {
       showNotification((err as { message?: string })?.message ?? "Failed to join pool", "error");
-    } finally {
-      setJoining(false);
-    }
+    } finally { setJoining(false); }
   };
 
   const handleUploadScreenshot = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,196 +154,318 @@ export default function VcPoolDetailPage() {
       loadPaymentStatus();
     } catch (err: unknown) {
       showNotification((err as { message?: string })?.message ?? "Upload failed", "error");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
+    } finally { setUploading(false); e.target.value = ""; }
   };
+
+  /* ── Card wrapper ─────────────────────── */
+  const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+    <div className={`rounded-xl sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent border border-white/[0.06] backdrop-blur p-5 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.04)] ${className}`}>
+      {children}
+    </div>
+  );
+
+  const filledSeats = pool ? pool.max_members - availableSeats : 0;
+  const totalSeats = pool?.max_members ?? 0;
+  const progress = totalSeats > 0 ? Math.min(100, (filledSeats / totalSeats) * 100) : 0;
 
   return (
     <div className="relative">
       {!canAccessVCPool && (
-        <LockedFeatureOverlay
-          featureName="VC Pool Access"
-          requiredTier={PlanTier.ELITE}
-          message="VC pools are available only for ELITE members. Upgrade your plan to access pool details."
-        />
+        <LockedFeatureOverlay featureName="VC Pool Access" requiredTier={PlanTier.ELITE} message="VC pools are available only for ELITE members. Upgrade your plan to access pool details." />
       )}
+      {notification && <Notification message={notification.message} type={notification.type} onClose={hideNotification} />}
 
-      {notification && (
-        <Notification message={notification.message} type={notification.type} onClose={hideNotification} />
-      )}
-
+      {/* Back button */}
       <button
         onClick={() => router.push("/dashboard/vc-pool")}
-        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white"
+        className="mb-5 sm:mb-6 inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-400 hover:text-[#fc4f02] transition-colors group"
       >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-4 w-4 sm:h-5 sm:w-5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        Back to VC pools
+        Back to VC Pools
       </button>
 
+      {/* Loading */}
       {loading && (
         <div className="flex min-h-[40vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#fc4f02] border-t-transparent" />
+          <div className="h-6 w-6 sm:h-8 sm:w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]" />
         </div>
       )}
 
+      {/* Error */}
       {!loading && error && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-          {error}
+        <div className="rounded-xl border-l-4 border-red-500/50 bg-red-500/10 p-4 text-sm text-red-200">
+          <p className="font-medium">Error loading pool</p>
+          <p className="mt-1 text-xs text-red-300/70">{error}</p>
         </div>
       )}
 
+      {/* Pool content */}
       {!loading && !error && pool && canAccessVCPool && (
-        <div className="space-y-6">
-          <div className="rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-6 sm:p-8 border border-[#fc4f02]/30">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{pool.name}</h1>
-            {pool.description && (
-              <p className="text-sm text-white/90 max-w-2xl mb-4">{pool.description}</p>
-            )}
-            <div className="grid gap-4 sm:grid-cols-3 text-xs text-white/90">
-              <div>
-                <p className="mb-1 text-white/70">Contribution per seat</p>
-                <p className="text-lg font-semibold">
-                  ${pool.contribution_amount} {pool.coin_type}
-                </p>
+        <div className="space-y-5 sm:space-y-6">
+
+          {/* ── Hero Header ─────────────────────── */}
+          <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-[#fc4f02]/20 bg-gradient-to-br from-[#fc4f02]/12 via-[#fda300]/6 to-transparent p-5 sm:p-8">
+            {/* Decorative glow */}
+            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-[#fc4f02]/10 blur-3xl pointer-events-none" />
+            <div className="relative">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <StatusBadge status={poolStatus} />
+                    {isMember && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2.5 py-1 text-xs font-medium text-emerald-400">
+                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                        Member
+                      </span>
+                    )}
+                  </div>
+                  <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">{pool.name}</h1>
+                  {pool.description && (
+                    <p className="mt-2 text-xs sm:text-sm text-slate-300/80 max-w-2xl">{pool.description}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <p className="mb-1 text-white/70">Duration</p>
-                <p className="text-lg font-semibold">{pool.duration_days} days</p>
+
+              {/* Header stats */}
+              <div className="mt-5 sm:mt-6 grid gap-3 grid-cols-2 sm:grid-cols-4">
+                <div className="rounded-lg bg-black/20 border border-white/[0.04] p-3">
+                  <p className="text-[10px] sm:text-xs text-slate-400/80">Investment / seat</p>
+                  <p className="mt-1 text-base sm:text-lg font-bold text-white">${pool.contribution_amount}</p>
+                  <p className="text-[10px] text-slate-500">{pool.coin_type}</p>
+                </div>
+                <div className="rounded-lg bg-black/20 border border-white/[0.04] p-3">
+                  <p className="text-[10px] sm:text-xs text-slate-400/80">Duration</p>
+                  <p className="mt-1 text-base sm:text-lg font-bold text-white">{pool.duration_days} days</p>
+                  {pool.started_at && <p className="text-[10px] text-slate-500">Since {new Date(pool.started_at).toLocaleDateString()}</p>}
+                </div>
+                <div className="rounded-lg bg-black/20 border border-white/[0.04] p-3">
+                  <p className="text-[10px] sm:text-xs text-slate-400/80">Available seats</p>
+                  <p className={`mt-1 text-base sm:text-lg font-bold ${availableSeats > 0 ? "text-white" : "text-amber-400"}`}>{availableSeats}</p>
+                  <p className="text-[10px] text-slate-500">of {pool.max_members} total</p>
+                </div>
+                <div className="rounded-lg bg-black/20 border border-white/[0.04] p-3">
+                  <p className="text-[10px] sm:text-xs text-slate-400/80">Pool fee</p>
+                  <p className="mt-1 text-base sm:text-lg font-bold text-emerald-400">{pool.pool_fee_percent ?? "—"}%</p>
+                  <p className="text-[10px] text-slate-500">{pool.payment_window_minutes ?? "—"} min window</p>
+                </div>
               </div>
-              <div>
-                <p className="mb-1 text-white/70">Available seats</p>
-                <p className="text-lg font-semibold">{availableSeats}</p>
+
+              {/* Progress bar */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-400 mb-1.5">
+                  <span>Funding progress</span>
+                  <span className="font-medium text-slate-300">{filledSeats}/{totalSeats} seats filled</span>
+                </div>
+                <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800/60">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${progress >= 100 ? "bg-gradient-to-r from-amber-500 to-amber-400" : "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"}`}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Already a member */}
+          {/* ── Member Status ───────────────────── */}
           {isMember && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
-              <p className="text-lg font-semibold text-green-200">You are a member of this pool.</p>
-              <p className="text-sm text-slate-400">Your share is locked. Pool activity will appear here when the pool is active.</p>
-              {/* Phase 1E: Request to exit (open/full/active) */}
+            <Card>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 border border-emerald-500/20">
+                  <svg className="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-base sm:text-lg font-semibold text-emerald-400">You are a member</p>
+                  <p className="text-xs text-slate-400">Your share is locked. Pool activity will appear when the pool is active.</p>
+                </div>
+              </div>
+
+              {/* Cancellation section */}
               {(poolStatus === "open" || poolStatus === "full" || poolStatus === "active") && (
-                <div className="pt-4 border-t border-[--color-border]">
+                <div className="pt-4 border-t border-white/[0.06]">
                   {myCancellation?.has_cancellation ? (
-                    <div className="rounded-lg bg-[--color-surface-alt] p-4 text-sm">
-                      <p className="font-medium text-white capitalize">Cancellation status: {myCancellation.cancellation?.status}</p>
+                    <div className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-4 text-sm">
+                      <div className="flex items-center gap-2 mb-2">
+                        <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <p className="font-medium text-white capitalize">Cancellation: {myCancellation.cancellation?.status}</p>
+                      </div>
                       {myCancellation.cancellation?.status === "pending" && (
-                        <p className="mt-1 text-slate-400">Awaiting admin approval. Refund amount: {myCancellation.cancellation?.refund_amount} {pool.coin_type}</p>
+                        <p className="text-slate-400">Awaiting admin approval. Refund: {myCancellation.cancellation?.refund_amount} {pool.coin_type}</p>
                       )}
                       {myCancellation.cancellation?.status === "approved" && (
-                        <p className="mt-1 text-slate-400">Approved. Admin will process the refund. Refund: {myCancellation.cancellation?.refund_amount} {pool.coin_type}</p>
+                        <p className="text-slate-400">Approved. Admin will process refund: {myCancellation.cancellation?.refund_amount} {pool.coin_type}</p>
                       )}
                       {myCancellation.cancellation?.status === "rejected" && myCancellation.cancellation?.rejection_reason && (
-                        <p className="mt-1 text-amber-400">Rejected: {myCancellation.cancellation.rejection_reason}</p>
+                        <p className="text-amber-400">Rejected: {myCancellation.cancellation.rejection_reason}</p>
                       )}
                       {myCancellation.cancellation?.status === "processed" && (
-                        <p className="mt-1 text-green-400">Refund completed. You have exited the pool.</p>
+                        <p className="text-emerald-400">Refund completed. You have exited the pool.</p>
                       )}
-                      <p className="mt-2 text-xs text-slate-500">Requested at {myCancellation.cancellation?.requested_at ? new Date(myCancellation.cancellation.requested_at).toLocaleString() : "—"}</p>
+                      <p className="mt-2 text-[10px] text-slate-500">
+                        Requested {myCancellation.cancellation?.requested_at ? new Date(myCancellation.cancellation.requested_at).toLocaleString() : "—"}
+                      </p>
                     </div>
                   ) : (
-                    <>
-                      <p className="text-slate-400 mb-2">Need to exit? Request cancellation. A fee may apply based on pool rules.</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <p className="text-xs sm:text-sm text-slate-400">Need to exit? Request cancellation. A fee may apply.</p>
                       <button
                         type="button"
                         onClick={handleRequestExit}
                         disabled={requestingExit}
-                        className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/20 disabled:opacity-60"
+                        className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs sm:text-sm font-semibold text-amber-300 hover:bg-amber-500/20 hover:border-amber-500/50 transition-all disabled:opacity-60 w-fit"
                       >
                         {requestingExit ? "Submitting…" : "Request to exit pool"}
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
               )}
-            </div>
+            </Card>
           )}
 
-          {/* Rejected: can re-join */}
+          {/* ── Rejected warning ────────────────── */}
           {!isMember && isRejected && (
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
-              <p className="font-medium">Your previous payment was rejected.</p>
-              {payment?.rejection_reason && (
-                <p className="mt-1 text-amber-200/80">Reason: {payment.rejection_reason}</p>
-              )}
-              <p className="mt-2">You can join again below.</p>
+            <div className="rounded-xl border-l-4 border-amber-500/50 bg-amber-500/10 p-4 text-sm">
+              <p className="font-medium text-amber-200">Your previous payment was rejected</p>
+              {payment?.rejection_reason && <p className="mt-1 text-amber-300/70">Reason: {payment.rejection_reason}</p>}
+              <p className="mt-2 text-slate-300">You can join again below.</p>
             </div>
           )}
 
-          {/* Active reservation: show instructions + upload (binance) or awaiting (stripe) */}
+          {/* ── Payment in progress ─────────────── */}
           {!isMember && hasReservation && payment && !isRejected && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-white">Complete your payment</h2>
-              <div className="rounded-lg bg-[--color-surface-alt] p-4 text-sm text-slate-200 space-y-2">
-                <p>
-                  Total to pay: <span className="font-mono font-semibold text-white">{payment.total_amount} {pool.coin_type}</span>
-                  {" "}(investment {payment.investment_amount} + fee {payment.pool_fee_amount})
-                </p>
+            <Card>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fc4f02]/15 border border-[#fc4f02]/20">
+                  <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold text-white">Complete your payment</h2>
+                  <p className="text-xs text-slate-400">Finish payment before the deadline to secure your seat</p>
+                </div>
+              </div>
+
+              {/* Payment info card */}
+              <div className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-4 space-y-3 text-sm">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                  <div>
+                    <p className="text-[10px] text-slate-500">Total to pay</p>
+                    <p className="font-mono text-base font-bold text-white">{payment.total_amount} {pool.coin_type}</p>
+                  </div>
+                  <div className="hidden sm:block h-8 w-px bg-white/[0.06]" />
+                  <div>
+                    <p className="text-[10px] text-slate-500">Investment</p>
+                    <p className="font-mono font-medium text-slate-300">{payment.investment_amount}</p>
+                  </div>
+                  <div className="hidden sm:block h-8 w-px bg-white/[0.06]" />
+                  <div>
+                    <p className="text-[10px] text-slate-500">Fee</p>
+                    <p className="font-mono font-medium text-slate-300">{payment.pool_fee_amount}</p>
+                  </div>
+                </div>
+
                 {payment.payment_method === "binance" && (
-                  <>
-                    <p className="mt-2 font-medium text-white">Send to Admin Binance UID: {pool.admin_binance_uid || "—"}</p>
-                    <p className="text-slate-400">
-                      Time remaining: <span className="font-mono text-white">{paymentStatus?.reservation?.minutes_remaining ?? 0} minutes</span>
-                      {" "}(deadline: {new Date(payment.payment_deadline).toLocaleString()})
-                    </p>
-                  </>
+                  <div className="pt-3 border-t border-white/[0.04] space-y-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-xs text-slate-400">Admin Binance UID:</p>
+                      <span className="font-mono text-sm font-medium text-white bg-white/[0.04] px-2 py-0.5 rounded">{pool.admin_binance_uid || "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <svg className="h-4 w-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-slate-400">
+                        Time remaining: <span className="font-mono font-medium text-white">{paymentStatus?.reservation?.minutes_remaining ?? 0} min</span>
+                        {" · "}Deadline: {new Date(payment.payment_deadline).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
                 )}
                 {payment.payment_method === "stripe" && (
-                  <p className="text-slate-400">Awaiting admin approval. No screenshot required for Stripe.</p>
+                  <p className="text-xs text-slate-400 pt-2 border-t border-white/[0.04]">Awaiting admin approval. No screenshot required for Stripe.</p>
                 )}
               </div>
+
+              {/* Binance instructions */}
               {payment.payment_method === "binance" && (
-                <ul className="list-decimal list-inside text-sm text-slate-300 space-y-1">
-                  <li>Open Binance → Transfer → Internal Transfer</li>
-                  <li>Enter recipient UID: {pool.admin_binance_uid}</li>
-                  <li>Send exactly {payment.total_amount} {pool.coin_type}</li>
-                  <li>Take a screenshot of the completed transfer</li>
-                  <li>Upload the screenshot below before the timer expires</li>
-                </ul>
+                <div className="mt-4 rounded-lg bg-white/[0.02] border border-white/[0.04] p-4">
+                  <p className="text-xs font-medium text-white mb-3">Payment steps:</p>
+                  <ol className="space-y-2 text-xs text-slate-300">
+                    {[
+                      "Open Binance → Transfer → Internal Transfer",
+                      `Enter recipient UID: ${pool.admin_binance_uid}`,
+                      `Send exactly ${payment.total_amount} ${pool.coin_type}`,
+                      "Take a screenshot of the completed transfer",
+                      "Upload the screenshot below before the timer expires",
+                    ].map((step, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className="flex-shrink-0 flex h-5 w-5 items-center justify-center rounded-full bg-[#fc4f02]/15 text-[10px] font-bold text-[#fc4f02]">{i + 1}</span>
+                        <span className="pt-0.5">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               )}
+
+              {/* Upload button */}
               {canUpload && (
-                <div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/gif,image/webp"
-                    className="hidden"
-                    onChange={handleUploadScreenshot}
-                    disabled={uploading}
-                  />
+                <div className="mt-4">
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={handleUploadScreenshot} disabled={uploading} />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="rounded-lg bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/25 hover:shadow-[#fc4f02]/40 hover:scale-[1.02] transition-all disabled:opacity-60"
                   >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
                     {uploading ? "Uploading…" : "Upload payment screenshot"}
                   </button>
-                  <p className="mt-1 text-xs text-slate-400">JPEG, PNG, GIF or WebP, max 10MB</p>
+                  <p className="mt-1.5 text-[10px] text-slate-500">JPEG, PNG, GIF or WebP — max 10 MB</p>
                 </div>
               )}
+
               {payment.screenshot_url && payment.status === "processing" && (
-                <p className="text-sm text-slate-400">Screenshot uploaded. Awaiting admin approval.</p>
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-xs text-emerald-400">
+                  <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Screenshot uploaded. Awaiting admin approval.
+                </div>
               )}
-            </div>
+            </Card>
           )}
 
-          {/* No reservation: show Join form (only if pool is open and has seats) */}
+          {/* ── Join Form ───────────────────────── */}
           {!isMember && !hasReservation && poolStatus === "open" && availableSeats > 0 && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
-              <h2 className="text-lg font-semibold text-white">Join this pool</h2>
-              <div className="space-y-3">
+            <Card>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fc4f02]/15 border border-[#fc4f02]/20">
+                  <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
                 <div>
-                  <label className="mb-1 block text-sm text-slate-300">Payment method</label>
+                  <h2 className="text-base sm:text-lg font-semibold text-white">Join this pool</h2>
+                  <p className="text-xs text-slate-400">Reserve your seat and complete payment</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-1.5 block text-xs sm:text-sm font-medium text-slate-300">Payment method</label>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
+                    className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm text-white focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/30 transition-all"
                   >
                     <option value="binance">Binance (transfer + screenshot)</option>
                     <option value="stripe">Stripe (awaiting admin approval)</option>
@@ -345,13 +473,13 @@ export default function VcPoolDetailPage() {
                 </div>
                 {paymentMethod === "binance" && (
                   <div>
-                    <label className="mb-1 block text-sm text-slate-300">Your Binance UID (optional)</label>
+                    <label className="mb-1.5 block text-xs sm:text-sm font-medium text-slate-300">Your Binance UID <span className="text-slate-500">(optional)</span></label>
                     <input
                       type="text"
                       value={userBinanceUid}
                       onChange={(e) => setUserBinanceUid(e.target.value)}
                       placeholder="e.g. 12345678"
-                      className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/30 transition-all"
                     />
                   </div>
                 )}
@@ -359,48 +487,79 @@ export default function VcPoolDetailPage() {
                   type="button"
                   onClick={handleJoin}
                   disabled={joining}
-                  className="w-full rounded-lg bg-[#fc4f02] px-4 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                  className="w-full rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/25 hover:shadow-[#fc4f02]/40 hover:scale-[1.01] transition-all disabled:opacity-60"
                 >
                   {joining ? "Reserving seat…" : "Reserve seat & get payment details"}
                 </button>
               </div>
-            </div>
+            </Card>
           )}
 
+          {/* ── Pool closed / full ──────────────── */}
           {!isMember && !hasReservation && (poolStatus !== "open" || availableSeats <= 0) && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 text-center text-slate-400 text-sm">
-              {poolStatus !== "open"
-                ? "This pool is not open for new members right now."
-                : "No seats available. The pool is full."}
-            </div>
+            <Card className="text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-500/10 border border-slate-500/20">
+                <svg className="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <p className="text-sm text-slate-400">
+                {poolStatus !== "open" ? "This pool is not open for new members right now." : "No seats available. The pool is full."}
+              </p>
+            </Card>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300">
-              <h2 className="mb-3 text-sm font-semibold text-white">Pool details</h2>
-              <dl className="space-y-2">
-                <div className="flex justify-between gap-4">
-                  <dt className="text-slate-400">Status</dt>
-                  <dd className="font-medium capitalize">{poolStatus || "—"}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-slate-400">Max members</dt>
-                  <dd className="font-medium">{pool.max_members}</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-slate-400">Pool fee</dt>
-                  <dd className="font-medium">{pool.pool_fee_percent ?? "—"}%</dd>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <dt className="text-slate-400">Payment window</dt>
-                  <dd className="font-medium">{pool.payment_window_minutes ?? "—"} min</dd>
-                </div>
+          {/* ── Pool Details Grid ───────────────── */}
+          <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
+            <Card>
+              <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                <svg className="h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Pool Details
+              </h2>
+              <dl className="space-y-3 text-sm">
+                {[
+                  { label: "Status", value: poolStatus || "—", capitalize: true },
+                  { label: "Max members", value: String(pool.max_members) },
+                  { label: "Verified members", value: String(pool.verified_members_count) },
+                  { label: "Pool fee", value: `${pool.pool_fee_percent ?? "—"}%` },
+                  { label: "Payment window", value: `${pool.payment_window_minutes ?? "—"} min` },
+                  ...(pool.started_at ? [{ label: "Started", value: new Date(pool.started_at).toLocaleDateString() }] : []),
+                  ...(pool.end_date ? [{ label: "Ends", value: new Date(pool.end_date).toLocaleDateString() }] : []),
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 py-1.5 border-b border-white/[0.03] last:border-0">
+                    <dt className="text-slate-400 text-xs sm:text-sm">{item.label}</dt>
+                    <dd className={`font-medium text-white text-xs sm:text-sm ${item.capitalize ? "capitalize" : ""}`}>{item.value}</dd>
+                  </div>
+                ))}
               </dl>
-            </div>
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300">
-              <h2 className="text-sm font-semibold text-white">Admin Binance UID</h2>
-              <p className="mt-1 font-mono text-white">{pool.admin_binance_uid || "Not set"}</p>
-            </div>
+            </Card>
+
+            <Card>
+              <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                <svg className="h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                Payment Info
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[10px] sm:text-xs text-slate-400 mb-1">Admin Binance UID</p>
+                  <p className="font-mono text-sm font-medium text-white bg-white/[0.03] border border-white/[0.04] rounded-lg px-3 py-2">
+                    {pool.admin_binance_uid || "Not set"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] sm:text-xs text-slate-400 mb-1">Contribution per seat</p>
+                  <p className="text-lg font-bold text-white">${pool.contribution_amount} <span className="text-sm font-normal text-slate-400">{pool.coin_type}</span></p>
+                </div>
+                <div>
+                  <p className="text-[10px] sm:text-xs text-slate-400 mb-1">Created</p>
+                  <p className="text-sm text-white">{new Date(pool.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       )}

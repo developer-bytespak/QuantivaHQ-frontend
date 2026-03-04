@@ -42,6 +42,24 @@ import { PoolSignalsTab } from "@/components/vcpool/pool-signals-tab";
 
 type Tab = "payments" | "reservations" | "members" | "trades" | "signals" | "cancellations" | "payouts";
 
+function StatusBadge({ status }: { status: string }) {
+  const map: Record<string, { bg: string; text: string; dot: string }> = {
+    draft: { bg: "bg-slate-500/15 border-slate-500/20", text: "text-slate-300", dot: "bg-slate-400" },
+    open: { bg: "bg-emerald-500/15 border-emerald-500/20", text: "text-emerald-400", dot: "bg-emerald-400 animate-pulse" },
+    full: { bg: "bg-amber-500/15 border-amber-500/20", text: "text-amber-400", dot: "bg-amber-400" },
+    active: { bg: "bg-blue-500/15 border-blue-500/20", text: "text-blue-400", dot: "bg-blue-400 animate-pulse" },
+    completed: { bg: "bg-slate-500/15 border-slate-500/20", text: "text-slate-300", dot: "bg-slate-400" },
+    cancelled: { bg: "bg-red-500/15 border-red-500/20", text: "text-red-400", dot: "bg-red-400" },
+  };
+  const s = map[status] ?? map.draft;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] sm:text-xs font-medium ${s.bg} ${s.text}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+}
+
 function EditPoolModal({
   pool,
   onSave,
@@ -88,67 +106,73 @@ function EditPoolModal({
     });
   };
 
+  const modalInput = "w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/50 transition-colors";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-lg rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-[--color-border] px-5 py-4 sticky top-0 bg-[--color-surface]">
-          <h3 className="text-lg font-semibold text-white">Edit pool</h3>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white" aria-label="Close">
+      <div className="w-full max-w-lg rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#1a1a2e]/95 to-[#0f0f1a]/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(252,79,2,0.08)] max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4 sticky top-0 bg-[#1a1a2e]/95 backdrop-blur-xl z-10">
+          <h3 className="text-lg font-semibold text-white">Edit Pool</h3>
+          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors" aria-label="Close">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <label className="block text-sm text-slate-400">Name</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" required />
-          <label className="block text-sm text-slate-400">Description (optional)</label>
-          <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-300">Name</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={modalInput} required />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-300">Description (optional)</label>
+            <textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} className={modalInput} />
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400">Coin</label>
-              <select value={coinType} onChange={(e) => setCoinType(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white">
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Coin</label>
+              <select value={coinType} onChange={(e) => setCoinType(e.target.value)} className={modalInput}>
                 <option value="USDT">USDT</option>
                 <option value="USDC">USDC</option>
                 <option value="BUSD">BUSD</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm text-slate-400">Contribution per seat</label>
-              <input type="number" min={0} step={0.01} value={contributionAmount} onChange={(e) => setContributionAmount(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" required />
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Contribution per seat</label>
+              <input type="number" min={0} step={0.01} value={contributionAmount} onChange={(e) => setContributionAmount(e.target.value)} className={modalInput} required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400">Max members</label>
-              <input type="number" min={2} value={maxMembers} onChange={(e) => setMaxMembers(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" required />
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Max members</label>
+              <input type="number" min={2} value={maxMembers} onChange={(e) => setMaxMembers(e.target.value)} className={modalInput} required />
             </div>
             <div>
-              <label className="block text-sm text-slate-400">Duration (days)</label>
-              <input type="number" min={1} value={durationDays} onChange={(e) => setDurationDays(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" required />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-slate-400">Pool fee %</label>
-              <input type="number" min={0} step={0.01} value={poolFeePercent} onChange={(e) => setPoolFeePercent(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
-            </div>
-            <div>
-              <label className="block text-sm text-slate-400">Admin profit fee %</label>
-              <input type="number" min={0} step={0.01} value={adminProfitFeePercent} onChange={(e) => setAdminProfitFeePercent(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Duration (days)</label>
+              <input type="number" min={1} value={durationDays} onChange={(e) => setDurationDays(e.target.value)} className={modalInput} required />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-slate-400">Cancellation fee %</label>
-              <input type="number" min={0} step={0.01} value={cancellationFeePercent} onChange={(e) => setCancellationFeePercent(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Pool fee %</label>
+              <input type="number" min={0} step={0.01} value={poolFeePercent} onChange={(e) => setPoolFeePercent(e.target.value)} className={modalInput} />
             </div>
             <div>
-              <label className="block text-sm text-slate-400">Payment window (min)</label>
-              <input type="number" min={5} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Admin profit fee %</label>
+              <input type="number" min={0} step={0.01} value={adminProfitFeePercent} onChange={(e) => setAdminProfitFeePercent(e.target.value)} className={modalInput} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Cancellation fee %</label>
+              <input type="number" min={0} step={0.01} value={cancellationFeePercent} onChange={(e) => setCancellationFeePercent(e.target.value)} className={modalInput} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-slate-300">Payment window (min)</label>
+              <input type="number" min={5} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className={modalInput} />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" disabled={saving} className="flex-1 rounded-xl bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60">Save changes</button>
-            <button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+            <button type="submit" disabled={saving} className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/25 hover:shadow-[#fc4f02]/40 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:hover:scale-100">Save changes</button>
+            <button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-60">Cancel</button>
           </div>
         </form>
       </div>
@@ -515,7 +539,7 @@ export default function AdminPoolDetailsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 sm:space-y-8">
       {notification && (
         <Notification
           message={notification.message}
@@ -526,9 +550,9 @@ export default function AdminPoolDetailsPage() {
 
       <button
         onClick={() => router.push("/admin/pools")}
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white"
+        className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-400 hover:text-[#fc4f02] transition-colors group"
       >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-4 w-4 sm:h-5 sm:w-5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Back to Pools
@@ -536,26 +560,28 @@ export default function AdminPoolDetailsPage() {
 
       {loading && (
         <div className="flex min-h-[40vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#fc4f02] border-t-transparent" />
+          <div className="h-6 w-6 sm:h-8 sm:w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]" />
         </div>
       )}
 
       {!loading && pool && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Page header — outside cards, matching dashboard/pools list pattern */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-xl font-semibold text-white">{pool.name}</h1>
-              <p className="text-xs text-slate-400">
-                Status: <span className="capitalize">{pool.status}</span>
-              </p>
+              <h1 className="text-xl sm:text-2xl font-bold text-white">{pool.name}</h1>
+              <div className="mt-1.5 flex items-center gap-2">
+                <StatusBadge status={pool.status} />
+                <span className="text-[10px] sm:text-xs text-slate-500">{pool.coin_type} · ${pool.contribution_amount}/seat · {pool.duration_days}d</span>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {isDraft && (
                 <button
                   type="button"
                   onClick={() => setShowEditModal(true)}
                   disabled={saving}
-                  className="rounded-xl border border-[--color-border] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60"
+                  className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.05] transition-colors disabled:opacity-60"
                 >
                   Edit pool
                 </button>
@@ -564,7 +590,7 @@ export default function AdminPoolDetailsPage() {
                 type="button"
                 onClick={handleClone}
                 disabled={saving}
-                className="rounded-xl border border-[--color-border] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60"
+                className="rounded-xl border border-white/[0.08] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/[0.05] transition-colors disabled:opacity-60"
               >
                 Clone
               </button>
@@ -573,7 +599,7 @@ export default function AdminPoolDetailsPage() {
                   type="button"
                   onClick={handlePublish}
                   disabled={saving}
-                  className="rounded-xl bg-[#fc4f02] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-[#fc4f02]/25 hover:shadow-[#fc4f02]/40 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:hover:scale-100"
                 >
                   Publish
                 </button>
@@ -583,7 +609,7 @@ export default function AdminPoolDetailsPage() {
                   type="button"
                   onClick={handleStartPool}
                   disabled={saving}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-500 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:hover:scale-100"
                 >
                   Start pool
                 </button>
@@ -593,7 +619,7 @@ export default function AdminPoolDetailsPage() {
                   type="button"
                   onClick={() => setShowCompletePoolConfirm(true)}
                   disabled={saving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:hover:scale-100"
                 >
                   Complete pool
                 </button>
@@ -603,7 +629,7 @@ export default function AdminPoolDetailsPage() {
                   type="button"
                   onClick={() => setShowCancelPoolConfirm(true)}
                   disabled={saving}
-                  className="rounded-xl border border-red-500/50 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60"
+                  className="rounded-xl border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-60"
                 >
                   Cancel pool
                 </button>
@@ -613,7 +639,7 @@ export default function AdminPoolDetailsPage() {
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={saving}
-                  className="rounded-xl border border-red-500/50 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60"
+                  className="rounded-xl border border-red-500/30 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-60"
                 >
                   Delete pool
                 </button>
@@ -621,49 +647,54 @@ export default function AdminPoolDetailsPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300 space-y-3">
-              <h2 className="text-sm font-semibold text-white">Basics</h2>
-              <div className="space-y-2">
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Name</span>
-                  <span className="text-xs font-medium text-white">{pool.name}</span>
+          {/* Info cards — matching dashboard recent-pools card style */}
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+            <div className="rounded-xl sm:rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur overflow-hidden">
+              <div className="border-b border-white/[0.06] px-5 sm:px-6 py-3 sm:py-4">
+                <h2 className="text-sm sm:text-base font-semibold text-white">Basics</h2>
+              </div>
+              <div className="divide-y divide-white/[0.04]">
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+                  <span className="text-[10px] sm:text-xs text-slate-400">Name</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">{pool.name}</span>
                 </div>
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Contribution per seat</span>
-                  <span className="text-xs font-medium text-white">
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+                  <span className="text-[10px] sm:text-xs text-slate-400">Contribution per seat</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">
                     ${pool.contribution_amount} {pool.coin_type}
                   </span>
                 </div>
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Max members</span>
-                  <span className="text-xs font-medium text-white">{pool.max_members}</span>
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+                  <span className="text-[10px] sm:text-xs text-slate-400">Max members</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">{pool.max_members}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Duration</span>
-                  <span className="font-medium text-white">{pool.duration_days} days</span>
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+                  <span className="text-[10px] sm:text-xs text-slate-400">Duration</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">{pool.duration_days} days</span>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300 space-y-3">
-              <h2 className="text-sm font-semibold text-white">Members & seats</h2>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Verified members</span>
-                  <span className="font-medium text-white">
+            <div className="rounded-xl sm:rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur overflow-hidden">
+              <div className="border-b border-white/[0.06] px-5 sm:px-6 py-3 sm:py-4">
+                <h2 className="text-sm sm:text-base font-semibold text-white">Members & Seats</h2>
+              </div>
+              <div className="divide-y divide-white/[0.04]">
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+                  <span className="text-[10px] sm:text-xs text-slate-400">Verified members</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">
                     {pool.verified_members_count}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Reserved seats</span>
-                  <span className="font-medium text-white">
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+                  <span className="text-[10px] sm:text-xs text-slate-400">Reserved seats</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">
                     {pool.reserved_seats_count}
                   </span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Available seats</span>
-                  <span className="font-medium text-white">
+                <div className="flex items-center justify-between px-5 sm:px-6 py-3">
+                  <span className="text-[10px] sm:text-xs text-slate-400">Available seats</span>
+                  <span className="text-xs sm:text-sm font-medium text-white">
                     {pool.max_members -
                       pool.verified_members_count -
                       pool.reserved_seats_count}
@@ -673,34 +704,61 @@ export default function AdminPoolDetailsPage() {
             </div>
           </div>
 
-          {/* Phase 1D: Pool value (active pools only) */}
+          {/* Pool value stat cards — matching dashboard stat cards style */}
           {isActive && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5">
-              <h2 className="text-sm font-semibold text-white mb-3">Pool value</h2>
-              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Total invested</span>
-                  <span className="font-medium text-white">
-                    ${pool.total_invested_usdt ?? "0"} USDT
-                  </span>
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+              <div className="relative overflow-hidden rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-[#fc4f02]/30 bg-gradient-to-br from-[#fc4f02]/15 via-[#fda300]/8 to-transparent shadow-[0_0_20px_rgba(252,79,2,0.08)]">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs text-slate-400 mb-1 sm:mb-2">Total Invested</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">${pool.total_invested_usdt ?? "0"}</p>
+                    <p className="text-[10px] text-slate-500 mt-1">USDT</p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10">
+                    <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
                 </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Current value</span>
-                  <span className="font-medium text-white">
-                    ${pool.current_pool_value_usdt ?? "0"} USDT
-                  </span>
+              </div>
+              <div className="relative overflow-hidden rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs text-slate-400 mb-1 sm:mb-2">Current Value</p>
+                    <p className="text-xl sm:text-2xl font-bold text-white">${pool.current_pool_value_usdt ?? "0"}</p>
+                    <p className="text-[10px] text-slate-500 mt-1">USDT</p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-white/[0.05]">
+                    <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                  </div>
                 </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Total profit</span>
-                  <span className={`font-medium ${Number(pool.total_profit_usdt ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    ${pool.total_profit_usdt ?? "0"} USDT
-                  </span>
+              </div>
+              <div className="relative overflow-hidden rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs text-slate-400 mb-1 sm:mb-2">Total Profit</p>
+                    <p className={`text-xl sm:text-2xl font-bold ${Number(pool.total_profit_usdt ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                      ${pool.total_profit_usdt ?? "0"}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1">USDT</p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-white/[0.05]">
+                    <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                  </div>
                 </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Started · Ends</span>
-                  <span className="font-medium text-white">
-                    {pool.started_at ? new Date(pool.started_at).toLocaleDateString() : "—"} · {pool.end_date ? new Date(pool.end_date).toLocaleDateString() : "—"}
-                  </span>
+              </div>
+              <div className="relative overflow-hidden rounded-xl sm:rounded-2xl p-4 sm:p-5 border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10px] sm:text-xs text-slate-400 mb-1 sm:mb-2">Timeline</p>
+                    <p className="text-sm sm:text-base font-bold text-white">
+                      {pool.started_at ? new Date(pool.started_at).toLocaleDateString() : "—"}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Ends {pool.end_date ? new Date(pool.end_date).toLocaleDateString() : "—"}
+                    </p>
+                  </div>
+                  <div className="flex-shrink-0 flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-white/[0.05]">
+                    <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  </div>
                 </div>
               </div>
             </div>
@@ -708,45 +766,45 @@ export default function AdminPoolDetailsPage() {
 
           {/* Phase 1C: Payments, Reservations, Members; Phase 1D: Trades (only for non-draft pools) */}
           {!isDraft && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
-              <div className="flex flex-wrap border-b border-[--color-border]">
+            <div className="rounded-xl sm:rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur overflow-hidden shadow-[0_0_20px_rgba(252,79,2,0.04)]">
+              <div className="flex flex-wrap border-b border-white/[0.06] overflow-x-auto scrollbar-none">
                 {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "signals", "cancellations", "payouts"] as Tab[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${
+                    className={`px-4 py-3 text-xs sm:text-sm font-medium capitalize transition-all whitespace-nowrap ${
                       activeTab === tab
-                        ? "bg-[#fc4f02]/20 text-[#fc4f02] border-b-2 border-[#fc4f02]"
-                        : "text-slate-400 hover:text-white"
+                        ? "text-[#fc4f02] border-b-2 border-[#fc4f02] bg-[#fc4f02]/[0.08]"
+                        : "text-slate-400 hover:text-white hover:bg-white/[0.03]"
                     }`}
                   >
                     {tab}
                   </button>
                 ))}
               </div>
-              <div className="p-4">
+              <div>
                 {activeTab === "payments" && (
                   <>
                     {paymentsLoading ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
-                        Loading…
+                      <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-400 py-10">
+                        <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-700/30 border-t-[#fc4f02]" />
+                        Loading payments…
                       </div>
                     ) : payments.length === 0 ? (
-                      <p className="text-sm text-slate-400 py-4">No payment submissions yet.</p>
+                      <p className="text-xs sm:text-sm text-slate-500 text-center py-10">No payment submissions yet.</p>
                     ) : (
-                      <div className="space-y-3 overflow-x-auto">
+                      <div className="divide-y divide-white/[0.04]">
                         {payments.map((p) => (
                           <div
                             key={p.submission_id}
-                            className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[--color-surface-alt] p-3 text-sm"
+                            className="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-6 py-3.5 sm:py-4 hover:bg-white/[0.02] transition-colors"
                           >
-                            <div>
-                              <p className="font-medium text-white">
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-white truncate">
                                 {p.user_email ?? p.user_username ?? p.user_id}
                               </p>
-                              <p className="text-xs text-slate-400">
+                              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
                                 {p.payment_method} · {p.total_amount} ·{" "}
                                 <span className="capitalize">{p.status}</span>
                               </p>
@@ -755,13 +813,13 @@ export default function AdminPoolDetailsPage() {
                                   href={p.screenshot_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-[#fc4f02] hover:underline mt-1 inline-block"
+                                  className="text-[10px] sm:text-xs text-[#fc4f02] hover:underline mt-1 inline-block"
                                 >
                                   View screenshot
                                 </a>
                               )}
                               {p.rejection_reason && (
-                                <p className="text-xs text-red-400 mt-1">Rejected: {p.rejection_reason}</p>
+                                <p className="text-[10px] sm:text-xs text-red-400 mt-1">Rejected: {p.rejection_reason}</p>
                               )}
                             </div>
                             {p.status === "processing" && (
@@ -770,7 +828,7 @@ export default function AdminPoolDetailsPage() {
                                   type="button"
                                   onClick={() => handleApprove(p.submission_id)}
                                   disabled={actionSubmitting !== null}
-                                  className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500 disabled:opacity-60"
+                                  className="rounded-lg bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-60"
                                 >
                                   {actionSubmitting === p.submission_id ? "…" : "Approve"}
                                 </button>
@@ -778,7 +836,7 @@ export default function AdminPoolDetailsPage() {
                                   type="button"
                                   onClick={() => handleReject(p.submission_id)}
                                   disabled={actionSubmitting !== null}
-                                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60"
+                                  className="rounded-lg bg-red-500/20 border border-red-500/30 px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-60"
                                 >
                                   {actionSubmitting === p.submission_id ? "…" : "Reject"}
                                 </button>
@@ -793,19 +851,19 @@ export default function AdminPoolDetailsPage() {
                 {activeTab === "reservations" && (
                   <>
                     {reservations.length === 0 ? (
-                      <p className="text-sm text-slate-400 py-4">No active reservations.</p>
+                      <p className="text-xs sm:text-sm text-slate-500 text-center py-10">No active reservations.</p>
                     ) : (
-                      <div className="space-y-2 overflow-x-auto">
+                      <div className="divide-y divide-white/[0.04]">
                         {reservations.map((r) => (
                           <div
                             key={r.reservation_id}
-                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
+                            className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3.5 sm:py-4 hover:bg-white/[0.02] transition-colors"
                           >
-                            <span className="font-medium text-white">
+                            <span className="text-xs sm:text-sm font-medium text-white truncate">
                               {r.user_email ?? r.user_username ?? r.user_id}
                             </span>
-                            <span className="text-xs capitalize">{r.status}</span>
-                            <span className="text-xs text-slate-400">
+                            <span className="text-[10px] sm:text-xs capitalize text-slate-300">{r.status}</span>
+                            <span className="text-[10px] sm:text-xs text-slate-400">
                               Expires: {new Date(r.expires_at).toLocaleString()}
                             </span>
                           </div>
@@ -817,19 +875,19 @@ export default function AdminPoolDetailsPage() {
                 {activeTab === "members" && (
                   <>
                     {members.length === 0 ? (
-                      <p className="text-sm text-slate-400 py-4">No members yet.</p>
+                      <p className="text-xs sm:text-sm text-slate-500 text-center py-10">No members yet.</p>
                     ) : (
-                      <div className="space-y-2 overflow-x-auto">
+                      <div className="divide-y divide-white/[0.04]">
                         {members.map((m) => (
                           <div
                             key={m.member_id}
-                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
+                            className="flex items-center justify-between gap-3 px-5 sm:px-6 py-3.5 sm:py-4 hover:bg-white/[0.02] transition-colors"
                           >
-                            <span className="font-medium text-white">
+                            <span className="text-xs sm:text-sm font-medium text-white truncate">
                               {m.user_email ?? m.user_username ?? m.user_id}
                             </span>
-                            <span className="text-xs">Share: {m.share_percent}%</span>
-                            <span className="text-xs text-slate-400">
+                            <span className="text-[10px] sm:text-xs text-slate-300">Share: {m.share_percent}%</span>
+                            <span className="text-[10px] sm:text-xs text-slate-400">
                               Joined {new Date(m.joined_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -839,60 +897,64 @@ export default function AdminPoolDetailsPage() {
                   </>
                 )}
                 {activeTab === "trades" && isActive && (
-                  <PoolTradesFlow
-                    pool={pool}
-                    trades={trades}
-                    tradesSummary={tradesSummary}
-                    tradesLoading={tradesLoading}
-                    tradeStatusFilter={tradeStatusFilter}
-                    onFilterChange={setTradeStatusFilter}
-                    onOpenTrade={handleOpenTrade}
-                    onCloseTrade={handleCloseTrade}
-                    saving={saving}
-                    actionSubmitting={actionSubmitting}
-                  />
+                  <div className="p-4 sm:p-5">
+                    <PoolTradesFlow
+                      pool={pool}
+                      trades={trades}
+                      tradesSummary={tradesSummary}
+                      tradesLoading={tradesLoading}
+                      tradeStatusFilter={tradeStatusFilter}
+                      onFilterChange={setTradeStatusFilter}
+                      onOpenTrade={handleOpenTrade}
+                      onCloseTrade={handleCloseTrade}
+                      saving={saving}
+                      actionSubmitting={actionSubmitting}
+                    />
+                  </div>
                 )}
                 {activeTab === "signals" && (
-                  <PoolSignalsTab
-                    poolId={poolId}
-                    pool={pool}
-                    onTradePlaced={() => {
-                      load();
-                      loadTrades();
-                    }}
-                  />
+                  <div className="p-4 sm:p-5">
+                    <PoolSignalsTab
+                      poolId={poolId}
+                      pool={pool}
+                      onTradePlaced={() => {
+                        load();
+                        loadTrades();
+                      }}
+                    />
+                  </div>
                 )}
                 {activeTab === "cancellations" && (
                   <>
                     {cancellationsLoading ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-400 py-6">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
-                        Loading…
+                      <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-400 py-10">
+                        <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-700/30 border-t-[#fc4f02]" />
+                        Loading cancellations…
                       </div>
                     ) : cancellations.length === 0 ? (
-                      <p className="text-sm text-slate-400 py-6">No cancellation requests.</p>
+                      <p className="text-xs sm:text-sm text-slate-500 text-center py-10">No cancellation requests.</p>
                     ) : (
-                      <div className="space-y-3 py-2">
+                      <div className="divide-y divide-white/[0.04]">
                         {cancellations.map((c) => (
-                          <div key={c.cancellation_id} className="rounded-lg bg-[--color-surface-alt] p-4 text-sm">
+                          <div key={c.cancellation_id} className="px-5 sm:px-6 py-3.5 sm:py-4 hover:bg-white/[0.02] transition-colors">
                             <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <p className="font-medium text-white">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-white truncate">
                                   {c.member?.user?.email ?? c.member?.user?.full_name ?? c.member?.member_id}
                                 </p>
-                                <p className="text-xs text-slate-400 mt-1">
+                                <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
                                   Value at exit: {c.member_value_at_exit} · Fee: {c.fee_amount} · Refund: {c.refund_amount} · Status: <span className="capitalize">{c.status}</span>
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">Requested {new Date(c.requested_at).toLocaleString()}</p>
-                                {c.rejection_reason && <p className="text-xs text-amber-400 mt-1">Rejected: {c.rejection_reason}</p>}
+                                <p className="text-[10px] text-slate-500 mt-0.5">Requested {new Date(c.requested_at).toLocaleString()}</p>
+                                {c.rejection_reason && <p className="text-[10px] sm:text-xs text-amber-400 mt-0.5">Rejected: {c.rejection_reason}</p>}
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 {c.status === "pending" && (
                                   <>
-                                    <button type="button" onClick={() => handleApproveCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500 disabled:opacity-60">
+                                    <button type="button" onClick={() => handleApproveCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Approve"}
                                     </button>
-                                    <button type="button" onClick={() => handleRejectCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
+                                    <button type="button" onClick={() => handleRejectCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-red-500/20 border border-red-500/30 px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-red-400 hover:bg-red-500/30 transition-colors disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Reject"}
                                     </button>
                                   </>
@@ -906,7 +968,7 @@ export default function AdminPoolDetailsPage() {
                                       if (txId !== null && notes !== null) handleMarkRefunded(c.cancellation_id, txId.trim() || undefined, notes.trim() || undefined);
                                     }}
                                     disabled={actionSubmitting !== null}
-                                    className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-60"
+                                    className="rounded-lg bg-amber-500/20 border border-amber-500/30 px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-amber-400 hover:bg-amber-500/30 transition-colors disabled:opacity-60"
                                   >
                                     {actionSubmitting === c.cancellation_id ? "…" : "Mark refunded"}
                                   </button>
@@ -922,25 +984,25 @@ export default function AdminPoolDetailsPage() {
                 {activeTab === "payouts" && (
                   <>
                     {payoutsLoading ? (
-                      <div className="flex items-center gap-2 text-sm text-slate-400 py-6">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
-                        Loading…
+                      <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-400 py-10">
+                        <div className="h-5 w-5 animate-spin rounded-full border-[3px] border-slate-700/30 border-t-[#fc4f02]" />
+                        Loading payouts…
                       </div>
                     ) : payouts.length === 0 ? (
-                      <p className="text-sm text-slate-400 py-6">No payouts yet. Complete or cancel the pool to create payouts.</p>
+                      <p className="text-xs sm:text-sm text-slate-500 text-center py-10">No payouts yet. Complete or cancel the pool to create payouts.</p>
                     ) : (
-                      <div className="space-y-3 py-2">
+                      <div className="divide-y divide-white/[0.04]">
                         {payouts.map((p) => (
-                          <div key={p.payout_id} className="rounded-lg bg-[--color-surface-alt] p-4 text-sm">
+                          <div key={p.payout_id} className="px-5 sm:px-6 py-3.5 sm:py-4 hover:bg-white/[0.02] transition-colors">
                             <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div>
-                                <p className="font-medium text-white">
+                              <div className="min-w-0">
+                                <p className="text-xs sm:text-sm font-medium text-white truncate">
                                   {p.member?.user?.email ?? p.member?.user?.full_name ?? p.member?.member_id}
                                 </p>
-                                <p className="text-xs text-slate-400 mt-1">
+                                <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5">
                                   Type: <span className="capitalize">{p.payout_type.replace("_", " ")}</span> · Net: {p.net_payout} · P/L: {p.profit_loss} · Status: <span className="capitalize">{p.status}</span>
                                 </p>
-                                <p className="text-xs text-slate-500 mt-1">Created {new Date(p.created_at).toLocaleString()}</p>
+                                <p className="text-[10px] text-slate-500 mt-0.5">Created {new Date(p.created_at).toLocaleString()}</p>
                               </div>
                               {p.status === "pending" && (
                                 <button
@@ -951,7 +1013,7 @@ export default function AdminPoolDetailsPage() {
                                     if (txId !== null && notes !== null) handleMarkPayoutPaid(p.payout_id, txId.trim() || undefined, notes.trim() || undefined);
                                   }}
                                   disabled={actionSubmitting !== null}
-                                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+                                  className="rounded-lg bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 text-[10px] sm:text-xs font-semibold text-emerald-400 hover:bg-emerald-500/30 transition-colors disabled:opacity-60"
                                 >
                                   {actionSubmitting === p.payout_id ? "…" : "Mark paid"}
                                 </button>
@@ -970,14 +1032,14 @@ export default function AdminPoolDetailsPage() {
           {/* Complete pool confirmation */}
           {showCompletePoolConfirm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+              <div className="w-full max-w-sm rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#1a1a2e]/95 to-[#0f0f1a]/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(252,79,2,0.08)] p-5">
                 <h3 className="text-lg font-semibold text-white">Complete pool?</h3>
                 <p className="mt-2 text-sm text-slate-400">
                   Close all trades first. This will calculate final payouts for all members. You will need to transfer funds and mark each payout as paid.
                 </p>
                 <div className="mt-6 flex gap-3">
-                  <button type="button" onClick={() => setShowCompletePoolConfirm(false)} disabled={saving} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
-                  <button type="button" onClick={handleCompletePool} disabled={saving} className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60">{saving ? "Completing…" : "Complete"}</button>
+                  <button type="button" onClick={() => setShowCompletePoolConfirm(false)} disabled={saving} className="flex-1 rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={handleCompletePool} disabled={saving} className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500 hover:scale-[1.02] transition-all disabled:opacity-60">{saving ? "Completing…" : "Complete"}</button>
                 </div>
               </div>
             </div>
@@ -986,14 +1048,14 @@ export default function AdminPoolDetailsPage() {
           {/* Cancel pool confirmation */}
           {showCancelPoolConfirm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+              <div className="w-full max-w-sm rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#1a1a2e]/95 to-[#0f0f1a]/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(252,79,2,0.08)] p-5">
                 <h3 className="text-lg font-semibold text-white">Cancel pool?</h3>
                 <p className="mt-2 text-sm text-slate-400">
                   This will cancel the pool and create full refund payouts for all members (no fee). Transfer refunds externally, then mark each as paid.
                 </p>
                 <div className="mt-6 flex gap-3">
-                  <button type="button" onClick={() => setShowCancelPoolConfirm(false)} disabled={saving} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
-                  <button type="button" onClick={handleCancelPool} disabled={saving} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60">{saving ? "Cancelling…" : "Cancel pool"}</button>
+                  <button type="button" onClick={() => setShowCancelPoolConfirm(false)} disabled={saving} className="flex-1 rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={handleCancelPool} disabled={saving} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/25 hover:bg-red-500 hover:scale-[1.02] transition-all disabled:opacity-60">{saving ? "Cancelling…" : "Cancel pool"}</button>
                 </div>
               </div>
             </div>
@@ -1002,7 +1064,7 @@ export default function AdminPoolDetailsPage() {
           {/* Delete confirmation modal */}
           {showDeleteConfirm && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+              <div className="w-full max-w-sm rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#1a1a2e]/95 to-[#0f0f1a]/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(252,79,2,0.08)] p-5">
                 <h3 className="text-lg font-semibold text-white">Delete pool?</h3>
                 <p className="mt-2 text-sm text-slate-400">
                   Only draft pools can be deleted. This will remove the pool permanently. This cannot be undone.
@@ -1012,7 +1074,7 @@ export default function AdminPoolDetailsPage() {
                     type="button"
                     onClick={() => setShowDeleteConfirm(false)}
                     disabled={saving}
-                    className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60"
+                    className="flex-1 rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-60"
                   >
                     Cancel
                   </button>
@@ -1020,7 +1082,7 @@ export default function AdminPoolDetailsPage() {
                     type="button"
                     onClick={handleDelete}
                     disabled={saving}
-                    className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60"
+                    className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/25 hover:bg-red-500 hover:scale-[1.02] transition-all disabled:opacity-60"
                   >
                     {saving ? "Deleting…" : "Delete"}
                   </button>

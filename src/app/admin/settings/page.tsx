@@ -74,19 +74,19 @@ export default function AdminSettingsPage() {
 
       <button
         onClick={() => router.push("/admin/dashboard")}
-        className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm font-medium"
+        className="flex items-center gap-2 text-slate-400 hover:text-[#fc4f02] transition-colors text-xs sm:text-sm font-medium group"
       >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
         Back to Dashboard
       </button>
 
       {/* Profile card - orange gradient like user Settings */}
-      <div className="rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-6 sm:p-8 border border-[#fc4f02]/30">
+      <div className="rounded-xl sm:rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-6 sm:p-8 border border-[#fc4f02]/30 shadow-[0_0_30px_rgba(252,79,2,0.15)]">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 text-2xl font-bold text-white backdrop-blur">
               {initial}
             </div>
             <div>
@@ -97,18 +97,18 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      {/* Settings list - same style as user Settings (Subscription, Tokenomics rows) */}
+      {/* Settings list */}
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-4">Settings</h3>
-        <div className="space-y-1 rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">Settings</h3>
+        <div className="space-y-2">
           {settingsItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-4 px-4 py-4 text-[#fc4f02] font-medium hover:bg-[--color-surface-alt] transition-colors"
+              className="flex items-center gap-4 px-4 py-4 rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur text-[#fc4f02] font-medium hover:bg-white/[0.1] hover:shadow-[0_0_20px_rgba(252,79,2,0.08)] transition-all"
             >
               {item.icon}
-              <span className="flex-1">{item.label}</span>
+              <span className="flex-1 text-sm">{item.label}</span>
               <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
