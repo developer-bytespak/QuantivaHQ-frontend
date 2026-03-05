@@ -7,6 +7,7 @@ import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile } from "@/lib/api/user";
 import { useMobileNav } from "@/hooks/useMobileNav";
 import { SubscriptionBadge } from "@/components/common/subscription-badge";
+import { NotificationDropdown } from "@/components/common/notification-dropdown";
 import { useExchange } from "@/context/ExchangeContext";
 
 const pageTitles: Record<string, string> = {
@@ -447,6 +448,7 @@ export function TopBar() {
         <DashboardSwitcher headingRef={headingRef} />
       </div>
       <div className="flex items-center gap-2 sm:gap-3 sm:gap-4">
+        <NotificationDropdown />
         <SubscriptionBadge />
         <MobileMenuButton />
         <UserProfileSection />
