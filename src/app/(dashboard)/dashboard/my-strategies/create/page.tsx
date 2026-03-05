@@ -113,6 +113,10 @@ export default function CreateStrategyPage() {
   const [assetResults, setAssetResults] = useState<AssetOption[]>([]);
   const [searchingAssets, setSearchingAssets] = useState(false);
 
+  // Popular assets (can be replaced by API when real data is fetched)
+  const [popularCrypto, setPopularCrypto] = useState<string[]>(POPULAR_CRYPTO);
+  const [popularStocks, setPopularStocks] = useState<string[]>(POPULAR_STOCKS);
+
   // Fetch real assets from your assets API
   const fetchRealAssets = async (assetType: "stock" | "crypto") => {
     try {
@@ -129,9 +133,9 @@ export default function CreateStrategyPage() {
         console.log(`🔄 Old hardcoded ${assetType}:`, assetType === "stock" ? POPULAR_STOCKS : POPULAR_CRYPTO);
         
         if (assetType === "stock") {
-          setRealPopularStocks(realSymbols);
+          setPopularStocks(realSymbols);
         } else {
-          setRealPopularCrypto(realSymbols);
+          setPopularCrypto(realSymbols);
         }
       } else {
         console.log(`⚠️ No real ${assetType} assets found, keeping hardcoded symbols`);
@@ -154,7 +158,7 @@ export default function CreateStrategyPage() {
   // Derived values
   const isStocksConnection = connectionType === "stocks";
   const assetTypeLabel = isStocksConnection ? "Stocks" : "Crypto Assets";
-  const popularAssets = isStocksConnection ? POPULAR_STOCKS : POPULAR_CRYPTO;
+  const popularAssets = isStocksConnection ? popularStocks : popularCrypto;
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
@@ -991,11 +995,3 @@ export default function CreateStrategyPage() {
     </div>
   );
 }
-function setRealPopularStocks(realSymbols: any[]) {
-  throw new Error("Function not implemented.");
-}
-
-function setRealPopularCrypto(realSymbols: any[]) {
-  throw new Error("Function not implemented.");
-}
-
