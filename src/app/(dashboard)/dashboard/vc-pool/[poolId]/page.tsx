@@ -7,6 +7,7 @@ import {
   getPaymentStatus,
   joinPool,
   uploadPoolScreenshot,
+  submitBinanceTx,
   cancelMembership,
   getMyCancellation,
   type VcPoolDetails,
@@ -14,6 +15,7 @@ import {
   type JoinPoolResponse,
   type PaymentMethod,
   type MyCancellationResponse,
+  type BinancePaymentStatus,
 } from "@/lib/api/vc-pools";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
@@ -41,6 +43,15 @@ export default function VcPoolDetailPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Binance TX ID submission state
+  const [binanceTxId, setBinanceTxId] = useState("");
+  const [binanceTxTimestamp, setBinanceTxTimestamp] = useState("");
+  const [submittingTx, setSubmittingTx] = useState(false);
+  const [binancePaymentStatus, setBinancePaymentStatus] = useState<BinancePaymentStatus | null>(null);
+  const [txSubmissionId, setTxSubmissionId] = useState<string | null>(null);
+  const [exactAmountExpected, setExactAmountExpected] = useState<number | null>(null);
+  const binancePollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const isMember = Boolean(paymentStatus?.membership?.exists);
   const hasReservation = Boolean(paymentStatus?.reservation);
   const payment = paymentStatus?.payment ?? null;
@@ -48,6 +59,12 @@ export default function VcPoolDetailPage() {
   const isRejected = payment?.status === "rejected";
   const availableSeats = Number(pool?.available_seats ?? 0);
   const poolStatus = pool?.status ?? "";
+
+  // Determine if we should show the Binance TX ID form (binance method, reservation active, no TX submitted yet)
+  const hasBinanceTxSubmitted = Boolean(payment && (payment as any).binance_tx_id) || Boolean(txSubmissionId);
+  const canSubmitBinanceTx = hasReservation && payment?.payment_method === "binance" && !hasBinanceTxSubmitted && !isRejected && payment?.status !== "verified";
+  // Determine if we're in binance auto-verification mode
+  const isBinanceAutoVerifying = hasBinanceTxSubmitted && binancePaymentStatus === "pending";
 
   const loadPool = () => {
     if (!poolId) return;
@@ -154,6 +171,58 @@ export default function VcPoolDetailPage() {
     }
   };
 
+  const handleSubmitBinanceTx = async () => {
+    if (!poolId || !binanceTxId.trim() || !binanceTxTimestamp) return;
+    setSubmittingTx(true);
+    try {
+      const res = await submitBinanceTx(poolId, {
+        binance_tx_id: binanceTxId.trim(),
+        binance_tx_timestamp: new Date(binanceTxTimestamp).toISOString(),
+      });
+      setTxSubmissionId(res.submission_id);
+      setExactAmountExpected(res.exact_amount_expected);
+      setBinancePaymentStatus(res.binance_payment_status);
+      showNotification("TX ID submitted. Auto-verification in progress…", "success");
+      loadPaymentStatus();
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to submit TX ID", "error");
+    } finally {
+      setSubmittingTx(false);
+    }
+  };
+
+  // Sync binance_payment_status from payment status polling
+  useEffect(() => {
+    if (payment && (payment as any).binance_payment_status) {
+      setBinancePaymentStatus((payment as any).binance_payment_status as BinancePaymentStatus);
+    }
+    if (payment && (payment as any).binance_tx_id) {
+      setTxSubmissionId((prev) => prev || (payment as any).submission_id || null);
+    }
+    if (payment && (payment as any).exact_amount_expected) {
+      setExactAmountExpected(Number((payment as any).exact_amount_expected));
+    }
+  }, [payment]);
+
+  // Poll payment status faster when binance TX is pending verification
+  useEffect(() => {
+    if (!poolId || !hasBinanceTxSubmitted || binancePaymentStatus !== "pending") {
+      if (binancePollingRef.current) clearInterval(binancePollingRef.current);
+      return;
+    }
+    binancePollingRef.current = setInterval(() => {
+      getPaymentStatus(poolId).then((ps) => {
+        setPaymentStatus(ps);
+        if (ps.payment && (ps.payment as any).binance_payment_status !== "pending") {
+          if (binancePollingRef.current) clearInterval(binancePollingRef.current);
+        }
+      });
+    }, 8000); // Poll every 8 seconds
+    return () => {
+      if (binancePollingRef.current) clearInterval(binancePollingRef.current);
+    };
+  }, [poolId, hasBinanceTxSubmitted, binancePaymentStatus]);
+
   return (
     <div className="relative">
       {!canAccessVCPool && (
@@ -170,12 +239,12 @@ export default function VcPoolDetailPage() {
 
       <button
         onClick={() => router.push("/dashboard/vc-pool")}
-        className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
       >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        Back to VC pools
+        <span className="text-white/90 group-hover:text-[#fda300]">Back to VC pools</span>
       </button>
 
       {loading && (
@@ -269,7 +338,7 @@ export default function VcPoolDetailPage() {
             </div>
           )}
 
-          {/* Active reservation: show instructions + upload (binance) or awaiting (stripe) */}
+          {/* Active reservation: show instructions + upload OR Binance TX submission */}
           {!isMember && hasReservation && payment && !isRejected && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
               <h2 className="text-lg font-semibold text-white">Complete your payment</h2>
@@ -291,17 +360,134 @@ export default function VcPoolDetailPage() {
                   <p className="text-slate-400">Awaiting admin approval. No screenshot required for Stripe.</p>
                 )}
               </div>
+
+              {/* Binance payment instructions */}
               {payment.payment_method === "binance" && (
                 <ul className="list-decimal list-inside text-sm text-slate-300 space-y-1">
-                  <li>Open Binance → Transfer → Internal Transfer</li>
-                  <li>Enter recipient UID: {pool.admin_binance_uid}</li>
-                  <li>Send exactly {payment.total_amount} {pool.coin_type}</li>
-                  <li>Take a screenshot of the completed transfer</li>
-                  <li>Upload the screenshot below before the timer expires</li>
+                  <li>Open Binance → P2P → Transfer</li>
+                  <li>Enter recipient UID: <span className="font-mono text-white">{pool.admin_binance_uid}</span></li>
+                  <li>Send exactly <span className="font-mono font-semibold text-[#fc4f02]">{payment.total_amount} {pool.coin_type}</span></li>
+                  <li>Copy the Transaction ID from Binance</li>
+                  <li>Submit the TX ID below for auto-verification</li>
                 </ul>
               )}
-              {canUpload && (
-                <div>
+
+              {/* Exact amount warning */}
+              {payment.payment_method === "binance" && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+                  <svg className="h-5 w-5 text-amber-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-amber-200">Exact amount required</p>
+                    <p className="text-xs text-amber-300/80 mt-0.5">
+                      Amount must be exactly <span className="font-mono font-bold text-amber-100">{payment.total_amount} {pool.coin_type}</span>. 
+                      Any variance (even 0.01) will result in automatic rejection and refund.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Binance TX ID Submission Form */}
+              {canSubmitBinanceTx && (
+                <div className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-white">Submit Binance Transaction ID</h3>
+                  <p className="text-xs text-slate-400">After completing payment on Binance P2P, enter the TX ID here for automatic verification.</p>
+                  <div>
+                    <label className="mb-1 block text-sm text-slate-300">Binance TX ID <span className="text-red-400">*</span></label>
+                    <input
+                      type="text"
+                      value={binanceTxId}
+                      onChange={(e) => setBinanceTxId(e.target.value)}
+                      placeholder="e.g. TX98765432100123"
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm text-slate-300">Transaction Date & Time <span className="text-red-400">*</span></label>
+                    <input
+                      type="datetime-local"
+                      value={binanceTxTimestamp}
+                      onChange={(e) => setBinanceTxTimestamp(e.target.value)}
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] [color-scheme:dark]"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSubmitBinanceTx}
+                    disabled={submittingTx || !binanceTxId.trim() || !binanceTxTimestamp}
+                    className="w-full rounded-lg bg-[#fc4f02] px-4 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+                  >
+                    {submittingTx ? "Submitting…" : "Submit TX ID for verification"}
+                  </button>
+                </div>
+              )}
+
+              {/* Binance Auto-Verification Status */}
+              {hasBinanceTxSubmitted && binancePaymentStatus && (
+                <div className={`rounded-lg border p-4 ${
+                  binancePaymentStatus === "pending"
+                    ? "border-yellow-500/40 bg-yellow-500/10"
+                    : binancePaymentStatus === "verified"
+                    ? "border-green-500/40 bg-green-500/10"
+                    : binancePaymentStatus === "rejected"
+                    ? "border-red-500/40 bg-red-500/10"
+                    : "border-blue-500/40 bg-blue-500/10"
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {binancePaymentStatus === "pending" && (
+                      <>
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-yellow-200">Verifying with Binance…</p>
+                          <p className="text-xs text-yellow-300/70 mt-0.5">Auto-verification runs every few minutes. Please wait.</p>
+                        </div>
+                      </>
+                    )}
+                    {binancePaymentStatus === "verified" && (
+                      <>
+                        <svg className="h-6 w-6 text-green-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-semibold text-green-200">Payment confirmed!</p>
+                          <p className="text-xs text-green-300/70 mt-0.5">Your payment has been verified. You are now a member of this pool.</p>
+                        </div>
+                      </>
+                    )}
+                    {binancePaymentStatus === "rejected" && (
+                      <>
+                        <svg className="h-6 w-6 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-semibold text-red-200">Payment rejected</p>
+                          {(payment as any)?.refund_reason && (
+                            <p className="text-xs text-red-300/70 mt-0.5">{(payment as any).refund_reason}</p>
+                          )}
+                          <p className="text-xs text-red-300/70 mt-0.5">Seat released. Refund is being processed.</p>
+                        </div>
+                      </>
+                    )}
+                    {binancePaymentStatus === "refunded" && (
+                      <>
+                        <svg className="h-6 w-6 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-semibold text-blue-200">Refund processed</p>
+                          <p className="text-xs text-blue-300/70 mt-0.5">Your payment has been refunded.</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Fallback: Screenshot upload (for cases where TX submission is not used) */}
+              {canUpload && !hasBinanceTxSubmitted && (
+                <div className="pt-3 border-t border-[--color-border]">
+                  <p className="text-xs text-slate-400 mb-2">Alternatively, you can upload a payment screenshot for manual review:</p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -314,14 +500,15 @@ export default function VcPoolDetailPage() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
-                    className="rounded-lg bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                    className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-4 py-2 text-sm font-medium text-slate-200 hover:bg-[--color-surface] disabled:opacity-60 transition-colors"
                   >
                     {uploading ? "Uploading…" : "Upload payment screenshot"}
                   </button>
-                  <p className="mt-1 text-xs text-slate-400">JPEG, PNG, GIF or WebP, max 10MB</p>
+                  <p className="mt-1 text-xs text-slate-500">JPEG, PNG, GIF or WebP, max 10MB</p>
                 </div>
               )}
-              {payment.screenshot_url && payment.status === "processing" && (
+
+              {payment.screenshot_url && payment.status === "processing" && !hasBinanceTxSubmitted && (
                 <p className="text-sm text-slate-400">Screenshot uploaded. Awaiting admin approval.</p>
               )}
             </div>
@@ -339,7 +526,7 @@ export default function VcPoolDetailPage() {
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                     className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
                   >
-                    <option value="binance">Binance (transfer + screenshot)</option>
+                    <option value="binance">Binance P2P (auto-verified)</option>
                     <option value="stripe">Stripe (awaiting admin approval)</option>
                   </select>
                 </div>

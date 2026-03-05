@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
@@ -73,12 +72,26 @@ export function VCPoolSection() {
             </p>
           </div>
           {canAccessVCPool && (
-            <Link
-              href="/dashboard/vc-pool/my-pools"
-              className="rounded-xl border border-[--color-border] px-4 py-2 text-sm font-medium text-slate-200 hover:bg-[--color-surface-alt] hover:text-white transition-colors"
-            >
-              My pools
-            </Link>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push("/dashboard/vc-pool/my-submissions")}
+                className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                My submissions
+              </button>
+              <button
+                onClick={() => router.push("/dashboard/vc-pool/transactions")}
+                className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                Transactions
+              </button>
+              <button
+                onClick={() => router.push("/dashboard/vc-pool/my-pools")}
+                className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              >
+                My pools
+              </button>
+            </div>
           )}
         </div>
 

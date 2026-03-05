@@ -46,12 +46,12 @@ export default function MyPoolsPage() {
 
         <Link
           href="/dashboard/vc-pool"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to VC pools
+          <span className="text-white/90 group-hover:text-[#fda300]">Back to VC pools</span>
         </Link>
 
         <h1 className="text-2xl font-bold text-white mb-1">My pools</h1>

@@ -227,3 +227,98 @@ export async function getMyPools(): Promise<MyPoolsResponse> {
   });
 }
 
+// ---- Phase Binance P2P: Auto-verification payment flow ----
+
+export type BinancePaymentStatus = "pending" | "verified" | "rejected" | "refunded";
+
+export interface SubmitBinanceTxRequest {
+  binance_tx_id: string;
+  binance_tx_timestamp: string; // ISO 8601
+}
+
+export interface SubmitBinanceTxResponse {
+  message: string;
+  submission_id: string;
+  binance_tx_id: string;
+  exact_amount_expected: number;
+  status: string;
+  binance_payment_status: BinancePaymentStatus;
+}
+
+export interface MyPaymentSubmission {
+  submission_id: string;
+  pool_id: string;
+  pool_name: string;
+  coin_type: string;
+  payment_method: string;
+  total_amount: string;
+  investment_amount: string;
+  pool_fee_amount: string;
+  binance_tx_id: string | null;
+  status: string;
+  binance_payment_status: BinancePaymentStatus;
+  exact_amount_expected: string;
+  exact_amount_received: string | null;
+  refund_reason: string | null;
+  rejection_reason: string | null;
+  verified_at: string | null;
+  submitted_at: string;
+  payment_deadline: string;
+}
+
+export interface PaymentSubmissionDetail extends MyPaymentSubmission {
+  screenshot_url: string | null;
+  reservation_status: string;
+  reservation_expires_at: string;
+  admin_binance_uid: string;
+}
+
+export interface MyTransaction {
+  transaction_id: string;
+  pool_id: string;
+  pool_name: string;
+  transaction_type: "payment_submitted" | "payment_verified" | "payment_rejected";
+  amount_usdt: string;
+  binance_tx_id: string | null;
+  expected_amount: string;
+  actual_amount_received: string | null;
+  status: string;
+  description: string;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export async function submitBinanceTx(
+  poolId: string,
+  body: SubmitBinanceTxRequest
+): Promise<SubmitBinanceTxResponse> {
+  return apiRequest<SubmitBinanceTxRequest, SubmitBinanceTxResponse>({
+    path: `/api/vc-pools/${poolId}/submit-binance-tx`,
+    method: "POST",
+    body,
+  });
+}
+
+export async function getMyPaymentSubmissions(): Promise<MyPaymentSubmission[]> {
+  return apiRequest<never, MyPaymentSubmission[]>({
+    path: `/api/vc-pools/payments/my-submissions`,
+    method: "GET",
+  });
+}
+
+export async function getPaymentSubmissionDetail(
+  submissionId: string
+): Promise<PaymentSubmissionDetail> {
+  return apiRequest<never, PaymentSubmissionDetail>({
+    path: `/api/vc-pools/payments/submissions/${submissionId}`,
+    method: "GET",
+  });
+}
+
+export async function getMyTransactions(): Promise<MyTransaction[]> {
+  return apiRequest<never, MyTransaction[]>({
+    path: `/api/vc-pools/payments/my-transactions`,
+    method: "GET",
+  });
+}
+
