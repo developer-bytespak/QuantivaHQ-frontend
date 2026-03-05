@@ -1264,7 +1264,7 @@ export default function DashboardPage() {
               <div className="mb-3 sm:mb-4 flex flex-wrap items-center gap-1.5 sm:gap-3">
                 <span className="text-[10px] sm:text-xs text-slate-400">
                   {newsData.news_items[selectedNews].published_at
-                    ? new Date(newsData.news_items[selectedNews].published_at).toLocaleString("en-US", {
+                    ? new Date(newsData.news_items[selectedNews].published_at!).toLocaleString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   getVcPoolById,
@@ -19,6 +19,7 @@ import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
 import { useNotification, Notification } from "@/components/common/notification";
+import { getDummyPoolTradesSummary, type VcPoolTradeDummy, type InvestmentByCoin } from "@/lib/dummy/vc-pool-trades-dummy";
 
 /* ── Helpers ────────────────────────────────────────────── */
 function formatUsd(n: number | string): string {
@@ -167,6 +168,11 @@ export default function VcPoolDetailPage() {
   const filledSeats = pool ? pool.max_members - availableSeats : 0;
   const totalSeats = pool?.max_members ?? 0;
   const progress = totalSeats > 0 ? Math.min(100, (filledSeats / totalSeats) * 100) : 0;
+
+  const tradesSummary = useMemo(() => {
+    if (!poolId || !pool) return null;
+    return getDummyPoolTradesSummary(poolId, pool.coin_type || "USDT");
+  }, [poolId, pool?.coin_type]);
 
   return (
     <div className="relative">
@@ -561,6 +567,122 @@ export default function VcPoolDetailPage() {
               </div>
             </Card>
           </div>
+
+          {/* ── Investment & P/L Summary + Trades (dummy data) ───────────────── */}
+          {tradesSummary && (
+            <>
+              {/* Total invested by coin + Total P/L */}
+              <Card>
+                <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Investment & P/L Summary
+                </h2>
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                  {tradesSummary.investment_by_coin.map((row: InvestmentByCoin) => (
+                    <div key={row.coin} className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-4">
+                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total invested ({row.coin})</p>
+                      <p className="text-lg font-bold text-white">{row.total_invested.toLocaleString(undefined, { minimumFractionDigits: 2 })} {row.coin}</p>
+                      <p className="text-xs text-slate-400 mt-1">Current value: {row.total_current_value.toLocaleString(undefined, { minimumFractionDigits: 2 })} {row.coin}</p>
+                    </div>
+                  ))}
+                  <div className="rounded-lg bg-white/[0.03] border border-white/[0.04] p-4">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total P/L</p>
+                    <p className={`text-lg font-bold ${tradesSummary.total_pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                      {tradesSummary.total_pnl >= 0 ? "+" : ""}{tradesSummary.total_pnl.toLocaleString(undefined, { minimumFractionDigits: 2 })} {pool.coin_type}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">{tradesSummary.total_pnl_percent >= 0 ? "+" : ""}{tradesSummary.total_pnl_percent.toFixed(2)}%</p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-3">Simulated data until real trades are linked.</p>
+              </Card>
+
+              {/* Active trades (open positions) */}
+              <Card>
+                <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Active Trades ({tradesSummary.active_trades.length})
+                </h2>
+                <div className="overflow-x-auto -mx-1">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-slate-400 border-b border-white/[0.06]">
+                        <th className="pb-2 pr-3 font-medium">Pair</th>
+                        <th className="pb-2 pr-3 font-medium">Side</th>
+                        <th className="pb-2 pr-3 font-medium">Entry</th>
+                        <th className="pb-2 pr-3 font-medium">Current</th>
+                        <th className="pb-2 pr-3 font-medium">Amount</th>
+                        <th className="pb-2 pr-3 font-medium">P/L</th>
+                        <th className="pb-2 font-medium">Opened</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tradesSummary.active_trades.map((t: VcPoolTradeDummy) => (
+                        <tr key={t.trade_id} className="border-b border-white/[0.04] last:border-0">
+                          <td className="py-2.5 pr-3 font-medium text-white">{t.pair}</td>
+                          <td className="py-2.5 pr-3">
+                            <span className={t.side === "buy" ? "text-emerald-400" : "text-rose-400"}>{t.side.toUpperCase()}</span>
+                          </td>
+                          <td className="py-2.5 pr-3 text-slate-300">{t.entry_price.toLocaleString()}</td>
+                          <td className="py-2.5 pr-3 text-slate-300">{t.current_price?.toLocaleString() ?? "—"}</td>
+                          <td className="py-2.5 pr-3 text-slate-300">{t.amount_quote.toLocaleString()} {t.coin}</td>
+                          <td className={`py-2.5 pr-3 font-medium ${t.pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                            {t.pnl >= 0 ? "+" : ""}{t.pnl.toFixed(2)} ({t.pnl_percent >= 0 ? "+" : ""}{t.pnl_percent.toFixed(2)}%)
+                          </td>
+                          <td className="py-2.5 text-slate-500 text-xs">{new Date(t.opened_at).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+
+              {/* Trade history (closed) */}
+              <Card>
+                <h2 className="text-base sm:text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Trade History ({tradesSummary.history_trades.length})
+                </h2>
+                <div className="overflow-x-auto -mx-1">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-left text-slate-400 border-b border-white/[0.06]">
+                        <th className="pb-2 pr-3 font-medium">Pair</th>
+                        <th className="pb-2 pr-3 font-medium">Side</th>
+                        <th className="pb-2 pr-3 font-medium">Entry</th>
+                        <th className="pb-2 pr-3 font-medium">Exit</th>
+                        <th className="pb-2 pr-3 font-medium">Amount</th>
+                        <th className="pb-2 pr-3 font-medium">P/L</th>
+                        <th className="pb-2 pr-3 font-medium">Opened</th>
+                        <th className="pb-2 font-medium">Closed</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tradesSummary.history_trades.map((t: VcPoolTradeDummy) => (
+                        <tr key={t.trade_id} className="border-b border-white/[0.04] last:border-0">
+                          <td className="py-2.5 pr-3 font-medium text-white">{t.pair}</td>
+                          <td className="py-2.5 pr-3">
+                            <span className={t.side === "buy" ? "text-emerald-400" : "text-rose-400"}>{t.side.toUpperCase()}</span>
+                          </td>
+                          <td className="py-2.5 pr-3 text-slate-300">{t.entry_price.toLocaleString()}</td>
+                          <td className="py-2.5 pr-3 text-slate-300">{t.exit_price?.toLocaleString() ?? "—"}</td>
+                          <td className="py-2.5 pr-3 text-slate-300">{t.amount_quote.toLocaleString()} {t.coin}</td>
+                          <td className={`py-2.5 pr-3 font-medium ${t.pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                            {t.pnl >= 0 ? "+" : ""}{t.pnl.toFixed(2)} ({t.pnl_percent >= 0 ? "+" : ""}{t.pnl_percent.toFixed(2)}%)
+                          </td>
+                          <td className="py-2.5 pr-3 text-slate-500 text-xs">{new Date(t.opened_at).toLocaleString()}</td>
+                          <td className="py-2.5 text-slate-500 text-xs">{t.closed_at ? new Date(t.closed_at).toLocaleString() : "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </>
+          )}
         </div>
       )}
     </div>

@@ -7,6 +7,13 @@ import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
 import { getAvailableVcPools, getMyPools, type VcPoolSummary } from "@/lib/api/vc-pools";
+import {
+  VC_POOL_STRATEGIES_DUMMY,
+  getDummyPoolPerformance,
+  getDummyPoolPerformanceSummary,
+  type VcPoolStrategyDummy,
+} from "@/lib/dummy/vc-pool-dummy";
+import { PoolPerformanceChart } from "@/components/market/PoolPerformanceChart";
 
 /* ── Format helpers ─────────────────────────────────────── */
 function formatUsd(n: number): string {
@@ -57,13 +64,49 @@ function StatCard({
   );
 }
 
+/* ── Strategy Card (dummy list) ──────────────────────────── */
+function StrategyCard({ strategy }: { strategy: VcPoolStrategyDummy }) {
+  const riskColors: Record<string, string> = {
+    low: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
+    medium: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+    high: "bg-rose-500/15 text-rose-400 border-rose-500/20",
+  };
+  const riskClass = riskColors[strategy.risk_level] ?? riskColors.medium;
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent p-4">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h4 className="text-sm font-semibold text-white">{strategy.name}</h4>
+        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${riskClass}`}>
+          {strategy.risk_level}
+        </span>
+      </div>
+      <p className="text-xs text-slate-400 line-clamp-2 mb-2">{strategy.description}</p>
+      <div className="flex flex-wrap gap-1.5 text-[10px] text-slate-500">
+        <span>{strategy.type}</span>
+        <span>•</span>
+        <span>{strategy.timeframe}</span>
+        <span>•</span>
+        <span>{strategy.target_assets.slice(0, 3).join(", ")}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ── Pool Card ──────────────────────────────────────────── */
-function PoolCard({ pool }: { pool: VcPoolSummary }) {
+function PoolCard({
+  pool,
+  strategy,
+}: {
+  pool: VcPoolSummary;
+  strategy: VcPoolStrategyDummy | null;
+}) {
   const router = useRouter();
   const filledSeats = pool.max_members - pool.available_seats;
   const totalSeats = pool.max_members || 0;
   const progress = totalSeats > 0 ? Math.min(100, Math.max(0, (filledSeats / totalSeats) * 100)) : 0;
   const isFull = pool.available_seats <= 0;
+  const performanceData = getDummyPoolPerformance(pool.pool_id);
+  const perfSummary = getDummyPoolPerformanceSummary(pool.pool_id);
 
   return (
     <button
@@ -95,16 +138,45 @@ function PoolCard({ pool }: { pool: VcPoolSummary }) {
         </span>
       </div>
 
-      {/* Pool name & description */}
+      {/* Pool name & strategy */}
       <div className="pr-20 sm:pr-24">
         <h4 className="text-base sm:text-lg font-semibold text-white group-hover:text-[#fc4f02] transition-colors duration-200">
           {pool.name}
         </h4>
+        {strategy && (
+          <p className="mt-1 text-xs text-slate-500">
+            Strategy: <span className="text-slate-400">{strategy.name}</span>
+          </p>
+        )}
         {pool.description && (
           <p className="mt-1 text-xs sm:text-sm text-slate-400 line-clamp-2 max-w-xl">
             {pool.description}
           </p>
         )}
+      </div>
+
+      {/* Pool performance (dummy) — graph + summary */}
+      <div className="mt-4 rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] text-slate-500 uppercase tracking-wider">Pool performance (30d)</span>
+          <span
+            className={`text-xs font-semibold ${
+              perfSummary.changePercent >= 0 ? "text-emerald-400" : "text-rose-400"
+            }`}
+          >
+            {perfSummary.changePercent >= 0 ? "+" : ""}
+            {perfSummary.changePercent.toFixed(1)}%
+          </span>
+        </div>
+        <PoolPerformanceChart
+          data={performanceData}
+          height={120}
+          compact
+          positiveColor={perfSummary.trend !== "down"}
+        />
+        <p className="mt-1.5 text-[10px] text-slate-500">
+          Base 100 → {perfSummary.currentValue.toFixed(1)} (simulated; real data when trades are linked)
+        </p>
       </div>
 
       {/* Key metrics grid */}
@@ -234,7 +306,7 @@ export function VCPoolSection() {
           <div>
             <h2 className="text-xl sm:text-2xl font-bold text-white">VC Pool Access</h2>
             <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-lg">
-              Browse curated trading pools created by Quantiva admins. Pool into collective trading strategies and track performance in real-time.
+              Browse curated trading pools and see which strategy each pool uses. Compare pool performance (graph) to decide which pool to join. Performance data is simulated until real trades are linked.
             </p>
           </div>
           {canAccessVCPool && (
@@ -252,6 +324,19 @@ export function VCPoolSection() {
 
         {canAccessVCPool && (
           <>
+            {/* ── Strategies (understanding: which strategy each pool type uses) ── */}
+            <div className="rounded-xl sm:rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.04] to-transparent p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Trading strategies</h3>
+              <p className="text-xs sm:text-sm text-slate-400 mb-4 max-w-2xl">
+                Pools use different strategies (momentum, DCA, scalping). Understanding these helps you choose which pool to join. Performance below is simulated until real trades are linked.
+              </p>
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {VC_POOL_STRATEGIES_DUMMY.map((s) => (
+                  <StrategyCard key={s.id} strategy={s} />
+                ))}
+              </div>
+            </div>
+
             {/* ── Stat Cards ─────────────────────── */}
             <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
               <StatCard
@@ -332,8 +417,12 @@ export function VCPoolSection() {
                   <span className="text-xs text-slate-500">{pools.length} pool{pools.length !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="grid gap-4 sm:gap-5 grid-cols-1 xl:grid-cols-2">
-                  {pools.map((pool) => (
-                    <PoolCard key={pool.pool_id} pool={pool} />
+                  {pools.map((pool, idx) => (
+                    <PoolCard
+                      key={pool.pool_id}
+                      pool={pool}
+                      strategy={VC_POOL_STRATEGIES_DUMMY[idx % VC_POOL_STRATEGIES_DUMMY.length] ?? null}
+                    />
                   ))}
                 </div>
               </div>

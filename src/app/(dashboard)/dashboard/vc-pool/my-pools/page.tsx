@@ -7,6 +7,12 @@ import { getMyPools, type MyPoolMembership } from "@/lib/api/vc-pools";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
+import {
+  VC_POOL_STRATEGIES_DUMMY,
+  getDummyPoolPerformance,
+  getDummyPoolPerformanceSummary,
+} from "@/lib/dummy/vc-pool-dummy";
+import { PoolPerformanceChart } from "@/components/market/PoolPerformanceChart";
 
 function formatUsd(n: number): string {
   return new Intl.NumberFormat(undefined, {
@@ -15,6 +21,46 @@ function formatUsd(n: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(n);
+}
+
+/* ── Stat card for summary ───────────────────────────────── */
+function StatCard({
+  label,
+  value,
+  sub,
+  accent,
+  icon,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: boolean;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`rounded-xl sm:rounded-2xl p-4 sm:p-5 border transition-all duration-300 ${
+        accent
+          ? "border-[#fc4f02]/30 bg-gradient-to-br from-[#fc4f02]/15 via-[#fda300]/8 to-transparent shadow-[0_0_20px_rgba(252,79,2,0.08)]"
+          : "border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] sm:text-xs text-slate-400 mb-1 sm:mb-2">{label}</p>
+          <p className="text-xl sm:text-2xl font-bold text-white truncate">{value}</p>
+          {sub != null && <p className="text-[10px] text-slate-500 mt-0.5">{sub}</p>}
+        </div>
+        <div
+          className={`flex-shrink-0 flex items-center justify-center h-9 w-9 sm:h-10 sm:w-10 rounded-xl ${
+            accent ? "bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10" : "bg-white/[0.05]"
+          }`}
+        >
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -115,6 +161,19 @@ export default function MyPoolsPage() {
     cancelled: filterPools(pools, "cancelled").length,
   }), [pools]);
 
+  const summaryStats = useMemo(() => {
+    if (!pools.length) return null;
+    const totalInvested = pools.reduce((s, p) => s + p.my_investment.invested_amount, 0);
+    const totalValue = pools.reduce((s, p) => s + p.my_value.current_value, 0);
+    const totalPnl = pools.reduce((s, p) => s + p.my_value.profit_loss, 0);
+    return {
+      totalInvested,
+      totalValue,
+      totalPnl,
+      poolCount: pools.length,
+    };
+  }, [pools]);
+
   return (
     <div className="relative">
       {!canAccessVCPool && (
@@ -136,7 +195,9 @@ export default function MyPoolsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white">My Pools</h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-400">Your pool memberships, current value, and cancellation status.</p>
+          <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-xl">
+            Your pool memberships, performance graphs, and strategy per pool. Track value and P/L at a glance.
+          </p>
         </div>
         <Link
           href="/dashboard/vc-pool"
@@ -148,6 +209,50 @@ export default function MyPoolsPage() {
           Browse pools
         </Link>
       </div>
+
+      {/* ── Summary stats (when user has pools) ───────────────── */}
+      {!loading && !error && summaryStats && (
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
+          <StatCard
+            accent
+            label="My Pools"
+            value={String(summaryStats.poolCount)}
+            icon={
+              <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Total Invested"
+            value={formatUsd(summaryStats.totalInvested)}
+            icon={
+              <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Current Value"
+            value={formatUsd(summaryStats.totalValue)}
+            icon={
+              <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Total P/L"
+            value={`${summaryStats.totalPnl >= 0 ? "+" : ""}${formatUsd(summaryStats.totalPnl)}`}
+            sub={summaryStats.totalInvested > 0 ? `${((summaryStats.totalPnl / summaryStats.totalInvested) * 100).toFixed(1)}%` : undefined}
+            icon={
+              <svg className={`h-5 w-5 ${summaryStats.totalPnl >= 0 ? "text-emerald-400" : "text-rose-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            }
+          />
+        </div>
+      )}
 
       {/* ── Status Tabs ──────────────────────── */}
       {!loading && !error && pools.length > 0 && (
@@ -242,12 +347,14 @@ export default function MyPoolsPage() {
       {/* Pool cards */}
       {!loading && !error && filteredPools.length > 0 && (
         <div className="space-y-4 sm:space-y-5">
-          {filteredPools.map((item) => {
+          {filteredPools.map((item, idx) => {
             const pnl = item.my_value.profit_loss;
             const pnlPositive = pnl >= 0;
             const sharePercent = item.my_investment.share_percent;
-            // Approximate member count from share % (equal splits assumed)
             const estMembers = sharePercent > 0 ? Math.round(100 / sharePercent) : 1;
+            const strategy = VC_POOL_STRATEGIES_DUMMY[idx % VC_POOL_STRATEGIES_DUMMY.length] ?? null;
+            const performanceData = getDummyPoolPerformance(item.membership.pool_id);
+            const perfSummary = getDummyPoolPerformanceSummary(item.membership.pool_id);
 
             return (
               <div
@@ -259,7 +366,7 @@ export default function MyPoolsPage() {
                   transition-all duration-300"
               >
                 {/* Header */}
-                <div className="flex flex-wrap items-start justify-between gap-3 mb-4 sm:mb-5">
+                <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 mb-1.5">
                       <StatusBadge status={item.membership.pool_status} />
@@ -268,6 +375,11 @@ export default function MyPoolsPage() {
                       )}
                     </div>
                     <h2 className="text-base sm:text-lg font-semibold text-white">{item.membership.pool_name}</h2>
+                    {strategy && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Strategy: <span className="text-slate-400">{strategy.name}</span>
+                      </p>
+                    )}
                     {item.membership.end_date && (
                       <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Ends {new Date(item.membership.end_date).toLocaleDateString()}</p>
                     )}
@@ -282,6 +394,30 @@ export default function MyPoolsPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
+                </div>
+
+                {/* Pool performance graph (dummy 30d) */}
+                <div className="mb-4 sm:mb-5 rounded-lg border border-white/[0.04] bg-white/[0.02] p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Performance (30d)</span>
+                    <span
+                      className={`text-xs font-semibold ${
+                        perfSummary.changePercent >= 0 ? "text-emerald-400" : "text-rose-400"
+                      }`}
+                    >
+                      {perfSummary.changePercent >= 0 ? "+" : ""}
+                      {perfSummary.changePercent.toFixed(1)}%
+                    </span>
+                  </div>
+                  <PoolPerformanceChart
+                    data={performanceData}
+                    height={120}
+                    compact
+                    positiveColor={perfSummary.trend !== "down"}
+                  />
+                  <p className="mt-1.5 text-[10px] text-slate-500">
+                    Simulated equity curve (base 100). Real data when trades are linked.
+                  </p>
                 </div>
 
                 {/* Stats grid */}
