@@ -67,8 +67,8 @@ function OpenTradeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl">
-        <div className="flex items-center justify-between border-b border-[--color-border] px-5 py-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#1a1a2e]/95 to-[#0f0f1a]/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(252,79,2,0.08)]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
           <h3 className="text-lg font-semibold text-white">Open trade</h3>
           <button
             type="button"
@@ -89,7 +89,7 @@ function OpenTradeModal({
               value={assetPair}
               onChange={(e) => setAssetPair(e.target.value)}
               placeholder="e.g. BTCUSDT"
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+              className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/50 transition-colors"
             />
           </label>
           <label className="block text-sm text-slate-400">
@@ -97,7 +97,7 @@ function OpenTradeModal({
             <select
               value={action}
               onChange={(e) => setAction(e.target.value as "BUY" | "SELL")}
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white"
+              className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/50 transition-colors"
             >
               <option value="BUY">BUY</option>
               <option value="SELL">SELL</option>
@@ -113,7 +113,7 @@ function OpenTradeModal({
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 placeholder="0.001"
-                className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/50 transition-colors"
               />
             </label>
             <label className="block text-sm text-slate-400">
@@ -125,7 +125,7 @@ function OpenTradeModal({
                 value={entryPrice}
                 onChange={(e) => setEntryPrice(e.target.value)}
                 placeholder="60000"
-                className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/50 transition-colors"
               />
             </label>
           </div>
@@ -136,14 +136,14 @@ function OpenTradeModal({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Test BTC buy"
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+              className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/50 transition-colors"
             />
           </label>
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-xl bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+              className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/25 hover:shadow-[#fc4f02]/40 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:hover:scale-100"
             >
               {saving ? "Opening…" : "Open trade"}
             </button>
@@ -151,7 +151,7 @@ function OpenTradeModal({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60"
+              className="rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-60"
             >
               Cancel
             </button>
@@ -191,8 +191,8 @@ function CloseTradeModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl">
-        <div className="flex items-center justify-between border-b border-[--color-border] px-5 py-4">
+      <div className="w-full max-w-sm rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#1a1a2e]/95 to-[#0f0f1a]/95 backdrop-blur-xl shadow-[0_20px_60px_rgba(0,0,0,0.5),0_0_30px_rgba(252,79,2,0.08)]">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
           <h3 className="text-lg font-semibold text-white">Close trade</h3>
           <button
             type="button"
@@ -218,7 +218,7 @@ function CloseTradeModal({
               value={exitPrice}
               onChange={(e) => setExitPrice(e.target.value)}
               placeholder="e.g. 62000"
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+              className="mt-1.5 w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:outline-none focus:ring-1 focus:ring-[#fc4f02]/50 transition-colors"
               autoFocus
             />
           </label>
@@ -234,7 +234,7 @@ function CloseTradeModal({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60"
+              className="rounded-xl border border-white/[0.08] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-60"
             >
               Cancel
             </button>
@@ -297,25 +297,25 @@ export function PoolTradesFlow({
 
       {/* Summary cards (Top Trades style) */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent p-4">
           <p className="text-xs text-slate-400">Open trades</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {tradesSummary !== null ? tradesSummary.open_trades : "—"}
           </p>
         </div>
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent p-4">
           <p className="text-xs text-slate-400">Closed trades</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {tradesSummary !== null ? tradesSummary.closed_trades : "—"}
           </p>
         </div>
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent p-4">
           <p className="text-xs text-slate-400">Realized PnL</p>
           <p className={`mt-1 text-xl font-semibold ${tradesSummary && tradesSummary.realized_pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
             {tradesSummary !== null ? `${formatUsdt(tradesSummary.realized_pnl)} USDT` : "—"}
           </p>
         </div>
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.06] bg-gradient-to-br from-white/[0.05] to-transparent p-4">
           <p className="text-xs text-slate-400">Pool value</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {pool ? `${formatUsdt(pool.current_pool_value_usdt)} USDT` : "—"}
@@ -324,7 +324,7 @@ export function PoolTradesFlow({
       </div>
 
       {/* Filter pills (Top Trades style) */}
-      <div className="flex flex-wrap gap-1.5 rounded-xl bg-[--color-surface-alt]/60 p-1.5">
+      <div className="flex flex-wrap gap-1.5 rounded-xl bg-white/[0.04] p-1.5">
         {(["open", "closed", "all"] as const).map((f) => (
           <button
             key={f}
@@ -343,19 +343,19 @@ export function PoolTradesFlow({
 
       {/* Trades table (desktop) / cards (mobile) */}
       {tradesLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-[--color-border] bg-[--color-surface]/50 py-16">
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
           <span className="text-sm text-slate-400">Loading trades…</span>
         </div>
       ) : trades.length === 0 ? (
-        <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/50 py-16 text-center">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] py-16 text-center">
           <p className="text-sm text-slate-400">No trades yet.</p>
           <p className="mt-1 text-xs text-slate-500">Open a trade to start tracking pool performance.</p>
           <button
             type="button"
             onClick={() => setShowOpenModal(true)}
             disabled={saving}
-            className="mt-4 rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+            className="mt-4 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/25 hover:shadow-[#fc4f02]/40 hover:scale-[1.02] transition-all disabled:opacity-60 disabled:hover:scale-100"
           >
             Open trade
           </button>
@@ -363,10 +363,10 @@ export function PoolTradesFlow({
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden overflow-x-auto rounded-xl border border-[--color-border] bg-[--color-surface]/50 md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.03] md:block">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[--color-border] text-slate-400">
+                <tr className="border-b border-white/[0.06] text-slate-400">
                   <th className="px-4 py-3 font-medium">Pair</th>
                   <th className="px-4 py-3 font-medium">Action</th>
                   <th className="px-4 py-3 font-medium">Qty</th>
@@ -380,7 +380,7 @@ export function PoolTradesFlow({
               </thead>
               <tbody>
                 {trades.map((t) => (
-                  <tr key={t.trade_id} className="border-b border-[--color-border]/50 hover:bg-white/[0.02]">
+                  <tr key={t.trade_id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
                     <td className="px-4 py-3 font-medium text-white">{t.asset_pair}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.action === "BUY" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
@@ -428,7 +428,7 @@ export function PoolTradesFlow({
             {trades.map((t) => (
               <div
                 key={t.trade_id}
-                className="rounded-xl border border-[--color-border] bg-[--color-surface]/50 p-4"
+                className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -458,7 +458,7 @@ export function PoolTradesFlow({
                     </button>
                   )}
                 </div>
-                {t.notes && <p className="mt-2 text-xs text-slate-500 border-t border-[--color-border]/50 pt-2">{t.notes}</p>}
+                {t.notes && <p className="mt-2 text-xs text-slate-500 border-t border-white/[0.04] pt-2">{t.notes}</p>}
               </div>
             ))}
           </div>
