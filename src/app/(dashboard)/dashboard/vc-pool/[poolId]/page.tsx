@@ -42,12 +42,18 @@ export default function VcPoolDetailPage() {
   const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const isMember = Boolean(paymentStatus?.membership?.exists);
+  const cancellationStatus = myCancellation?.cancellation?.status ?? "";
+  const hasExitedByCancellation = cancellationStatus === "approved" || cancellationStatus === "processed";
+  const isMemberEffective = isMember && !hasExitedByCancellation;
   const hasReservation = Boolean(paymentStatus?.reservation);
   const payment = paymentStatus?.payment ?? null;
   const canUpload = hasReservation && payment?.payment_method === "binance" && payment?.status !== "verified" && payment?.status !== "rejected";
   const isRejected = payment?.status === "rejected";
   const availableSeats = Number(pool?.available_seats ?? 0);
   const poolStatus = pool?.status ?? "";
+  const poolAllowsJoin = poolStatus === "open" || poolStatus === "full";
+  const hasSeatsOrExited = availableSeats > 0 || hasExitedByCancellation;
+  const canShowJoinForm = !isMemberEffective && !hasReservation && poolAllowsJoin && hasSeatsOrExited;
 
   const loadPool = () => {
     if (!poolId) return;
@@ -96,13 +102,11 @@ export default function VcPoolDetailPage() {
     };
   }, [poolId, paymentStatus?.reservation?.reservation_id, paymentStatus?.membership?.exists]);
 
-  // Load my-cancellation when user is member and pool allows cancellation
+  // Load my-cancellation when pool is loaded so we know if user exited via approved/processed cancellation (for re-join flow)
   useEffect(() => {
-    if (!poolId || !canAccessVCPool || !isMember || !pool) return;
-    const status = pool?.status ?? "";
-    const allowCancel = status === "open" || status === "full" || status === "active";
-    if (allowCancel) loadMyCancellation();
-  }, [poolId, canAccessVCPool, isMember, pool?.status]);
+    if (!poolId || !canAccessVCPool || !pool) return;
+    getMyCancellation(poolId).then(setMyCancellation).catch(() => setMyCancellation(null));
+  }, [poolId, canAccessVCPool, pool?.pool_id]);
 
   const handleRequestExit = async () => {
     if (!poolId) return;
@@ -215,12 +219,62 @@ export default function VcPoolDetailPage() {
             </div>
           </div>
 
-          {/* Already a member */}
-          {isMember && (
+          {/* Exited by cancellation: show re-join message + join form in one card */}
+          {hasExitedByCancellation && (
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-100">
+                <p className="font-medium">You have cancel this pool.</p>
+                {/* <p className="mt-1 text-emerald-200/90">You can join again using the form below.</p> */}
+              </div>
+              {canShowJoinForm ? (
+                <div className="space-y-3 pt-2">
+                  <h2 className="text-lg font-semibold text-white">Re-join this pool</h2>
+                  <div>
+                    <label className="mb-1 block text-sm text-slate-300">Payment method</label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
+                    >
+                      <option value="binance">Binance (transfer + screenshot)</option>
+                      <option value="stripe">Stripe (awaiting admin approval)</option>
+                    </select>
+                  </div>
+                  {paymentMethod === "binance" && (
+                    <div>
+                      <label className="mb-1 block text-sm text-slate-300">Your Binance UID (optional)</label>
+                      <input
+                        type="text"
+                        value={userBinanceUid}
+                        onChange={(e) => setUserBinanceUid(e.target.value)}
+                        placeholder="e.g. 12345678"
+                        className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
+                      />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleJoin}
+                    disabled={joining}
+                    className="w-full rounded-lg bg-[#fc4f02] px-4 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+                  >
+                    {joining ? "Reserving seat…" : "Reserve seat & get payment details"}
+                  </button>
+                </div>
+              ) : poolAllowsJoin && availableSeats <= 0 ? (
+                <p className="text-sm text-slate-400">No seats available right now. Try again later or check another pool.</p>
+              ) : !poolAllowsJoin ? (
+                <p className="text-sm text-slate-400">This pool is not open for new members at the moment.</p>
+              ) : null}
+            </div>
+          )}
+
+          {/* Already a member (not exited by cancellation) */}
+          {isMemberEffective && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
               <p className="text-lg font-semibold text-green-200">You are a member of this pool.</p>
               <p className="text-sm text-slate-400">Your share is locked. Pool activity will appear here when the pool is active.</p>
-              {/* Phase 1E: Request to exit (open/full/active) */}
+              {/* Request to exit (open/full/active) */}
               {(poolStatus === "open" || poolStatus === "full" || poolStatus === "active") && (
                 <div className="pt-4 border-t border-[--color-border]">
                   {myCancellation?.has_cancellation ? (
@@ -258,8 +312,8 @@ export default function VcPoolDetailPage() {
             </div>
           )}
 
-          {/* Rejected: can re-join */}
-          {!isMember && isRejected && (
+          {/* Rejected payment: can re-join */}
+          {!isMemberEffective && isRejected && (
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
               <p className="font-medium">Your previous payment was rejected.</p>
               {payment?.rejection_reason && (
@@ -270,7 +324,7 @@ export default function VcPoolDetailPage() {
           )}
 
           {/* Active reservation: show instructions + upload (binance) or awaiting (stripe) */}
-          {!isMember && hasReservation && payment && !isRejected && (
+          {!isMemberEffective && hasReservation && payment && !isRejected && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
               <h2 className="text-lg font-semibold text-white">Complete your payment</h2>
               <div className="rounded-lg bg-[--color-surface-alt] p-4 text-sm text-slate-200 space-y-2">
@@ -327,8 +381,8 @@ export default function VcPoolDetailPage() {
             </div>
           )}
 
-          {/* No reservation: show Join form (only if pool is open and has seats) */}
-          {!isMember && !hasReservation && poolStatus === "open" && availableSeats > 0 && (
+          {/* No reservation: show Join form (when pool allows and has seats; re-join after exit is shown in exited card above) */}
+          {canShowJoinForm && !hasExitedByCancellation && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
               <h2 className="text-lg font-semibold text-white">Join this pool</h2>
               <div className="space-y-3">
@@ -367,9 +421,9 @@ export default function VcPoolDetailPage() {
             </div>
           )}
 
-          {!isMember && !hasReservation && (poolStatus !== "open" || availableSeats <= 0) && (
+          {!isMemberEffective && !hasReservation && !canShowJoinForm && !hasExitedByCancellation && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 text-center text-slate-400 text-sm">
-              {poolStatus !== "open"
+              {poolStatus !== "open" && poolStatus !== "full"
                 ? "This pool is not open for new members right now."
                 : "No seats available. The pool is full."}
             </div>

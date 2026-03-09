@@ -225,7 +225,7 @@ export function VCPoolSection() {
                         </p>
                         <div className="flex items-center gap-3">
                           <div className="h-9 flex-1 rounded-full bg-[#fc4f02] text-center text-xs font-semibold text-white flex items-center justify-center group-hover:brightness-110 transition">
-                            View details &amp; join
+                            View Detail
                           </div>
                         </div>
                       </div>

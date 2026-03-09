@@ -20,7 +20,7 @@ export default function AdminSettingsBinancePage() {
         showNotification((err as { message?: string })?.message ?? "Failed to load", "error");
       })
       .finally(() => setLoading(false));
-  }, [showNotification]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
