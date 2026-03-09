@@ -231,9 +231,9 @@ export function VCPoolSection() {
                       {/* Footer CTA */}
                       <div className="mt-5 space-y-2">
                         <p className="text-[11px] text-slate-500">
-                          Admin Binance UID:{" "}
+                          Deposit Address (BSC):{" "}
                           <span className="font-mono text-slate-300">
-                            {pool.admin_binance_uid || "Not set"}
+                            {pool.admin_wallet_address || pool.admin_binance_uid || "Not set"}
                           </span>
                         </p>
                         <div className="flex items-center gap-3">

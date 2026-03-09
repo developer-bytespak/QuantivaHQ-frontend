@@ -20,7 +20,7 @@ export default function AdminPoolsPage() {
         showNotification((err as { message?: string })?.message ?? "Failed to load pools", "error");
       })
       .finally(() => setLoading(false));
-  }, [showNotification]);
+  }, []);
 
   return (
     <div className="space-y-6">

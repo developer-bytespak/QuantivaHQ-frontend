@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   getMyPaymentSubmissions,
   type MyPaymentSubmission,
-  type BinancePaymentStatus,
+  type PaymentStatus,
 } from "@/lib/api/vc-pools";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
@@ -31,12 +31,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function BinanceStatusIndicator({ status }: { status: BinancePaymentStatus }) {
+function PaymentStatusIndicator({ status }: { status: PaymentStatus }) {
   if (status === "pending") {
     return (
       <div className="flex items-center gap-2">
         <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
-        <span className="text-xs text-yellow-300">Verifying…</span>
+        <span className="text-xs text-yellow-300">Awaiting approval…</span>
       </div>
     );
   }
@@ -194,9 +194,9 @@ export default function MySubmissionsPage() {
                     </p>
                   </div>
                   <div className="rounded-lg bg-[--color-surface-alt] p-3">
-                    <p className="text-xs text-slate-400">Binance TX ID</p>
+                    <p className="text-xs text-slate-400">TX Hash</p>
                     <p className="font-mono text-white text-sm truncate">
-                      {sub.binance_tx_id || "—"}
+                      {sub.tx_hash || sub.binance_tx_id || "—"}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5 capitalize">
                       Method: {sub.payment_method}
@@ -204,7 +204,7 @@ export default function MySubmissionsPage() {
                   </div>
                   <div className="rounded-lg bg-[--color-surface-alt] p-3">
                     <p className="text-xs text-slate-400">Verification</p>
-                    <BinanceStatusIndicator status={sub.binance_payment_status} />
+                    <PaymentStatusIndicator status={sub.payment_status || sub.binance_payment_status} />
                     {sub.exact_amount_received && (
                       <p className="text-xs text-slate-500 mt-1">
                         Received: {sub.exact_amount_received} {sub.coin_type}

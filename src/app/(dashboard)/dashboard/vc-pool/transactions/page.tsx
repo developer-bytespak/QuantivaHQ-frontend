@@ -182,9 +182,9 @@ export default function TransactionsPage() {
                     <p className="text-xs text-slate-300 mt-2">{tx.description}</p>
 
                     <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                      {tx.binance_tx_id && (
+                      {(tx.tx_hash || tx.binance_tx_id) && (
                         <span>
-                          TX: <span className="font-mono text-slate-400">{tx.binance_tx_id}</span>
+                          TX Hash: <span className="font-mono text-slate-400">{tx.tx_hash || tx.binance_tx_id}</span>
                         </span>
                       )}
                       {tx.expected_amount && (

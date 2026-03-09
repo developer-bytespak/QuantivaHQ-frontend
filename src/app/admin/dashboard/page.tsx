@@ -20,7 +20,7 @@ export default function AdminDashboardPage() {
         );
       })
       .finally(() => setLoading(false));
-  }, [showNotification]);
+  }, []);
 
   const stats = useMemo(() => {
     const byStatus = pools.reduce<Record<string, number>>((acc, p) => {
