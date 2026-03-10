@@ -33,7 +33,7 @@ interface BinanceStatus {
   message?: string | null;
 }
 
-interface UseRealtimePaperTrading {
+interface UseRealtimeAccountStream {
   connected: boolean;
   balance: Record<string, { free: string; locked: string }> | null;
   orders: OrderUpdate[];
@@ -47,7 +47,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 2000;
 
-export function useRealtimePaperTrading(userId: string = 'default-user', key?: any, enabled: boolean = true): UseRealtimePaperTrading {
+export function useRealtimeAccountStream(userId: string = 'default-user', key?: any, enabled: boolean = true): UseRealtimeAccountStream {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
@@ -74,7 +74,7 @@ export function useRealtimePaperTrading(userId: string = 'default-user', key?: a
     }
 
     // Create Socket.IO connection
-    const newSocket = io(`${SOCKET_URL}/paper-trading`, {
+    const newSocket = io(`${SOCKET_URL}/account-stream`, {
       auth: { userId },
       query: { userId },
       transports: ['websocket', 'polling'],
@@ -87,7 +87,7 @@ export function useRealtimePaperTrading(userId: string = 'default-user', key?: a
 
     // Connection established
     newSocket.on('connect', () => {
-      console.log('[WebSocket] Connected to paper trading');
+      console.log('[WebSocket] Connected to account stream');
       setConnected(true);
       setReconnecting(false);
       setError(null);

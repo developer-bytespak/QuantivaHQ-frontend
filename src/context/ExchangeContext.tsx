@@ -7,6 +7,7 @@ interface ExchangeContextType {
   connectionType: "crypto" | "stocks" | null;
   connectionId: string | null;
   activeConnection: Connection | null;
+  allConnections: Connection[];
   isLoading: boolean;
   refetch: () => Promise<void>;
   selectedDashboardType: "crypto" | "stocks" | null;
@@ -32,6 +33,7 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDashboardType, setSelectedDashboardTypeState] = useState<"crypto" | "stocks" | null>(null);
   const [hasBothConnections, setHasBothConnections] = useState(false);
+  const [allConnections, setAllConnections] = useState<Connection[]>([]);
 
   const applyConnection = useCallback((connection: Connection | null) => {
     if (connection) {
@@ -58,11 +60,12 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       // getConnections returns [] on any error (401, network, etc.) so this never throws
-      const allConnections = await exchangesService.getConnections();
-      const activeCrypto = allConnections.find(
+      const fetched = await exchangesService.getConnections();
+      setAllConnections(fetched);
+      const activeCrypto = fetched.find(
         (c: Connection) => c.status === "active" && c.exchange?.type === "crypto"
       );
-      const activeStocks = allConnections.find(
+      const activeStocks = fetched.find(
         (c: Connection) => c.status === "active" && c.exchange?.type === "stocks"
       );
       const hasBoth = !!activeCrypto && !!activeStocks;
@@ -89,6 +92,7 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: any) {
       applyConnection(null);
+      setAllConnections([]);
       setHasBothConnections(false);
       setSelectedDashboardTypeState(null);
     } finally {
@@ -109,6 +113,7 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
     connectionType,
     connectionId,
     activeConnection,
+    allConnections,
     isLoading,
     refetch: fetchConnectionInfo,
     selectedDashboardType,
@@ -125,7 +130,7 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
 
 /**
  * Custom hook to access exchange connection info globally
- * Usage: const { connectionType, connectionId, activeConnection, hasBothConnections, selectedDashboardType, setSelectedDashboardType } = useExchange();
+ * Usage: const { connectionType, connectionId, activeConnection, allConnections, hasBothConnections, selectedDashboardType, setSelectedDashboardType } = useExchange();
  */
 export function useExchange(): ExchangeContextType {
   const context = useContext(ExchangeContext);
