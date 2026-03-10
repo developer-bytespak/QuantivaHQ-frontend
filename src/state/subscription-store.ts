@@ -245,6 +245,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       [PlanTier.FREE]: [],
       [PlanTier.PRO]: [],
       [PlanTier.ELITE]: [],
+      [PlanTier.ELITE_PLUS]: [],
     };
     allPlans.forEach((plan) => {
       if (grouped[plan.tier]) {
