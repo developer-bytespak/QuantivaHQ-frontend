@@ -132,6 +132,10 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       if (!currentSubscription) return false;
       const plan = allPlans?.find((p) => p.plan_id === currentSubscription.plan_id);
       if (!plan) return false;
+
+      // ELITE tier gets access to all features
+      if (plan.tier === PlanTier.ELITE) return true;
+
       const features = plan.plan_features ?? [];
       const planFeature = features.find((f: any) => f.feature_type === feature);
       return planFeature?.enabled ?? false;
