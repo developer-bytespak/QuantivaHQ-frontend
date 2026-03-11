@@ -249,7 +249,8 @@ export type PaymentStatus = "pending" | "verified" | "rejected" | "refunded";
 export type BinancePaymentStatus = PaymentStatus;
 
 export interface SubmitTxHashRequest {
-  tx_hash: string;
+  tx_hash?: string;
+  binance_tx_id?: string;
 }
 
 /** @deprecated Use SubmitTxHashRequest */

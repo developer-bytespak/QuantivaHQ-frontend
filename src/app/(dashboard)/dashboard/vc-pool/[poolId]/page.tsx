@@ -54,9 +54,21 @@ const truncAddr = (addr: string) =>
 const isValidBscAddress = (addr: string): boolean =>
   /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
 
-/** BSC (EVM) transaction hash: 0x + 64 hex chars */
-const isValidTxHash = (hash: string): boolean =>
-  /^0x[a-fA-F0-9]{64}$/.test(hash.trim());
+/** Accept both blockchain TX hash (0x + 64 hex) or Binance TX ID (12+ alphanumeric chars) */
+const isValidTxHash = (hash: string): boolean => {
+  const trimmed = hash.trim();
+  // Blockchain TX: 0x + 64 hex chars
+  const isBlockchainTx = /^0x[a-fA-F0-9]{64}$/.test(trimmed);
+  // Binance TX ID: at least 12 characters, alphanumeric
+  const isBinanceTx = /^[a-zA-Z0-9]{12,}$/.test(trimmed);
+  return isBlockchainTx || isBinanceTx;
+};
+
+/** Detect TX format: returns 'blockchain' or 'binance' */
+const detectTxFormat = (hash: string): 'blockchain' | 'binance' => {
+  const trimmed = hash.trim();
+  return /^0x[a-fA-F0-9]{64}$/.test(trimmed) ? 'blockchain' : 'binance';
+};
 
 /* ══════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -370,34 +382,37 @@ export default function VcPoolDetailPage() {
     if (!poolId) return;
     const trimmed = txHash.trim();
     if (!trimmed) {
-      showNotification("Please enter the transaction hash", "error");
+      showNotification("Please enter the transaction hash or Binance TX ID", "error");
       return;
     }
     if (!isValidTxHash(trimmed)) {
       showNotification(
-        "Invalid TX hash. Use 0x followed by 64 hex characters (e.g. from Binance withdrawal confirmation).",
+        "Invalid transaction ID. Enter either a blockchain TX hash (0x + 64 hex chars) or a Binance P2P TX ID (12+ characters).",
         "error"
       );
       return;
     }
     setSubmittingTx(true);
     try {
-      const res = await submitTxHash(poolId, {
-        tx_hash: trimmed,
-      });
+      const format = detectTxFormat(trimmed);
+      const res = await submitTxHash(poolId, 
+        format === 'blockchain' 
+          ? { tx_hash: trimmed }
+          : { binance_tx_id: trimmed }
+      );
       setTxSubmitted(true);
       setPaymentVerifyStatus(
         res.payment_status ?? res.binance_payment_status
       );
       showNotification(
-        "TX Hash submitted. Waiting for admin approval…",
+        "Transaction ID submitted. Waiting for admin approval…",
         "success"
       );
       loadPaymentStatus();
       setJoinStep("payment-details");
     } catch (err: unknown) {
       showNotification(
-        getApiErrorMessage(err, "Failed to submit TX Hash"),
+        getApiErrorMessage(err, "Failed to submit transaction ID"),
         "error"
       );
     } finally {
@@ -1108,19 +1123,19 @@ export default function VcPoolDetailPage() {
                       {/* TX Hash input */}
                       <div>
                         <label className="mb-1 block text-sm font-medium text-slate-300">
-                          Transaction Hash (TX Hash){" "}
+                          Transaction ID{" "}
                           <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="text"
                           value={txHash}
                           onChange={(e) => setTxHash(e.target.value)}
-                          placeholder="0x..."
+                          placeholder="0x... or Binance TX ID"
                           className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white font-mono placeholder:text-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
                         />
                         <p className="mt-1 text-xs text-slate-500">
-                          Find this in Binance → Wallet → Transaction
-                          History after your withdrawal completes.
+                          For Binance P2P: Find the order ID in Binance → P2P → Orders.
+                          For blockchain withdrawal: Find in Binance → Wallet → Transaction History.
                         </p>
                       </div>
 
@@ -1184,9 +1199,8 @@ export default function VcPoolDetailPage() {
                               Waiting for admin approval…
                             </p>
                             <p className="text-sm text-yellow-300/70 mt-1">
-                              Your TX Hash has been submitted. The admin
-                              will verify your on-chain payment and approve
-                              or reject it.
+                              Your transaction ID has been submitted. The admin
+                              will verify your payment and approve or reject it.
                             </p>
                           </div>
                           <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
