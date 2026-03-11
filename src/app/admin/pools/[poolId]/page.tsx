@@ -836,20 +836,50 @@ export default function AdminPoolDetailsPage() {
                       <p className="text-sm text-slate-400 py-4">No members yet.</p>
                     ) : (
                       <div className="space-y-2 overflow-x-auto">
-                        {members.map((m) => (
-                          <div
-                            key={m.member_id}
-                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
-                          >
-                            <span className="font-medium text-white">
-                              {m.user_email ?? m.user_username ?? m.user_id}
-                            </span>
-                            <span className="text-xs">Share: {m.share_percent}%</span>
-                            <span className="text-xs text-slate-400">
-                              Joined {new Date(m.joined_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        ))}
+                        {members.map((m) => {
+                          const displayName =
+                            m.user?.full_name?.trim() ||
+                            m.user?.email ||
+                            m.user?.username ||
+                            `Member ${m.member_id.slice(0, 8)}`;
+                          const invested =
+                            m.invested_amount_usdt != null
+                              ? Number(m.invested_amount_usdt).toFixed(2)
+                              : "—";
+                          return (
+                            <div
+                              key={m.member_id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[--color-surface-alt] px-4 py-3 text-sm"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-medium text-white truncate">
+                                  {displayName}
+                                </p>
+                                {m.user?.email && (
+                                  <p className="text-xs text-slate-400 truncate">
+                                    {m.user.email}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-4 text-slate-300">
+                                <span className="text-xs">
+                                  Invested: <span className="text-white font-medium">{invested} USDT</span>
+                                </span>
+                                <span className="text-xs">
+                                  Share: <span className="text-white font-medium">{Number(m.share_percent).toFixed(2)}%</span>
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  Joined {new Date(m.joined_at).toLocaleDateString()}
+                                </span>
+                                {m.is_active === false && (
+                                  <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-300">
+                                    Exited
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </>

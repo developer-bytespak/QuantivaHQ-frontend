@@ -189,11 +189,20 @@ export interface AdminReservationsListResponse {
 export interface AdminPoolMember {
   member_id: string;
   user_id: string;
+  pool_id?: string;
   payment_method: string;
-  share_percent: string;
+  invested_amount_usdt?: string | number;
+  share_percent: string | number;
+  is_active?: boolean;
   joined_at: string;
-  user_email?: string;
-  user_username?: string;
+  exited_at?: string | null;
+  user_wallet_address?: string | null;
+  user?: {
+    user_id: string;
+    email: string;
+    username: string | null;
+    full_name: string | null;
+  } | null;
 }
 
 export interface AdminMembersListResponse {
