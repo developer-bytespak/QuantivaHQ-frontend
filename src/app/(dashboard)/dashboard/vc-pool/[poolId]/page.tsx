@@ -115,6 +115,9 @@ export default function VcPoolDetailPage() {
     paymentStatus?.membership?.exists &&
       paymentStatus?.membership?.is_active !== false
   );
+  const cancellationStatus = myCancellation?.cancellation?.status ?? "";
+  const hasExitedByCancellation = cancellationStatus === "approved" || cancellationStatus === "processed";
+  const isMemberEffective = isMember && !hasExitedByCancellation;
   const hasReservation = Boolean(paymentStatus?.reservation);
   const payment = paymentStatus?.payment ?? null;
   const isRejected = payment?.status === "rejected";
@@ -391,6 +394,7 @@ export default function VcPoolDetailPage() {
         "success"
       );
       loadPaymentStatus();
+      setJoinStep("payment-details");
     } catch (err: unknown) {
       showNotification(
         getApiErrorMessage(err, "Failed to submit TX Hash"),

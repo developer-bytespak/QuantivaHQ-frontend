@@ -184,6 +184,11 @@ export default function AdminPoolDetailsPage() {
   const [payoutsLoading, setPayoutsLoading] = useState(false);
   const [showCancelPoolConfirm, setShowCancelPoolConfirm] = useState(false);
   const [showCompletePoolConfirm, setShowCompletePoolConfirm] = useState(false);
+  // Popups (replacing window.prompt)
+  const [markRefundedModal, setMarkRefundedModal] = useState<{ cancellationId: string; txId: string; notes: string } | null>(null);
+  const [markPayoutPaidModal, setMarkPayoutPaidModal] = useState<{ payoutId: string; txId: string; notes: string } | null>(null);
+  const [rejectCancellationModal, setRejectCancellationModal] = useState<{ cancellationId: string; reason: string } | null>(null);
+  const [rejectPaymentModal, setRejectPaymentModal] = useState<{ submissionId: string; reason: string } | null>(null);
 
   const isDraft = pool?.status === "draft";
   const isFull = pool?.status === "full";
@@ -330,14 +335,13 @@ export default function AdminPoolDetailsPage() {
     }
   };
 
-  const handleRejectCancellation = async (cancellationId: string) => {
-    const reason = window.prompt("Rejection reason (shown to user):", "Please reconsider. Pool is performing well.");
-    if (reason === null) return;
+  const handleRejectCancellation = async (cancellationId: string, reason: string) => {
     if (!poolId) return;
     setActionSubmitting(cancellationId);
     try {
       await adminRejectCancellation(poolId, cancellationId, { rejection_reason: reason.trim() || "Rejected by admin" });
       showNotification("Cancellation rejected. Member remains active.", "success");
+      setRejectCancellationModal(null);
       loadCancellations();
     } catch (err: unknown) {
       showNotification((err as { message?: string })?.message ?? "Failed to reject", "error");
@@ -352,6 +356,7 @@ export default function AdminPoolDetailsPage() {
     try {
       await adminMarkRefunded(poolId, cancellationId, { binance_tx_id: binanceTxId || undefined, notes: notes || undefined });
       showNotification("Refund marked as completed. Member deactivated.", "success");
+      setMarkRefundedModal(null);
       load();
       loadCancellations();
       loadMembers();
@@ -368,6 +373,7 @@ export default function AdminPoolDetailsPage() {
     try {
       await adminMarkPayoutPaid(poolId, payoutId, { binance_tx_id: binanceTxId || undefined, notes: notes || undefined });
       showNotification("Payout marked as paid.", "success");
+      setMarkPayoutPaidModal(null);
       loadPayouts();
     } catch (err: unknown) {
       showNotification((err as { message?: string })?.message ?? "Failed to mark paid", "error");
@@ -495,14 +501,13 @@ export default function AdminPoolDetailsPage() {
     }
   };
 
-  const handleReject = async (submissionId: string) => {
-    const reason = window.prompt("Rejection reason (shown to user):", "Screenshot unclear or invalid");
-    if (reason === null) return;
+  const handleReject = async (submissionId: string, reason: string) => {
     if (!poolId) return;
     setActionSubmitting(submissionId);
     try {
       await adminRejectPayment(poolId, submissionId, { rejection_reason: reason.trim() || "Rejected by admin" });
       showNotification("Payment rejected. Seat released.", "success");
+      setRejectPaymentModal(null);
       load();
       loadPayments();
       loadReservations();
@@ -792,7 +797,7 @@ export default function AdminPoolDetailsPage() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleReject(p.submission_id)}
+                                  onClick={() => setRejectPaymentModal({ submissionId: p.submission_id, reason: "Screenshot unclear or invalid" })}
                                   disabled={actionSubmitting !== null}
                                   className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60"
                                 >
@@ -938,7 +943,7 @@ export default function AdminPoolDetailsPage() {
                                     <button type="button" onClick={() => handleApproveCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500 disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Approve"}
                                     </button>
-                                    <button type="button" onClick={() => handleRejectCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
+                                    <button type="button" onClick={() => setRejectCancellationModal({ cancellationId: c.cancellation_id, reason: "Please reconsider. Pool is performing well." })} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Reject"}
                                     </button>
                                   </>
@@ -946,11 +951,7 @@ export default function AdminPoolDetailsPage() {
                                 {c.status === "approved" && (
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      const txId = window.prompt("Binance TX ID (optional):");
-                                      const notes = window.prompt("Notes (optional):");
-                                      if (txId !== null && notes !== null) handleMarkRefunded(c.cancellation_id, txId.trim() || undefined, notes.trim() || undefined);
-                                    }}
+                                    onClick={() => setMarkRefundedModal({ cancellationId: c.cancellation_id, txId: "", notes: "" })}
                                     disabled={actionSubmitting !== null}
                                     className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-60"
                                   >
@@ -991,11 +992,7 @@ export default function AdminPoolDetailsPage() {
                               {p.status === "pending" && (
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    const txId = window.prompt("Binance TX ID (optional):");
-                                    const notes = window.prompt("Notes (optional):");
-                                    if (txId !== null && notes !== null) handleMarkPayoutPaid(p.payout_id, txId.trim() || undefined, notes.trim() || undefined);
-                                  }}
+                                  onClick={() => setMarkPayoutPaidModal({ payoutId: p.payout_id, txId: "", notes: "" })}
                                   disabled={actionSubmitting !== null}
                                   className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
                                 >
@@ -1070,6 +1067,126 @@ export default function AdminPoolDetailsPage() {
                   >
                     {saving ? "Deleting…" : "Delete"}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mark refunded popup */}
+          {markRefundedModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Mark refunded</h3>
+                <p className="mt-1 text-sm text-slate-400">Record the transfer and mark this cancellation as refunded.</p>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Binance TX ID </label>
+                    <input
+                      type="text"
+                      value={markRefundedModal.txId}
+                      onChange={(e) => setMarkRefundedModal((prev) => (prev ? { ...prev, txId: e.target.value } : null))}
+                      placeholder="e.g. abc123..."
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
+                    <input
+                      type="text"
+                      value={markRefundedModal.notes}
+                      onChange={(e) => setMarkRefundedModal((prev) => (prev ? { ...prev, notes: e.target.value } : null))}
+                      placeholder="Internal notes"
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setMarkRefundedModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleMarkRefunded(markRefundedModal.cancellationId, markRefundedModal.txId || undefined, markRefundedModal.notes || undefined)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-60">{actionSubmitting === markRefundedModal.cancellationId ? "…" : "Mark refunded"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mark payout paid popup */}
+          {markPayoutPaidModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Mark payout paid</h3>
+                <p className="mt-1 text-sm text-slate-400">Record the transfer and mark this payout as paid.</p>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Binance TX ID (optional)</label>
+                    <input
+                      type="text"
+                      value={markPayoutPaidModal.txId}
+                      onChange={(e) => setMarkPayoutPaidModal((prev) => (prev ? { ...prev, txId: e.target.value } : null))}
+                      placeholder="e.g. abc123..."
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
+                    <input
+                      type="text"
+                      value={markPayoutPaidModal.notes}
+                      onChange={(e) => setMarkPayoutPaidModal((prev) => (prev ? { ...prev, notes: e.target.value } : null))}
+                      placeholder="Internal notes"
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setMarkPayoutPaidModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleMarkPayoutPaid(markPayoutPaidModal.payoutId, markPayoutPaidModal.txId || undefined, markPayoutPaidModal.notes || undefined)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60">{actionSubmitting === markPayoutPaidModal.payoutId ? "…" : "Mark paid"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reject cancellation popup */}
+          {rejectCancellationModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Reject cancellation</h3>
+                <p className="mt-1 text-sm text-slate-400">This reason will be shown to the member.</p>
+                <div className="mt-4">
+                  <label className="block text-xs text-slate-400 mb-1">Rejection reason</label>
+                  <input
+                    type="text"
+                    value={rejectCancellationModal.reason}
+                    onChange={(e) => setRejectCancellationModal((prev) => (prev ? { ...prev, reason: e.target.value } : null))}
+                    placeholder="e.g. Please reconsider. Pool is performing well."
+                    className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                  />
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setRejectCancellationModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleRejectCancellation(rejectCancellationModal.cancellationId, rejectCancellationModal.reason)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60">{actionSubmitting === rejectCancellationModal.cancellationId ? "…" : "Reject"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reject payment popup */}
+          {rejectPaymentModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Reject payment</h3>
+                <p className="mt-1 text-sm text-slate-400">This reason will be shown to the user.</p>
+                <div className="mt-4">
+                  <label className="block text-xs text-slate-400 mb-1">Rejection reason</label>
+                  <input
+                    type="text"
+                    value={rejectPaymentModal.reason}
+                    onChange={(e) => setRejectPaymentModal((prev) => (prev ? { ...prev, reason: e.target.value } : null))}
+                    placeholder="e.g. Screenshot unclear or invalid"
+                    className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                  />
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setRejectPaymentModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleReject(rejectPaymentModal.submissionId, rejectPaymentModal.reason)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60">{actionSubmitting === rejectPaymentModal.submissionId ? "…" : "Reject"}</button>
                 </div>
               </div>
             </div>

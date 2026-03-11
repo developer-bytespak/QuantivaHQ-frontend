@@ -19,8 +19,11 @@ export interface Connection {
   connection_id: string;
   user_id: string;
   exchange_id: string;
+  exchange_name: string;
   auth_type: string;
   status: "pending" | "active" | "invalid" | "revoked";
+  verified: boolean;
+  account_type?: string;
   connection_metadata?: {
     enable_trading?: boolean;
     permissions?: string[];

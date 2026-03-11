@@ -22,6 +22,8 @@ export function SubscriptionBadge() {
         return "bg-[#fc4f02] text-white";
       case PlanTier.ELITE:
         return "bg-blue-600 text-white";
+      case PlanTier.ELITE_PLUS:
+        return "bg-emerald-600 text-white";
       default:
         return "bg-slate-500 text-white";
     }
