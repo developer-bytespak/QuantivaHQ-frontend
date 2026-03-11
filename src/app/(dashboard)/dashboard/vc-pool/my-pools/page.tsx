@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getMyPools, type MyPoolMembership } from "@/lib/api/vc-pools";
+import { getApiErrorMessage } from "@/lib/utils/errors";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
@@ -103,17 +104,22 @@ export default function MyPoolsPage() {
     return { activePools: active, cancellationPools: cancellation };
   }, [pools]);
 
+  const fetchMyPools = () => {
+    if (!canAccessVCPool) return;
+    setLoading(true);
+    setError(null);
+    getMyPools()
+      .then((res) => setPools(res.pools))
+      .catch((err: unknown) => setError(getApiErrorMessage(err, "Failed to load my pools")))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
     if (!canAccessVCPool) {
       setLoading(false);
       return;
     }
-    setLoading(true);
-    setError(null);
-    getMyPools()
-      .then((res) => setPools(res.pools))
-      .catch((err: unknown) => setError((err as { message?: string })?.message ?? "Failed to load my pools"))
-      .finally(() => setLoading(false));
+    fetchMyPools();
   }, [canAccessVCPool]);
 
   return (
@@ -129,16 +135,28 @@ export default function MyPoolsPage() {
 
         <Link
           href="/dashboard/vc-pool"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to VC pools
+          <span className="text-white/90 group-hover:text-[#fda300]">Back to VC pools</span>
         </Link>
 
-        <h1 className="text-2xl font-bold text-white mb-1">My pools</h1>
-        <p className="text-sm text-slate-400 mb-6">Your pool memberships, current value, and cancellation status.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-white mb-1">My pools</h1>
+            <p className="text-sm text-slate-400">Your pool memberships, current value, and cancellation status.</p>
+          </div>
+          <button
+            type="button"
+            onClick={fetchMyPools}
+            disabled={loading}
+            className="rounded-xl border border-[--color-border] px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60 transition-colors"
+          >
+            {loading ? "Loading…" : "Refresh"}
+          </button>
+        </div>
 
         {loading && (
           <div className="flex items-center justify-center py-16">
@@ -147,8 +165,15 @@ export default function MyPoolsPage() {
         )}
 
         {!loading && error && (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-            {error}
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100 flex flex-wrap items-center justify-between gap-3">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => { setError(null); fetchMyPools(); }}
+              className="shrink-0 rounded-lg bg-red-500/20 border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-200 hover:bg-red-500/30 transition-colors"
+            >
+              Try again
+            </button>
           </div>
         )}
 

@@ -755,6 +755,22 @@ export default function AdminPoolDetailsPage() {
                                 {p.payment_method} · {p.total_amount} ·{" "}
                                 <span className="capitalize">{p.status}</span>
                               </p>
+                              {(p.tx_hash || p.binance_tx_id) && (
+                                <p className="text-xs text-slate-400 mt-1">
+                                  TX Hash:{" "}
+                                  <span className="font-mono text-slate-300">
+                                    {p.tx_hash || p.binance_tx_id}
+                                  </span>
+                                </p>
+                              )}
+                              {p.user_wallet_address && (
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  User wallet:{" "}
+                                  <span className="font-mono text-slate-300">
+                                    {p.user_wallet_address}
+                                  </span>
+                                </p>
+                              )}
                               {p.screenshot_url && (
                                 <a
                                   href={p.screenshot_url}

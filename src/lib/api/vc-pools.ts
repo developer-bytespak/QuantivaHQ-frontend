@@ -7,6 +7,7 @@ export type PaymentMethod = "binance" | "stripe";
 export interface JoinPoolRequest {
   payment_method: PaymentMethod;
   user_binance_uid?: string;
+  user_wallet_address?: string;
 }
 
 export interface JoinPoolResponse {
@@ -17,6 +18,10 @@ export interface JoinPoolResponse {
   pool_fee_amount: number;
   coin: string;
   admin_binance_uid?: string;
+  admin_wallet_address?: string;
+  payment_network?: string;
+  deposit_coin?: string;
+  deposit_method?: string;
   deadline: string;
   minutes_remaining: number;
   payment_method: PaymentMethod;
@@ -26,7 +31,7 @@ export interface JoinPoolResponse {
 
 export interface PaymentStatusResponse {
   pool_id: string;
-  membership: { exists: boolean };
+  membership: { exists: boolean; is_active?: boolean };
   reservation: {
     reservation_id: string;
     status: string;
@@ -45,6 +50,12 @@ export interface PaymentStatusResponse {
     rejection_reason: string | null;
     payment_deadline: string;
     verified_at: string | null;
+    tx_hash: string | null;
+    binance_tx_id: string | null;
+    binance_payment_status: string | null;
+    payment_status: string | null;
+    user_wallet_address: string | null;
+    exact_amount_expected: string | null;
   } | null;
 }
 
@@ -100,6 +111,10 @@ export interface VcPoolSummary {
   pool_fee_percent: string;
   payment_window_minutes: number;
   admin_binance_uid: string | null;
+  admin_wallet_address: string | null;
+  payment_network: string | null;
+  deposit_coin: string | null;
+  deposit_method: string | null;
   created_at: string;
 }
 
@@ -223,6 +238,124 @@ export interface MyPoolsResponse {
 export async function getMyPools(): Promise<MyPoolsResponse> {
   return apiRequest<never, MyPoolsResponse>({
     path: `/api/vc-pools/my-pools`,
+    method: "GET",
+  });
+}
+
+// ---- Phase Binance P2P: Auto-verification payment flow ----
+
+export type PaymentStatus = "pending" | "verified" | "rejected" | "refunded";
+/** @deprecated Use PaymentStatus */
+export type BinancePaymentStatus = PaymentStatus;
+
+export interface SubmitTxHashRequest {
+  tx_hash: string;
+}
+
+/** @deprecated Use SubmitTxHashRequest */
+export type SubmitBinanceTxRequest = {
+  binance_tx_id?: string;
+  binance_tx_timestamp?: string;
+  tx_hash?: string;
+};
+
+export interface SubmitTxHashResponse {
+  message: string;
+  submission_id: string;
+  binance_tx_id: string | null;
+  tx_hash: string | null;
+  exact_amount_expected: number;
+  status: string;
+  payment_status: PaymentStatus;
+  binance_payment_status: PaymentStatus;
+}
+
+/** @deprecated Use SubmitTxHashResponse */
+export type SubmitBinanceTxResponse = SubmitTxHashResponse;
+
+export interface MyPaymentSubmission {
+  submission_id: string;
+  pool_id: string;
+  pool_name: string;
+  coin_type: string;
+  payment_method: string;
+  total_amount: string;
+  investment_amount: string;
+  pool_fee_amount: string;
+  binance_tx_id: string | null;
+  tx_hash: string | null;
+  status: string;
+  binance_payment_status: PaymentStatus;
+  payment_status: PaymentStatus;
+  exact_amount_expected: string;
+  exact_amount_received: string | null;
+  refund_reason: string | null;
+  rejection_reason: string | null;
+  verified_at: string | null;
+  submitted_at: string;
+  payment_deadline: string;
+}
+
+export interface PaymentSubmissionDetail extends MyPaymentSubmission {
+  screenshot_url: string | null;
+  reservation_status: string;
+  reservation_expires_at: string;
+  admin_binance_uid: string;
+  admin_wallet_address: string | null;
+  payment_network: string | null;
+  deposit_coin: string | null;
+  deposit_method: string | null;
+}
+
+export interface MyTransaction {
+  transaction_id: string;
+  pool_id: string;
+  pool_name: string;
+  transaction_type: "payment_submitted" | "payment_verified" | "payment_rejected";
+  amount_usdt: string;
+  binance_tx_id: string | null;
+  tx_hash: string | null;
+  expected_amount: string;
+  actual_amount_received: string | null;
+  status: string;
+  description: string;
+  created_at: string;
+  resolved_at: string | null;
+}
+
+export async function submitTxHash(
+  poolId: string,
+  body: SubmitTxHashRequest
+): Promise<SubmitTxHashResponse> {
+  return apiRequest<SubmitTxHashRequest, SubmitTxHashResponse>({
+    path: `/api/vc-pools/${poolId}/submit-binance-tx`,
+    method: "POST",
+    body,
+  });
+}
+
+/** @deprecated Use submitTxHash */
+export const submitBinanceTx = submitTxHash;
+
+export async function getMyPaymentSubmissions(): Promise<MyPaymentSubmission[]> {
+  return apiRequest<never, MyPaymentSubmission[]>({
+    path: `/api/vc-pools/payments/my-submissions`,
+    method: "GET",
+  });
+}
+
+export async function getPaymentSubmissionDetail(
+  submissionId: string
+): Promise<PaymentSubmissionDetail> {
+  return apiRequest<never, PaymentSubmissionDetail>({
+    path: `/api/vc-pools/payments/submissions/${submissionId}`,
+    method: "GET",
+  });
+}
+
+export async function getMyTransactions(): Promise<MyTransaction[]> {
+  return apiRequest<never, MyTransaction[]>({
+    path: `/api/vc-pools/payments/my-transactions`,
     method: "GET",
   });
 }
