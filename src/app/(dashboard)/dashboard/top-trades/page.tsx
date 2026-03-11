@@ -96,7 +96,13 @@ interface Trade {
   volume_status?: "NORMAL" | "VOLUME_SURGE" | "MASSIVE_SURGE";
 }
 
-export default function TopTradesPage() {
+export interface TopTradesPageProps {
+  poolId?: string;
+  poolName?: string;
+}
+
+export default function TopTradesPage(props?: TopTradesPageProps) {
+  const { poolId: propsPoolId, poolName } = props ?? {};
   // Connection type detection - using global context
   const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
   const isStocksConnection = connectionType === "stocks";
@@ -764,15 +770,16 @@ export default function TopTradesPage() {
     );
   }
 
-  // Top Trades is PRO and ELITE only
-  if (!currentSubscription) {
+  // Top Trades is PRO and ELITE only (skip when in admin pool context)
+  const isAdminPoolContext = Boolean(poolName);
+  if (!currentSubscription && !isAdminPoolContext) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
       </div>
     );
   }
-  if (!canAccessTopTrades) {
+  if (!canAccessTopTrades && !isAdminPoolContext) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur p-8">
         <div className="text-center max-w-md">
@@ -794,6 +801,26 @@ export default function TopTradesPage() {
   // --- UI Rendering (reuse existing layout and style) ---
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
+      {/* Admin pool context: show pool name at top (when rendered inside admin) */}
+      {poolName && (
+        <div className="rounded-xl border border-[#fc4f02]/30 bg-[#fc4f02]/10 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-wider text-slate-400">Pool</span>
+            <span className="text-lg font-semibold text-white">{poolName}</span>
+          </div>
+          {propsPoolId && (
+            <Link
+              href={`/admin/pools/${propsPoolId}`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-[#fc4f02] hover:text-[#fda300] transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to pool
+            </Link>
+          )}
+        </div>
+      )}
       {/* Stocks Info Banner with Controls */}
       {isStocksConnection && (
         <div className="rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 p-4">
@@ -875,14 +902,14 @@ export default function TopTradesPage() {
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <Link
-            href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
+            href={isAdminPoolContext ? "/admin/settings" : "/dashboard/custom-strategies-trading?mode=live&from=top-trades"}
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 whitespace-nowrap flex items-center gap-1.5 text-white"
-            title="Trade with your custom strategies"
+            title={isAdminPoolContext ? "Admin settings (Binance, fees)" : "Trade with your custom strategies"}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <span>Custom Strategy</span>
+            <span>{isAdminPoolContext ? "Admin Settings" : "Custom Strategy"}</span>
           </Link>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
@@ -991,13 +1018,17 @@ export default function TopTradesPage() {
             </div>
             <div>
               <p className="text-sm text-slate-300 mb-2">No trading strategies available</p>
-              <p className="text-xs text-slate-500">Connect an exchange to view trading signals and strategies</p>
+              <p className="text-xs text-slate-500">
+                {isAdminPoolContext
+                  ? "Configure Binance in admin settings to use signals for this pool."
+                  : "Connect an exchange to view trading signals and strategies"}
+              </p>
             </div>
-            <Link 
-              href="/dashboard/settings/exchange-configuration" 
+            <Link
+              href={isAdminPoolContext ? "/admin/settings/binance" : "/dashboard/settings/exchange-configuration"}
               className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
-              Configure Exchange
+              {isAdminPoolContext ? "Admin: Binance / Exchange" : "Configure Exchange"}
             </Link>
           </div>
         </div>

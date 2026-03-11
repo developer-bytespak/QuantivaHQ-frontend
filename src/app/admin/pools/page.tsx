@@ -70,10 +70,9 @@ export default function AdminPoolsPage() {
           </div>
           <div className="divide-y divide-[--color-border]">
             {pools.map((pool) => (
-              <Link
+              <div
                 key={pool.pool_id}
-                href={`/admin/pools/${pool.pool_id}`}
-                className="grid grid-cols-5 gap-4 px-4 py-3 text-sm text-slate-200 hover:bg-[--color-surface-alt]"
+                className="grid grid-cols-5 gap-4 px-4 py-3 text-sm text-slate-200 items-center"
               >
                 <div className="truncate font-medium">{pool.name}</div>
                 <div className="capitalize text-xs text-slate-300">
@@ -85,10 +84,24 @@ export default function AdminPoolsPage() {
                 <div className="text-xs text-slate-300">
                   {pool.verified_members_count}/{pool.max_members}
                 </div>
-                <div className="text-right text-xs text-[#fc4f02]">
-                  View
+                <div className="text-right flex items-center justify-end gap-2">
+                  <Link
+                    href={`/admin/pools/${pool.pool_id}/top-trades`}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    Top Trades
+                  </Link>
+                  <Link
+                    href={`/admin/pools/${pool.pool_id}`}
+                    className="text-xs font-medium text-[#fc4f02] hover:underline"
+                  >
+                    View
+                  </Link>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </div>

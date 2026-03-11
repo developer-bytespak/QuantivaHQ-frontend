@@ -44,6 +44,10 @@ export interface UpdateBinanceRequest {
   binance_uid?: string;
   wallet_address?: string;
   payment_network?: string;
+  /** Binance API key for trading / pool (stored encrypted). Send with api_secret. */
+  api_key?: string;
+  /** Binance API secret (stored encrypted). Send with api_key. */
+  api_secret?: string;
 }
 
 export interface UpdateBinanceResponse {

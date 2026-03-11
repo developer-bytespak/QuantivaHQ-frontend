@@ -258,6 +258,132 @@ export interface PoolTradesFlowProps {
   actionSubmitting: string | null;
 }
 
+// --- Trade detail overlay (Top Trades style): shows poolId + trade for tracking ---
+function TradeDetailOverlay({
+  open,
+  trade,
+  poolName,
+  poolId,
+  onClose,
+  onCloseTrade,
+  actionSubmitting,
+  formatUsdt,
+  formatDate,
+}: {
+  open: boolean;
+  trade: AdminPoolTrade | null;
+  poolName: string | null;
+  poolId: string;
+  onClose: () => void;
+  onRequestCloseTrade: (t: AdminPoolTrade) => void;
+  actionSubmitting: string | null;
+  formatUsdt: (v: string | number | null | undefined) => string;
+  formatDate: (v: string | null | undefined) => string;
+}) {
+  if (!open || !trade) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative mx-4 w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur border border-[--color-border]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-white">Trade Details</h2>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+            aria-label="Close"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* VC Pool badge: poolId + trade for differentiation */}
+        <div className="mb-4 rounded-xl bg-[#fc4f02]/15 border border-[#fc4f02]/30 px-4 py-3">
+          <p className="text-xs text-slate-400 uppercase tracking-wider">VC Pool</p>
+          <p className="font-semibold text-white mt-0.5">
+            {poolName || poolId} <span className="text-slate-400 font-normal">· {trade.asset_pair}</span>
+          </p>
+          <p className="text-xs text-slate-500 mt-1">Pool ID: {poolId}</p>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                trade.action === "BUY" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"
+              }`}
+            >
+              {trade.action}
+            </span>
+            <span className="text-sm font-medium text-white">{trade.asset_pair}</span>
+            <span
+              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                trade.is_open ? "bg-amber-500/20 text-amber-400" : "bg-slate-500/20 text-slate-300"
+              }`}
+            >
+              {trade.is_open ? "Open" : "Closed"}
+            </span>
+          </div>
+          <div className="rounded-xl bg-white/[0.06] p-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Quantity</span>
+              <span className="text-white font-medium">{trade.quantity}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Entry (USDT)</span>
+              <span className="text-white font-medium">{formatUsdt(trade.entry_price_usdt)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Exit (USDT)</span>
+              <span className="text-white font-medium">{trade.exit_price_usdt ? formatUsdt(trade.exit_price_usdt) : "—"}</span>
+            </div>
+            {trade.pnl_usdt != null && !trade.is_open && (
+              <div className="flex justify-between pt-2 border-t border-white/10">
+                <span className="text-slate-400">PnL</span>
+                <span className={Number(trade.pnl_usdt) >= 0 ? "text-emerald-400 font-medium" : "text-red-400 font-medium"}>
+                  {formatUsdt(trade.pnl_usdt)} USDT
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-slate-400">Traded at</span>
+              <span className="text-slate-300">{formatDate(trade.traded_at)}</span>
+            </div>
+            {trade.closed_at && (
+              <div className="flex justify-between">
+                <span className="text-slate-400">Closed at</span>
+                <span className="text-slate-300">{formatDate(trade.closed_at)}</span>
+              </div>
+            )}
+            {trade.notes && (
+              <div className="pt-2 border-t border-white/10">
+                <span className="text-slate-400 block mb-1">Notes</span>
+                <p className="text-slate-300 text-xs">{trade.notes}</p>
+              </div>
+            )}
+          </div>
+          {trade.is_open && (
+            <button
+              type="button"
+              onClick={() => onRequestCloseTrade(trade)}
+              disabled={actionSubmitting !== null}
+              className="w-full rounded-xl bg-amber-600/20 px-4 py-2.5 text-sm font-semibold text-amber-400 hover:bg-amber-600/30 disabled:opacity-60"
+            >
+              {actionSubmitting === trade.trade_id ? "Closing…" : "Close trade"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function PoolTradesFlow({
   pool,
   trades,
@@ -272,16 +398,30 @@ export function PoolTradesFlow({
 }: PoolTradesFlowProps) {
   const [showOpenModal, setShowOpenModal] = useState(false);
   const [closeModalTrade, setCloseModalTrade] = useState<AdminPoolTrade | null>(null);
+  const [detailTrade, setDetailTrade] = useState<AdminPoolTrade | null>(null);
 
   return (
     <div className="space-y-6">
-      {/* Header: title + CTA (Top Trades style) */}
+      {/* Top Trades · Pool name (admin pool context only) */}
+      <div className="border-b border-[--color-border] pb-3">
+        <h2 className="text-lg sm:text-xl font-semibold text-white">
+          {pool?.name ? (
+            <>
+              <span className="text-[#fc4f02]">Top Trades</span>
+              <span className="text-slate-400 font-normal mx-2">·</span>
+              <span>{pool.name}</span>
+            </>
+          ) : (
+            <span className="text-[#fc4f02]">Top Trades</span>
+          )}
+        </h2>
+        <p className="mt-1 text-xs sm:text-sm text-slate-400">
+          Open and close manual trades for this pool. Pool value updates after each closed trade.
+        </p>
+      </div>
+      {/* CTA row */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Open and close manual trades. Pool value updates after each closed trade.
-          </p>
-        </div>
+        <div className="hidden sm:block" aria-hidden />
         <button
           type="button"
           onClick={() => setShowOpenModal(true)}
@@ -367,6 +507,7 @@ export function PoolTradesFlow({
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[--color-border] text-slate-400">
+                  <th className="px-4 py-3 font-medium">Pool</th>
                   <th className="px-4 py-3 font-medium">Pair</th>
                   <th className="px-4 py-3 font-medium">Action</th>
                   <th className="px-4 py-3 font-medium">Qty</th>
@@ -380,7 +521,16 @@ export function PoolTradesFlow({
               </thead>
               <tbody>
                 {trades.map((t) => (
-                  <tr key={t.trade_id} className="border-b border-[--color-border]/50 hover:bg-white/[0.02]">
+                  <tr
+                    key={t.trade_id}
+                    onClick={() => setDetailTrade(t)}
+                    className="border-b border-[--color-border]/50 hover:bg-white/[0.04] cursor-pointer transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-[#fc4f02]/20 text-[#fda300]">
+                        {pool?.name ?? t.pool_id}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 font-medium text-white">{t.asset_pair}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.action === "BUY" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
@@ -405,7 +555,7 @@ export function PoolTradesFlow({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-400">{formatDate(t.is_open ? t.traded_at : t.closed_at)}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       {t.is_open && (
                         <button
                           type="button"
@@ -423,15 +573,19 @@ export function PoolTradesFlow({
             </table>
           </div>
 
-          {/* Mobile cards */}
+          {/* Mobile cards (Top Trades style, click to open detail) */}
           <div className="space-y-3 md:hidden">
             {trades.map((t) => (
               <div
                 key={t.trade_id}
-                className="rounded-xl border border-[--color-border] bg-[--color-surface]/50 p-4"
+                onClick={() => setDetailTrade(t)}
+                className="rounded-xl border border-[--color-border] bg-[--color-surface]/50 p-4 cursor-pointer hover:bg-white/[0.03] transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
+                  <div className="min-w-0 flex-1">
+                    <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium bg-[#fc4f02]/20 text-[#fda300] mb-1.5">
+                      {pool?.name ?? t.pool_id}
+                    </span>
                     <p className="font-medium text-white">{t.asset_pair}</p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-400">
                       <span className={`rounded-full px-2 py-0.5 font-semibold ${t.action === "BUY" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
@@ -450,7 +604,7 @@ export function PoolTradesFlow({
                   {t.is_open && (
                     <button
                       type="button"
-                      onClick={() => setCloseModalTrade(t)}
+                      onClick={(e) => { e.stopPropagation(); setCloseModalTrade(t); }}
                       disabled={actionSubmitting !== null}
                       className="shrink-0 rounded-lg bg-amber-600/20 px-3 py-1.5 text-xs font-semibold text-amber-400 hover:bg-amber-600/30 disabled:opacity-60"
                     >
@@ -477,6 +631,20 @@ export function PoolTradesFlow({
         onClose={() => setCloseModalTrade(null)}
         onSubmit={onCloseTrade}
         submitting={actionSubmitting !== null}
+      />
+      <TradeDetailOverlay
+        open={!!detailTrade}
+        trade={detailTrade}
+        poolName={pool?.name ?? null}
+        poolId={pool?.pool_id ?? detailTrade?.pool_id ?? ""}
+        onClose={() => setDetailTrade(null)}
+        onRequestCloseTrade={(t) => {
+          setDetailTrade(null);
+          setCloseModalTrade(t);
+        }}
+        actionSubmitting={actionSubmitting}
+        formatUsdt={formatUsdt}
+        formatDate={formatDate}
       />
     </div>
   );
