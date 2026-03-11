@@ -23,6 +23,7 @@ import {
   useNotification,
   Notification,
 } from "@/components/common/notification";
+import { getApiErrorMessage } from "@/lib/utils/errors";
 
 /* ──────── join-flow step type ──────── */
 type JoinFlowStep = "idle" | "enter-wallet" | "payment-details" | "submit-tx";
@@ -48,6 +49,14 @@ const fmtCountdown = (sec: number) =>
   `${pad2(Math.floor(sec / 60))}:${pad2(sec % 60)}`;
 const truncAddr = (addr: string) =>
   addr.length > 14 ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : addr;
+
+/** BSC (EVM) wallet: 0x + 40 hex chars */
+const isValidBscAddress = (addr: string): boolean =>
+  /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
+
+/** BSC (EVM) transaction hash: 0x + 64 hex chars */
+const isValidTxHash = (hash: string): boolean =>
+  /^0x[a-fA-F0-9]{64}$/.test(hash.trim());
 
 /* ══════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -102,7 +111,10 @@ export default function VcPoolDetailPage() {
   );
 
   /* ── derived ── */
-  const isMember = Boolean(paymentStatus?.membership?.exists);
+  const isMember = Boolean(
+    paymentStatus?.membership?.exists &&
+      paymentStatus?.membership?.is_active !== false
+  );
   const hasReservation = Boolean(paymentStatus?.reservation);
   const payment = paymentStatus?.payment ?? null;
   const isRejected = payment?.status === "rejected";
@@ -139,7 +151,7 @@ export default function VcPoolDetailPage() {
       .then(setPool)
       .catch((err: unknown) =>
         setError(
-          (err as { message?: string })?.message ?? "Failed to load pool"
+          getApiErrorMessage(err, "Failed to load pool")
         )
       );
   };
@@ -174,7 +186,7 @@ export default function VcPoolDetailPage() {
       })
       .catch((err: unknown) =>
         setError(
-          (err as { message?: string })?.message ?? "Failed to load"
+          getApiErrorMessage(err, "Failed to load")
         )
       )
       .finally(() => setLoading(false));
@@ -310,15 +322,23 @@ export default function VcPoolDetailPage() {
   /** Step 1 → Step 2: confirm wallet & create reservation */
   const handleConfirmWallet = async () => {
     if (!poolId || !pool) return;
-    if (!userWalletAddress.trim()) {
+    const trimmed = userWalletAddress.trim();
+    if (!trimmed) {
       showNotification("Please enter your wallet address", "error");
+      return;
+    }
+    if (!isValidBscAddress(trimmed)) {
+      showNotification(
+        "Invalid BSC address. Use 0x followed by 40 hex characters (e.g. 0x1234...abcd).",
+        "error"
+      );
       return;
     }
     setJoining(true);
     try {
       const res = await joinPool(poolId, {
         payment_method: paymentMethod,
-        user_wallet_address: userWalletAddress.trim(),
+        user_wallet_address: trimmed,
       });
       setJoinResponse(res);
       showNotification(
@@ -329,7 +349,7 @@ export default function VcPoolDetailPage() {
       setJoinStep("payment-details");
     } catch (err: unknown) {
       showNotification(
-        (err as { message?: string })?.message ?? "Failed to join pool",
+        getApiErrorMessage(err, "Failed to join pool"),
         "error"
       );
     } finally {
@@ -344,11 +364,23 @@ export default function VcPoolDetailPage() {
 
   /** Step 3: submit TX hash for admin verification */
   const handleSubmitTxHash = async () => {
-    if (!poolId || !txHash.trim()) return;
+    if (!poolId) return;
+    const trimmed = txHash.trim();
+    if (!trimmed) {
+      showNotification("Please enter the transaction hash", "error");
+      return;
+    }
+    if (!isValidTxHash(trimmed)) {
+      showNotification(
+        "Invalid TX hash. Use 0x followed by 64 hex characters (e.g. from Binance withdrawal confirmation).",
+        "error"
+      );
+      return;
+    }
     setSubmittingTx(true);
     try {
       const res = await submitTxHash(poolId, {
-        tx_hash: txHash.trim(),
+        tx_hash: trimmed,
       });
       setTxSubmitted(true);
       setPaymentVerifyStatus(
@@ -361,8 +393,7 @@ export default function VcPoolDetailPage() {
       loadPaymentStatus();
     } catch (err: unknown) {
       showNotification(
-        (err as { message?: string })?.message ??
-          "Failed to submit TX Hash",
+        getApiErrorMessage(err, "Failed to submit TX Hash"),
         "error"
       );
     } finally {
@@ -383,8 +414,7 @@ export default function VcPoolDetailPage() {
       loadPaymentStatus();
     } catch (err: unknown) {
       showNotification(
-        (err as { message?: string })?.message ??
-          "Failed to request exit",
+        getApiErrorMessage(err, "Failed to request exit"),
         "error"
       );
     } finally {
@@ -706,12 +736,12 @@ export default function VcPoolDetailPage() {
                       </p>
                     </div>
 
-                    {/* Network & Coin info (read-only) */}
+                    {/* Network & Coin info (read-only) — from pool */}
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
                         <p className="text-xs text-slate-400">Network</p>
                         <p className="text-sm font-semibold text-white">
-                          BSC (BEP-20)
+                          {pool.payment_network || "BSC"} (BEP-20)
                         </p>
                       </div>
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
@@ -719,13 +749,15 @@ export default function VcPoolDetailPage() {
                           Deposit Coin
                         </p>
                         <p className="text-sm font-semibold text-white">
-                          USDT
+                          {pool.deposit_coin || "USDT"}
                         </p>
                       </div>
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
                         <p className="text-xs text-slate-400">Method</p>
                         <p className="text-sm font-semibold text-white">
-                          On-Chain Deposit
+                          {pool.deposit_method === "on_chain"
+                            ? "On-Chain Deposit"
+                            : pool.deposit_method || "On-Chain Deposit"}
                         </p>
                       </div>
                     </div>
@@ -742,7 +774,7 @@ export default function VcPoolDetailPage() {
                     <button
                       type="button"
                       onClick={handleConfirmWallet}
-                      disabled={joining || !userWalletAddress.trim()}
+                      disabled={joining || !userWalletAddress.trim() || !isValidBscAddress(userWalletAddress.trim())}
                       className="flex-1 rounded-lg bg-[#fc4f02] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
                     >
                       {joining ? (
@@ -1102,7 +1134,7 @@ export default function VcPoolDetailPage() {
                         <button
                           type="button"
                           onClick={handleSubmitTxHash}
-                          disabled={submittingTx || !txHash.trim()}
+                          disabled={submittingTx || !txHash.trim() || !isValidTxHash(txHash.trim())}
                           className="flex-1 rounded-lg bg-[#fc4f02] px-5 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
                         >
                           {submittingTx ? (

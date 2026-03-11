@@ -8,6 +8,7 @@ import {
   type MyPaymentSubmission,
   type PaymentStatus,
 } from "@/lib/api/vc-pools";
+import { getApiErrorMessage } from "@/lib/utils/errors";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
@@ -81,19 +82,24 @@ export default function MySubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!canAccessVCPool) {
-      setLoading(false);
-      return;
-    }
+  const fetchSubmissions = () => {
+    if (!canAccessVCPool) return;
     setLoading(true);
     setError(null);
     getMyPaymentSubmissions()
       .then(setSubmissions)
       .catch((err: unknown) =>
-        setError((err as { message?: string })?.message ?? "Failed to load submissions")
+        setError(getApiErrorMessage(err, "Failed to load submissions"))
       )
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!canAccessVCPool) {
+      setLoading(false);
+      return;
+    }
+    fetchSubmissions();
   }, [canAccessVCPool]);
 
   return (
@@ -125,6 +131,15 @@ export default function MySubmissionsPage() {
             </p>
           </div>
           <button
+            type="button"
+            onClick={fetchSubmissions}
+            disabled={loading}
+            className="rounded-xl border border-[--color-border] px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60 transition-colors"
+          >
+            {loading ? "Loading…" : "Refresh"}
+          </button>
+          <button
+            type="button"
             onClick={() => router.push("/dashboard/vc-pool/transactions")}
             className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
           >
@@ -139,8 +154,15 @@ export default function MySubmissionsPage() {
         )}
 
         {!loading && error && (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-            {error}
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100 flex flex-wrap items-center justify-between gap-3">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => { setError(null); fetchSubmissions(); }}
+              className="shrink-0 rounded-lg bg-red-500/20 border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-200 hover:bg-red-500/30 transition-colors"
+            >
+              Try again
+            </button>
           </div>
         )}
 

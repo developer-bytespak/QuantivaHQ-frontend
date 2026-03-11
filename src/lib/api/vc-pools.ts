@@ -31,7 +31,7 @@ export interface JoinPoolResponse {
 
 export interface PaymentStatusResponse {
   pool_id: string;
-  membership: { exists: boolean };
+  membership: { exists: boolean; is_active?: boolean };
   reservation: {
     reservation_id: string;
     status: string;

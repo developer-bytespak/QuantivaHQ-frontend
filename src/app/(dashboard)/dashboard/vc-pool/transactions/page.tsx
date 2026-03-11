@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getMyTransactions, type MyTransaction } from "@/lib/api/vc-pools";
+import { getApiErrorMessage } from "@/lib/utils/errors";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
@@ -79,19 +80,24 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!canAccessVCPool) {
-      setLoading(false);
-      return;
-    }
+  const fetchTransactions = () => {
+    if (!canAccessVCPool) return;
     setLoading(true);
     setError(null);
     getMyTransactions()
       .then(setTransactions)
       .catch((err: unknown) =>
-        setError((err as { message?: string })?.message ?? "Failed to load transactions")
+        setError(getApiErrorMessage(err, "Failed to load transactions"))
       )
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    if (!canAccessVCPool) {
+      setLoading(false);
+      return;
+    }
+    fetchTransactions();
   }, [canAccessVCPool]);
 
   return (
@@ -123,6 +129,15 @@ export default function TransactionsPage() {
             </p>
           </div>
           <button
+            type="button"
+            onClick={fetchTransactions}
+            disabled={loading}
+            className="rounded-xl border border-[--color-border] px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60 transition-colors"
+          >
+            {loading ? "Loading…" : "Refresh"}
+          </button>
+          <button
+            type="button"
             onClick={() => router.push("/dashboard/vc-pool/my-submissions")}
             className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
           >
@@ -137,8 +152,15 @@ export default function TransactionsPage() {
         )}
 
         {!loading && error && (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-            {error}
+          <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100 flex flex-wrap items-center justify-between gap-3">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={() => { setError(null); fetchTransactions(); }}
+              className="shrink-0 rounded-lg bg-red-500/20 border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-200 hover:bg-red-500/30 transition-colors"
+            >
+              Try again
+            </button>
           </div>
         )}
 
