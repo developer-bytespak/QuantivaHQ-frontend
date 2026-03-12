@@ -4,6 +4,7 @@ import { useRouter, usePathname } from "next/navigation";
 
 const ONBOARDING_PAGES = [
   "/onboarding/account-type",
+  "/onboarding/choose-plan",
   "/onboarding/crypto-exchange",
   "/onboarding/api-key-tutorial",
   "/onboarding/api-keys",
@@ -26,6 +27,10 @@ export function BackButton() {
     // Handle branched navigation
     if (pathname === "/onboarding/sign-up" || pathname.startsWith("/onboarding/sign-up")) {
       prevPage = "/";
+    } else if (pathname === "/onboarding/account-type") {
+      prevPage = "/onboarding/choose-plan";
+    } else if (pathname === "/onboarding/choose-plan") {
+      prevPage = "/onboarding/verification-status";
     } else if (pathname === "/onboarding/stock-exchange") {
       prevPage = "/onboarding/account-type";
     } else if (pathname === "/onboarding/crypto-exchange") {
