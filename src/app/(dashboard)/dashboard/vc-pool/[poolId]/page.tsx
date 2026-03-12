@@ -54,9 +54,21 @@ const truncAddr = (addr: string) =>
 const isValidBscAddress = (addr: string): boolean =>
   /^0x[a-fA-F0-9]{40}$/.test(addr.trim());
 
-/** BSC (EVM) transaction hash: 0x + 64 hex chars */
-const isValidTxHash = (hash: string): boolean =>
-  /^0x[a-fA-F0-9]{64}$/.test(hash.trim());
+/** Accept both blockchain TX hash (0x + 64 hex) or Binance TX ID (12+ alphanumeric chars) */
+const isValidTxHash = (hash: string): boolean => {
+  const trimmed = hash.trim();
+  // Blockchain TX: 0x + 64 hex chars
+  const isBlockchainTx = /^0x[a-fA-F0-9]{64}$/.test(trimmed);
+  // Binance TX ID: at least 12 characters, alphanumeric
+  const isBinanceTx = /^[a-zA-Z0-9]{12,}$/.test(trimmed);
+  return isBlockchainTx || isBinanceTx;
+};
+
+/** Detect TX format: returns 'blockchain' or 'binance' */
+const detectTxFormat = (hash: string): 'blockchain' | 'binance' => {
+  const trimmed = hash.trim();
+  return /^0x[a-fA-F0-9]{64}$/.test(trimmed) ? 'blockchain' : 'binance';
+};
 
 /* ══════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -101,22 +113,49 @@ export default function VcPoolDetailPage() {
 
   /* ── cancellation ── */
   const [requestingExit, setRequestingExit] = useState(false);
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
+  const [isRejoin, setIsRejoin] = useState(false);
+  const [rejoinInfo, setRejoinInfo] = useState<{
+    cancellation_id: string;
+    requested_at: string;
+    refunded_at: string;
+    refund_amount: number;
+  } | null>(null);
+  const [poolIsActive, setPoolIsActive] = useState(false);
 
-  /* ── polling refs ── */
+  /* ── statusIntervalRef ── */
   const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null
   );
   const verifyPollingRef = useRef<ReturnType<typeof setInterval> | null>(
     null
   );
+  const cancellationPollingRef = useRef<ReturnType<typeof setInterval> | null>(
+    null
+  );
 
   /* ── derived ── */
+  /* Get cancellation from both sources - payment status is primary */
+  const cancellationFromPaymentStatus = paymentStatus?.cancellation;
+  const cancellationStatus = 
+    cancellationFromPaymentStatus?.status ?? 
+    myCancellation?.cancellation?.status ?? 
+    "";
+  
   const isMember = Boolean(
     paymentStatus?.membership?.exists &&
-      paymentStatus?.membership?.is_active !== false
+      paymentStatus?.membership?.is_active === true
   );
-  const cancellationStatus = myCancellation?.cancellation?.status ?? "";
-  const hasExitedByCancellation = cancellationStatus === "approved" || cancellationStatus === "processed";
+  const hasExitedByCancellation = 
+    cancellationStatus === "approved" || 
+    cancellationStatus === "processed";
+  
+  // Check if user previously was a member but has now exited
+  const userHasExitedPool = Boolean(
+    paymentStatus?.membership?.exists &&
+    paymentStatus?.membership?.is_active === false
+  );
+  
   const isMemberEffective = isMember && !hasExitedByCancellation;
   const hasReservation = Boolean(paymentStatus?.reservation);
   const payment = paymentStatus?.payment ?? null;
@@ -128,7 +167,27 @@ export default function VcPoolDetailPage() {
     Boolean(payment?.binance_tx_id) ||
     txSubmitted;
 
+  /* cancellation eligibility check */
+  const canRequestCancellation =
+    isMember &&
+    (poolStatus === "open" || poolStatus === "full");
+  
+  /* track if pool is actively trading */
+  useEffect(() => {
+    setPoolIsActive(
+      poolStatus === "active" ||
+      poolStatus === "completed" ||
+      poolStatus === "cancelled"
+    );
+  }, [poolStatus]);
+
   /* calculated amounts (from payment or joinResponse) */
+  /* Get cancellation data from both sources - payment status is primary */
+  const cancellationData = 
+    cancellationFromPaymentStatus || 
+    myCancellation?.cancellation || 
+    null;
+  
   const totalAmount =
     payment?.total_amount ?? joinResponse?.total_amount?.toString() ?? null;
   const investmentAmount =
@@ -182,10 +241,16 @@ export default function VcPoolDetailPage() {
     if (!poolId) return;
     setLoading(true);
     setError(null);
-    Promise.all([getVcPoolById(poolId), getPaymentStatus(poolId)])
-      .then(([p, ps]) => {
+    Promise.all([
+      getVcPoolById(poolId),
+      getPaymentStatus(poolId),
+      getMyCancellation(poolId)
+        .catch(() => null) // Gracefully handle cancellation API failures
+    ])
+      .then(([p, ps, cancellation]) => {
         setPool(p);
         setPaymentStatus(ps);
+        if (cancellation) setMyCancellation(cancellation);
       })
       .catch((err: unknown) =>
         setError(
@@ -203,6 +268,10 @@ export default function VcPoolDetailPage() {
       setJoinStep("idle");
       return;
     }
+    // Don't override step if user is already in the middle of join flow
+    if (joinStep !== "idle") {
+      return;
+    }
     if (hasReservation && payment) {
       const hasTx =
         Boolean(payment.tx_hash) || Boolean(payment.binance_tx_id);
@@ -215,6 +284,12 @@ export default function VcPoolDetailPage() {
       return;
     }
     setJoinStep("idle");
+    
+    // Reset rejoin flag when user becomes active member again
+    if (isMember && isRejoin) {
+      setIsRejoin(false);
+      setRejoinInfo(null);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     loading,
@@ -309,13 +384,30 @@ export default function VcPoolDetailPage() {
     };
   }, [poolId, hasTxSubmitted, paymentVerifyStatus, payment?.status]);
 
-  /* ──────── load cancellation for members ──────── */
+  /* ──────── poll cancellation status every 30s while pending ──────── */
   useEffect(() => {
-    if (!poolId || !canAccessVCPool || !isMember || !pool) return;
-    const s = pool.status ?? "";
-    if (["open", "full", "active"].includes(s)) loadMyCancellation();
+    if (!poolId || !myCancellation?.has_cancellation) return;
+    const status = myCancellation.cancellation?.status;
+    if (status === "pending") {
+      cancellationPollingRef.current = setInterval(() => {
+        loadMyCancellation();
+      }, 30000);
+      return () => {
+        if (cancellationPollingRef.current)
+          clearInterval(cancellationPollingRef.current);
+      };
+    }
+  }, [poolId, myCancellation?.has_cancellation, myCancellation?.cancellation?.status]);
+
+  /* ──────── load cancellation for members or users who have exited ──────── */
+  useEffect(() => {
+    if (!poolId || !canAccessVCPool) return;
+    
+    // Always try to load cancellation data - it's needed for exited users too
+    loadMyCancellation();
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [poolId, canAccessVCPool, isMember, pool?.status]);
+  }, [poolId, canAccessVCPool]);
 
   /* ═══════════════════════ HANDLERS ═══════════════════════ */
 
@@ -344,10 +436,22 @@ export default function VcPoolDetailPage() {
         user_wallet_address: trimmed,
       });
       setJoinResponse(res);
-      showNotification(
-        "Seat reserved! Complete payment before the deadline.",
-        "success"
-      );
+      
+      /* Check if this is a rejoin */
+      if (res.is_rejoin) {
+        setIsRejoin(true);
+        setRejoinInfo(res.previous_cancellation ?? null);
+        showNotification(
+          "Welcome back! Your membership is being restored.",
+          "success"
+        );
+      } else {
+        showNotification(
+          "Seat reserved! Complete payment before the deadline.",
+          "success"
+        );
+      }
+      
       loadPaymentStatus();
       setJoinStep("payment-details");
     } catch (err: unknown) {
@@ -362,6 +466,9 @@ export default function VcPoolDetailPage() {
 
   /** Step 2 → Step 3: user says they completed the withdrawal */
   const handleProceedToTx = () => {
+    // Reset TX form state to show fresh input
+    setTxHash("");
+    setTxSubmitted(false);
     setJoinStep("submit-tx");
   };
 
@@ -370,34 +477,37 @@ export default function VcPoolDetailPage() {
     if (!poolId) return;
     const trimmed = txHash.trim();
     if (!trimmed) {
-      showNotification("Please enter the transaction hash", "error");
+      showNotification("Please enter the transaction hash or Binance TX ID", "error");
       return;
     }
     if (!isValidTxHash(trimmed)) {
       showNotification(
-        "Invalid TX hash. Use 0x followed by 64 hex characters (e.g. from Binance withdrawal confirmation).",
+        "Invalid transaction ID. Enter either a blockchain TX hash (0x + 64 hex chars) or a Binance P2P TX ID (12+ characters).",
         "error"
       );
       return;
     }
     setSubmittingTx(true);
     try {
-      const res = await submitTxHash(poolId, {
-        tx_hash: trimmed,
-      });
+      const format = detectTxFormat(trimmed);
+      const res = await submitTxHash(poolId, 
+        format === 'blockchain' 
+          ? { tx_hash: trimmed }
+          : { binance_tx_id: trimmed }
+      );
       setTxSubmitted(true);
       setPaymentVerifyStatus(
         res.payment_status ?? res.binance_payment_status
       );
       showNotification(
-        "TX Hash submitted. Waiting for admin approval…",
+        "Transaction ID submitted. Waiting for admin approval…",
         "success"
       );
       loadPaymentStatus();
-      setJoinStep("payment-details");
+      // Stay on submit-tx step to show verification status
     } catch (err: unknown) {
       showNotification(
-        getApiErrorMessage(err, "Failed to submit TX Hash"),
+        getApiErrorMessage(err, "Failed to submit transaction ID"),
         "error"
       );
     } finally {
@@ -405,8 +515,38 @@ export default function VcPoolDetailPage() {
     }
   };
 
-  const handleRequestExit = async () => {
+  const handleRequestExit = () => {
+    /* Check if cancellation is allowed */
+    if (!canRequestCancellation) {
+      if (poolIsActive) {
+        showNotification(
+          "This pool is currently trading. You cannot cancel your membership.",
+          "error"
+        );
+      } else {
+        showNotification(
+          "Cancellation is not allowed for this pool at this time.",
+          "error"
+        );
+      }
+      return;
+    }
+    setShowExitConfirmModal(true);
+  };
+
+  const handleConfirmExit = async () => {
     if (!poolId) return;
+    
+    /* Final check before submitting */
+    if (!canRequestCancellation) {
+      showNotification(
+        "Pool status changed. Cancellation is no longer allowed.",
+        "error"
+      );
+      setShowExitConfirmModal(false);
+      return;
+    }
+
     setRequestingExit(true);
     try {
       await cancelMembership(poolId);
@@ -414,6 +554,7 @@ export default function VcPoolDetailPage() {
         "Cancellation request submitted. Awaiting admin approval.",
         "success"
       );
+      setShowExitConfirmModal(false);
       loadMyCancellation();
       loadPaymentStatus();
     } catch (err: unknown) {
@@ -523,14 +664,15 @@ export default function VcPoolDetailPage() {
             </div>
           </div>
 
-          {/* ═══════════ ALREADY A MEMBER ═══════════ */}
-          {isMember && (
+          {/* ═══════════ ALREADY A MEMBER OR EXITED ═══════════ */}
+          {(isMember || userHasExitedPool) && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20">
-                  <svg
-                    className="h-6 w-6 text-green-400"
-                    fill="none"
+              {isMember && (
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20">
+                    <svg
+                      className="h-6 w-6 text-green-400"
+                      fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
@@ -552,73 +694,485 @@ export default function VcPoolDetailPage() {
                   </p>
                 </div>
               </div>
+              )}
 
-              {/* Request to exit */}
-              {["open", "full", "active"].includes(poolStatus) && (
+              {/* Show exit status/rejoin for exited users */}
+              {userHasExitedPool && !isMember && (
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20">
+                    <svg
+                      className="h-6 w-6 text-red-400"
+                      fill="none" 
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold text-amber-200">
+                      You have exited this pool
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Your position has been closed. View refund details below and rejoin if you'd like.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Request to exit or show exit status */}
+              {!isMember && userHasExitedPool && cancellationData && (
                 <div className="pt-4 border-t border-[--color-border]">
-                  {myCancellation?.has_cancellation ? (
-                    <div className="rounded-lg bg-[--color-surface-alt] p-4 text-sm">
-                      <p className="font-medium text-white capitalize">
-                        Cancellation status:{" "}
-                        {myCancellation.cancellation?.status}
-                      </p>
-                      {myCancellation.cancellation?.status === "pending" && (
-                        <p className="mt-1 text-slate-400">
-                          Awaiting admin approval. Refund amount:{" "}
-                          {myCancellation.cancellation?.refund_amount}{" "}
-                          {pool.coin_type}
+                  {(cancellationStatus || userHasExitedPool) ? (
+                    <div className="space-y-4">
+                      {/* Status badge */}
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-slate-300">
+                          Cancellation Status
                         </p>
-                      )}
-                      {myCancellation.cancellation?.status ===
-                        "approved" && (
-                        <p className="mt-1 text-slate-400">
-                          Approved. Admin will process the refund. Refund:{" "}
-                          {myCancellation.cancellation?.refund_amount}{" "}
-                          {pool.coin_type}
-                        </p>
-                      )}
-                      {myCancellation.cancellation?.status === "rejected" &&
-                        myCancellation.cancellation?.rejection_reason && (
-                          <p className="mt-1 text-amber-400">
-                            Rejected:{" "}
-                            {myCancellation.cancellation.rejection_reason}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
+                            cancellationStatus === "pending"
+                              ? "bg-yellow-500/20 text-yellow-200 border border-yellow-500/30"
+                              : cancellationStatus === "approved"
+                              ? "bg-blue-500/20 text-blue-200 border border-blue-500/30"
+                              : cancellationStatus === "processed"
+                              ? "bg-green-500/20 text-green-200 border border-green-500/30"
+                              : "bg-red-500/20 text-red-200 border border-red-500/30"
+                          }`}
+                        >
+                          {cancellationStatus}
+                        </span>
+                      </div>
+
+                      {/* Fee breakdown card */}
+                      <div className="rounded-lg bg-[--color-surface-alt] p-4 space-y-3">
+                        <div>
+                          <p className="text-xs text-slate-400 mb-1">
+                            Original Contribution
                           </p>
-                        )}
-                      {myCancellation.cancellation?.status ===
-                        "processed" && (
-                        <p className="mt-1 text-green-400">
-                          Refund completed. You have exited the pool.
+                          <p className="text-lg font-bold text-white">
+                            {cancellationData?.contribution_amount}{" "}
+                            {pool?.coin_type || "USDT"}
+                          </p>
+                        </div>
+
+                        {cancellationData?.pool_fee_amount &&
+                          cancellationData.pool_fee_amount > 0 && (
+                            <div className="flex items-center justify-between text-sm border-t border-[--color-border] pt-2">
+                              <span className="text-slate-400">
+                                Pool Fee
+                              </span>
+                              <span className="text-red-400">
+                                -{cancellationData.pool_fee_amount}{" "}
+                                {pool?.coin_type || "USDT"}
+                              </span>
+                            </div>
+                          )}
+
+                        {cancellationData?.
+                          cancellation_fee_amount &&
+                          cancellationData.cancellation_fee_amount > 0 && (
+                            <div className="flex items-center justify-between text-sm border-t border-[--color-border] pt-2">
+                              <span className="text-slate-400">
+                                Cancellation Fee
+                              </span>
+                              <span className="text-red-400">
+                                -{cancellationData.cancellation_fee_amount}{" "}
+                                {pool?.coin_type || "USDT"}
+                              </span>
+                            </div>
+                          )}
+
+                        <div className="flex items-center justify-between font-semibold border-t border-[--color-border] pt-3">
+                          <span className="text-white">
+                            Refund Amount
+                          </span>
+                          <span className="text-green-400 text-lg">
+                            {cancellationData?.refund_amount}{" "}
+                            {pool?.coin_type || "USDT"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Status-specific details */}
+                      {cancellationStatus === "pending" && (
+                        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
+                          <p className="text-sm text-yellow-200 font-medium">
+                            ⏳ Awaiting admin approval
+                          </p>
+                          <p className="text-xs text-yellow-300/70 mt-1">
+                            Requested on{" "}
+                            {cancellationData?.requested_at
+                              ? new Date(
+                                  cancellationData.requested_at
+                                ).toLocaleString()
+                              : "—"}
+                          </p>
+                        </div>
+                      )}
+
+                      {cancellationStatus === "approved" && (
+                        <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 space-y-2">
+                          <p className="text-sm text-blue-200 font-medium">
+                            ✓ Approved by admin
+                          </p>
+                          {cancellationData?.user_wallet_address && (
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                Refund will be sent to:
+                              </p>
+                              <p className="text-xs font-mono text-blue-300 break-all mt-0.5">
+                                {cancellationData.user_wallet_address}
+                              </p>
+                            </div>
+                          )}
+                          <p className="text-xs text-blue-300/70">
+                            Approved on{" "}
+                            {cancellationData?.approved_at
+                              ? new Date(
+                                  cancellationData.approved_at
+                                ).toLocaleString()
+                              : "—"}
+                          </p>
+                          <p className="text-xs text-slate-400 pt-1">
+                            Admin is processing the refund transfer.
+                            Expected within 24 hours.
+                          </p>
+                        </div>
+                      )}
+
+                      {cancellationStatus === "processed" && (
+                        <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3 space-y-2">
+                          <p className="text-sm text-green-200 font-medium">
+                            ✓ Refund completed
+                          </p>
+                          {cancellationData?.user_wallet_address && (
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                Refund sent to:
+                              </p>
+                              <p className="text-xs font-mono text-green-300 break-all mt-0.5">
+                                {cancellationData.user_wallet_address}
+                              </p>
+                            </div>
+                          )}
+                          <p className="text-xs text-green-300/70">
+                            Completed on{" "}
+                            {cancellationData
+                              ?.refund_completed_at
+                              ? new Date(
+                                  cancellationData
+                                    .refund_completed_at
+                                ).toLocaleString()
+                              : "—"}
+                          </p>
+                          <p className="text-xs text-slate-400 pt-1">
+                            You have successfully exited the pool.
+                          </p>
+
+                          {/* REJOIN BUTTON */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsRejoin(true);
+                              setRejoinInfo({
+                                cancellation_id:
+                                  cancellationData?.cancellation_id ||
+                                  "",
+                                requested_at:
+                                  cancellationData?.requested_at || "",
+                                refunded_at:
+                                  cancellationData
+                                    ?.refund_completed_at || "",
+                                refund_amount:
+                                  cancellationData?.refund_amount ||
+                                  0,
+                              });
+                              setJoinStep("idle");
+                              handleStartJoin();
+                            }}
+                            className="mt-3 w-full rounded-lg bg-green-500/20 border border-green-500/30 px-3 py-2 text-sm font-semibold text-green-200 hover:bg-green-500/30 transition-colors"
+                          >
+                            Rejoin this pool
+                          </button>
+                        </div>
+                      )}
+
+                      {cancellationStatus === "rejected" && (
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3 space-y-2">
+                          <p className="text-sm text-red-200 font-medium">
+                            ✗ Cancellation rejected
+                          </p>
+                          {cancellationData
+                            ?.rejection_reason && (
+                            <div>
+                              <p className="text-xs text-slate-400">
+                                Reason:
+                              </p>
+                              <p className="text-xs text-red-300 mt-0.5">
+                                {cancellationData.rejection_reason}
+                              </p>
+                            </div>
+                          )}
+                          <p className="text-xs text-red-300/70">
+                            You remain as an active member of this pool.
+                          </p>
+                        </div>
+                      )}
+
+                      {cancellationData?.reviewed_by && (
+                        <p className="text-xs text-slate-400 pt-1">
+                          Reviewed by:{" "}
+                          <span className="text-slate-300">
+                            {cancellationData.reviewed_by.name} (
+                            {cancellationData.reviewed_by.email})
+                          </span>
                         </p>
                       )}
-                      <p className="mt-2 text-xs text-slate-500">
-                        Requested at{" "}
-                        {myCancellation.cancellation?.requested_at
-                          ? new Date(
-                              myCancellation.cancellation.requested_at
-                            ).toLocaleString()
-                          : "—"}
-                      </p>
                     </div>
                   ) : (
                     <>
-                      <p className="text-slate-400 mb-2">
-                        Need to exit? Request cancellation. A fee may apply
-                        based on pool rules.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleRequestExit}
-                        disabled={requestingExit}
-                        className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/20 disabled:opacity-60"
-                      >
-                        {requestingExit
-                          ? "Submitting…"
-                          : "Request to exit pool"}
-                      </button>
+                      {canRequestCancellation ? (
+                        <>
+                          <p className="text-slate-400 mb-3 text-sm">
+                            Need to exit? Request cancellation. Fees will be deducted based
+                            on pool rules.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={handleRequestExit}
+                            disabled={requestingExit}
+                            className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-500/20 disabled:opacity-60 transition-colors"
+                          >
+                            {requestingExit
+                              ? "Submitting…"
+                              : "Request to exit pool"}
+                          </button>
+                        </>
+                      ) : poolIsActive ? (
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3">
+                          <p className="text-sm text-red-200 font-medium">
+                            ⛔ Pool is trading
+                          </p>
+                          <p className="text-xs text-red-300/70 mt-1">
+                            Cancellation is only allowed before the pool starts trading.
+                            You are now locked in until the pool completes.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                          <p className="text-sm text-amber-200 font-medium">
+                            ⏳ Cancellation unavailable
+                          </p>
+                          <p className="text-xs text-amber-300/70 mt-1">
+                            Cancellation is not available for this pool at this time.
+                          </p>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
               )}
+
+              {/* Show cancellation status for active members with pending/approved exit requests */}
+              {isMember && (cancellationStatus === "pending" || cancellationStatus === "approved") && cancellationData && (
+                <div className="pt-4 border-t border-[--color-border]">
+                  <div className="space-y-4">
+                    {/* Status badge */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-slate-300">
+                        Cancellation Status
+                      </p>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
+                          cancellationStatus === "pending"
+                            ? "bg-yellow-500/20 text-yellow-200 border border-yellow-500/30"
+                            : "bg-blue-500/20 text-blue-200 border border-blue-500/30"
+                        }`}
+                      >
+                        {cancellationStatus}
+                      </span>
+                    </div>
+
+                    {/* Status-specific messages */}
+                    {cancellationStatus === "pending" && (
+                      <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/5 p-3">
+                        <p className="text-sm text-yellow-200 font-medium">
+                          ⏳ Awaiting admin approval
+                        </p>
+                        <p className="text-xs text-yellow-300/70 mt-1">
+                          Requested on{" "}
+                          {cancellationData?.requested_at
+                            ? new Date(
+                                cancellationData.requested_at
+                              ).toLocaleString()
+                            : "—"}
+                        </p>
+                      </div>
+                    )}
+
+                    {cancellationStatus === "approved" && (
+                      <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3 space-y-2">
+                        <p className="text-sm text-blue-200 font-medium">
+                          ✓ Approved by admin
+                        </p>
+                        {cancellationData?.user_wallet_address && (
+                          <div>
+                            <p className="text-xs text-slate-400">
+                              Refund will be sent to:
+                            </p>
+                            <p className="text-xs font-mono text-blue-300 break-all mt-0.5">
+                              {cancellationData.user_wallet_address}
+                            </p>
+                          </div>
+                        )}
+                        <p className="text-xs text-blue-300/70">
+                          Approved on{" "}
+                          {cancellationData?.approved_at
+                            ? new Date(
+                                cancellationData.approved_at
+                              ).toLocaleString()
+                            : "—"}
+                        </p>
+                        <p className="text-xs text-slate-400 pt-1">
+                          Admin is processing the refund transfer.
+                          Expected within 24 hours.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Fee breakdown */}
+                    <div className="rounded-lg bg-[--color-surface-alt] p-4 space-y-3">
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">
+                          Original Contribution
+                        </p>
+                        <p className="text-lg font-bold text-white">
+                          {cancellationData?.contribution_amount}{" "}
+                          {pool?.coin_type || "USDT"}
+                        </p>
+                      </div>
+
+                      {cancellationData?.pool_fee_amount &&
+                        cancellationData.pool_fee_amount > 0 && (
+                          <div className="flex items-center justify-between text-sm border-t border-[--color-border] pt-2">
+                            <span className="text-slate-400">
+                              Pool Fee
+                            </span>
+                            <span className="text-red-400">
+                              -{cancellationData.pool_fee_amount}{" "}
+                              {pool?.coin_type || "USDT"}
+                            </span>
+                          </div>
+                        )}
+
+                      {cancellationData?.
+                        cancellation_fee_amount &&
+                        cancellationData.cancellation_fee_amount > 0 && (
+                          <div className="flex items-center justify-between text-sm border-t border-[--color-border] pt-2">
+                            <span className="text-slate-400">
+                              Cancellation Fee
+                            </span>
+                            <span className="text-red-400">
+                              -{cancellationData.cancellation_fee_amount}{" "}
+                              {pool?.coin_type || "USDT"}
+                            </span>
+                          </div>
+                        )}
+
+                      <div className="flex items-center justify-between font-semibold border-t border-[--color-border] pt-3">
+                        <span className="text-white">
+                          Refund Amount
+                        </span>
+                        <span className="text-green-400 text-lg">
+                          {cancellationData?.refund_amount}{" "}
+                          {pool?.coin_type || "USDT"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Request exit button for active members without pending cancellation */}
+              {isMember && canRequestCancellation && cancellationStatus !== "pending" && cancellationStatus !== "approved" && (
+                <div className="pt-4 border-t border-[--color-border]">
+                  <p className="text-slate-400 mb-3 text-sm">
+                    Need to exit? Request cancellation. Fees will be deducted based on pool rules.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleRequestExit}
+                    disabled={requestingExit}
+                    className="rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-200 hover:bg-amber-500/20 disabled:opacity-60 transition-colors"
+                  >
+                    {requestingExit ? "Submitting…" : "Request to exit pool"}
+                  </button>
+                </div>
+              )}
+
+              {/* Exit unavailable messages for active members */}
+              {isMember && !canRequestCancellation && (
+                <div className="pt-4 border-t border-[--color-border]">
+                  {poolIsActive ? (
+                    <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3">
+                      <p className="text-sm text-red-200 font-medium">
+                        ⛔ Pool is trading
+                      </p>
+                      <p className="text-xs text-red-300/70 mt-1">
+                        Cancellation is only allowed before the pool starts trading.
+                        You are now locked in until the pool completes.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                      <p className="text-sm text-amber-200 font-medium">
+                        ⏳ Cancellation unavailable
+                      </p>
+                      <p className="text-xs text-amber-300/70 mt-1">
+                        Cancellation is not available for this pool at this time.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ═══════════ REJOIN BANNER ═══════════ */}
+          {isRejoin && rejoinInfo && !isMember && joinStep !== "idle" && (
+            <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <svg
+                  className="h-5 w-5 text-green-400 mt-0.5 shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <div className="flex-1">
+                  <p className="font-semibold text-green-200">
+                    Welcome back! You were reactivated.
+                  </p>
+                  <p className="text-sm text-green-300/90 mt-1">
+                    You previously cancelled this pool on{" "}
+                    <span className="font-medium">
+                      {new Date(rejoinInfo.requested_at).toLocaleDateString()}
+                    </span>
+                    . We received your refund of{" "}
+                    <span className="font-medium">
+                      {rejoinInfo.refund_amount} {pool?.coin_type || "USDT"}
+                    </span>
+                    . Now you need to complete a new payment to rejoin.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -640,7 +1194,7 @@ export default function VcPoolDetailPage() {
           {/* ═══════════════════════════════════════════════════
               3-SCREEN JOIN FLOW
               ═══════════════════════════════════════════════════ */}
-          {!isMember && joinStep !== "idle" && (
+          {!isMember && joinStep !== "idle" && (isRejoin || !hasExitedByCancellation) && (
             <>
               {/* ── Step indicator ── */}
               <div className="flex items-center justify-center gap-0 py-2">
@@ -799,6 +1353,22 @@ export default function VcPoolDetailPage() {
                   ╚═════════════════════════════════════════╝ */}
               {joinStep === "payment-details" && (
                 <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-5">
+                  {/* Welcome back banner for rejoin */}
+                  {isRejoin && rejoinInfo && (
+                    <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 space-y-2">
+                      <p className="text-sm font-semibold text-emerald-100">
+                        👋 Welcome Back!
+                      </p>
+                      <p className="text-xs text-emerald-200/80">
+                        You previously exited the pool and received a refund of{" "}
+                        <span className="font-semibold">
+                          {rejoinInfo.refund_amount} {pool?.deposit_coin || "USDT"}
+                        </span>
+                        . Now you're rejoining with a fresh investment.
+                      </p>
+                    </div>
+                  )}
+
                   {/* Header + countdown */}
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -1108,19 +1678,19 @@ export default function VcPoolDetailPage() {
                       {/* TX Hash input */}
                       <div>
                         <label className="mb-1 block text-sm font-medium text-slate-300">
-                          Transaction Hash (TX Hash){" "}
+                          Transaction ID{" "}
                           <span className="text-red-400">*</span>
                         </label>
                         <input
                           type="text"
                           value={txHash}
                           onChange={(e) => setTxHash(e.target.value)}
-                          placeholder="0x..."
+                          placeholder="0x... or Binance TX ID"
                           className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white font-mono placeholder:text-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
                         />
                         <p className="mt-1 text-xs text-slate-500">
-                          Find this in Binance → Wallet → Transaction
-                          History after your withdrawal completes.
+                          For Binance P2P: Find the order ID in Binance → P2P → Orders.
+                          For blockchain withdrawal: Find in Binance → Wallet → Transaction History.
                         </p>
                       </div>
 
@@ -1184,9 +1754,8 @@ export default function VcPoolDetailPage() {
                               Waiting for admin approval…
                             </p>
                             <p className="text-sm text-yellow-300/70 mt-1">
-                              Your TX Hash has been submitted. The admin
-                              will verify your on-chain payment and approve
-                              or reject it.
+                              Your transaction ID has been submitted. The admin
+                              will verify your payment and approve or reject it.
                             </p>
                           </div>
                           <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
@@ -1431,6 +2000,101 @@ export default function VcPoolDetailPage() {
                   </dd>
                 </div>
               </dl>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════ EXIT CONFIRMATION MODAL ═══════════ */}
+      {showExitConfirmModal && isMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] p-6 space-y-5">
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                Confirm Pool Exit
+              </h2>
+              <p className="mt-2 text-sm text-slate-400">
+                You are about to request cancellation of your membership. Please review the fee breakdown below.
+              </p>
+            </div>
+
+            {/* Fee breakdown */}
+            <div className="rounded-lg bg-[--color-surface-alt] p-4 space-y-3">
+              <div>
+                <p className="text-xs text-slate-400">
+                  Your Contribution
+                </p>
+                <p className="text-lg font-bold text-white">
+                  {investmentAmount} {pool?.coin_type || "USDT"}
+                </p>
+              </div>
+              
+              {feeAmount && Number(feeAmount) > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">Pool Management Fee</span>
+                  <span className="text-red-400">
+                    -{feeAmount} {pool?.coin_type || "USDT"}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between text-sm border-t border-[--color-border] pt-3">
+                <span className="text-slate-400">Cancellation Fee</span>
+                <span className="text-red-400">
+                  -{paymentStatus?.payment?.pool_fee_amount || "0"} {pool?.coin_type || "USDT"}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between font-semibold border-t border-[--color-border] pt-3">
+                <span className="text-white">You will receive</span>
+                <span className="text-green-400 text-lg">
+                  {investmentAmount && feeAmount
+                    ? (Number(investmentAmount) - Number(feeAmount) - (Number(paymentStatus?.payment?.pool_fee_amount) || 0)).toFixed(2)
+                    : investmentAmount || "0"} {pool?.coin_type || "USDT"}
+                </span>
+              </div>
+            </div>
+
+            {/* Info message */}
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+              <p className="text-xs text-amber-200">
+                <span className="font-semibold">Note:</span> After admin approval, the refund will be sent to your wallet address within 24 hours.
+              </p>
+            </div>
+
+            {!canRequestCancellation && (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3">
+                <p className="text-xs text-red-200">
+                  <span className="font-semibold">⚠️ Pool Status Changed:</span> This pool is no longer eligible for cancellation. Cancellation is only allowed before the pool starts trading.
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowExitConfirmModal(false)}
+                disabled={requestingExit}
+                className="flex-1 rounded-lg border border-[--color-border] px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/5 transition-colors disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmExit}
+                disabled={requestingExit || !canRequestCancellation}
+                className="flex-1 rounded-lg bg-red-500/20 border border-red-500/30 px-4 py-2.5 text-sm font-semibold text-red-200 hover:bg-red-500/30 disabled:opacity-60 transition-colors"
+              >
+                {requestingExit ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-200 border-t-transparent" />
+                    Submitting…
+                  </span>
+                ) : (
+                  "Confirm Exit"
+                )}
+              </button>
             </div>
           </div>
         </div>

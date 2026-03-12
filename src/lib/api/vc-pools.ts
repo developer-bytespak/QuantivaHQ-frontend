@@ -11,6 +11,7 @@ export interface JoinPoolRequest {
 }
 
 export interface JoinPoolResponse {
+  member_id?: string;
   reservation_id: string;
   submission_id: string;
   total_amount: number;
@@ -27,6 +28,13 @@ export interface JoinPoolResponse {
   payment_method: PaymentMethod;
   instructions?: string[];
   message?: string;
+  is_rejoin?: boolean;
+  previous_cancellation?: {
+    cancellation_id: string;
+    requested_at: string;
+    refunded_at: string;
+    refund_amount: number;
+  };
 }
 
 export interface PaymentStatusResponse {
@@ -57,6 +65,21 @@ export interface PaymentStatusResponse {
     user_wallet_address: string | null;
     exact_amount_expected: string | null;
   } | null;
+  cancellation?: {
+    has_cancellation: boolean;
+    status?: string;
+    cancellation_id?: string;
+    contribution_amount?: number;
+    pool_fee_amount?: number;
+    cancellation_fee_amount?: number;
+    refund_amount?: number;
+    requested_at?: string;
+    approved_at?: string | null;
+    refund_completed_at?: string | null;
+    rejection_reason?: string | null;
+    reviewed_by?: { name: string; email: string } | null;
+    user_wallet_address?: string | null;
+  };
 }
 
 export interface UploadScreenshotResponse {
@@ -163,17 +186,23 @@ export async function getVcPoolById(id: string): Promise<VcPoolDetails> {
 
 export interface CancelMembershipResponse {
   cancellation_id: string;
-  pool_status_at_request: string;
-  member_value_at_exit: number;
-  fee_amount: number;
-  refund_amount: number;
   status: string;
+  contribution_amount: number;
+  pool_fee_amount: number;
+  cancellation_fee_amount: number;
+  refund_amount: number;
+  requested_at: string;
+  approved_at: string | null;
+  refund_completed_at: string | null;
+  rejection_reason: string | null;
+  reviewed_by: { name: string; email: string } | null;
+  user_wallet_address: string | null;
   message: string;
 }
 
 export async function cancelMembership(poolId: string): Promise<CancelMembershipResponse> {
   return apiRequest<never, CancelMembershipResponse>({
-    path: `/api/vc-pools/${poolId}/cancel-membership`,
+    path: `/api/vc-pools/${poolId}/request-exit`,
     method: "POST",
     body: undefined as never,
   });
@@ -182,14 +211,16 @@ export async function cancelMembership(poolId: string): Promise<CancelMembership
 export interface MyCancellationItem {
   cancellation_id: string;
   status: string;
-  requested_at: string;
-  member_value_at_exit: number;
-  fee_amount: number;
+  contribution_amount: number;
+  pool_fee_amount: number;
+  cancellation_fee_amount: number;
   refund_amount: number;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
+  requested_at: string;
+  approved_at: string | null;
+  refund_completed_at: string | null;
   rejection_reason: string | null;
-  refunded_at: string | null;
+  reviewed_by: { name: string; email: string } | null;
+  user_wallet_address: string | null;
 }
 
 export interface MyCancellationResponse {
@@ -249,7 +280,8 @@ export type PaymentStatus = "pending" | "verified" | "rejected" | "refunded";
 export type BinancePaymentStatus = PaymentStatus;
 
 export interface SubmitTxHashRequest {
-  tx_hash: string;
+  tx_hash?: string;
+  binance_tx_id?: string;
 }
 
 /** @deprecated Use SubmitTxHashRequest */
