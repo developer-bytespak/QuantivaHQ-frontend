@@ -72,7 +72,7 @@ export function hasAdminToken(): boolean {
   return !!getAdminAccessToken();
 }
 
-const adminAxios: AxiosInstance = axios.create({
+export const adminAxios: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 30000,

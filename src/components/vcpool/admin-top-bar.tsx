@@ -11,8 +11,16 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/pools": "Pools",
   "/admin/pools/create": "Create pool",
   "/admin/settings": "Settings",
+  "/admin/settings/exchange-configuration": "Exchange Configuration",
   "/admin/settings/binance": "Binance UID",
   "/admin/settings/fees": "Default Fees",
+  "/admin/settings/notifications": "Notifications",
+  "/admin/settings/security": "Security",
+  "/admin/settings/help-support": "Help and Support",
+  "/admin/settings/terms": "Terms and Conditions",
+  "/admin/settings/connect-crypto": "Connect Crypto",
+  "/admin/settings/connect-stock": "Connect Stock",
+  "/admin/settings/connect-api-keys": "API Keys",
 };
 
 function getPageTitle(pathname: string | null): string {
