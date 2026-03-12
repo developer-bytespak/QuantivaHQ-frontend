@@ -234,8 +234,8 @@ export function SubscriptionSettings() {
     const data = {
       plan_id: planId,
       price_id: priceId || "price_1QXQ52EzYvKYlo2C0986b63e",
-      cancel_url: `localhost:3001/dashboard/settings/subscription`,
-      success_url: `localhost:3001/dashboard/settings/subscription`,
+      cancel_url: `${window.location.origin}/dashboard/settings/subscription`,
+      success_url: `${window.location.origin}/dashboard/settings/subscription`,
     };
 
     console.log(data);

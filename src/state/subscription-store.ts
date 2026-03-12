@@ -38,6 +38,7 @@ interface CurrentSubscription {
 interface SubscriptionState {
   // Data
   currentSubscription: CurrentSubscription | null;
+  hasPlan: boolean | null; // from API: true = user has a plan, false = must see choose-plan
   allPlans: SubscriptionPlan[];
   allSubscriptions: any[]; // Direct frontend API response
   usageStats: UsageData;
@@ -86,6 +87,7 @@ interface SubscriptionState {
 const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   // Initial Data - populated from backend API
   currentSubscription: CURRENT_USER_SUBSCRIPTION,
+  hasPlan: null,
   allPlans: [],
   allSubscriptions: [],
   usageStats: USER_USAGE_STATS,
@@ -319,9 +321,10 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         });
       }
 
-      // Map API response to store state
+      // Map API response to store state (hasPlan: true = skip choose-plan, false = show choose-plan)
       set({
         currentSubscription,
+        hasPlan: data.hasPlan === true || data.hasPlan === false ? data.hasPlan : null,
         allPlans: data.allSubscriptions || [],
         usageStats,
         paymentHistory,
