@@ -12,6 +12,7 @@ export type FlowRoute =
   | "/onboarding/personal-info"
   | "/onboarding/kyc-verification"
   | "/onboarding/verification-status"
+  | "/onboarding/choose-plan"
   | "/onboarding/account-type"
   | "/dashboard";
 
@@ -111,7 +112,36 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       };
     }
 
-    // Step 2: Check exchange connection (only if KYC is approved)
+    // Step 2: Subscription GET API – use hasPlan: true = skip choose-plan, hasPlan false/missing = show choose-plan
+    let shouldShowChoosePlan = true;
+    try {
+      const subsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/subscriptions`,
+        {
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("quantivahq_access_token") : ""}`,
+          },
+        }
+      );
+      if (subsRes.ok) {
+        const subsData = await subsRes.json();
+        // hasPlan true = user already has a plan → don't show choose-plan; false/missing → show
+        if (subsData?.hasPlan === true) {
+          shouldShowChoosePlan = false;
+        }
+      }
+    } catch {
+      // API fail – show choose-plan
+    }
+    if (shouldShowChoosePlan) {
+      return {
+        route: "/onboarding/choose-plan",
+        reason: "KYC approved – hasPlan false, show choose-plan",
+      };
+    }
+
+    // Step 3: Check exchange connection (only if KYC approved and plan chosen)
     let hasActiveConnection = false;
     let exchangeType: "crypto" | "stocks" | null = null;
     try {
@@ -133,7 +163,7 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     if (!hasActiveConnection) {
       return {
         route: "/onboarding/account-type",
-        reason: "KYC approved but no exchange connection",
+        reason: "Plan chosen but no exchange connection",
       };
     }
 

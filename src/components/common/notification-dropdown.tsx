@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSocket } from "@/hooks/useSocket";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { Trash2 } from "lucide-react";
 
 const DUMMY_NOTIFICATIONS = [
   { id: "1", title: "New trade alert", message: "BTC crossed $95,000. Check your portfolio.", time: "2 min ago", unread: true },
@@ -18,11 +19,20 @@ export function NotificationDropdown() {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number; arrowLeft: number } | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { notificationCount, setNotificationDropdownOpen, setNotificationCount, notifications: socketNotifications } = useSocket();
   const [unreadCount, setUnreadCount] = useState(notificationCount);
+
+  const sortedNotifications = useMemo(() => {
+    return [...notifications].sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return sortOrder === "desc" ? timeB - timeA : timeA - timeB;
+    });
+  }, [notifications, sortOrder]);
 
   useEffect(() => {
     setUnreadCount(notificationCount);
@@ -83,17 +93,51 @@ export function NotificationDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+  const authHeaders = typeof window !== "undefined" && localStorage.getItem("quantivahq_access_token")
+    ? { Authorization: `Bearer ${localStorage.getItem("quantivahq_access_token")}` }
+    : {};
+
   const handleGetAllNotifications = async () => {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifications`);
-    if(response.status === 200){
-      setNotifications(response.data);
+    try {
+      const response = await axios.get(`${apiBase}/notifications`, { withCredentials: true, headers: authHeaders });
+      if (response.status === 200) {
+        setNotifications(response.data);
+        setUnreadCount(0);
+        setNotificationCount(0);
+      } else {
+        toast.error("Error fetching notifications");
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Error fetching notifications";
+      toast.error(msg);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await axios.delete(`${apiBase}/notifications/delete`, { withCredentials: true, headers: authHeaders });
+      setNotifications([]);
       setUnreadCount(0);
       setNotificationCount(0);
-    }else{
-      console.log("error",response);
-      toast.error("Error fetching notifications");
+      toast.success("All notifications cleared");
+    } catch (err: any) {
+      console.log("handleClearAll error", err); 
+      const msg = err.response?.data?.message || err.message || "Failed to clear notifications";
+      toast.error(msg);
     }
-  }
+  };
+
+  const handleDeleteNotification = async (id: string) => {
+    try {
+      await axios.delete(`${apiBase}/notifications/delete/${id}`, { withCredentials: true, headers: authHeaders });
+      setNotifications((prev) => prev.filter((n) => (n._id ?? n.id) !== id));
+      toast.success("Notification removed");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || "Failed to delete notification";
+      toast.error(msg);
+    }
+  };
 
   return (
     <>
@@ -145,24 +189,62 @@ export function NotificationDropdown() {
               <span className="flex h-7 w-1.5 rounded-full bg-[#fc4f02] shadow-sm shadow-[#fc4f02]/40" aria-hidden />
               <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Notifications</h3>
             </div>
-            {unreadCount > 0 && (
-              <span className="text-[10px] font-bold text-white bg-[#fc4f02] px-2 py-1 rounded-md min-w-[1.5rem] text-center shadow-md shadow-[#fc4f02]/40">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              <div className="flex rounded-md overflow-hidden border border-white/[0.08]">
+                <button
+                  type="button"
+                  onClick={() => setSortOrder("desc")}
+                  className={`px-2 py-1 text-[10px] font-medium transition-colors ${sortOrder === "desc" ? "bg-[#fc4f02] text-white" : "text-slate-400 hover:text-white hover:bg-white/10"}`}
+                >
+                  DSC
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortOrder("asc")}
+                  className={`px-2 py-1 text-[10px] font-medium transition-colors ${sortOrder === "asc" ? "bg-[#fc4f02] text-white" : "text-slate-400 hover:text-white hover:bg-white/10"}`}
+                >
+                  ASC
+                </button>
+              </div>
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-[10px] font-medium text-slate-400 hover:text-[#fc4f02] transition-colors px-2 py-1 rounded hover:bg-white/5"
+                >
+                  Clear All
+                </button>
+              )}
+              {unreadCount > 0 && (
+                <span className="text-[10px] font-bold text-white bg-[#fc4f02] px-2 py-1 rounded-md min-w-[1.5rem] text-center shadow-md shadow-[#fc4f02]/40">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </div>
           </div>
           {/* List – glass fade */}
           <div className="overflow-y-auto flex-1 min-h-0 bg-transparent">
-            {notifications.length === 0 ? (
+            {sortedNotifications.length === 0 ? (
               <p className="px-4 py-8 text-sm text-slate-400 text-center">No notifications yet.</p>
             ) : (
               <ul className="divide-y divide-[#fc4f02]/15">
-                {notifications.map((n: any) => (
+                {sortedNotifications.map((n: any) => (
                   <li
-                    key={n._id}
-                    className={`group px-4 py-2.5 transition-colors cursor-default touch-manipulation hover:bg-[#fc4f02]/10 active:bg-[#fc4f02]/15 ${!n.read ? "bg-[#fc4f02]/15 border-l-2 border-l-[#fc4f02] pl-3" : ""}`}
+                    key={n._id ?? n.id}
+                    className={`group relative px-4 py-2.5 pr-10 transition-colors cursor-default touch-manipulation hover:bg-[#fc4f02]/10 active:bg-[#fc4f02]/15 ${!n.read ? "bg-[#fc4f02]/15 border-l-2 border-l-[#fc4f02] pl-3" : ""}`}
                   >
-                    <p className="text-sm font-semibold text-white truncate">{n.title || n.notification_type}</p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteNotification(n._id ?? n.id);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-[#fc4f02]/20 hover:text-[#fc4f02] transition-all focus:opacity-100 focus:outline-none"
+                      aria-label="Delete notification"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                    <p className="text-sm font-semibold text-white truncate pr-6">{n.title || n.notification_type}</p>
                     <p className="text-xs text-slate-300 mt-0.5 truncate">{n.message}</p>
                     <p className="text-xs font-medium text-[#fc4f02] mt-1">
                       {n.created_at

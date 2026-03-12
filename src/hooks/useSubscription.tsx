@@ -7,6 +7,7 @@ interface UserContextType {
     updateSubscription: UseMutationResult<any, unknown, any, unknown>;
     createCheckout: UseMutationResult<any, unknown, any, unknown>;
     cancelSubscription: UseMutationResult<any, unknown, any, unknown>;
+    createSubs: UseMutationResult<any, unknown, any, unknown>;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -72,8 +73,20 @@ export const SubsProvider = ({ children }: { children: ReactNode }) => {
         },
     })
 
+    const createSubs = useMutation({
+        mutationFn: async (data: any) => {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/subscriptions/subscribe`, data, {
+                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
+                },
+            });
+            return response.data;
+        },
+    })
+
     return (
-        <UserContext.Provider value={{ updateSubscription, createCheckout , cancelSubscription}}>
+        <UserContext.Provider value={{ updateSubscription, createCheckout , cancelSubscription, createSubs}}>
             {children}
         </UserContext.Provider>
     );
