@@ -26,6 +26,7 @@ const PAGE_TITLES: Record<string, string> = {
 function getPageTitle(pathname: string | null): string {
   if (!pathname) return "Dashboard";
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.match(/^\/admin\/pools\/[^/]+\/top-trade$/)) return "Top Trade";
   if (pathname.startsWith("/admin/pools/") && pathname !== "/admin/pools/create")
     return "Pool details";
   if (pathname.startsWith("/admin/settings")) return "Settings";

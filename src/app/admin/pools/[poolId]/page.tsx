@@ -38,9 +38,8 @@ import {
 } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
 import { PoolTradesFlow } from "@/components/vcpool/pool-trades-flow";
-import { PoolSignalsTab } from "@/components/vcpool/pool-signals-tab";
 
-type Tab = "payments" | "reservations" | "members" | "trades" | "signals" | "cancellations" | "payouts";
+type Tab = "payments" | "reservations" | "members" | "trades" | "cancellations" | "payouts";
 
 function EditPoolModal({
   pool,
@@ -554,7 +553,17 @@ export default function AdminPoolDetailsPage() {
                 Status: <span className="capitalize">{pool.status}</span>
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
+              {/* Top Trade: show when pool is open, full, or active (not draft) */}
+              {(isOpen || isFull || isActive) && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/admin/pools/${poolId}/top-trade`)}
+                  className="rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-xs font-semibold text-white hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                >
+                  Top Trade
+                </button>
+              )}
               {isDraft && (
                 <button
                   type="button"
@@ -715,7 +724,7 @@ export default function AdminPoolDetailsPage() {
           {!isDraft && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
               <div className="flex flex-wrap border-b border-[--color-border]">
-                {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "signals", "cancellations", "payouts"] as Tab[]).map((tab) => (
+                {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "cancellations", "payouts"] as Tab[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
@@ -901,16 +910,6 @@ export default function AdminPoolDetailsPage() {
                     onCloseTrade={handleCloseTrade}
                     saving={saving}
                     actionSubmitting={actionSubmitting}
-                  />
-                )}
-                {activeTab === "signals" && (
-                  <PoolSignalsTab
-                    poolId={poolId}
-                    pool={pool}
-                    onTradePlaced={() => {
-                      load();
-                      loadTrades();
-                    }}
                   />
                 )}
                 {activeTab === "cancellations" && (
