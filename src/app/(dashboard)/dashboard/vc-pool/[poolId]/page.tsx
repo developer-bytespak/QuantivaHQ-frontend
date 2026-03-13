@@ -45,8 +45,7 @@ const stepIndex = (s: JoinFlowStep): number =>
 
 /* ──────── helpers ──────── */
 const pad2 = (n: number) => n.toString().padStart(2, "0");
-const fmtCountdown = (sec: number) =>
-  `${pad2(Math.floor(sec / 60))}:${pad2(sec % 60)}`;
+const fmtCountdown = (sec: number) => `${sec}s`;
 const truncAddr = (addr: string) =>
   addr.length > 14 ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : addr;
 

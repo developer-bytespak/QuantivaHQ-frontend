@@ -142,7 +142,7 @@ function EditPoolModal({
             </div>
             <div>
               <label className="block text-sm text-slate-400">Payment window (min)</label>
-              <input type="number" min={5} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <input type="number" min={1} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
@@ -783,9 +783,14 @@ export default function AdminPoolDetailsPage() {
                           >
                             <div>
                               <p className="font-medium text-white">
-                                {p.user_email ?? p.user_username ?? p.user_id}
+                                {(p as any).user?.username || (p as any).user?.full_name || p.user_username || p.user_email || p.user_id}
                               </p>
-                              <p className="text-xs text-slate-400">
+                              {((p as any).user?.email || p.user_email) && (
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  {(p as any).user?.email || p.user_email}
+                                </p>
+                              )}
+                              <p className="text-xs text-slate-400 mt-1">
                                 {p.payment_method} · {p.total_amount} ·{" "}
                                 <span className="capitalize">{p.status}</span>
                               </p>
@@ -854,15 +859,24 @@ export default function AdminPoolDetailsPage() {
                         {reservations.map((r) => (
                           <div
                             key={r.reservation_id}
-                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[--color-surface-alt] px-4 py-3 text-sm"
                           >
-                            <span className="font-medium text-white">
-                              {r.user_email ?? r.user_username ?? r.user_id}
-                            </span>
-                            <span className="text-xs capitalize">{r.status}</span>
-                            <span className="text-xs text-slate-400">
-                              Expires: {new Date(r.expires_at).toLocaleString()}
-                            </span>
+                            <div className="min-w-0">
+                              <p className="font-medium text-white truncate">
+                                {(r as any).user?.username || (r as any).user?.full_name || r.user_username || (r as any).user?.email || r.user_email || r.user_id}
+                              </p>
+                              {((r as any).user?.email || r.user_email) && (
+                                <p className="text-xs text-slate-400 truncate">
+                                  {(r as any).user?.email || r.user_email}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-slate-300">
+                              <span className="text-xs capitalize">{r.status}</span>
+                              <span className="text-xs text-slate-400">
+                                Expires: {new Date(r.expires_at).toLocaleString()}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -878,7 +892,6 @@ export default function AdminPoolDetailsPage() {
                         {members.map((m) => {
                           const displayName =
                             m.user?.full_name?.trim() ||
-                            m.user?.email ||
                             m.user?.username ||
                             `Member ${m.member_id.slice(0, 8)}`;
                           const invested =
@@ -1006,8 +1019,13 @@ export default function AdminPoolDetailsPage() {
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div>
                                 <p className="font-medium text-white">
-                                  {p.member?.user?.email ?? p.member?.user?.full_name ?? p.member?.member_id}
+                                  {p.member?.user?.full_name?.trim() || p.member?.user?.email?.split("@")[0] || p.member?.member_id}
                                 </p>
+                                {p.member?.user?.email && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    {p.member.user.email}
+                                  </p>
+                                )}
                                 <p className="text-xs text-slate-400 mt-1">
                                   Type: <span className="capitalize">{p.payout_type.replace("_", " ")}</span> · Net: {p.net_payout} · P/L: {p.profit_loss} · Status: <span className="capitalize">{p.status}</span>
                                 </p>

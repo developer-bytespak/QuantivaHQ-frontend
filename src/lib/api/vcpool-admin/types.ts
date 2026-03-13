@@ -169,6 +169,12 @@ export interface AdminPaymentSubmission {
   created_at: string;
   user_email?: string;
   user_username?: string;
+  user?: {
+    user_id: string;
+    email?: string;
+    username?: string | null;
+    full_name?: string | null;
+  };
   tx_hash: string | null;
   binance_tx_id: string | null;
   user_wallet_address: string | null;
@@ -188,6 +194,12 @@ export interface AdminReservation {
   created_at: string;
   user_email?: string;
   user_username?: string;
+  user?: {
+    user_id: string;
+    email?: string;
+    username?: string | null;
+    full_name?: string | null;
+  };
 }
 
 export interface AdminReservationsListResponse {
