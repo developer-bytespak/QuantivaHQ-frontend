@@ -151,12 +151,54 @@ export interface VcPoolsListResponse {
   };
 }
 
+export interface PoolFinancials {
+  total_invested_usdt: number;
+  current_pool_value_usdt: number;
+  total_profit_usdt: number;
+  total_pool_fees_usdt: number;
+  pool_roi_pct: number;
+}
+
+export interface AdminInfo {
+  binance_uid: string;
+  wallet_address: string;
+  payment_network: string;
+  deposit_coin: string;
+  deposit_method: string;
+}
+
+export interface UserContext {
+  is_member: boolean;
+  member_id: string | null;
+  invested_amount_usdt: number;
+  current_share_percent: number;
+  joined_at: string | null;
+  exited_at: string | null;
+  is_active: boolean;
+  payment_method: string | null;
+  current_member_value_usdt: number;
+  unrealized_pnl_usdt: number;
+  unrealized_pnl_pct: number;
+}
+
+export interface PoolTimeline {
+  started_at: string | null;
+  end_date: string | null;
+  completed_at: string | null;
+  days_remaining: number;
+  progress_percent: number;
+}
+
 export interface VcPoolDetails extends VcPoolSummary {
   verified_members_count: number;
   reserved_seats_count: number;
   status: string;
   started_at: string | null;
   end_date: string | null;
+  pool_financials?: PoolFinancials;
+  admin_info?: AdminInfo;
+  user_context?: UserContext;
+  pool_timeline?: PoolTimeline;
 }
 
 export async function getAvailableVcPools(
@@ -235,6 +277,51 @@ export async function getMyCancellation(poolId: string): Promise<MyCancellationR
   });
 }
 
+export type MembershipStatus =
+  | 'active_in_pool'
+  | 'completed_and_paid'
+  | 'exited_with_refund'
+  | 'rejoined_after_exit'
+  | 'exit_requested_pending_approval'
+  | 'exit_approved_pending_refund'
+  | 'pool_cancelled_refund';
+
+export interface StatusDetail {
+  // For active_in_pool
+  joined_at?: string;
+
+  // For completed_and_paid
+  payout_id?: string;
+  payout_amount?: string;
+  gross_payout?: string;
+  admin_fee_deducted?: string;
+  profit_loss?: string;
+  payout_status?: string;
+  paid_at?: string;
+  payout_type?: string;
+
+  // For exited_with_refund
+  cancellation_id?: string;
+  refund_amount?: string;
+  requested_at?: string;
+  reviewed_at?: string;
+  refund_completed_at?: string;
+
+  // For rejoined_after_exit
+  rejoined_at?: string;
+  previous_member_count?: number;
+
+  // For exit_requested_pending_approval
+  // (shares cancellation_id, refund_amount, requested_at)
+
+  // For exit_approved_pending_refund
+  // (shares all exit fields)
+
+  // For pool_cancelled_refund
+  payout_id_cancel?: string;
+  payout_status_cancel?: string;
+}
+
 export interface MyPoolMembership {
   membership: {
     member_id: string;
@@ -242,10 +329,16 @@ export interface MyPoolMembership {
     pool_name: string;
     pool_status: string;
     coin_type: string;
+    is_active: boolean;
+    joined_at: string;
+    exited_at: string | null;
+    completed_at: string | null;
     started_at: string | null;
     end_date: string | null;
     payment_method: string;
   };
+  membership_status: MembershipStatus;
+  status_detail: StatusDetail;
   my_investment: {
     invested_amount: number;
     share_percent: number;

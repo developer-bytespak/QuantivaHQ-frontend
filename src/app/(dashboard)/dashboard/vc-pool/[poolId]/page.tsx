@@ -142,26 +142,38 @@ export default function VcPoolDetailPage() {
     myCancellation?.cancellation?.status ?? 
     "";
   
+  // membership: prefer paymentStatus, fall back to pool.user_context (GET /api/vc-pools/:id)
   const isMember = Boolean(
-    paymentStatus?.membership?.exists &&
-      paymentStatus?.membership?.is_active === true
+    (paymentStatus?.membership?.exists && paymentStatus?.membership?.is_active === true) ||
+      pool?.user_context?.is_member === true
   );
-  const hasExitedByCancellation = 
-    cancellationStatus === "approved" || 
-    cancellationStatus === "processed";
-  
+
+  const hasExitedByCancellation =
+    cancellationStatus === "approved" || cancellationStatus === "processed";
+
   // Check if user previously was a member but has now exited
   const userHasExitedPool = Boolean(
-    paymentStatus?.membership?.exists &&
-    paymentStatus?.membership?.is_active === false
+    (paymentStatus?.membership?.exists && paymentStatus?.membership?.is_active === false) ||
+      (pool?.user_context && pool.user_context.is_member === false && pool.user_context.exited_at)
   );
-  
+
   const isMemberEffective = isMember && !hasExitedByCancellation;
   const hasReservation = Boolean(paymentStatus?.reservation);
   const payment = paymentStatus?.payment ?? null;
   const isRejected = payment?.status === "rejected";
-  const availableSeats = Number(pool?.available_seats ?? 0);
-  const poolStatus = pool?.status ?? "";
+  const availableSeats = Number(pool?.available_seats ?? (pool as any)?.pool_details?.available_seats ?? 0);
+  const poolStatus = String(pool?.status ?? (pool as any)?.pool_metadata?.status ?? "");
+
+  // Payout detection: backend may set paid timestamps in different places depending on API
+  const paidAt =
+    (pool as any)?.user_context?.paid_at ??
+    (pool as any)?.status_detail?.paid_at ??
+    (pool as any)?.paid_at ??
+    (pool as any)?.payout?.paid_at ??
+    null;
+  const payoutTxId =
+    (pool as any)?.payout?.binance_tx_id ?? (pool as any)?.user_context?.binance_tx_id ?? null;
+  const isPayoutSent = Boolean(paidAt);
   const hasTxSubmitted =
     Boolean(payment?.tx_hash) ||
     Boolean(payment?.binance_tx_id) ||
@@ -174,11 +186,9 @@ export default function VcPoolDetailPage() {
   
   /* track if pool is actively trading */
   useEffect(() => {
-    setPoolIsActive(
-      poolStatus === "active" ||
-      poolStatus === "completed" ||
-      poolStatus === "cancelled"
-    );
+    // Only treat the pool as "actively trading" when status === 'active'.
+    // 'completed' means trading finished — don't show "Pool is trading" for completed pools.
+    setPoolIsActive(poolStatus === "active");
   }, [poolStatus]);
 
   /* calculated amounts (from payment or joinResponse) */
@@ -408,6 +418,15 @@ export default function VcPoolDetailPage() {
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolId, canAccessVCPool]);
+
+  /* ──────── poll pool details while waiting for admin payout (completed state) ──────── */
+  useEffect(() => {
+    if (!poolId || !isMember || poolStatus !== 'completed' || isPayoutSent) return;
+    const interval = setInterval(() => {
+      getVcPoolById(poolId).then((p) => setPool(p)).catch(() => {});
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [poolId, isMember, poolStatus, isPayoutSent]);
 
   /* ═══════════════════════ HANDLERS ═══════════════════════ */
 
@@ -664,15 +683,100 @@ export default function VcPoolDetailPage() {
             </div>
           </div>
 
-          {/* ═══════════ ALREADY A MEMBER OR EXITED ═══════════ */}
-          {(isMember || userHasExitedPool) && (
+          {/* ═══════════ POOL FINANCIALS CARD ═══════════ */}
+          {pool.pool_financials && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
-              {isMember && (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500/20">
-                    <svg
-                      className="h-6 w-6 text-green-400"
-                      fill="none"
+              <h2 className="text-lg font-bold text-white mb-4">Pool Performance</h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {/* Total Invested */}
+                <div className="rounded-lg bg-[--color-surface-alt] p-4 space-y-1">
+                  <p className="text-xs text-slate-400 font-medium">Total Invested</p>
+                  <p className="text-lg font-bold text-white">
+                    ${pool.pool_financials.total_invested_usdt.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                  <p className="text-xs text-slate-500">All members</p>
+                </div>
+
+                {/* Current Pool Value */}
+                <div className="rounded-lg bg-[--color-surface-alt] p-4 space-y-1">
+                  <p className="text-xs text-slate-400 font-medium">Current Value</p>
+                  <p className="text-lg font-bold text-white">
+                    ${pool.pool_financials.current_pool_value_usdt.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                  <p className="text-xs text-slate-500">Current holdings</p>
+                </div>
+
+                {/* Total Profit/Loss */}
+                <div className={`rounded-lg p-4 space-y-1 ${
+                  pool.pool_financials.total_profit_usdt >= 0
+                    ? 'bg-green-500/10 border border-green-500/20'
+                    : 'bg-red-500/10 border border-red-500/20'
+                }`}>
+                  <p className="text-xs font-medium mb-1">
+                    {pool.pool_financials.total_profit_usdt >= 0
+                      ? 'Total Profit'
+                      : 'Total Loss'}
+                  </p>
+                  <p className={`text-lg font-bold ${
+                    pool.pool_financials.total_profit_usdt >= 0
+                      ? 'text-green-400'
+                      : 'text-red-400'
+                  }`}>
+                    {pool.pool_financials.total_profit_usdt >= 0 ? '+' : ''}${Math.abs(pool.pool_financials.total_profit_usdt).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                  <p className="text-xs text-slate-500">All members</p>
+                </div>
+
+                {/* Pool ROI */}
+                <div className={`rounded-lg p-4 space-y-1 ${
+                  pool.pool_financials.pool_roi_pct >= 0
+                    ? 'bg-emerald-500/10 border border-emerald-500/20'
+                    : 'bg-orange-500/10 border border-orange-500/20'
+                }`}>
+                  <p className="text-xs font-medium mb-1">Pool ROI</p>
+                  <p className={`text-lg font-bold ${
+                    pool.pool_financials.pool_roi_pct >= 0
+                      ? 'text-emerald-400'
+                      : 'text-orange-400'
+                  }`}>
+                    {pool.pool_financials.pool_roi_pct >= 0 ? '+' : ''}{pool.pool_financials.pool_roi_pct.toFixed(2)}%
+                  </p>
+                  <p className="text-xs text-slate-500">Return on investment</p>
+                </div>
+              </div>
+
+              {/* Fee Summary */}
+              <div className="pt-4 border-t border-[--color-border] text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Pool Fees Collected:</span>
+                  <span className="font-medium text-white">
+                    ${pool.pool_financials.total_pool_fees_usdt.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════ USER MEMBERSHIP CARD ═══════════ */}
+          {pool.user_context && pool.user_context.is_member && (
+            <div className="rounded-xl border-2 border-blue-500/30 bg-blue-500/5 p-6 space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20">
+                  <svg
+                    className="h-6 w-6 text-blue-400"
+                    fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                   >
@@ -685,18 +789,192 @@ export default function VcPoolDetailPage() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-lg font-semibold text-green-200">
-                    You are a member of this pool
+                  <h2 className="text-lg font-bold text-blue-200">Your Investment</h2>
+                  <p className="text-sm text-blue-300/70">Member since {
+                    pool.user_context.joined_at 
+                      ? new Date(pool.user_context.joined_at).toLocaleDateString()
+                      : '—'
+                  }</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                {/* Your Invested Amount */}
+                <div className="rounded-lg bg-white/5 border border-blue-500/20 p-4 space-y-1">
+                  <p className="text-xs text-slate-400 font-medium">Your Investment</p>
+                  <p className="text-lg font-bold text-white">
+                    ${pool.user_context.invested_amount_usdt.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </p>
-                  <p className="text-sm text-slate-400">
-                    Your share is locked. Pool activity will appear here
-                    when the pool is active.
+                  <p className="text-xs text-slate-500">Initial capital</p>
+                </div>
+
+                {/* Current Member Value */}
+                <div className="rounded-lg bg-white/5 border border-blue-500/20 p-4 space-y-1">
+                  <p className="text-xs text-slate-400 font-medium">Current Value</p>
+                  <p className="text-lg font-bold text-white">
+                    ${pool.user_context.current_member_value_usdt.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                  <p className="text-xs text-slate-500">Today's value</p>
+                </div>
+
+                {/* Your Ownership */}
+                <div className="rounded-lg bg-white/5 border border-blue-500/20 p-4 space-y-1">
+                  <p className="text-xs text-slate-400 font-medium">Your Ownership</p>
+                  <p className="text-lg font-bold text-white">
+                    {pool.user_context.current_share_percent.toFixed(2)}%
+                  </p>
+                  <p className="text-xs text-slate-500">Pool share</p>
+                </div>
+              </div>
+
+              {/* P&L Summary */}
+              <div className={`rounded-lg border-l-4 p-4 ${
+                pool.user_context.unrealized_pnl_usdt >= 0
+                  ? 'border-l-green-500 bg-green-500/5'
+                  : 'border-l-red-500 bg-red-500/5'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-400 font-medium">Unrealized Profit / Loss</p>
+                    <p className={`text-2xl font-bold mt-1 ${
+                      pool.user_context.unrealized_pnl_usdt >= 0
+                        ? 'text-green-400'
+                        : 'text-red-400'
+                    }`}>
+                      {pool.user_context.unrealized_pnl_usdt >= 0 ? '+' : ''}${Math.abs(pool.user_context.unrealized_pnl_usdt).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-xl font-bold ${
+                      pool.user_context.unrealized_pnl_pct >= 0
+                        ? 'text-green-400'
+                        : 'text-red-400'
+                    }`}>
+                      {pool.user_context.unrealized_pnl_pct >= 0 ? '+' : ''}{pool.user_context.unrealized_pnl_pct.toFixed(2)}%
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">Return</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════ POOL COMPLETED MESSAGE ═══════════ */}
+          {isMember && poolStatus === "completed" && (
+            <div className="rounded-xl border-2 border-yellow-500/50 bg-yellow-500/10 p-6 space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500/20 flex-shrink-0">
+                  <svg
+                    className="h-7 w-7 text-yellow-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-yellow-200 mb-1">
+                    Pool is Completed
+                  </h3>
+                  <p className="text-sm text-yellow-100/90">
+                    The pool has completed its trading cycle. Your final amount will be processed and sent when the admin confirms and transfers your funds.
                   </p>
                 </div>
               </div>
-              )}
+              
+              {/* Status timeline */}
+              <div className="rounded-lg bg-white/3 border border-yellow-500/20 p-4 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-green-400 text-xs font-bold flex-shrink-0 mt-0.5">
+                    ✓
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-green-200">Pool Completed</p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {pool.pool_timeline?.completed_at
+                        ? `On ${new Date(pool.pool_timeline.completed_at).toLocaleDateString()}`
+                        : "Recently completed"}
+                    </p>
+                  </div>
+                </div>
 
-              {/* Show exit status/rejoin for exited users */}
+                <div className="flex items-start gap-3">
+                  <div className={`flex h-6 w-6 items-center justify-center rounded-full ${isPayoutSent ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'} text-xs font-bold flex-shrink-0 mt-0.5`}>
+                    {isPayoutSent ? '✓' : '⏳'}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm font-semibold ${isPayoutSent ? 'text-green-200' : 'text-yellow-200'}`}>
+                      {isPayoutSent ? 'Payout Sent' : 'Awaiting Admin Payout'}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {isPayoutSent ? (
+                        paidAt ? `Marked paid on ${new Date(paidAt).toLocaleString()}` : 'Admin marked this payout as paid.'
+                      ) : (
+                        'Admin is processing and will send your final amount soon'
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Final amount info */}
+              <div className="rounded-lg bg-white/3 border border-yellow-500/20 p-4">
+                <p className="text-xs text-slate-400 font-medium mb-2">Your Expected Payout</p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Initial Investment</span>
+                    <span className="text-sm font-semibold text-white">
+                      ${pool.user_context?.invested_amount_usdt?.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-300">Current Value</span>
+                    <span className="text-sm font-semibold text-white">
+                      ${pool.user_context?.current_member_value_usdt?.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                  <div className="border-t border-yellow-500/20 pt-2 flex items-center justify-between">
+                    <span className="text-sm font-bold text-yellow-200">Total to Receive</span>
+                    <span className={`text-lg font-bold ${
+                      pool.user_context && pool.user_context.unrealized_pnl_usdt >= 0
+                        ? 'text-green-400'
+                        : 'text-red-400'
+                    }`}>
+                      ${pool.user_context?.current_member_value_usdt?.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════ MEMBER STATUS & CANCELLATION MANAGEMENT ═══════════ */}
+          {(isMember || userHasExitedPool) && (
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
               {userHasExitedPool && !isMember && (
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20">
