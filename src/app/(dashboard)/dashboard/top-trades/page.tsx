@@ -876,7 +876,7 @@ export default function TopTradesPage() {
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
           <Link
             href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 whitespace-nowrap flex items-center gap-1.5 text-white"
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:opacity-90 shadow-lg shadow-[#fc4f02]/30 whitespace-nowrap flex items-center gap-1.5 text-white"
             title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

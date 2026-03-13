@@ -88,8 +88,15 @@ export function ExchangeAutoTradeModal({
         quantity: Math.floor(quantity * 100000000) / 100000000,
       });
       if (response?.success) {
-        onSuccess();
-        onClose();
+        // Show a warning if the OCO (stop-loss / take-profit) order failed
+        if ((response as any).ocoError) {
+          setError(`Order filled ✓ — but OCO protection order failed: ${(response as any).ocoError}. Please set a stop-loss manually.`);
+          // Still call onSuccess so the trade is recorded, but keep modal open so user sees the warning
+          onSuccess();
+        } else {
+          onSuccess();
+          onClose();
+        }
       } else {
         setError("Order failed");
       }

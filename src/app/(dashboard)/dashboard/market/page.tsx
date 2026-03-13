@@ -42,11 +42,16 @@ export default function MarketPage() {
 
 
   useEffect(() => {
-    // Fetch crypto data by default (for market overview page)
-    // This will trigger when connectionType is set or if it's already "crypto"
-    if (!connectionType) return; // Only skip if still checking
+    // Wait for the exchange context to finish loading before fetching.
+    // Without this guard, connectionType can briefly resolve to "crypto" via the
+    // fallback in applyConnection() while the backend is still waking up, causing
+    // an immediate fetch that fails with a cold-start error.
+    if (isCheckingConnection) return;
+    if (!connectionType) return;
     if (connectionType !== "crypto") return;
-    
+
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
     const fetchCoins = async () => {
       setIsLoading(true);
       setError(null);
@@ -54,23 +59,19 @@ export default function MarketPage() {
         const result = await getCachedMarketData(500);
         // Backend already filters coins for Binance with USDT pairs
         setCoins(result.coins);
-        
+
         if (result.lastSyncTime) {
           setLastSyncTime(new Date(result.lastSyncTime));
         }
       } catch (err: any) {
         console.error("Failed to fetch market data:", err);
-        // Provide user-friendly error message
         const errorMessage = err.message || "Failed to load market data";
         setError(errorMessage);
-        
-        // If it's a network error, suggest retrying
-        if (errorMessage.includes("Network error") || errorMessage.includes("Unable to connect")) {
-          // Auto-retry after 5 seconds
-          setTimeout(() => {
-            fetchCoins();
-          }, 5000);
-        }
+
+        // Auto-retry after 4 seconds on any error (covers backend cold-start on Render)
+        retryTimer = setTimeout(() => {
+          fetchCoins();
+        }, 4000);
       } finally {
         setIsLoading(false);
       }
@@ -81,8 +82,11 @@ export default function MarketPage() {
     // Auto-refresh every 5 minutes to match cron job schedule
     const refreshInterval = setInterval(fetchCoins, 5 * 60 * 1000);
 
-    return () => clearInterval(refreshInterval);
-  }, [connectionType]); // Only fetch when connection type changes
+    return () => {
+      clearInterval(refreshInterval);
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [connectionType, isCheckingConnection]);
 
   // Update "time since sync" display every second
   useEffect(() => {
