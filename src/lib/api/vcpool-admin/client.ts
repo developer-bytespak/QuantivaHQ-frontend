@@ -14,6 +14,8 @@ import type {
   UpdateBinanceResponse,
   UpdateFeesRequest,
   UpdateFeesResponse,
+  AdminChangePasswordRequest,
+  AdminChangePasswordResponse,
   AdminPoolsListResponse,
   AdminPoolDetails,
   CreatePoolRequest,
@@ -96,12 +98,13 @@ adminAxios.interceptors.response.use(
       const refresh = getAdminRefreshToken();
       if (refresh) {
         try {
+          // Send refresh token in body so refresh works when cookies aren't sent (e.g. cross-origin dev)
           const { data } = await axios.post<AdminRefreshResponse>(
             `${API_BASE_URL}/admin/auth/refresh`,
-            {},
+            { refreshToken: refresh },
             { withCredentials: true }
           );
-          if (data.accessToken) {
+          if (data.accessToken && data.refreshToken) {
             setAdminTokens(data.accessToken, data.refreshToken);
             original.headers.Authorization = `Bearer ${data.accessToken}`;
             return adminAxios(original);
@@ -187,6 +190,17 @@ export async function adminUpdateFees(
 ): Promise<UpdateFeesResponse> {
   const { data } = await adminAxios.put<UpdateFeesResponse>(
     "/admin/settings/fees",
+    body
+  );
+  return data;
+}
+
+/** PUT /admin/settings/password — Change admin password */
+export async function adminChangePassword(
+  body: AdminChangePasswordRequest
+): Promise<AdminChangePasswordResponse> {
+  const { data } = await adminAxios.put<AdminChangePasswordResponse>(
+    "/admin/settings/password",
     body
   );
   return data;

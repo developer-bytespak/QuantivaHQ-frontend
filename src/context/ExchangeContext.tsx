@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { exchangesService, Connection } from "@/lib/api/exchanges.service";
+import { adminExchangesService } from "@/lib/api/admin-exchanges.service";
+import { hasAdminToken } from "@/lib/api/vcpool-admin/client";
 
 interface ExchangeContextType {
   connectionType: "crypto" | "stocks" | null;
@@ -18,6 +20,11 @@ interface ExchangeContextType {
 const ExchangeContext = createContext<ExchangeContextType | undefined>(undefined);
 
 const DASHBOARD_TYPE_KEY = "quantivahq_dashboard_type";
+
+function isAdminArea(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.pathname.startsWith("/admin");
+}
 
 function getSavedDashboardType(): "crypto" | "stocks" | null {
   if (typeof window === "undefined") return null;
@@ -47,50 +54,95 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const fetchConnectionForType = useCallback(async (type: "crypto" | "stocks") => {
-    try {
-      const response = await exchangesService.getActiveConnectionByType(type);
-      applyConnection(response.data as Connection);
-    } catch {
-      applyConnection(null);
-    }
-  }, [applyConnection]);
+  const fetchConnectionForType = useCallback(
+    async (type: "crypto" | "stocks") => {
+      const useAdmin = isAdminArea() && hasAdminToken();
+      try {
+        if (useAdmin) {
+          const res = await adminExchangesService.getActiveConnectionByType(type);
+          if (res?.data) {
+            applyConnection(res.data as unknown as Connection);
+          } else {
+            applyConnection(null);
+          }
+        } else {
+          const response = await exchangesService.getActiveConnectionByType(type);
+          applyConnection(response.data as Connection);
+        }
+      } catch {
+        applyConnection(null);
+      }
+    },
+    [applyConnection]
+  );
 
   const fetchConnectionInfo = useCallback(async () => {
     setIsLoading(true);
+    const useAdmin = isAdminArea() && hasAdminToken();
     try {
-      // getConnections returns [] on any error (401, network, etc.) so this never throws
-      const fetched = await exchangesService.getConnections();
-      setAllConnections(fetched);
-      const activeCrypto = fetched.find(
-        (c: Connection) => c.status === "active" && c.exchange?.type === "crypto"
-      );
-      const activeStocks = fetched.find(
-        (c: Connection) => c.status === "active" && c.exchange?.type === "stocks"
-      );
-      const hasBoth = !!activeCrypto && !!activeStocks;
-      setHasBothConnections(hasBoth);
+      if (useAdmin) {
+        const fetched = await adminExchangesService.getConnections();
+        setAllConnections(fetched);
+        const activeCrypto = fetched.find(
+          (c: Connection) => c.status === "active" && c.exchange?.type === "crypto"
+        );
+        const activeStocks = fetched.find(
+          (c: Connection) => c.status === "active" && c.exchange?.type === "stocks"
+        );
+        const hasBoth = !!activeCrypto && !!activeStocks;
+        setHasBothConnections(hasBoth);
 
-      if (hasBoth) {
-        const saved = getSavedDashboardType() || "crypto";
-        setSelectedDashboardTypeState(saved);
-        localStorage.setItem(DASHBOARD_TYPE_KEY, saved);
-        await fetchConnectionForType(saved);
-      } else if (activeCrypto || activeStocks) {
-        setSelectedDashboardTypeState(null);
-        const single = (activeCrypto || activeStocks) as Connection;
-        applyConnection(single);
-      } else {
-        // No connections returned (could be 401 / no account). Fall back to getActiveConnection.
-        setSelectedDashboardTypeState(null);
-        try {
-          const response = await exchangesService.getActiveConnection();
-          applyConnection(response.data as Connection);
-        } catch {
+        if (hasBoth) {
+          const saved = getSavedDashboardType() || "crypto";
+          setSelectedDashboardTypeState(saved);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(DASHBOARD_TYPE_KEY, saved);
+          }
+          await fetchConnectionForType(saved);
+        } else if (activeCrypto || activeStocks) {
+          setSelectedDashboardTypeState(null);
+          const single = (activeCrypto || activeStocks) as Connection;
+          applyConnection(single);
+        } else {
+          setSelectedDashboardTypeState(null);
           applyConnection(null);
         }
+      } else {
+        // getConnections returns [] on any error (401, network, etc.) so this never throws
+        const fetched = await exchangesService.getConnections();
+        setAllConnections(fetched);
+        const activeCrypto = fetched.find(
+          (c: Connection) => c.status === "active" && c.exchange?.type === "crypto"
+        );
+        const activeStocks = fetched.find(
+          (c: Connection) => c.status === "active" && c.exchange?.type === "stocks"
+        );
+        const hasBoth = !!activeCrypto && !!activeStocks;
+        setHasBothConnections(hasBoth);
+
+        if (hasBoth) {
+          const saved = getSavedDashboardType() || "crypto";
+          setSelectedDashboardTypeState(saved);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(DASHBOARD_TYPE_KEY, saved);
+          }
+          await fetchConnectionForType(saved);
+        } else if (activeCrypto || activeStocks) {
+          setSelectedDashboardTypeState(null);
+          const single = (activeCrypto || activeStocks) as Connection;
+          applyConnection(single);
+        } else {
+          // No connections returned (could be 401 / no account). Fall back to getActiveConnection.
+          setSelectedDashboardTypeState(null);
+          try {
+            const response = await exchangesService.getActiveConnection();
+            applyConnection(response.data as Connection);
+          } catch {
+            applyConnection(null);
+          }
+        }
       }
-    } catch (err: any) {
+    } catch {
       applyConnection(null);
       setAllConnections([]);
       setHasBothConnections(false);

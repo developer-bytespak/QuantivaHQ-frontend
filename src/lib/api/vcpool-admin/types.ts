@@ -69,6 +69,15 @@ export interface UpdateFeesResponse {
   default_payment_window_minutes: number;
 }
 
+export interface AdminChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export interface AdminChangePasswordResponse {
+  message: string;
+}
+
 // ---- Phase 1B: Admin pool management ----
 
 export type PoolStatus =
