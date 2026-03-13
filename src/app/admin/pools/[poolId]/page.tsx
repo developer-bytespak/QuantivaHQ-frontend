@@ -531,187 +531,212 @@ export default function AdminPoolDetailsPage() {
 
       <button
         onClick={() => router.push("/admin/pools")}
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
       >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        <svg
+          className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
-        Back to Pools
+        <span>Back to Pools</span>
       </button>
 
       {loading && (
         <div className="flex min-h-[40vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#fc4f02] border-t-transparent" />
+          <div className="text-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#fc4f02] border-t-transparent mx-auto mb-3" />
+            <p className="text-slate-400">Loading pool...</p>
+          </div>
         </div>
       )}
 
       {!loading && pool && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-semibold text-white">{pool.name}</h1>
-              <p className="text-xs text-slate-400">
-                Status: <span className="capitalize">{pool.status}</span>
-              </p>
+          {/* ═══════════ POOL HEADER WITH GRADIENT ═══════════ */}
+          <div className="rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-6 sm:p-8 border border-[#fc4f02]/30 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{pool.name}</h1>
+                {pool.description && (
+                  <p className="text-sm text-white/90 max-w-2xl">{pool.description}</p>
+                )}
+              </div>
+              <span className="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap bg-white/20 backdrop-blur-sm text-white border border-white/30">
+                {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {isDraft && (
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(true)}
-                  disabled={saving}
-                  className="rounded-xl border border-[--color-border] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60"
-                >
-                  Edit pool
-                </button>
-              )}
+
+            {/* ── Pool basics grid ── */}
+            <div className="grid gap-4 sm:grid-cols-3 text-xs text-white/90">
+              <div>
+                <p className="mb-1 text-white/70">Contribution per seat</p>
+                <p className="text-lg font-semibold">${pool.contribution_amount} {pool.coin_type}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-white/70">Duration</p>
+                <p className="text-lg font-semibold">{pool.duration_days} days</p>
+              </div>
+              <div>
+                <p className="mb-1 text-white/70">Max members</p>
+                <p className="text-lg font-semibold">{pool.max_members}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══════════ ACTION BUTTONS ═══════════ */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {isDraft && (
               <button
                 type="button"
-                onClick={handleClone}
+                onClick={() => setShowEditModal(true)}
                 disabled={saving}
-                className="rounded-xl border border-[--color-border] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#fc4f02]/50 bg-[#fc4f02]/10 px-4 py-2.5 text-sm font-semibold text-[#fc4f02] hover:bg-[#fc4f02]/20 disabled:opacity-60 transition-colors"
               >
-                Clone
+                ✎ Edit
               </button>
-              {isDraft && (
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={saving}
-                  className="rounded-xl bg-[#fc4f02] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
-                >
-                  Publish
-                </button>
-              )}
-              {isFull && pool.verified_members_count === pool.max_members && (
-                <button
-                  type="button"
-                  onClick={handleStartPool}
-                  disabled={saving}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-                >
-                  Start pool
-                </button>
-              )}
-              {isActive && tradesSummary?.open_trades === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowCompletePoolConfirm(true)}
-                  disabled={saving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
-                >
-                  Complete pool
-                </button>
-              )}
-              {(isOpen || isFull) && (
-                <button
-                  type="button"
-                  onClick={() => setShowCancelPoolConfirm(true)}
-                  disabled={saving}
-                  className="rounded-xl border border-red-500/50 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60"
-                >
-                  Cancel pool
-                </button>
-              )}
-              {isDraft && (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={saving}
-                  className="rounded-xl border border-red-500/50 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60"
-                >
-                  Delete pool
-                </button>
-              )}
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={handleClone}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60 transition-colors"
+            >
+              🔀 Clone
+            </button>
+            {isDraft && (
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+              >
+                📤 Publish
+              </button>
+            )}
+            {isFull && pool.verified_members_count === pool.max_members && (
+              <button
+                type="button"
+                onClick={handleStartPool}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60 transition-colors"
+              >
+                ⚡ Start
+              </button>
+            )}
+            {isActive && tradesSummary?.open_trades === 0 && (
+              <button
+                type="button"
+                onClick={() => setShowCompletePoolConfirm(true)}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60 transition-colors"
+              >
+                ✓ Complete
+              </button>
+            )}
+            {(isOpen || isFull) && (
+              <button
+                type="button"
+                onClick={() => setShowCancelPoolConfirm(true)}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 disabled:opacity-60 transition-colors"
+              >
+                ⊗ Cancel Pool
+              </button>
+            )}
+            {isDraft && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 disabled:opacity-60 transition-colors"
+              >
+                🗑 Delete
+              </button>
+            )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300 space-y-3">
-              <h2 className="text-sm font-semibold text-white">Basics</h2>
-              <div className="space-y-2">
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Name</span>
-                  <span className="text-xs font-medium text-white">{pool.name}</span>
+          {/* ═══════════ POOL STATS CARDS ═══════════ */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Members</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Verified members</span>
+                  <span className="text-lg font-bold text-white">{pool.verified_members_count}/{pool.max_members}</span>
                 </div>
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Contribution per seat</span>
-                  <span className="text-xs font-medium text-white">
-                    ${pool.contribution_amount} {pool.coin_type}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Reserved seats</span>
+                  <span className="text-lg font-bold text-blue-400">{pool.reserved_seats_count}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Available</span>
+                  <span className="text-lg font-bold text-emerald-400">
+                    {pool.max_members - pool.verified_members_count - pool.reserved_seats_count}
                   </span>
-                </div>
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Max members</span>
-                  <span className="text-xs font-medium text-white">{pool.max_members}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Duration</span>
-                  <span className="font-medium text-white">{pool.duration_days} days</span>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300 space-y-3">
-              <h2 className="text-sm font-semibold text-white">Members & seats</h2>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Verified members</span>
-                  <span className="font-medium text-white">
-                    {pool.verified_members_count}
-                  </span>
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Pool Details</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Created</span>
+                  <span className="text-sm font-medium text-white">{new Date(pool.created_at).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Reserved seats</span>
-                  <span className="font-medium text-white">
-                    {pool.reserved_seats_count}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Available seats</span>
-                  <span className="font-medium text-white">
-                    {pool.max_members -
-                      pool.verified_members_count -
-                      pool.reserved_seats_count}
-                  </span>
-                </div>
+                {pool.started_at && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Started</span>
+                    <span className="text-sm font-medium text-white">{new Date(pool.started_at).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {pool.end_date && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Ends</span>
+                    <span className="text-sm font-medium text-white">{new Date(pool.end_date).toLocaleDateString()}</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {(pool.total_invested_usdt || pool.current_pool_value_usdt) && (
+              <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
+                <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Performance</h3>
+                <div className="space-y-3">
+                  {pool.total_invested_usdt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-400">Invested</span>
+                      <span className="text-lg font-bold text-white">${Number(pool.total_invested_usdt).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {pool.current_pool_value_usdt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-400">Current Value</span>
+                      <span className="text-lg font-bold text-white">${Number(pool.current_pool_value_usdt).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {pool.total_profit_usdt && (
+                    <div className={`flex items-center justify-between pt-2 border-t border-[--color-border] ${Number(pool.total_profit_usdt) >= 0 ? '' : ''}`}>
+                      <span className="text-sm text-slate-400">Profit/Loss</span>
+                      <span className={`text-lg font-bold ${Number(pool.total_profit_usdt) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {Number(pool.total_profit_usdt) >= 0 ? '+' : ''}${Number(pool.total_profit_usdt).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Phase 1D: Pool value (active pools only) */}
-          {isActive && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5">
-              <h2 className="text-sm font-semibold text-white mb-3">Pool value</h2>
-              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Total invested</span>
-                  <span className="font-medium text-white">
-                    ${pool.total_invested_usdt ?? "0"} USDT
-                  </span>
-                </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Current value</span>
-                  <span className="font-medium text-white">
-                    ${pool.current_pool_value_usdt ?? "0"} USDT
-                  </span>
-                </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Total profit</span>
-                  <span className={`font-medium ${Number(pool.total_profit_usdt ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    ${pool.total_profit_usdt ?? "0"} USDT
-                  </span>
-                </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Started · Ends</span>
-                  <span className="font-medium text-white">
-                    {pool.started_at ? new Date(pool.started_at).toLocaleDateString() : "—"} · {pool.end_date ? new Date(pool.end_date).toLocaleDateString() : "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Phase 1C: Payments, Reservations, Members; Phase 1D: Trades (only for non-draft pools) */}
+          {/* ═══════════ TABS & CONTENT ═══════════ */}
           {!isDraft && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
               <div className="flex flex-wrap border-b border-[--color-border]">
