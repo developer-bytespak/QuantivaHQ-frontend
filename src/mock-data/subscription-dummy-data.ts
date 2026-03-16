@@ -243,7 +243,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       {
         feature_id: "elite-plus-opt",
         plan_id: "elite-plus-monthly-static",
-        feature_type: FeatureType.OPTION_TRADING,
+        feature_type: FeatureType.OPTIONS_TRADING,
         enabled: true,
         limit_value: null,
         created_at: "2026-02-12T19:15:49.705Z",
@@ -277,7 +277,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       {
         feature_id: "elite-plus-opt-q",
         plan_id: "elite-plus-quarterly-static",
-        feature_type: FeatureType.OPTION_TRADING,
+        feature_type: FeatureType.OPTIONS_TRADING,
         enabled: true,
         limit_value: null,
         created_at: "2026-02-12T19:15:50.366Z",
@@ -311,7 +311,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       {
         feature_id: "elite-plus-opt-y",
         plan_id: "elite-plus-yearly-static",
-        feature_type: FeatureType.OPTION_TRADING,
+        feature_type: FeatureType.OPTIONS_TRADING,
         enabled: true,
         limit_value: null,
         created_at: "2026-02-12T19:15:50.796Z",
