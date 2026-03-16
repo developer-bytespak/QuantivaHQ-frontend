@@ -164,6 +164,13 @@ export function SubscriptionSettings() {
               </li>
             ))}
           </ul>
+          {/* show discount caption above the button so buttons align */}
+          {!isCurrentPlan && plan.discount_percent !== "0" && (
+            <p className="text-xs text-slate-400 mb-3 text-center">
+              Save {plan.discount_percent}% with this plan
+            </p>
+          )}
+
           <div className="flex flex-col justify-end">
             {isCurrentPlan ? (
               <button
@@ -188,11 +195,7 @@ export function SubscriptionSettings() {
                 {isThisPlanLoading ? "Upgrading..." : "Upgrade"}
               </button>
             )}
-            {!isCurrentPlan && plan.discount_percent !== "0" && (
-              <p className="text-xs text-slate-400 mt-3 text-center">
-                Save {plan.discount_percent}% with this plan
-              </p>
-            )}
+            
           </div>
         </div>
       </div>

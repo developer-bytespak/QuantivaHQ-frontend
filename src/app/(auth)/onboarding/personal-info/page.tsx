@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
 import { AUTH_STEPS } from "@/config/navigation";
@@ -28,6 +28,7 @@ export default function PersonalInfoPage() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [countries, setCountries] = useState<Country[]>([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
+  const [countrySearchQuery, setCountrySearchQuery] = useState("");
   
   const [isNationalityDropdownOpen, setIsNationalityDropdownOpen] = useState(false);
   const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -296,6 +297,19 @@ export default function PersonalInfoPage() {
 
   const nationalityData = nationality ? countries.find((c) => c.name === nationality) : null;
 
+  const filteredCountries = useMemo(() => {
+    const q = countrySearchQuery.toLowerCase().trim();
+    if (!q) return countries;
+    const starts: Country[] = [];
+    const contains: Country[] = [];
+    for (const c of countries) {
+      const name = c.name.toLowerCase();
+      if (name.startsWith(q)) starts.push(c);
+      else if (name.includes(q)) contains.push(c);
+    }
+    return [...starts, ...contains];
+  }, [countries, countrySearchQuery]);
+
   // Show loading state while checking if personal info exists
   if (isCheckingInfo) {
     return (
@@ -530,25 +544,47 @@ export default function PersonalInfoPage() {
                             <div className="flex items-center justify-center py-8">
                               <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-[#fc4f02]"></div>
                             </div>
-                          ) : countries.length > 0 ? (
-                            countries.map((country) => (
-                              <button
-                                key={country.code}
-                                type="button"
-                                onClick={() => handleCountrySelect(country.code)}
-                                className={`w-full text-left px-4 py-3 text-sm transition-colors duration-150 ${
-                                  nationality === country.code
-                                    ? "bg-[#1e293b] text-white"
-                                    : "text-white hover:bg-[#1e293b] bg-[#0f172a]"
-                                }`}
-                              >
-                                {country.name}
-                              </button>
-                            ))
                           ) : (
-                            <div className="px-4 py-8 text-center text-sm text-slate-400">
-                              No countries available
-                            </div>
+                            <>
+                              <div className="px-3 py-2">
+                                <input
+                                  type="text"
+                                  aria-label="Search country"
+                                  placeholder="Search country"
+                                  value={countrySearchQuery}
+                                  onChange={(e) => setCountrySearchQuery(e.target.value)}
+                                  className="w-full rounded-lg bg-[#0b1220] border border-[--color-border] px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
+                                />
+                              </div>
+
+                              {filteredCountries.length > 0 ? (
+                                filteredCountries.map((country) => (
+                                  <button
+                                    key={country.code}
+                                    type="button"
+                                    onClick={() => { handleCountrySelect(country.code); setCountrySearchQuery(""); }}
+                                    className={`w-full text-left px-4 py-3 text-sm transition-colors duration-150 ${
+                                      nationality === country.name
+                                        ? "bg-[#1e293b] text-white"
+                                        : "text-white hover:bg-[#1e293b] bg-[#0f172a]"
+                                    }`}
+                                  >
+                                    {country.name}
+                                  </button>
+                                ))
+                              ) : (
+                                // Show contextual messaging when no results
+                                countries.length === 0 ? (
+                                  <div className="px-4 py-8 text-center text-sm text-slate-400">
+                                    No countries available — failed to load country data. This may be due to network issues or the country API being blocked (for example by adblockers or CORS restrictions). Try refreshing the page or checking your network.
+                                  </div>
+                                ) : (
+                                  <div className="px-4 py-8 text-center text-sm text-slate-400">
+                                    No countries match "{countrySearchQuery}".
+                                  </div>
+                                )
+                              )}
+                            </>
                           )}
                         </div>
                       </div>,

@@ -805,74 +805,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   // --- UI Rendering (reuse existing layout and style) ---
   const content = (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
-      {/* Stocks Info Banner with Controls */}
-      {isStocksConnection && (
-        <div className="rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className={`h-2 w-2 rounded-full ${marketDataSource === 'alpaca' ? 'bg-green-500 animate-pulse' : 'bg-blue-500'}`} />
-              <span className="text-sm text-blue-300">
-                Stock Trading Signals - {marketDataSource === 'alpaca' ? 'Real-time Alpaca data' : 'Database cached data'}
-              </span>
-              {lastMarketDataUpdate && (
-                <span className="text-xs text-slate-500">
-                  Updated: {lastMarketDataUpdate.toLocaleTimeString()}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefreshStockData}
-                disabled={loadingMarketData}
-                className="flex items-center gap-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 px-3 py-1.5 text-xs font-medium text-blue-300 transition-all disabled:opacity-50"
-              >
-                <svg className={`w-3.5 h-3.5 ${loadingMarketData ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </button>
-              <button
-                onClick={handleSeedStocks}
-                disabled={isSeeding || isGeneratingSignals}
-                className="flex items-center gap-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 px-3 py-1.5 text-xs font-medium text-purple-300 transition-all disabled:opacity-50"
-                title="Seed popular stocks and generate signals"
-              >
-                {isSeeding ? (
-                  <>
-                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    {isGeneratingSignals ? 'Generating signals...' : 'Seeding...'}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Seed & Generate
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-          {stockMarketData.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {stockMarketData.slice(0, 8).map(stock => (
-                <div key={stock.symbol} className="flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1">
-                  <span className="text-xs font-medium text-white">{stock.symbol}</span>
-                  <span className={`text-xs ${stock.price_change_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {stock.price_change_24h >= 0 ? '+' : ''}{stock.price_change_24h.toFixed(2)}%
-                  </span>
-                </div>
-              ))}
-              {stockMarketData.length > 8 && (
-                <span className="text-xs text-slate-500 self-center">+{stockMarketData.length - 8} more</span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Stocks Info Banner removed per user request */}
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">

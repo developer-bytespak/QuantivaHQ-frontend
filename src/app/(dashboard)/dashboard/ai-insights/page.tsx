@@ -386,8 +386,7 @@ function FilterButtons({
     { id: "trending", label: "Trending" },
     { id: "bullish", label: "Bullish" },
     { id: "bearish", label: "Bearish" },
-    { id: "high-impact", label: "High-impact" },
-    { id: "ai-predicted", label: "AI predicted" },
+    // removed: High-impact, AI predicted
   ];
 
   return (
@@ -859,10 +858,6 @@ export default function AIInsightsPage() {
       filtered = filtered.filter((item) => item.marketMood === "Bullish");
     } else if (activeFilter === "bearish") {
       filtered = filtered.filter((item) => item.marketMood === "Bearish");
-    } else if (activeFilter === "high-impact") {
-      filtered = filtered.filter((item) => item.impactLevel === "High");
-    } else if (activeFilter === "ai-predicted") {
-      filtered = filtered.filter((item) => item.impactScore && item.impactScore > 70);
     }
     // "trending" shows all
 
