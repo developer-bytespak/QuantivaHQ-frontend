@@ -501,6 +501,23 @@ export default function DashboardPage() {
     setOrdersPage(1);
   }, [openOrders.length]);
 
+  // Holdings modal + pagination
+  const [showHoldingsModal, setShowHoldingsModal] = useState(false);
+  const [holdingsPage, setHoldingsPage] = useState(1);
+  const HOLDINGS_PER_PAGE = 5;
+
+  const totalHoldingsPages = Math.max(1, Math.ceil((dashboardData?.positions?.length || 0) / HOLDINGS_PER_PAGE));
+
+  const paginatedHoldings = useMemo(() => {
+    if (!dashboardData || !dashboardData.positions) return [];
+    const start = (holdingsPage - 1) * HOLDINGS_PER_PAGE;
+    return dashboardData.positions.slice(start, start + HOLDINGS_PER_PAGE);
+  }, [dashboardData, holdingsPage]);
+
+  useEffect(() => {
+    setHoldingsPage(1);
+  }, [dashboardData?.positions?.length]);
+
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
       {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
@@ -723,7 +740,7 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : dashboardData && dashboardData.positions.length > 0 ? (
-                    dashboardData.positions.map((position, index) => {
+                    dashboardData.positions.slice(0, 3).map((position, index) => {
                       const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
                       return (
                         <tr
@@ -752,6 +769,16 @@ export default function DashboardPage() {
                   )}
                   </tbody>
                 </table>
+                {dashboardData && dashboardData.positions.length > 3 && (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={() => setShowHoldingsModal(true)}
+                      className="px-4 py-2 rounded-md bg-[#fc4f02] text-white text-sm font-medium hover:bg-[#e04502] transition-colors"
+                    >
+                      View more
+                    </button>
+                  </div>
+                )}
               </div>
               ) : (
                 <div className="space-y-4">
@@ -1206,6 +1233,85 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Holdings Modal */}
+      {showHoldingsModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowHoldingsModal(false)}
+        >
+          <div
+            className="relative w-full max-w-3xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.03] to-transparent p-4 sm:p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 sm:mb-6 flex items-center justify-between">
+              <h2 className="text-lg sm:text-2xl font-bold text-white">All Holdings</h2>
+              <button
+                onClick={() => setShowHoldingsModal(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
+                <thead className="divide-y divide-[--color-border]">
+                  <tr>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Holding</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Values</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Entry</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">P/L</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">P/L value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[--color-border]">
+                  {paginatedHoldings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-slate-400">No positions found</td>
+                    </tr>
+                  ) : (
+                    paginatedHoldings.map((position: any, idx: number) => {
+                      const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
+                      return (
+                        <tr key={position.symbol + idx} className="hover:bg-[--color-surface]/40">
+                          <td className="py-2 px-2 text-white font-medium">{symbol}</td>
+                          <td className="py-2 px-2 text-slate-300">{position.quantity.toFixed(4)}</td>
+                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
+                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.entryPrice)}</td>
+                          <td className={`py-2 px-2 font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(position.pnlPercent)}</td>
+                          <td className={`py-2 px-2 text-slate-400 hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(position.unrealizedPnl)}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-xs text-slate-400">Showing {(holdingsPage - 1) * HOLDINGS_PER_PAGE + 1} - {Math.min(holdingsPage * HOLDINGS_PER_PAGE, (dashboardData?.positions?.length || 0))} of {dashboardData?.positions?.length || 0}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setHoldingsPage(p => Math.max(1, p - 1))}
+                  disabled={holdingsPage === 1}
+                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                  Prev
+                </button>
+                <div className="text-xs text-slate-400">Page {holdingsPage} / {totalHoldingsPages}</div>
+                <button
+                  onClick={() => setHoldingsPage(p => Math.min(totalHoldingsPages, p + 1))}
+                  disabled={holdingsPage === totalHoldingsPages}
+                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === totalHoldingsPages ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Trade Details Overlay (crypto: uses cryptoSignals) */}
       {showTradeOverlay && (() => {
