@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { DASHBOARD_NAV } from "@/config/navigation";
@@ -18,7 +19,9 @@ export default function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
+  const router = useRouter();
   const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [shouldRedirectToPlan, setShouldRedirectToPlan] = useState(false);
   const { refetch: refetchConnection } = useExchange();
   const {
     showUpgradeModal,
@@ -39,8 +42,15 @@ export default function DashboardLayout({
         await refetchConnection();
         if (cancelledRef.current) return;
         await fetchSubscriptionData();
+        if (cancelledRef.current) return;
+        const { hasPlan } = useSubscriptionStore.getState();
+        // API hasPlan false = user has no plan → show choose-plan
+        if (hasPlan === false) {
+          setShouldRedirectToPlan(true);
+          return;
+        }
       } catch {
-        // Active or Subscription failed: still allow dashboard to load (per plan)
+        // Connection or subscription failed: still allow dashboard (e.g. free tier)
       } finally {
         if (!cancelledRef.current) {
           setIsBootstrapping(false);
@@ -53,6 +63,24 @@ export default function DashboardLayout({
       cancelledRef.current = true;
     };
   }, [refetchConnection, fetchSubscriptionData]);
+
+  useEffect(() => {
+    if (!shouldRedirectToPlan || isBootstrapping) return;
+    router.replace("/onboarding/choose-plan");
+  }, [shouldRedirectToPlan, isBootstrapping, router]);
+
+  if (shouldRedirectToPlan) {
+    return (
+      <AuthGuard>
+        <div className="flex h-screen items-center justify-center bg-[--color-background]">
+          <div className="text-center">
+            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-[--color-primary] border-t-transparent mx-auto" />
+            <p className="text-sm text-[--color-foreground]/60">Redirecting to plan selection...</p>
+          </div>
+        </div>
+      </AuthGuard>
+    );
+  }
 
   return (
     <AuthGuard>

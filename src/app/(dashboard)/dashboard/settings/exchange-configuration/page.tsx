@@ -6,19 +6,10 @@ import { createPortal } from "react-dom";
 import { SettingsBackButton } from "@/components/settings/settings-back-button";
 import { useNotification, Notification } from "@/components/common/notification";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { exchangesService, Connection } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
-interface ExchangeConnection {
-  connection_id: string;
-  exchange_id: string;
-  exchange_name: string;
-  status: "active" | "pending" | "invalid";
-  created_at: string;
-  updated_at: string;
-  account_type?: string;
-  verified: boolean;
-  exchange?: { type: "crypto" | "stocks"; name?: string };
-}
+type ExchangeConnection = Connection;
 
 type AccountType = "crypto" | "stocks" | "both";
 
@@ -47,11 +38,11 @@ function getEffectiveAccountType(
 
 export default function ExchangeConfigurationPage() {
   const router = useRouter();
+  const { allConnections, isLoading, refetch } = useExchange();
   const { notification, showNotification, hideNotification } = useNotification();
-  const [connections, setConnections] = useState<ExchangeConnection[]>([]);
+  const connections = allConnections;
   const [selectedConnection, setSelectedConnection] = useState<ExchangeConnection | null>(null);
   const [showUpdateForm, setShowUpdateForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [formData, setFormData] = useState({
     api_key: "",
@@ -84,7 +75,6 @@ export default function ExchangeConfigurationPage() {
 
   useEffect(() => {
     setMounted(true);
-    loadConnections();
   }, []);
 
   // Sync localStorage with effective account type (so deleting one of "both" updates to crypto/stocks)
@@ -95,32 +85,6 @@ export default function ExchangeConfigurationPage() {
       localStorage.setItem("quantivahq_account_type", effectiveAccountType);
     }
   }, [connections, effectiveAccountType]);
-
-  const loadConnections = async (): Promise<ExchangeConnection[]> => {
-    try {
-      setIsLoading(true);
-      const data = await exchangesService.getConnections();
-
-      let connectionsList: ExchangeConnection[] = [];
-      if (Array.isArray(data)) {
-        connectionsList = data;
-      } else if (data && typeof data === "object" && "data" in data) {
-        const dataObj = data as any;
-        if (Array.isArray(dataObj.data)) {
-          connectionsList = dataObj.data;
-        }
-      }
-
-      setConnections(connectionsList);
-      return connectionsList;
-    } catch (error: any) {
-      console.error("Failed to load connections:", error);
-      showNotification("Failed to load exchange connections", "error");
-      return [];
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSelectConnection = (connection: ExchangeConnection) => {
     setSelectedConnection(connection);
@@ -151,7 +115,7 @@ export default function ExchangeConfigurationPage() {
       showNotification("Exchange connection updated successfully", "success");
       setShowUpdateForm(false);
       setSelectedConnection(null);
-      loadConnections();
+      refetch();
     } catch (error: any) {
       showNotification(
         error?.response?.data?.message ?? error?.message ?? "Failed to update exchange connection",
@@ -175,13 +139,6 @@ export default function ExchangeConfigurationPage() {
       setDeleteConfirmation({ isOpen: false, connectionId: null });
       setSelectedConnection(null);
       setShowUpdateForm(false);
-
-      const newConnections = await loadConnections();
-      const newAccountType = getEffectiveAccountType(newConnections);
-      if (newAccountType === "crypto" || newAccountType === "stocks" || newAccountType === "both") {
-        localStorage.setItem("quantivahq_account_type", newAccountType);
-      }
-
       window.location.reload();
     } catch (error: any) {
       showNotification(

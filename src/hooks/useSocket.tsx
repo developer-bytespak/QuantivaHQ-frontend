@@ -4,7 +4,7 @@ import axios from "axios";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { io, Socket } from "socket.io-client";
-// import { useUser } from "./userContext";
+import { getCurrentUser } from "@/lib/api/user";
 
 interface ISocketContext {
     sendMessage: (msg: string) => any;
@@ -24,11 +24,20 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
     const [notifications, setNotifications] = useState<any[]>([]);
     const [notificationCount, setNotificationCount] = useState(0);
     const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+    const [userId, setUserId] = useState<string | null>(null);
     const isNotificationDropdownOpenRef = useRef(false);
-    const userId = "f96b2562-ff2b-4f22-a5c7-fc3fe56491f1"
+    // Guard against React StrictMode double-mount creating two simultaneous connections
+    const socketRef = useRef<Socket | null>(null);
 
     const setNotificationDropdownOpen = useCallback((open: boolean) => {
         isNotificationDropdownOpenRef.current = open;
+    }, []);
+
+    // Fetch the real authenticated userId on mount
+    useEffect(() => {
+        getCurrentUser()
+            .then((user) => setUserId(user.user_id))
+            .catch(() => setUserId(null));
     }, []);
 
     useEffect(() => {
@@ -49,13 +58,16 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
     }, [userId])
 
     useEffect(() => {
-        if(!userId) return;
-            const _socket = io(process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000", {
-                query:{    
-                    userId: userId
-                }}
-            );
-            setSocket(_socket);
+        if (!userId) return;
+        // Prevent StrictMode double-mount from creating a second connection
+        // while the first one is still being established or is already live
+        if (socketRef.current) return;
+
+        const _socket = io(process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000", {
+            query: { userId }
+        });
+        socketRef.current = _socket;
+        setSocket(_socket);
 
             _socket.on("connection:status", (data) => {
                 console.log("connection:status", data);
@@ -81,10 +93,10 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
 
             return () => {
                 _socket.disconnect();
+                socketRef.current = null;
                 setSocket(undefined);
             }
     }, [userId])
-    // console.log(onlineUsers)
 
     const sendMessage:ISocketContext["sendMessage"] = useCallback((msg:string) => {
         if(socket) socket.emit("message", {message:msg})

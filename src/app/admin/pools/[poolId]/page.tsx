@@ -184,6 +184,11 @@ export default function AdminPoolDetailsPage() {
   const [payoutsLoading, setPayoutsLoading] = useState(false);
   const [showCancelPoolConfirm, setShowCancelPoolConfirm] = useState(false);
   const [showCompletePoolConfirm, setShowCompletePoolConfirm] = useState(false);
+  // Popups (replacing window.prompt)
+  const [markRefundedModal, setMarkRefundedModal] = useState<{ cancellationId: string; txId: string; notes: string } | null>(null);
+  const [markPayoutPaidModal, setMarkPayoutPaidModal] = useState<{ payoutId: string; txId: string; notes: string } | null>(null);
+  const [rejectCancellationModal, setRejectCancellationModal] = useState<{ cancellationId: string; reason: string } | null>(null);
+  const [rejectPaymentModal, setRejectPaymentModal] = useState<{ submissionId: string; reason: string } | null>(null);
 
   const isDraft = pool?.status === "draft";
   const isFull = pool?.status === "full";
@@ -330,14 +335,13 @@ export default function AdminPoolDetailsPage() {
     }
   };
 
-  const handleRejectCancellation = async (cancellationId: string) => {
-    const reason = window.prompt("Rejection reason (shown to user):", "Please reconsider. Pool is performing well.");
-    if (reason === null) return;
+  const handleRejectCancellation = async (cancellationId: string, reason: string) => {
     if (!poolId) return;
     setActionSubmitting(cancellationId);
     try {
       await adminRejectCancellation(poolId, cancellationId, { rejection_reason: reason.trim() || "Rejected by admin" });
       showNotification("Cancellation rejected. Member remains active.", "success");
+      setRejectCancellationModal(null);
       loadCancellations();
     } catch (err: unknown) {
       showNotification((err as { message?: string })?.message ?? "Failed to reject", "error");
@@ -352,6 +356,7 @@ export default function AdminPoolDetailsPage() {
     try {
       await adminMarkRefunded(poolId, cancellationId, { binance_tx_id: binanceTxId || undefined, notes: notes || undefined });
       showNotification("Refund marked as completed. Member deactivated.", "success");
+      setMarkRefundedModal(null);
       load();
       loadCancellations();
       loadMembers();
@@ -368,6 +373,7 @@ export default function AdminPoolDetailsPage() {
     try {
       await adminMarkPayoutPaid(poolId, payoutId, { binance_tx_id: binanceTxId || undefined, notes: notes || undefined });
       showNotification("Payout marked as paid.", "success");
+      setMarkPayoutPaidModal(null);
       loadPayouts();
     } catch (err: unknown) {
       showNotification((err as { message?: string })?.message ?? "Failed to mark paid", "error");
@@ -495,14 +501,13 @@ export default function AdminPoolDetailsPage() {
     }
   };
 
-  const handleReject = async (submissionId: string) => {
-    const reason = window.prompt("Rejection reason (shown to user):", "Screenshot unclear or invalid");
-    if (reason === null) return;
+  const handleReject = async (submissionId: string, reason: string) => {
     if (!poolId) return;
     setActionSubmitting(submissionId);
     try {
       await adminRejectPayment(poolId, submissionId, { rejection_reason: reason.trim() || "Rejected by admin" });
       showNotification("Payment rejected. Seat released.", "success");
+      setRejectPaymentModal(null);
       load();
       loadPayments();
       loadReservations();
@@ -526,187 +531,212 @@ export default function AdminPoolDetailsPage() {
 
       <button
         onClick={() => router.push("/admin/pools")}
-        className="inline-flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
       >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        <svg
+          className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 19l-7-7 7-7"
+          />
         </svg>
-        Back to Pools
+        <span>Back to Pools</span>
       </button>
 
       {loading && (
         <div className="flex min-h-[40vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#fc4f02] border-t-transparent" />
+          <div className="text-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#fc4f02] border-t-transparent mx-auto mb-3" />
+            <p className="text-slate-400">Loading pool...</p>
+          </div>
         </div>
       )}
 
       {!loading && pool && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-semibold text-white">{pool.name}</h1>
-              <p className="text-xs text-slate-400">
-                Status: <span className="capitalize">{pool.status}</span>
-              </p>
+          {/* ═══════════ POOL HEADER WITH GRADIENT ═══════════ */}
+          <div className="rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-6 sm:p-8 border border-[#fc4f02]/30 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{pool.name}</h1>
+                {pool.description && (
+                  <p className="text-sm text-white/90 max-w-2xl">{pool.description}</p>
+                )}
+              </div>
+              <span className="px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap bg-white/20 backdrop-blur-sm text-white border border-white/30">
+                {pool.status.charAt(0).toUpperCase() + pool.status.slice(1)}
+              </span>
             </div>
-            <div className="flex flex-wrap gap-3">
-              {isDraft && (
-                <button
-                  type="button"
-                  onClick={() => setShowEditModal(true)}
-                  disabled={saving}
-                  className="rounded-xl border border-[--color-border] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60"
-                >
-                  Edit pool
-                </button>
-              )}
+
+            {/* ── Pool basics grid ── */}
+            <div className="grid gap-4 sm:grid-cols-3 text-xs text-white/90">
+              <div>
+                <p className="mb-1 text-white/70">Contribution per seat</p>
+                <p className="text-lg font-semibold">${pool.contribution_amount} {pool.coin_type}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-white/70">Duration</p>
+                <p className="text-lg font-semibold">{pool.duration_days} days</p>
+              </div>
+              <div>
+                <p className="mb-1 text-white/70">Max members</p>
+                <p className="text-lg font-semibold">{pool.max_members}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══════════ ACTION BUTTONS ═══════════ */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {isDraft && (
               <button
                 type="button"
-                onClick={handleClone}
+                onClick={() => setShowEditModal(true)}
                 disabled={saving}
-                className="rounded-xl border border-[--color-border] px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg border border-[#fc4f02]/50 bg-[#fc4f02]/10 px-4 py-2.5 text-sm font-semibold text-[#fc4f02] hover:bg-[#fc4f02]/20 disabled:opacity-60 transition-colors"
               >
-                Clone
+                ✎ Edit
               </button>
-              {isDraft && (
-                <button
-                  type="button"
-                  onClick={handlePublish}
-                  disabled={saving}
-                  className="rounded-xl bg-[#fc4f02] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-60"
-                >
-                  Publish
-                </button>
-              )}
-              {isFull && pool.verified_members_count === pool.max_members && (
-                <button
-                  type="button"
-                  onClick={handleStartPool}
-                  disabled={saving}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
-                >
-                  Start pool
-                </button>
-              )}
-              {isActive && tradesSummary?.open_trades === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowCompletePoolConfirm(true)}
-                  disabled={saving}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
-                >
-                  Complete pool
-                </button>
-              )}
-              {(isOpen || isFull) && (
-                <button
-                  type="button"
-                  onClick={() => setShowCancelPoolConfirm(true)}
-                  disabled={saving}
-                  className="rounded-xl border border-red-500/50 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60"
-                >
-                  Cancel pool
-                </button>
-              )}
-              {isDraft && (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={saving}
-                  className="rounded-xl border border-red-500/50 px-3 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/10 disabled:opacity-60"
-                >
-                  Delete pool
-                </button>
-              )}
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={handleClone}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-[--color-surface-alt] disabled:opacity-60 transition-colors"
+            >
+              🔀 Clone
+            </button>
+            {isDraft && (
+              <button
+                type="button"
+                onClick={handlePublish}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+              >
+                📤 Publish
+              </button>
+            )}
+            {isFull && pool.verified_members_count === pool.max_members && (
+              <button
+                type="button"
+                onClick={handleStartPool}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60 transition-colors"
+              >
+                ⚡ Start
+              </button>
+            )}
+            {isActive && tradesSummary?.open_trades === 0 && (
+              <button
+                type="button"
+                onClick={() => setShowCompletePoolConfirm(true)}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-60 transition-colors"
+              >
+                ✓ Complete
+              </button>
+            )}
+            {(isOpen || isFull) && (
+              <button
+                type="button"
+                onClick={() => setShowCancelPoolConfirm(true)}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 disabled:opacity-60 transition-colors"
+              >
+                ⊗ Cancel Pool
+              </button>
+            )}
+            {isDraft && (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={saving}
+                className="inline-flex items-center gap-2 rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-400 hover:bg-red-500/20 disabled:opacity-60 transition-colors"
+              >
+                🗑 Delete
+              </button>
+            )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300 space-y-3">
-              <h2 className="text-sm font-semibold text-white">Basics</h2>
-              <div className="space-y-2">
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Name</span>
-                  <span className="text-xs font-medium text-white">{pool.name}</span>
+          {/* ═══════════ POOL STATS CARDS ═══════════ */}
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Members</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Verified members</span>
+                  <span className="text-lg font-bold text-white">{pool.verified_members_count}/{pool.max_members}</span>
                 </div>
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Contribution per seat</span>
-                  <span className="text-xs font-medium text-white">
-                    ${pool.contribution_amount} {pool.coin_type}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Reserved seats</span>
+                  <span className="text-lg font-bold text-blue-400">{pool.reserved_seats_count}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Available</span>
+                  <span className="text-lg font-bold text-emerald-400">
+                    {pool.max_members - pool.verified_members_count - pool.reserved_seats_count}
                   </span>
-                </div>
-                <div className="flex w-full items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-left">
-                  <span className="text-xs text-slate-400">Max members</span>
-                  <span className="text-xs font-medium text-white">{pool.max_members}</span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Duration</span>
-                  <span className="font-medium text-white">{pool.duration_days} days</span>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 text-sm text-slate-300 space-y-3">
-              <h2 className="text-sm font-semibold text-white">Members & seats</h2>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Verified members</span>
-                  <span className="font-medium text-white">
-                    {pool.verified_members_count}
-                  </span>
+            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Pool Details</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-400">Created</span>
+                  <span className="text-sm font-medium text-white">{new Date(pool.created_at).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Reserved seats</span>
-                  <span className="font-medium text-white">
-                    {pool.reserved_seats_count}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400">Available seats</span>
-                  <span className="font-medium text-white">
-                    {pool.max_members -
-                      pool.verified_members_count -
-                      pool.reserved_seats_count}
-                  </span>
-                </div>
+                {pool.started_at && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Started</span>
+                    <span className="text-sm font-medium text-white">{new Date(pool.started_at).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {pool.end_date && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-400">Ends</span>
+                    <span className="text-sm font-medium text-white">{new Date(pool.end_date).toLocaleDateString()}</span>
+                  </div>
+                )}
               </div>
             </div>
+
+            {(pool.total_invested_usdt || pool.current_pool_value_usdt) && (
+              <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
+                <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Performance</h3>
+                <div className="space-y-3">
+                  {pool.total_invested_usdt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-400">Invested</span>
+                      <span className="text-lg font-bold text-white">${Number(pool.total_invested_usdt).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {pool.current_pool_value_usdt && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-400">Current Value</span>
+                      <span className="text-lg font-bold text-white">${Number(pool.current_pool_value_usdt).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {pool.total_profit_usdt && (
+                    <div className={`flex items-center justify-between pt-2 border-t border-[--color-border] ${Number(pool.total_profit_usdt) >= 0 ? '' : ''}`}>
+                      <span className="text-sm text-slate-400">Profit/Loss</span>
+                      <span className={`text-lg font-bold ${Number(pool.total_profit_usdt) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {Number(pool.total_profit_usdt) >= 0 ? '+' : ''}${Number(pool.total_profit_usdt).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Phase 1D: Pool value (active pools only) */}
-          {isActive && (
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5">
-              <h2 className="text-sm font-semibold text-white mb-3">Pool value</h2>
-              <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Total invested</span>
-                  <span className="font-medium text-white">
-                    ${pool.total_invested_usdt ?? "0"} USDT
-                  </span>
-                </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Current value</span>
-                  <span className="font-medium text-white">
-                    ${pool.current_pool_value_usdt ?? "0"} USDT
-                  </span>
-                </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Total profit</span>
-                  <span className={`font-medium ${Number(pool.total_profit_usdt ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                    ${pool.total_profit_usdt ?? "0"} USDT
-                  </span>
-                </div>
-                <div className="rounded-lg bg-[--color-surface-alt] px-3 py-2 text-xs">
-                  <span className="text-slate-400 block">Started · Ends</span>
-                  <span className="font-medium text-white">
-                    {pool.started_at ? new Date(pool.started_at).toLocaleDateString() : "—"} · {pool.end_date ? new Date(pool.end_date).toLocaleDateString() : "—"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Phase 1C: Payments, Reservations, Members; Phase 1D: Trades (only for non-draft pools) */}
+          {/* ═══════════ TABS & CONTENT ═══════════ */}
           {!isDraft && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
               <div className="flex flex-wrap border-b border-[--color-border]">
@@ -750,6 +780,22 @@ export default function AdminPoolDetailsPage() {
                                 {p.payment_method} · {p.total_amount} ·{" "}
                                 <span className="capitalize">{p.status}</span>
                               </p>
+                              {(p.tx_hash || p.binance_tx_id) && (
+                                <p className="text-xs text-slate-400 mt-1">
+                                  TX Hash:{" "}
+                                  <span className="font-mono text-slate-300">
+                                    {p.tx_hash || p.binance_tx_id}
+                                  </span>
+                                </p>
+                              )}
+                              {p.user_wallet_address && (
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  User wallet:{" "}
+                                  <span className="font-mono text-slate-300">
+                                    {p.user_wallet_address}
+                                  </span>
+                                </p>
+                              )}
                               {p.screenshot_url && (
                                 <a
                                   href={p.screenshot_url}
@@ -764,7 +810,7 @@ export default function AdminPoolDetailsPage() {
                                 <p className="text-xs text-red-400 mt-1">Rejected: {p.rejection_reason}</p>
                               )}
                             </div>
-                            {p.status === "processing" && (
+                            {(p.status === "pending" || p.status === "processing") && (
                               <div className="flex gap-2">
                                 <button
                                   type="button"
@@ -776,7 +822,7 @@ export default function AdminPoolDetailsPage() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleReject(p.submission_id)}
+                                  onClick={() => setRejectPaymentModal({ submissionId: p.submission_id, reason: "Screenshot unclear or invalid" })}
                                   disabled={actionSubmitting !== null}
                                   className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60"
                                 >
@@ -892,7 +938,7 @@ export default function AdminPoolDetailsPage() {
                                     <button type="button" onClick={() => handleApproveCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500 disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Approve"}
                                     </button>
-                                    <button type="button" onClick={() => handleRejectCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
+                                    <button type="button" onClick={() => setRejectCancellationModal({ cancellationId: c.cancellation_id, reason: "Please reconsider. Pool is performing well." })} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Reject"}
                                     </button>
                                   </>
@@ -900,11 +946,7 @@ export default function AdminPoolDetailsPage() {
                                 {c.status === "approved" && (
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      const txId = window.prompt("Binance TX ID (optional):");
-                                      const notes = window.prompt("Notes (optional):");
-                                      if (txId !== null && notes !== null) handleMarkRefunded(c.cancellation_id, txId.trim() || undefined, notes.trim() || undefined);
-                                    }}
+                                    onClick={() => setMarkRefundedModal({ cancellationId: c.cancellation_id, txId: "", notes: "" })}
                                     disabled={actionSubmitting !== null}
                                     className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 disabled:opacity-60"
                                   >
@@ -945,11 +987,7 @@ export default function AdminPoolDetailsPage() {
                               {p.status === "pending" && (
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    const txId = window.prompt("Binance TX ID (optional):");
-                                    const notes = window.prompt("Notes (optional):");
-                                    if (txId !== null && notes !== null) handleMarkPayoutPaid(p.payout_id, txId.trim() || undefined, notes.trim() || undefined);
-                                  }}
+                                  onClick={() => setMarkPayoutPaidModal({ payoutId: p.payout_id, txId: "", notes: "" })}
                                   disabled={actionSubmitting !== null}
                                   className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
                                 >
@@ -1024,6 +1062,126 @@ export default function AdminPoolDetailsPage() {
                   >
                     {saving ? "Deleting…" : "Delete"}
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mark refunded popup */}
+          {markRefundedModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Mark refunded</h3>
+                <p className="mt-1 text-sm text-slate-400">Record the transfer and mark this cancellation as refunded.</p>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Binance TX ID </label>
+                    <input
+                      type="text"
+                      value={markRefundedModal.txId}
+                      onChange={(e) => setMarkRefundedModal((prev) => (prev ? { ...prev, txId: e.target.value } : null))}
+                      placeholder="e.g. abc123..."
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
+                    <input
+                      type="text"
+                      value={markRefundedModal.notes}
+                      onChange={(e) => setMarkRefundedModal((prev) => (prev ? { ...prev, notes: e.target.value } : null))}
+                      placeholder="Internal notes"
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setMarkRefundedModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleMarkRefunded(markRefundedModal.cancellationId, markRefundedModal.txId || undefined, markRefundedModal.notes || undefined)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-500 disabled:opacity-60">{actionSubmitting === markRefundedModal.cancellationId ? "…" : "Mark refunded"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mark payout paid popup */}
+          {markPayoutPaidModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Mark payout paid</h3>
+                <p className="mt-1 text-sm text-slate-400">Record the transfer and mark this payout as paid.</p>
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Binance TX ID (optional)</label>
+                    <input
+                      type="text"
+                      value={markPayoutPaidModal.txId}
+                      onChange={(e) => setMarkPayoutPaidModal((prev) => (prev ? { ...prev, txId: e.target.value } : null))}
+                      placeholder="e.g. abc123..."
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">Notes (optional)</label>
+                    <input
+                      type="text"
+                      value={markPayoutPaidModal.notes}
+                      onChange={(e) => setMarkPayoutPaidModal((prev) => (prev ? { ...prev, notes: e.target.value } : null))}
+                      placeholder="Internal notes"
+                      className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                    />
+                  </div>
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setMarkPayoutPaidModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleMarkPayoutPaid(markPayoutPaidModal.payoutId, markPayoutPaidModal.txId || undefined, markPayoutPaidModal.notes || undefined)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60">{actionSubmitting === markPayoutPaidModal.payoutId ? "…" : "Mark paid"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reject cancellation popup */}
+          {rejectCancellationModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Reject cancellation</h3>
+                <p className="mt-1 text-sm text-slate-400">This reason will be shown to the member.</p>
+                <div className="mt-4">
+                  <label className="block text-xs text-slate-400 mb-1">Rejection reason</label>
+                  <input
+                    type="text"
+                    value={rejectCancellationModal.reason}
+                    onChange={(e) => setRejectCancellationModal((prev) => (prev ? { ...prev, reason: e.target.value } : null))}
+                    placeholder="e.g. Please reconsider. Pool is performing well."
+                    className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                  />
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setRejectCancellationModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleRejectCancellation(rejectCancellationModal.cancellationId, rejectCancellationModal.reason)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60">{actionSubmitting === rejectCancellationModal.cancellationId ? "…" : "Reject"}</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Reject payment popup */}
+          {rejectPaymentModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl p-5">
+                <h3 className="text-lg font-semibold text-white">Reject payment</h3>
+                <p className="mt-1 text-sm text-slate-400">This reason will be shown to the user.</p>
+                <div className="mt-4">
+                  <label className="block text-xs text-slate-400 mb-1">Rejection reason</label>
+                  <input
+                    type="text"
+                    value={rejectPaymentModal.reason}
+                    onChange={(e) => setRejectPaymentModal((prev) => (prev ? { ...prev, reason: e.target.value } : null))}
+                    placeholder="e.g. Screenshot unclear or invalid"
+                    className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+                  />
+                </div>
+                <div className="mt-6 flex gap-3">
+                  <button type="button" onClick={() => setRejectPaymentModal(null)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60">Cancel</button>
+                  <button type="button" onClick={() => handleReject(rejectPaymentModal.submissionId, rejectPaymentModal.reason)} disabled={actionSubmitting !== null} className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-60">{actionSubmitting === rejectPaymentModal.submissionId ? "…" : "Reject"}</button>
                 </div>
               </div>
             </div>

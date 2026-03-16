@@ -8,6 +8,7 @@ export enum PlanTier {
   FREE = "FREE",
   PRO = "PRO",
   ELITE = "ELITE",
+  ELITE_PLUS = "ELITE_PLUS",
 }
 
 export enum BillingPeriod {
@@ -210,6 +211,109 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
         feature_type: FeatureType.CUSTOM_STRATEGIES,
         enabled: true,
         limit_value: -1,
+        created_at: "2026-02-12T19:15:50.796Z",
+        updated_at: "2026-02-12T19:15:50.796Z"
+      }
+    ]
+  },
+  // ============= ELITE PLUS (static - coming soon) =============
+  {
+    plan_id: "elite-plus-monthly-static",
+    tier: PlanTier.ELITE_PLUS,
+    billing_period: BillingPeriod.MONTHLY,
+    price: "119.99",
+    base_price: "119.99",
+    discount_percent: "0",
+    name: "ELITE Plus Plan",
+    description: "Everything in ELITE plus Option Trading",
+    is_active: true,
+    display_order: 4,
+    created_at: "2026-02-12T19:15:49.478Z",
+    updated_at: "2026-02-12T19:15:49.478Z",
+    plan_features: [
+      {
+        feature_id: "elite-plus-1",
+        plan_id: "elite-plus-monthly-static",
+        feature_type: FeatureType.CUSTOM_STRATEGIES,
+        enabled: true,
+        limit_value: -1,
+        created_at: "2026-02-12T19:15:49.705Z",
+        updated_at: "2026-02-12T19:15:49.705Z"
+      },
+      {
+        feature_id: "elite-plus-opt",
+        plan_id: "elite-plus-monthly-static",
+        feature_type: FeatureType.OPTION_TRADING,
+        enabled: true,
+        limit_value: null,
+        created_at: "2026-02-12T19:15:49.705Z",
+        updated_at: "2026-02-12T19:15:49.705Z"
+      }
+    ]
+  },
+  {
+    plan_id: "elite-plus-quarterly-static",
+    tier: PlanTier.ELITE_PLUS,
+    billing_period: BillingPeriod.QUARTERLY,
+    price: "305.97",
+    base_price: "119.99",
+    discount_percent: "15",
+    name: "ELITE Plus Plan",
+    description: "Everything in ELITE plus Option Trading",
+    is_active: true,
+    display_order: 4,
+    created_at: "2026-02-12T19:15:50.257Z",
+    updated_at: "2026-02-12T19:15:50.257Z",
+    plan_features: [
+      {
+        feature_id: "elite-plus-2",
+        plan_id: "elite-plus-quarterly-static",
+        feature_type: FeatureType.CUSTOM_STRATEGIES,
+        enabled: true,
+        limit_value: -1,
+        created_at: "2026-02-12T19:15:50.366Z",
+        updated_at: "2026-02-12T19:15:50.366Z"
+      },
+      {
+        feature_id: "elite-plus-opt-q",
+        plan_id: "elite-plus-quarterly-static",
+        feature_type: FeatureType.OPTION_TRADING,
+        enabled: true,
+        limit_value: null,
+        created_at: "2026-02-12T19:15:50.366Z",
+        updated_at: "2026-02-12T19:15:50.366Z"
+      }
+    ]
+  },
+  {
+    plan_id: "elite-plus-yearly-static",
+    tier: PlanTier.ELITE_PLUS,
+    billing_period: BillingPeriod.YEARLY,
+    price: "1151.9",
+    base_price: "119.99",
+    discount_percent: "20",
+    name: "ELITE Plus Plan",
+    description: "Everything in ELITE plus Option Trading",
+    is_active: true,
+    display_order: 4,
+    created_at: "2026-02-12T19:15:50.689Z",
+    updated_at: "2026-02-12T19:15:50.689Z",
+    plan_features: [
+      {
+        feature_id: "elite-plus-3",
+        plan_id: "elite-plus-yearly-static",
+        feature_type: FeatureType.CUSTOM_STRATEGIES,
+        enabled: true,
+        limit_value: -1,
+        created_at: "2026-02-12T19:15:50.796Z",
+        updated_at: "2026-02-12T19:15:50.796Z"
+      },
+      {
+        feature_id: "elite-plus-opt-y",
+        plan_id: "elite-plus-yearly-static",
+        feature_type: FeatureType.OPTION_TRADING,
+        enabled: true,
+        limit_value: null,
         created_at: "2026-02-12T19:15:50.796Z",
         updated_at: "2026-02-12T19:15:50.796Z"
       }

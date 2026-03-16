@@ -29,7 +29,7 @@ export default function AdminSettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [showNotification]);
+  }, []);
 
   if (loading) {
     return (

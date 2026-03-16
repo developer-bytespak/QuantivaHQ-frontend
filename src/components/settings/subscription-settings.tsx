@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import useSubscriptionStore from "@/state/subscription-store";
-import { PlanTier, BillingPeriod } from "@/mock-data/subscription-dummy-data";
+import { PlanTier, BillingPeriod, getPlansByTier } from "@/mock-data/subscription-dummy-data";
 import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
 
 type SubscriptionPlanWithPriceId = SubscriptionPlan & { priceId: string };
@@ -98,28 +98,42 @@ export function SubscriptionSettings() {
     );
   };
 
-  const renderPlanCard = (plan: SubscriptionPlanWithPriceId) => {
-    const isCurrentPlan = currentSubscription?.plan_id === plan.plan_id;
+  const renderPlanCard = (plan: SubscriptionPlanWithPriceId, isStaticComingSoon = false) => {
+    const isCurrentPlan = !isStaticComingSoon && currentSubscription?.plan_id === plan.plan_id;
     const isUpgrade = !isCurrentPlan;
     const isThisPlanLoading = loadingPlanId === plan.plan_id;
 
-    // Different colors for PRO vs ELITE
+    // Different colors for PRO vs ELITE vs ELITE_PLUS
     const isElite = plan.tier === PlanTier.ELITE;
+    const isElitePlus = plan.tier === PlanTier.ELITE_PLUS;
     const borderColor = isCurrentPlan
-      ? isElite
+      ? isElitePlus
+        ? "border-emerald-400 bg-emerald-500/10"
+        : isElite
         ? "border-blue-400 bg-blue-500/10"
         : "border-[#fc4f02] bg-[#fc4f02]/10"
+      : isElitePlus
+      ? "border-[--color-border] hover:border-emerald-400/50 bg-emerald-500/5"
       : isElite
       ? "border-[--color-border] hover:border-blue-400/50 bg-blue-500/5"
       : "border-[--color-border] hover:border-[#fc4f02]/50";
     
-    const buttonColor = isElite
+    const buttonColor = isElitePlus
+      ? "bg-emerald-500 text-white hover:bg-emerald-600"
+      : isElite
       ? "bg-blue-500 text-white hover:bg-blue-600"
       : "bg-[#fc4f02] text-white hover:bg-[#e04502]";
 
     const benefits =
       plan.tier === PlanTier.PRO
         ? ["5 custom strategies", "Real-time news"]
+        : plan.tier === PlanTier.ELITE_PLUS
+        ? [
+            "Unlimited custom strategies",
+            "Real-time news",
+            "Early access to new upgrades",
+            "Option trading",
+          ]
         : [
             "Unlimited custom strategies",
             "Real-time news",
@@ -158,6 +172,13 @@ export function SubscriptionSettings() {
               >
                 Current Plan
               </button>
+            ) : isStaticComingSoon ? (
+              <button
+                disabled
+                className="w-full px-4 py-2 bg-slate-500/30 text-slate-400 rounded-lg text-sm font-semibold cursor-not-allowed"
+              >
+                Coming Soon
+              </button>
             ) : (
               <button 
                 className={`w-full px-4 py-2 ${buttonColor} rounded-lg transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -186,6 +207,8 @@ export function SubscriptionSettings() {
         return "text-[#fc4f02]";
       case PlanTier.ELITE:
         return "text-blue-500";
+      case PlanTier.ELITE_PLUS:
+        return "text-emerald-500";
       default:
         return "text-white";
     }
@@ -199,6 +222,8 @@ export function SubscriptionSettings() {
         return "bg-[#fc4f02]/10";
       case PlanTier.ELITE:
         return "bg-blue-500/10";
+      case PlanTier.ELITE_PLUS:
+        return "bg-emerald-500/10";
       default:
         return "bg-slate-500/10";
     }
@@ -209,8 +234,8 @@ export function SubscriptionSettings() {
     const data = {
       plan_id: planId,
       price_id: priceId || "price_1QXQ52EzYvKYlo2C0986b63e",
-      cancel_url: `localhost:3001/dashboard/settings/subscription`,
-      success_url: `localhost:3001/dashboard/settings/subscription`,
+      cancel_url: `${window.location.origin}/dashboard/settings/subscription`,
+      success_url: `${window.location.origin}/dashboard/settings/subscription`,
     };
 
     console.log(data);
@@ -526,6 +551,16 @@ export function SubscriptionSettings() {
                   }
                   return renderPlanCard({ ...plan, priceId });
                 })}
+              </div>
+            </div>
+
+            {/* ELITE Plus Plan Group - 3 plans (static, coming soon) */}
+            <div>
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-3">ELITE Plus Plan</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+                {getPlansByTier(PlanTier.ELITE_PLUS).map((plan) =>
+                  renderPlanCard({ ...plan, priceId: "" }, true)
+                )}
               </div>
             </div>
 

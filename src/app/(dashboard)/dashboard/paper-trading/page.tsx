@@ -20,7 +20,7 @@ import TradeLeaderboard from "./components/trade-leaderboard";
 import { OrdersPanel } from "./components/orders-panel";
 import { AIAutoTradePanel } from "./components/ai-auto-trade-panel";
 import { CryptoAIAutoTradePanel } from "./components/crypto-ai-auto-trade-panel";
-import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
+import { useRealtimeAccountStream } from "@/hooks/useRealtimeAccountStream";
 
 // ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
 const ACCOUNT_DATA_REFRESH_INTERVAL = 600000;  // 10 minutes - Fallback only
@@ -99,7 +99,7 @@ export default function PaperTradingPage() {
   // WebSocket connection for real-time updates (only for crypto, not stocks)
   const [socketKey, setSocketKey] = useState(0);
   const isCryptoMode = connectionType === "crypto";
-  const realtimeData = useRealtimePaperTrading('default-user', socketKey, isCryptoMode);
+  const realtimeData = useRealtimeAccountStream('default-user', socketKey, isCryptoMode);
   
   // Refs to track last fetch times and prevent aggressive reloads
   const lastAccountDataFetch = useRef<number>(0);

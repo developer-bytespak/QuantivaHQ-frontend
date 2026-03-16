@@ -13,6 +13,8 @@ export interface AdminProfile {
   email: string;
   full_name: string;
   binance_uid: string | null;
+  wallet_address: string | null;
+  payment_network: string | null;
   default_pool_fee_percent: string;
   default_admin_profit_fee_percent: string;
   default_cancellation_fee_percent: string;
@@ -39,12 +41,16 @@ export interface AdminRefreshResponse {
 }
 
 export interface UpdateBinanceRequest {
-  binance_uid: string;
+  binance_uid?: string;
+  wallet_address?: string;
+  payment_network?: string;
 }
 
 export interface UpdateBinanceResponse {
   message: string;
   binance_uid: string;
+  wallet_address: string;
+  payment_network: string;
 }
 
 export interface UpdateFeesRequest {
@@ -154,6 +160,9 @@ export interface AdminPaymentSubmission {
   created_at: string;
   user_email?: string;
   user_username?: string;
+  tx_hash: string | null;
+  binance_tx_id: string | null;
+  user_wallet_address: string | null;
 }
 
 export interface AdminPaymentsListResponse {
