@@ -1,12 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { adminGetSettings, adminUpdateBinance } from "@/lib/api/vcpool-admin";
-import {
-  useNotification,
-  Notification,
-} from "@/components/common/notification";
+import { useNotification, Notification } from "@/components/common/notification";
+import { SettingsBackButton } from "@/components/settings/settings-back-button";
 
 export default function AdminSettingsBinancePage() {
   const { notification, showNotification, hideNotification } =
@@ -68,25 +65,7 @@ export default function AdminSettingsBinancePage() {
           onClose={hideNotification}
         />
       )}
-      <Link
-        href="/admin/settings"
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-white text-sm font-medium"
-      >
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
-        Back to Settings
-      </Link>
+      <SettingsBackButton backHref="/admin/settings" />
       <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6">
         <h2 className="text-lg font-semibold text-white mb-2">
           Deposit Wallet Address

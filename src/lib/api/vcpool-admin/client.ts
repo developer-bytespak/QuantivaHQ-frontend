@@ -14,6 +14,8 @@ import type {
   UpdateBinanceResponse,
   UpdateFeesRequest,
   UpdateFeesResponse,
+  AdminChangePasswordRequest,
+  AdminChangePasswordResponse,
   AdminPoolsListResponse,
   AdminPoolDetails,
   CreatePoolRequest,
@@ -40,6 +42,10 @@ import type {
   AdminMarkPayoutPaidRequest,
   AdminMarkPayoutPaidResponse,
   AdminCancelPoolResponse,
+  AdminBinanceDepositsResponse,
+  AdminBinanceWithdrawalsResponse,
+  AdminBinanceAnalytics,
+  AdminBinanceTransactionFilters,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -72,7 +78,7 @@ export function hasAdminToken(): boolean {
   return !!getAdminAccessToken();
 }
 
-const adminAxios: AxiosInstance = axios.create({
+export const adminAxios: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,
   timeout: 30000,
@@ -96,12 +102,13 @@ adminAxios.interceptors.response.use(
       const refresh = getAdminRefreshToken();
       if (refresh) {
         try {
+          // Send refresh token in body so refresh works when cookies aren't sent (e.g. cross-origin dev)
           const { data } = await axios.post<AdminRefreshResponse>(
             `${API_BASE_URL}/admin/auth/refresh`,
-            {},
+            { refreshToken: refresh },
             { withCredentials: true }
           );
-          if (data.accessToken) {
+          if (data.accessToken && data.refreshToken) {
             setAdminTokens(data.accessToken, data.refreshToken);
             original.headers.Authorization = `Bearer ${data.accessToken}`;
             return adminAxios(original);
@@ -187,6 +194,17 @@ export async function adminUpdateFees(
 ): Promise<UpdateFeesResponse> {
   const { data } = await adminAxios.put<UpdateFeesResponse>(
     "/admin/settings/fees",
+    body
+  );
+  return data;
+}
+
+/** PUT /admin/settings/password — Change admin password */
+export async function adminChangePassword(
+  body: AdminChangePasswordRequest
+): Promise<AdminChangePasswordResponse> {
+  const { data } = await adminAxios.put<AdminChangePasswordResponse>(
+    "/admin/settings/password",
     body
   );
   return data;
@@ -521,6 +539,209 @@ export async function adminGetTrendingAssetsWithInsights(
   const { data } = await adminAxios.get<AdminTrendingWithInsightsResponse>(
     `/strategies/pre-built/${strategyId}/trending-with-insights?limit=${limit}`,
     { timeout: 120000 }
+  );
+  return data;
+}
+
+// ---- Admin Binance APIs (Real Binance Stream) ----
+
+export interface BinanceDeposit {
+  id: string;
+  coin: string;
+  amount: string;
+  address: string;
+  addressTag: string | null;
+  txId: string;
+  insertTime: number;
+  status: number;
+  statusText: string;
+  confirmTimes: string;
+  unlockConfirm: number;
+  network: string;
+}
+
+export interface BinanceWithdrawal {
+  id: string;
+  coin: string;
+  withdrawOrderId: string;
+  network: string;
+  address: string;
+  addressTag: string | null;
+  txId: string;
+  amount: string;
+  transactionFee: string;
+  status: number;
+  statusText: string;
+  completeTime: number;
+  insertTime: number;
+  failedReason?: string;
+}
+
+export interface BinanceAccountBalance {
+  asset: string;
+  free: string;
+  locked: string;
+  total: string;
+}
+
+export interface BinanceAccount {
+  account_id: string;
+  email: string;
+  balances: BinanceAccountBalance[];
+  account_info: {
+    maker_commission: string;
+    taker_commission: string;
+    buy_commission: string;
+    sell_commission: string;
+    can_trade: boolean;
+    can_deposit: boolean;
+    can_withdraw: boolean;
+  };
+}
+
+export interface BinanceTrade {
+  symbol: string;
+  id: string;
+  orderId: string;
+  price: string;
+  qty: string;
+  commission: string;
+  commissionAsset: string;
+  time: number;
+  isBuyer: boolean;
+  isMaker: boolean;
+  isBestMatch: boolean;
+}
+
+export interface BinanceSummaryDeposit {
+  id: string;
+  coin: string;
+  amount: number;
+  network: string;
+  status: number;
+  address: string;
+  addressTag: string;
+  txId: string;
+  insertTime: number;
+  transferType: number;
+  confirmTimes: string;
+}
+
+export interface BinanceSummaryWithdrawal {
+  id: string;
+  coin: string;
+  amount: number;
+  network: string;
+  address: string;
+  txId: string;
+  status: number;
+  completeTime: string;
+  applyTime: string;
+  transferType: number;
+}
+
+export interface BinanceSummary {
+  account_info: {
+    assets: Array<{
+      symbol: string;
+      free: string;
+      locked: string;
+      total: string;
+    }>;
+    totalValueUSD: number;
+  };
+  deposits: BinanceSummaryDeposit[];
+  withdrawals: BinanceSummaryWithdrawal[];
+  summary: {
+    total_deposits: number;
+    total_withdrawals: number;
+    total_deposit_amount: number;
+    total_withdrawal_amount: number;
+  };
+}
+
+/** GET /admin/binance/health - No auth required */
+export async function adminBinanceHealth() {
+  const { data } = await axios.get("/admin/binance/health");
+  return data;
+}
+
+/** GET /admin/binance/stream-status */
+export async function adminBinanceStreamStatus() {
+  const { data } = await adminAxios.get("/admin/binance/stream-status");
+  return data;
+}
+
+/** GET /admin/binance/account */
+export async function adminBinanceAccount(): Promise<{ success: boolean; data: BinanceAccount; last_updated: string }> {
+  const { data } = await adminAxios.get("/admin/binance/account");
+  return data;
+}
+
+/** GET /admin/binance/deposits */
+export async function adminBinanceDeposits(params?: {
+  coin?: string;
+  status?: number;
+  offset?: number;
+  limit?: number;
+  startTime?: number;
+  endTime?: number;
+}): Promise<{ success: boolean; data: BinanceDeposit[]; count: number; last_updated: string }> {
+  const query = new URLSearchParams();
+  if (params?.coin) query.set("coin", params.coin);
+  if (params?.status !== undefined) query.set("status", String(params.status));
+  if (params?.offset !== undefined) query.set("offset", String(params.offset));
+  if (params?.limit !== undefined) query.set("limit", String(params.limit));
+  if (params?.startTime) query.set("startTime", String(params.startTime));
+  if (params?.endTime) query.set("endTime", String(params.endTime));
+  
+  const { data } = await adminAxios.get(
+    `/admin/binance/deposits${query.toString() ? `?${query.toString()}` : ""}`
+  );
+  return data;
+}
+
+/** GET /admin/binance/withdrawals */
+export async function adminBinanceWithdrawals(params?: {
+  coin?: string;
+  status?: number;
+  offset?: number;
+  limit?: number;
+  startTime?: number;
+  endTime?: number;
+}): Promise<{ success: boolean; data: BinanceWithdrawal[]; count: number; last_updated: string }> {
+  const query = new URLSearchParams();
+  if (params?.coin) query.set("coin", params.coin);
+  if (params?.status !== undefined) query.set("status", String(params.status));
+  if (params?.offset !== undefined) query.set("offset", String(params.offset));
+  if (params?.limit !== undefined) query.set("limit", String(params.limit));
+  if (params?.startTime) query.set("startTime", String(params.startTime));
+  if (params?.endTime) query.set("endTime", String(params.endTime));
+  
+  const { data } = await adminAxios.get(
+    `/admin/binance/withdrawals${query.toString() ? `?${query.toString()}` : ""}`
+  );
+  return data;
+}
+
+/** GET /admin/binance/trades/:symbol */
+export async function adminBinanceTrades(
+  symbol: string,
+  limit: number = 50
+): Promise<{ success: boolean; data: BinanceTrade[]; count: number; symbol: string; last_updated: string }> {
+  const { data } = await adminAxios.get(
+    `/admin/binance/trades/${symbol}?limit=${limit}`
+  );
+  return data;
+}
+
+/** GET /admin/binance/summary */
+export async function adminBinanceSummary(coin?: string): Promise<{ success: boolean; data: BinanceSummary; last_updated: string }> {
+  const query = new URLSearchParams();
+  if (coin) query.set("coin", coin);
+  
+  const { data } = await adminAxios.get(
+    `/admin/binance/summary${query.toString() ? `?${query.toString()}` : ""}`
   );
   return data;
 }

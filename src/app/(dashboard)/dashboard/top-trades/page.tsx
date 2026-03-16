@@ -10,8 +10,17 @@ import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
 import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
+import { TopTradeVcPoolContext } from "./context/top-trade-vc-pool-context";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
+
+export interface TopTradesPageProps {
+  /** When set, page runs in admin VC Pool mode: trades execute via adminCreateTrade(poolId, body) */
+  vcPoolId?: string;
+  /** Override connection (used in admin mode when user context has no connection) */
+  connectionId?: string;
+  connectionType?: "crypto" | "stocks";
+}
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -96,12 +105,14 @@ interface Trade {
   volume_status?: "NORMAL" | "VOLUME_SURGE" | "MASSIVE_SURGE";
 }
 
-export default function TopTradesPage() {
-  // Connection type detection - using global context
-  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
+export default function TopTradesPage(props?: TopTradesPageProps) {
+  const { vcPoolId, connectionId: propConnectionId, connectionType: propConnectionType } = props ?? {};
+  const { connectionType: ctxConnectionType, connectionId: ctxConnectionId, isLoading: isCheckingConnection } = useExchange();
+  const connectionId = propConnectionId ?? ctxConnectionId;
+  const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
   const { currentSubscription } = useSubscriptionStore();
-  const canAccessTopTrades = currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE);
+  const canAccessTopTrades = !!vcPoolId || (currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE));
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -755,8 +766,8 @@ export default function TopTradesPage() {
     if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
   };
 
-  // Show loading while checking connection
-  if (isCheckingConnection) {
+  // Show loading while checking connection (skip when admin pool mode with connection override)
+  if (!vcPoolId && isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -764,8 +775,8 @@ export default function TopTradesPage() {
     );
   }
 
-  // Top Trades is PRO and ELITE only
-  if (!currentSubscription) {
+  // Top Trades is PRO and ELITE only (skip when admin VC Pool mode)
+  if (!vcPoolId && !currentSubscription) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -792,7 +803,7 @@ export default function TopTradesPage() {
   }
 
   // --- UI Rendering (reuse existing layout and style) ---
-  return (
+  const content = (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
       {/* Stocks Info Banner with Controls */}
       {isStocksConnection && (
@@ -1483,5 +1494,12 @@ export default function TopTradesPage() {
         />
       )}
     </div>
+  );
+  return vcPoolId ? (
+    <TopTradeVcPoolContext.Provider value={vcPoolId}>
+      {content}
+    </TopTradeVcPoolContext.Provider>
+  ) : (
+    content
   );
 }

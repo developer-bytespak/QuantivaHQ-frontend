@@ -11,13 +11,22 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/pools": "Pools",
   "/admin/pools/create": "Create pool",
   "/admin/settings": "Settings",
+  "/admin/settings/exchange-configuration": "Exchange Configuration",
   "/admin/settings/binance": "Binance UID",
   "/admin/settings/fees": "Default Fees",
+  "/admin/settings/notifications": "Notifications",
+  "/admin/settings/security": "Security",
+  "/admin/settings/help-support": "Help and Support",
+  "/admin/settings/terms": "Terms and Conditions",
+  "/admin/settings/connect-crypto": "Connect Crypto",
+  "/admin/settings/connect-stock": "Connect Stock",
+  "/admin/settings/connect-api-keys": "API Keys",
 };
 
 function getPageTitle(pathname: string | null): string {
   if (!pathname) return "Dashboard";
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.match(/^\/admin\/pools\/[^/]+\/top-trade$/)) return "Top Trade";
   if (pathname.startsWith("/admin/pools/") && pathname !== "/admin/pools/create")
     return "Pool details";
   if (pathname.startsWith("/admin/settings")) return "Settings";
