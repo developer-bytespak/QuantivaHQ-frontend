@@ -478,6 +478,29 @@ export default function DashboardPage() {
     return () => clearInterval(refreshInterval);
   }, [connectionType, fetchNews]);
 
+  // Orders pagination for Action Center
+  const [ordersPage, setOrdersPage] = useState(1);
+  const ORDERS_PER_PAGE = 5;
+
+  const openOrders = useMemo(() => {
+    if (!dashboardData || !dashboardData.orders) return [];
+    return (dashboardData.orders || []).filter(
+      (o: any) => o.status === "NEW" || o.status === "PARTIALLY_FILLED" || o.status === "OPEN"
+    );
+  }, [dashboardData]);
+
+  const totalOrderPages = Math.max(1, Math.ceil((openOrders || []).length / ORDERS_PER_PAGE));
+
+  const paginatedOrders = useMemo(() => {
+    const start = (ordersPage - 1) * ORDERS_PER_PAGE;
+    return (openOrders || []).slice(start, start + ORDERS_PER_PAGE);
+  }, [openOrders, ordersPage]);
+
+  useEffect(() => {
+    // reset page when orders change
+    setOrdersPage(1);
+  }, [openOrders.length]);
+
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
       {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
@@ -595,14 +618,57 @@ export default function DashboardPage() {
           {/* Action Center - Recent Activities */}
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
             <div className="mb-3 sm:mb-4 flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
+                <div className="text-xs sm:text-sm text-slate-400">
+                  {(openOrders || []).length} open orders
+                </div>
             </div>
-            <div className="space-y-4">
-              <div className="py-6 sm:py-8 text-center text-slate-400">
-                <p className="text-xs sm:text-sm">No activities yet</p>
-                <p className="mt-1 text-[10px] sm:text-xs text-slate-500">Activities will appear here when available</p>
+              <div className="space-y-4">
+                {(!dashboardData || (openOrders || []).length === 0) ? (
+                  <div className="py-6 sm:py-8 text-center text-slate-400">
+                    <p className="text-xs sm:text-sm">No Open Orders yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <ul className="divide-y divide-[--color-border]">
+                      {paginatedOrders.map((order: any, idx: number) => (
+                        <li key={order.id || idx} className="py-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm font-medium text-white">{order.symbol}</div>
+                            <div className={`text-xs px-2 py-1 rounded-md font-medium ${order.side?.toLowerCase() === 'buy' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
+                              {order.side?.toUpperCase()}
+                            </div>
+                            <div className="text-xs text-slate-400">{order.quantity} • {order.type || ''}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-white">{formatCurrency(order.price || 0)}</div>
+                            <div className="text-xs text-slate-400">{order.status} • {order.created_at ? new Date(order.created_at).toLocaleString() : ''}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="text-xs text-slate-400">Showing {(ordersPage - 1) * ORDERS_PER_PAGE + 1} - {Math.min(ordersPage * ORDERS_PER_PAGE, openOrders.length)} of {openOrders.length}</div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+                          disabled={ordersPage === 1}
+                          className={`px-3 py-1 rounded-md text-xs transition ${ordersPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                          Prev
+                        </button>
+                        <div className="text-xs text-slate-400">Page {ordersPage} / {totalOrderPages}</div>
+                        <button
+                          onClick={() => setOrdersPage(p => Math.min(totalOrderPages, p + 1))}
+                          disabled={ordersPage === totalOrderPages}
+                          className={`px-3 py-1 rounded-md text-xs transition ${ordersPage === totalOrderPages ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
           </div>
 
           {/* Holdings & Market */}
