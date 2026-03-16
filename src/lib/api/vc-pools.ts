@@ -485,3 +485,82 @@ export async function getMyTransactions(): Promise<MyTransaction[]> {
   });
 }
 
+// ---- Enhanced Transactions: filtered list, summary, detail ----
+
+export interface TransactionFilters {
+  status?: string;
+  type?: string;
+  pool_id?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+
+export interface TransactionsListResponse {
+  transactions: MyTransaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface TransactionSummary {
+  total_transactions: number;
+  total_deposited: number;
+  total_withdrawn: number;
+  pending_count: number;
+  verified_count: number;
+  rejected_count: number;
+}
+
+export interface TransactionDetail extends MyTransaction {
+  user_wallet_address: string | null;
+  admin_wallet_address: string | null;
+  payment_method: string;
+  screenshot_url: string | null;
+  payment_network: string | null;
+  verified_at: string | null;
+  rejection_reason: string | null;
+}
+
+export async function getAllTransactions(
+  filters: TransactionFilters = {}
+): Promise<TransactionsListResponse> {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.type) params.set("type", filters.type);
+  if (filters.pool_id) params.set("pool_id", filters.pool_id);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.sort_by) params.set("sort_by", filters.sort_by);
+  if (filters.sort_order) params.set("sort_order", filters.sort_order);
+  const qs = params.toString();
+  return apiRequest<never, TransactionsListResponse>({
+    path: `/api/vc-pools/payments/my-transactions${qs ? `?${qs}` : ""}`,
+    method: "GET",
+  });
+}
+
+export async function getTransactionSummary(): Promise<TransactionSummary> {
+  return apiRequest<never, TransactionSummary>({
+    path: `/api/vc-pools/payments/transactions-summary`,
+    method: "GET",
+  });
+}
+
+export async function getTransactionDetail(
+  transactionId: string
+): Promise<TransactionDetail> {
+  return apiRequest<never, TransactionDetail>({
+    path: `/api/vc-pools/payments/transactions/${encodeURIComponent(transactionId)}`,
+    method: "GET",
+  });
+}
+

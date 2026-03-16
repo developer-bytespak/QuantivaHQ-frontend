@@ -424,3 +424,86 @@ export interface AdminCancelPoolResponse {
   message: string;
 }
 
+// ---- Binance Deposits / Withdrawals / Analytics ----
+
+export interface AdminBinanceDeposit {
+  deposit_id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  pool_id: string;
+  pool_name: string;
+  amount_usdt: number;
+  tx_hash: string | null;
+  binance_tx_id: string | null;
+  status: "pending" | "verified" | "rejected" | "expired";
+  payment_method: string;
+  submitted_at: string;
+  verified_at: string | null;
+  rejection_reason: string | null;
+}
+
+export interface AdminBinanceDepositsResponse {
+  deposits: AdminBinanceDeposit[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  summary: {
+    total_deposits: number;
+    total_amount: number;
+    pending_count: number;
+    verified_count: number;
+    rejected_count: number;
+  };
+}
+
+export interface AdminBinanceWithdrawal {
+  withdrawal_id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  pool_id: string;
+  pool_name: string;
+  type: "payout" | "refund";
+  amount_usdt: number;
+  tx_hash: string | null;
+  binance_tx_id: string | null;
+  status: "pending" | "paid" | "processing";
+  created_at: string;
+  paid_at: string | null;
+}
+
+export interface AdminBinanceWithdrawalsResponse {
+  withdrawals: AdminBinanceWithdrawal[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  summary: {
+    total_withdrawals: number;
+    total_amount: number;
+    pending_count: number;
+    paid_count: number;
+    processing_count: number;
+  };
+}
+
+export interface AdminBinanceAnalytics {
+  total_deposits: number;
+  total_deposit_amount: number;
+  total_withdrawals: number;
+  total_withdrawal_amount: number;
+  net_flow: number;
+  deposits_by_status: { pending: number; verified: number; rejected: number; expired: number };
+  withdrawals_by_status: { pending: number; paid: number; processing: number };
+  deposits_by_pool: Array<{ pool_id: string; pool_name: string; count: number; amount: number }>;
+  withdrawals_by_pool: Array<{ pool_id: string; pool_name: string; count: number; amount: number }>;
+}
+
+export interface AdminBinanceTransactionFilters {
+  status?: string;
+  pool_id?: string;
+  user_id?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+
