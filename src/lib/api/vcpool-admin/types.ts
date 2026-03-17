@@ -69,6 +69,15 @@ export interface UpdateFeesResponse {
   default_payment_window_minutes: number;
 }
 
+export interface AdminChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+export interface AdminChangePasswordResponse {
+  message: string;
+}
+
 // ---- Phase 1B: Admin pool management ----
 
 export type PoolStatus =
@@ -160,6 +169,12 @@ export interface AdminPaymentSubmission {
   created_at: string;
   user_email?: string;
   user_username?: string;
+  user?: {
+    user_id: string;
+    email?: string;
+    username?: string | null;
+    full_name?: string | null;
+  };
   tx_hash: string | null;
   binance_tx_id: string | null;
   user_wallet_address: string | null;
@@ -179,6 +194,12 @@ export interface AdminReservation {
   created_at: string;
   user_email?: string;
   user_username?: string;
+  user?: {
+    user_id: string;
+    email?: string;
+    username?: string | null;
+    full_name?: string | null;
+  };
 }
 
 export interface AdminReservationsListResponse {
@@ -189,11 +210,20 @@ export interface AdminReservationsListResponse {
 export interface AdminPoolMember {
   member_id: string;
   user_id: string;
+  pool_id?: string;
   payment_method: string;
-  share_percent: string;
+  invested_amount_usdt?: string | number;
+  share_percent: string | number;
+  is_active?: boolean;
   joined_at: string;
-  user_email?: string;
-  user_username?: string;
+  exited_at?: string | null;
+  user_wallet_address?: string | null;
+  user?: {
+    user_id: string;
+    email: string;
+    username: string | null;
+    full_name: string | null;
+  } | null;
 }
 
 export interface AdminMembersListResponse {
@@ -392,5 +422,88 @@ export interface AdminCancelPoolResponse {
   refunds_created: number;
   payouts: Array<{ payout_id: string; member_id: string; net_payout: number; status: string }>;
   message: string;
+}
+
+// ---- Binance Deposits / Withdrawals / Analytics ----
+
+export interface AdminBinanceDeposit {
+  deposit_id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  pool_id: string;
+  pool_name: string;
+  amount_usdt: number;
+  tx_hash: string | null;
+  binance_tx_id: string | null;
+  status: "pending" | "verified" | "rejected" | "expired";
+  payment_method: string;
+  submitted_at: string;
+  verified_at: string | null;
+  rejection_reason: string | null;
+}
+
+export interface AdminBinanceDepositsResponse {
+  deposits: AdminBinanceDeposit[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  summary: {
+    total_deposits: number;
+    total_amount: number;
+    pending_count: number;
+    verified_count: number;
+    rejected_count: number;
+  };
+}
+
+export interface AdminBinanceWithdrawal {
+  withdrawal_id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string;
+  pool_id: string;
+  pool_name: string;
+  type: "payout" | "refund";
+  amount_usdt: number;
+  tx_hash: string | null;
+  binance_tx_id: string | null;
+  status: "pending" | "paid" | "processing";
+  created_at: string;
+  paid_at: string | null;
+}
+
+export interface AdminBinanceWithdrawalsResponse {
+  withdrawals: AdminBinanceWithdrawal[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  summary: {
+    total_withdrawals: number;
+    total_amount: number;
+    pending_count: number;
+    paid_count: number;
+    processing_count: number;
+  };
+}
+
+export interface AdminBinanceAnalytics {
+  total_deposits: number;
+  total_deposit_amount: number;
+  total_withdrawals: number;
+  total_withdrawal_amount: number;
+  net_flow: number;
+  deposits_by_status: { pending: number; verified: number; rejected: number; expired: number };
+  withdrawals_by_status: { pending: number; paid: number; processing: number };
+  deposits_by_pool: Array<{ pool_id: string; pool_name: string; count: number; amount: number }>;
+  withdrawals_by_pool: Array<{ pool_id: string; pool_name: string; count: number; amount: number }>;
+}
+
+export interface AdminBinanceTransactionFilters {
+  status?: string;
+  pool_id?: string;
+  user_id?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
 }
 

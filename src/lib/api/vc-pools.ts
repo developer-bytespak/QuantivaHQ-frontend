@@ -11,6 +11,7 @@ export interface JoinPoolRequest {
 }
 
 export interface JoinPoolResponse {
+  member_id?: string;
   reservation_id: string;
   submission_id: string;
   total_amount: number;
@@ -27,6 +28,13 @@ export interface JoinPoolResponse {
   payment_method: PaymentMethod;
   instructions?: string[];
   message?: string;
+  is_rejoin?: boolean;
+  previous_cancellation?: {
+    cancellation_id: string;
+    requested_at: string;
+    refunded_at: string;
+    refund_amount: number;
+  };
 }
 
 export interface PaymentStatusResponse {
@@ -57,6 +65,21 @@ export interface PaymentStatusResponse {
     user_wallet_address: string | null;
     exact_amount_expected: string | null;
   } | null;
+  cancellation?: {
+    has_cancellation: boolean;
+    status?: string;
+    cancellation_id?: string;
+    contribution_amount?: number;
+    pool_fee_amount?: number;
+    cancellation_fee_amount?: number;
+    refund_amount?: number;
+    requested_at?: string;
+    approved_at?: string | null;
+    refund_completed_at?: string | null;
+    rejection_reason?: string | null;
+    reviewed_by?: { name: string; email: string } | null;
+    user_wallet_address?: string | null;
+  };
 }
 
 export interface UploadScreenshotResponse {
@@ -128,12 +151,54 @@ export interface VcPoolsListResponse {
   };
 }
 
+export interface PoolFinancials {
+  total_invested_usdt: number;
+  current_pool_value_usdt: number;
+  total_profit_usdt: number;
+  total_pool_fees_usdt: number;
+  pool_roi_pct: number;
+}
+
+export interface AdminInfo {
+  binance_uid: string;
+  wallet_address: string;
+  payment_network: string;
+  deposit_coin: string;
+  deposit_method: string;
+}
+
+export interface UserContext {
+  is_member: boolean;
+  member_id: string | null;
+  invested_amount_usdt: number;
+  current_share_percent: number;
+  joined_at: string | null;
+  exited_at: string | null;
+  is_active: boolean;
+  payment_method: string | null;
+  current_member_value_usdt: number;
+  unrealized_pnl_usdt: number;
+  unrealized_pnl_pct: number;
+}
+
+export interface PoolTimeline {
+  started_at: string | null;
+  end_date: string | null;
+  completed_at: string | null;
+  days_remaining: number;
+  progress_percent: number;
+}
+
 export interface VcPoolDetails extends VcPoolSummary {
   verified_members_count: number;
   reserved_seats_count: number;
   status: string;
   started_at: string | null;
   end_date: string | null;
+  pool_financials?: PoolFinancials;
+  admin_info?: AdminInfo;
+  user_context?: UserContext;
+  pool_timeline?: PoolTimeline;
 }
 
 export async function getAvailableVcPools(
@@ -163,17 +228,23 @@ export async function getVcPoolById(id: string): Promise<VcPoolDetails> {
 
 export interface CancelMembershipResponse {
   cancellation_id: string;
-  pool_status_at_request: string;
-  member_value_at_exit: number;
-  fee_amount: number;
-  refund_amount: number;
   status: string;
+  contribution_amount: number;
+  pool_fee_amount: number;
+  cancellation_fee_amount: number;
+  refund_amount: number;
+  requested_at: string;
+  approved_at: string | null;
+  refund_completed_at: string | null;
+  rejection_reason: string | null;
+  reviewed_by: { name: string; email: string } | null;
+  user_wallet_address: string | null;
   message: string;
 }
 
 export async function cancelMembership(poolId: string): Promise<CancelMembershipResponse> {
   return apiRequest<never, CancelMembershipResponse>({
-    path: `/api/vc-pools/${poolId}/cancel-membership`,
+    path: `/api/vc-pools/${poolId}/request-exit`,
     method: "POST",
     body: undefined as never,
   });
@@ -182,14 +253,16 @@ export async function cancelMembership(poolId: string): Promise<CancelMembership
 export interface MyCancellationItem {
   cancellation_id: string;
   status: string;
-  requested_at: string;
-  member_value_at_exit: number;
-  fee_amount: number;
+  contribution_amount: number;
+  pool_fee_amount: number;
+  cancellation_fee_amount: number;
   refund_amount: number;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
+  requested_at: string;
+  approved_at: string | null;
+  refund_completed_at: string | null;
   rejection_reason: string | null;
-  refunded_at: string | null;
+  reviewed_by: { name: string; email: string } | null;
+  user_wallet_address: string | null;
 }
 
 export interface MyCancellationResponse {
@@ -204,6 +277,51 @@ export async function getMyCancellation(poolId: string): Promise<MyCancellationR
   });
 }
 
+export type MembershipStatus =
+  | 'active_in_pool'
+  | 'completed_and_paid'
+  | 'exited_with_refund'
+  | 'rejoined_after_exit'
+  | 'exit_requested_pending_approval'
+  | 'exit_approved_pending_refund'
+  | 'pool_cancelled_refund';
+
+export interface StatusDetail {
+  // For active_in_pool
+  joined_at?: string;
+
+  // For completed_and_paid
+  payout_id?: string;
+  payout_amount?: string;
+  gross_payout?: string;
+  admin_fee_deducted?: string;
+  profit_loss?: string;
+  payout_status?: string;
+  paid_at?: string;
+  payout_type?: string;
+
+  // For exited_with_refund
+  cancellation_id?: string;
+  refund_amount?: string;
+  requested_at?: string;
+  reviewed_at?: string;
+  refund_completed_at?: string;
+
+  // For rejoined_after_exit
+  rejoined_at?: string;
+  previous_member_count?: number;
+
+  // For exit_requested_pending_approval
+  // (shares cancellation_id, refund_amount, requested_at)
+
+  // For exit_approved_pending_refund
+  // (shares all exit fields)
+
+  // For pool_cancelled_refund
+  payout_id_cancel?: string;
+  payout_status_cancel?: string;
+}
+
 export interface MyPoolMembership {
   membership: {
     member_id: string;
@@ -211,10 +329,16 @@ export interface MyPoolMembership {
     pool_name: string;
     pool_status: string;
     coin_type: string;
+    is_active: boolean;
+    joined_at: string;
+    exited_at: string | null;
+    completed_at: string | null;
     started_at: string | null;
     end_date: string | null;
     payment_method: string;
   };
+  membership_status: MembershipStatus;
+  status_detail: StatusDetail;
   my_investment: {
     invested_amount: number;
     share_percent: number;
@@ -249,7 +373,8 @@ export type PaymentStatus = "pending" | "verified" | "rejected" | "refunded";
 export type BinancePaymentStatus = PaymentStatus;
 
 export interface SubmitTxHashRequest {
-  tx_hash: string;
+  tx_hash?: string;
+  binance_tx_id?: string;
 }
 
 /** @deprecated Use SubmitTxHashRequest */
@@ -356,6 +481,85 @@ export async function getPaymentSubmissionDetail(
 export async function getMyTransactions(): Promise<MyTransaction[]> {
   return apiRequest<never, MyTransaction[]>({
     path: `/api/vc-pools/payments/my-transactions`,
+    method: "GET",
+  });
+}
+
+// ---- Enhanced Transactions: filtered list, summary, detail ----
+
+export interface TransactionFilters {
+  status?: string;
+  type?: string;
+  pool_id?: string;
+  date_from?: string;
+  date_to?: string;
+  page?: number;
+  limit?: number;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+
+export interface TransactionsListResponse {
+  transactions: MyTransaction[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface TransactionSummary {
+  total_transactions: number;
+  total_deposited: number;
+  total_withdrawn: number;
+  pending_count: number;
+  verified_count: number;
+  rejected_count: number;
+}
+
+export interface TransactionDetail extends MyTransaction {
+  user_wallet_address: string | null;
+  admin_wallet_address: string | null;
+  payment_method: string;
+  screenshot_url: string | null;
+  payment_network: string | null;
+  verified_at: string | null;
+  rejection_reason: string | null;
+}
+
+export async function getAllTransactions(
+  filters: TransactionFilters = {}
+): Promise<TransactionsListResponse> {
+  const params = new URLSearchParams();
+  if (filters.status) params.set("status", filters.status);
+  if (filters.type) params.set("type", filters.type);
+  if (filters.pool_id) params.set("pool_id", filters.pool_id);
+  if (filters.date_from) params.set("date_from", filters.date_from);
+  if (filters.date_to) params.set("date_to", filters.date_to);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.limit) params.set("limit", String(filters.limit));
+  if (filters.sort_by) params.set("sort_by", filters.sort_by);
+  if (filters.sort_order) params.set("sort_order", filters.sort_order);
+  const qs = params.toString();
+  return apiRequest<never, TransactionsListResponse>({
+    path: `/api/vc-pools/payments/my-transactions${qs ? `?${qs}` : ""}`,
+    method: "GET",
+  });
+}
+
+export async function getTransactionSummary(): Promise<TransactionSummary> {
+  return apiRequest<never, TransactionSummary>({
+    path: `/api/vc-pools/payments/transactions-summary`,
+    method: "GET",
+  });
+}
+
+export async function getTransactionDetail(
+  transactionId: string
+): Promise<TransactionDetail> {
+  return apiRequest<never, TransactionDetail>({
+    path: `/api/vc-pools/payments/transactions/${encodeURIComponent(transactionId)}`,
     method: "GET",
   });
 }

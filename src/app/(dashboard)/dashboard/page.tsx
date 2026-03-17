@@ -478,6 +478,46 @@ export default function DashboardPage() {
     return () => clearInterval(refreshInterval);
   }, [connectionType, fetchNews]);
 
+  // Orders pagination for Action Center
+  const [ordersPage, setOrdersPage] = useState(1);
+  const ORDERS_PER_PAGE = 5;
+
+  const openOrders = useMemo(() => {
+    if (!dashboardData || !dashboardData.orders) return [];
+    return (dashboardData.orders || []).filter(
+      (o: any) => o.status === "NEW" || o.status === "PARTIALLY_FILLED" || o.status === "OPEN"
+    );
+  }, [dashboardData]);
+
+  const totalOrderPages = Math.max(1, Math.ceil((openOrders || []).length / ORDERS_PER_PAGE));
+
+  const paginatedOrders = useMemo(() => {
+    const start = (ordersPage - 1) * ORDERS_PER_PAGE;
+    return (openOrders || []).slice(start, start + ORDERS_PER_PAGE);
+  }, [openOrders, ordersPage]);
+
+  useEffect(() => {
+    // reset page when orders change
+    setOrdersPage(1);
+  }, [openOrders.length]);
+
+  // Holdings modal + pagination
+  const [showHoldingsModal, setShowHoldingsModal] = useState(false);
+  const [holdingsPage, setHoldingsPage] = useState(1);
+  const HOLDINGS_PER_PAGE = 5;
+
+  const totalHoldingsPages = Math.max(1, Math.ceil((dashboardData?.positions?.length || 0) / HOLDINGS_PER_PAGE));
+
+  const paginatedHoldings = useMemo(() => {
+    if (!dashboardData || !dashboardData.positions) return [];
+    const start = (holdingsPage - 1) * HOLDINGS_PER_PAGE;
+    return dashboardData.positions.slice(start, start + HOLDINGS_PER_PAGE);
+  }, [dashboardData, holdingsPage]);
+
+  useEffect(() => {
+    setHoldingsPage(1);
+  }, [dashboardData?.positions?.length]);
+
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
       {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
@@ -595,14 +635,57 @@ export default function DashboardPage() {
           {/* Action Center - Recent Activities */}
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
             <div className="mb-3 sm:mb-4 flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
+                <div className="text-xs sm:text-sm text-slate-400">
+                  {(openOrders || []).length} open orders
+                </div>
             </div>
-            <div className="space-y-4">
-              <div className="py-6 sm:py-8 text-center text-slate-400">
-                <p className="text-xs sm:text-sm">No activities yet</p>
-                <p className="mt-1 text-[10px] sm:text-xs text-slate-500">Activities will appear here when available</p>
+              <div className="space-y-4">
+                {(!dashboardData || (openOrders || []).length === 0) ? (
+                  <div className="py-6 sm:py-8 text-center text-slate-400">
+                    <p className="text-xs sm:text-sm">No Open Orders yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <ul className="divide-y divide-[--color-border]">
+                      {paginatedOrders.map((order: any, idx: number) => (
+                        <li key={order.id || idx} className="py-3 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="text-sm font-medium text-white">{order.symbol}</div>
+                            <div className={`text-xs px-2 py-1 rounded-md font-medium ${order.side?.toLowerCase() === 'buy' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
+                              {order.side?.toUpperCase()}
+                            </div>
+                            <div className="text-xs text-slate-400">{order.quantity} • {order.type || ''}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-white">{formatCurrency(order.price || 0)}</div>
+                            <div className="text-xs text-slate-400">{order.status} • {order.created_at ? new Date(order.created_at).toLocaleString() : ''}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="text-xs text-slate-400">Showing {(ordersPage - 1) * ORDERS_PER_PAGE + 1} - {Math.min(ordersPage * ORDERS_PER_PAGE, openOrders.length)} of {openOrders.length}</div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+                          disabled={ordersPage === 1}
+                          className={`px-3 py-1 rounded-md text-xs transition ${ordersPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                          Prev
+                        </button>
+                        <div className="text-xs text-slate-400">Page {ordersPage} / {totalOrderPages}</div>
+                        <button
+                          onClick={() => setOrdersPage(p => Math.min(totalOrderPages, p + 1))}
+                          disabled={ordersPage === totalOrderPages}
+                          className={`px-3 py-1 rounded-md text-xs transition ${ordersPage === totalOrderPages ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
           </div>
 
           {/* Holdings & Market */}
@@ -657,7 +740,7 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : dashboardData && dashboardData.positions.length > 0 ? (
-                    dashboardData.positions.map((position, index) => {
+                    dashboardData.positions.slice(0, 3).map((position, index) => {
                       const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
                       return (
                         <tr
@@ -686,6 +769,16 @@ export default function DashboardPage() {
                   )}
                   </tbody>
                 </table>
+                {dashboardData && dashboardData.positions.length > 3 && (
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      onClick={() => setShowHoldingsModal(true)}
+                      className="px-4 py-2 rounded-md bg-[#fc4f02] text-white text-sm font-medium hover:bg-[#e04502] transition-colors"
+                    >
+                      View more
+                    </button>
+                  </div>
+                )}
               </div>
               ) : (
                 <div className="space-y-4">
@@ -1140,6 +1233,85 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Holdings Modal */}
+      {showHoldingsModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => setShowHoldingsModal(false)}
+        >
+          <div
+            className="relative w-full max-w-3xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.03] to-transparent p-4 sm:p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 sm:mb-6 flex items-center justify-between">
+              <h2 className="text-lg sm:text-2xl font-bold text-white">All Holdings</h2>
+              <button
+                onClick={() => setShowHoldingsModal(false)}
+                className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
+                <thead className="divide-y divide-[--color-border]">
+                  <tr>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Holding</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Values</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Entry</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">P/L</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">P/L value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[--color-border]">
+                  {paginatedHoldings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-slate-400">No positions found</td>
+                    </tr>
+                  ) : (
+                    paginatedHoldings.map((position: any, idx: number) => {
+                      const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
+                      return (
+                        <tr key={position.symbol + idx} className="hover:bg-[--color-surface]/40">
+                          <td className="py-2 px-2 text-white font-medium">{symbol}</td>
+                          <td className="py-2 px-2 text-slate-300">{position.quantity.toFixed(4)}</td>
+                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
+                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.entryPrice)}</td>
+                          <td className={`py-2 px-2 font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(position.pnlPercent)}</td>
+                          <td className={`py-2 px-2 text-slate-400 hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(position.unrealizedPnl)}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-xs text-slate-400">Showing {(holdingsPage - 1) * HOLDINGS_PER_PAGE + 1} - {Math.min(holdingsPage * HOLDINGS_PER_PAGE, (dashboardData?.positions?.length || 0))} of {dashboardData?.positions?.length || 0}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setHoldingsPage(p => Math.max(1, p - 1))}
+                  disabled={holdingsPage === 1}
+                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                  Prev
+                </button>
+                <div className="text-xs text-slate-400">Page {holdingsPage} / {totalHoldingsPages}</div>
+                <button
+                  onClick={() => setHoldingsPage(p => Math.min(totalHoldingsPages, p + 1))}
+                  disabled={holdingsPage === totalHoldingsPages}
+                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === totalHoldingsPages ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Trade Details Overlay (crypto: uses cryptoSignals) */}
       {showTradeOverlay && (() => {

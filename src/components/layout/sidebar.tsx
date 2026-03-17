@@ -71,6 +71,12 @@ const PaperTradingIcon = ({ isActive }: { isActive: boolean }) => (
   </svg>
 );
 
+const OptionsIcon = ({ isActive }: { isActive: boolean }) => (
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+  </svg>
+);
+
 const getIcon = (label: string, isActive: boolean) => {
   const iconProps = { isActive };
   switch (label.toLowerCase()) {
@@ -86,6 +92,8 @@ const getIcon = (label: string, isActive: boolean) => {
       return <VCPoolIcon {...iconProps} />;
     case "paper trading":
       return <PaperTradingIcon {...iconProps} />;
+    case "options":
+      return <OptionsIcon {...iconProps} />;
     case "holdings":
       return <HoldingsIcon {...iconProps} />;
     case "profile":

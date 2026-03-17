@@ -10,8 +10,17 @@ import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
 import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
+import { TopTradeVcPoolContext } from "./context/top-trade-vc-pool-context";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
+
+export interface TopTradesPageProps {
+  /** When set, page runs in admin VC Pool mode: trades execute via adminCreateTrade(poolId, body) */
+  vcPoolId?: string;
+  /** Override connection (used in admin mode when user context has no connection) */
+  connectionId?: string;
+  connectionType?: "crypto" | "stocks";
+}
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -96,12 +105,14 @@ interface Trade {
   volume_status?: "NORMAL" | "VOLUME_SURGE" | "MASSIVE_SURGE";
 }
 
-export default function TopTradesPage() {
-  // Connection type detection - using global context
-  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
+export default function TopTradesPage(props?: TopTradesPageProps) {
+  const { vcPoolId, connectionId: propConnectionId, connectionType: propConnectionType } = props ?? {};
+  const { connectionType: ctxConnectionType, connectionId: ctxConnectionId, isLoading: isCheckingConnection } = useExchange();
+  const connectionId = propConnectionId ?? ctxConnectionId;
+  const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
   const { currentSubscription } = useSubscriptionStore();
-  const canAccessTopTrades = currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE);
+  const canAccessTopTrades = !!vcPoolId || (currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE));
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -755,8 +766,8 @@ export default function TopTradesPage() {
     if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
   };
 
-  // Show loading while checking connection
-  if (isCheckingConnection) {
+  // Show loading while checking connection (skip when admin pool mode with connection override)
+  if (!vcPoolId && isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -764,8 +775,8 @@ export default function TopTradesPage() {
     );
   }
 
-  // Top Trades is PRO and ELITE only
-  if (!currentSubscription) {
+  // Top Trades is PRO and ELITE only (skip when admin VC Pool mode)
+  if (!vcPoolId && !currentSubscription) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -792,76 +803,9 @@ export default function TopTradesPage() {
   }
 
   // --- UI Rendering (reuse existing layout and style) ---
-  return (
+  const content = (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
-      {/* Stocks Info Banner with Controls */}
-      {isStocksConnection && (
-        <div className="rounded-lg bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className={`h-2 w-2 rounded-full ${marketDataSource === 'alpaca' ? 'bg-green-500 animate-pulse' : 'bg-blue-500'}`} />
-              <span className="text-sm text-blue-300">
-                Stock Trading Signals - {marketDataSource === 'alpaca' ? 'Real-time Alpaca data' : 'Database cached data'}
-              </span>
-              {lastMarketDataUpdate && (
-                <span className="text-xs text-slate-500">
-                  Updated: {lastMarketDataUpdate.toLocaleTimeString()}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefreshStockData}
-                disabled={loadingMarketData}
-                className="flex items-center gap-1.5 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 px-3 py-1.5 text-xs font-medium text-blue-300 transition-all disabled:opacity-50"
-              >
-                <svg className={`w-3.5 h-3.5 ${loadingMarketData ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Refresh
-              </button>
-              <button
-                onClick={handleSeedStocks}
-                disabled={isSeeding || isGeneratingSignals}
-                className="flex items-center gap-1.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 px-3 py-1.5 text-xs font-medium text-purple-300 transition-all disabled:opacity-50"
-                title="Seed popular stocks and generate signals"
-              >
-                {isSeeding ? (
-                  <>
-                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    {isGeneratingSignals ? 'Generating signals...' : 'Seeding...'}
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Seed & Generate
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-          {stockMarketData.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {stockMarketData.slice(0, 8).map(stock => (
-                <div key={stock.symbol} className="flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1">
-                  <span className="text-xs font-medium text-white">{stock.symbol}</span>
-                  <span className={`text-xs ${stock.price_change_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {stock.price_change_24h >= 0 ? '+' : ''}{stock.price_change_24h.toFixed(2)}%
-                  </span>
-                </div>
-              ))}
-              {stockMarketData.length > 8 && (
-                <span className="text-xs text-slate-500 self-center">+{stockMarketData.length - 8} more</span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Stocks Info Banner removed per user request */}
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1483,5 +1427,12 @@ export default function TopTradesPage() {
         />
       )}
     </div>
+  );
+  return vcPoolId ? (
+    <TopTradeVcPoolContext.Provider value={vcPoolId}>
+      {content}
+    </TopTradeVcPoolContext.Provider>
+  ) : (
+    content
   );
 }

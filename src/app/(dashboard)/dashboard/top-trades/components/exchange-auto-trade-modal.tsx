@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { adminCreateTrade } from "@/lib/api/vcpool-admin";
+import { useTopTradeVcPoolId } from "../context/top-trade-vc-pool-context";
 import {
   formatCurrency,
   formatPercent,
@@ -25,11 +27,13 @@ export function ExchangeAutoTradeModal({
   onSuccess,
   strategy,
 }: ExchangeAutoTradeModalProps) {
+  const vcPoolId = useTopTradeVcPoolId();
   const [balance, setBalance] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [usdtAmount, setUsdtAmount] = useState("");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isPoolTrade = !!vcPoolId;
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
@@ -50,6 +54,10 @@ export function ExchangeAutoTradeModal({
   const quantityDisplay = quantity > 0 ? quantity.toFixed(8).replace(/\.?0+$/, "") : "—";
 
   useEffect(() => {
+    if (isPoolTrade) {
+      setLoadingBalance(false);
+      return;
+    }
     let cancelled = false;
     exchangesService.getBalance(connectionId).then((res) => {
       if (cancelled || !res?.data?.assets) return;
@@ -58,7 +66,7 @@ export function ExchangeAutoTradeModal({
     }).catch(() => { if (!cancelled) setBalance(0); })
       .finally(() => { if (!cancelled) setLoadingBalance(false); });
     return () => { cancelled = true; };
-  }, [connectionId]);
+  }, [connectionId, isPoolTrade]);
 
   const handleExecute = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +75,7 @@ export function ExchangeAutoTradeModal({
       setError("Enter a valid USDT amount");
       return;
     }
-    if (amountNum > balance) {
+    if (!isPoolTrade && amountNum > balance) {
       setError(`Insufficient balance. Need ${formatCurrency(amountNum)} but only have ${formatCurrency(balance)}`);
       return;
     }
@@ -98,7 +106,18 @@ export function ExchangeAutoTradeModal({
           onClose();
         }
       } else {
-        setError("Order failed");
+        const response = await exchangesService.placeOrder(connectionId, {
+          symbol,
+          side: "BUY",
+          type: "MARKET",
+          quantity: Math.floor(quantity * 100000000) / 100000000,
+        });
+        if (response?.success) {
+          onSuccess();
+          onClose();
+        } else {
+          setError("Order failed");
+        }
       }
     } catch (err: any) {
       let msg = err?.message ?? "Failed to place order";
