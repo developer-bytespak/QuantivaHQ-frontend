@@ -7,16 +7,17 @@ import { FeatureType } from "@/mock-data/subscription-dummy-data";
 import { useOptionsStore } from "@/state/options-store";
 import { useOptionsSocket } from "@/hooks/useOptionsSocket";
 import { optionsService } from "@/lib/api/options.service";
-import type { OptionsRecommendation, OptionsOrder, OptionContract } from "@/lib/api/options.service";
+import { exchangesService } from "@/lib/api/exchanges.service";
+import type { OptionsOrder, OptionContract } from "@/lib/api/options.service";
 import {
   OptionsChainTable,
   GreeksPanel,
-  OptionsRecommendationList,
   OptionOrderForm,
   OptionsPositionsTable,
   OptionsOrdersTable,
   ExpiryTabs,
   OptionsEducationModal,
+  OptionsAISignals,
 } from "@/components/options";
 
 // ── ELITE Gate Component ─────────────────────────────────────────────────────
@@ -48,13 +49,13 @@ function EliteGate() {
 
 // ── Tab Types ────────────────────────────────────────────────────────────────
 
-type OptionsTab = "chain" | "positions" | "orders" | "recommendations";
+type OptionsTab = "chain" | "positions" | "orders" | "ai-signals";
 
 const TABS: { key: OptionsTab; label: string }[] = [
   { key: "chain", label: "Options Chain" },
   { key: "positions", label: "Positions" },
   { key: "orders", label: "Orders" },
-  { key: "recommendations", label: "AI Signals" },
+  { key: "ai-signals", label: "AI Signals" },
 ];
 
 // ── Main Page ────────────────────────────────────────────────────────────────
@@ -139,8 +140,13 @@ export default function OptionsPage() {
     (async () => {
       store.setIsLoadingAccount(true);
       try {
-        const account = await optionsService.getBalance(connectionId);
-        store.setAccount(account);
+        // Use the same exchange balance API as top trades — reads the real spot USDT wallet
+        const res = await exchangesService.getBalance(connectionId);
+        const assets = res.data?.assets ?? [];
+        const usdt = assets.find((a) => a.symbol === "USDT");
+        const available = usdt ? parseFloat(usdt.free || "0") : 0;
+        const total = usdt ? parseFloat(usdt.total || usdt.free || "0") : 0;
+        store.setAccount({ availableBalance: available, totalBalance: total, unrealizedPnl: 0, marginBalance: 0 });
       } catch {
         // Non-critical
       } finally {
@@ -186,24 +192,24 @@ export default function OptionsPage() {
     if (hasAccess && activeTab === "orders") fetchOrders();
   }, [activeTab, hasAccess, fetchOrders]);
 
-  // ── Fetch recommendations ──────────────────────────────────────────────
+  // ── Fetch AI signals ───────────────────────────────────────────
 
-  const fetchRecommendations = useCallback(async () => {
-    if (!connectionId) return;
-    store.setIsLoadingRecommendations(true);
+  const fetchAiSignals = useCallback(async () => {
+    store.setIsLoadingAiSignals(true);
     try {
-      const recs = await optionsService.getRecommendations(connectionId, store.selectedUnderlying ?? undefined);
-      store.setRecommendations(recs);
+      // Fetch all signals — filtering by coin is done client-side in the component
+      const signals = await optionsService.getAiSignals();
+      store.setAiSignals(signals);
     } catch (err: any) {
-      store.setError(err.message ?? "Failed to load recommendations");
+      store.setError(err.message ?? "Failed to load AI signals");
     } finally {
-      store.setIsLoadingRecommendations(false);
+      store.setIsLoadingAiSignals(false);
     }
-  }, [connectionId, store.selectedUnderlying]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (hasAccess && activeTab === "recommendations") fetchRecommendations();
-  }, [activeTab, hasAccess, fetchRecommendations]);
+    if (hasAccess && activeTab === "ai-signals") fetchAiSignals();
+  }, [activeTab, hasAccess, fetchAiSignals]);
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
@@ -273,36 +279,6 @@ export default function OptionsPage() {
     [connectionId, fetchOrders], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  const handleSelectRecommendation = useCallback(
-    (rec: OptionsRecommendation) => {
-      // Pre-fill order form from AI recommendation
-      const underlying = rec.assetSymbol.replace(/USDT?$/, "").toUpperCase();
-      const contractSymbol = `${underlying}-${rec.recommendedExpiry.replace(/-/g, "").slice(2)}-${rec.recommendedStrike}-${rec.recommendedType === "CALL" ? "C" : "P"}`;
-      store.setSelectedContract({
-        symbol: contractSymbol,
-        underlying,
-        strike: rec.recommendedStrike,
-        expiry: rec.recommendedExpiry,
-        type: rec.recommendedType,
-        bidPrice: 0,
-        askPrice: 0,
-        lastPrice: 0,
-        markPrice: 0,
-        volume: 0,
-        openInterest: 0,
-      });
-      store.setOrderForm({
-        optionType: rec.recommendedType,
-        side: "BUY",
-        quantity: 1,
-        price: 0,
-      });
-      store.setSelectedContractGreeks(rec.greeks ?? null);
-      setActiveTab("chain");
-    },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-
   // ── No Connection Guard ─────────────────────────────────────────────────
 
   if (!connectionId) {
@@ -367,17 +343,7 @@ export default function OptionsPage() {
                 {wsConnected ? "Live" : "Polling"}
               </span>
             </div>
-            {store.account && (
-              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5">
-                <span className="text-[10px] text-slate-500">Balance: </span>
-                <span className="text-xs font-semibold text-slate-200">
-                  {store.account.availableBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })} USDT
-                </span>
-              </div>
-            )}
-            <span className="rounded-md bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-[#fda300]">
-              ELITE
-            </span>
+
           </div>
         </div>
 
@@ -487,15 +453,13 @@ export default function OptionsPage() {
           />
         )}
 
-        {/* ── Recommendations Tab ──────────────────────────────── */}
-        {activeTab === "recommendations" && (
-          <OptionsRecommendationList
-            recommendations={store.recommendations}
-            onSelect={handleSelectRecommendation}
-            isLoading={store.isLoadingRecommendations}
+        {/* ── AI Signals Tab ───────────────────────────────────── */}
+        {activeTab === "ai-signals" && (
+          <OptionsAISignals
+            signals={store.aiSignals}
+            isLoading={store.isLoadingAiSignals}
           />
-        )}
-      </div>
+        )}      </div>
     </div>
   );
 }
