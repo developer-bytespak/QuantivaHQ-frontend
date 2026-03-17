@@ -580,11 +580,19 @@ export default function DashboardPage() {
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
             <div className="mb-3 sm:mb-4 flex items-center justify-between">
               <h2 className="text-base sm:text-lg font-semibold text-white">Portfolio</h2>
-              {lastUpdated && (
-                <p className="text-[10px] sm:text-xs text-slate-400">
-                  Updated {lastUpdated.toLocaleTimeString()}
-                </p>
-              )}
+              <div className="flex items-center gap-2">
+                {lastUpdated && (
+                  <p className="text-[10px] sm:text-xs text-slate-400">
+                    Updated {lastUpdated.toLocaleTimeString()}
+                  </p>
+                )}
+                <button
+                  onClick={() => router.push("/dashboard/vc-pool/transaction")}
+                  className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
+                >
+                  Transactions
+                </button>
+              </div>
             </div>
 
             {isLoading && !dashboardData ? (

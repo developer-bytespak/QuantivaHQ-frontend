@@ -121,7 +121,7 @@ export function VCPoolSection() {
                 My submissions
               </button>
               <button
-                onClick={() => router.push("/dashboard/vc-pool/transactions")}
+                onClick={() => router.push("/dashboard/vc-pool/transaction")}
                 className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 Transactions
