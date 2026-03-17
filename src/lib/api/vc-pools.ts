@@ -67,6 +67,7 @@ export interface PaymentStatusResponse {
   } | null;
   cancellation?: {
     has_cancellation: boolean;
+    is_historical?: boolean;
     status?: string;
     cancellation_id?: string;
     contribution_amount?: number;
