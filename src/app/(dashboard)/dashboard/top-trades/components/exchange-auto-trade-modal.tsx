@@ -89,16 +89,22 @@ export function ExchangeAutoTradeModal({
     }
     try {
       setExecuting(true);
-      if (vcPoolId) {
-        await adminCreateTrade(vcPoolId, {
-          asset_pair: symbol,
-          action: "BUY",
-          quantity: Math.floor(quantity * 100000000) / 100000000,
-          entry_price_usdt: entryPrice,
-          notes: null,
-        });
-        onSuccess();
-        onClose();
+      const response = await exchangesService.placeOrder(connectionId, {
+        symbol,
+        side: "BUY",
+        type: "MARKET",
+        quantity: Math.floor(quantity * 100000000) / 100000000,
+      });
+      if (response?.success) {
+        // Show a warning if the OCO (stop-loss / take-profit) order failed
+        if ((response as any).ocoError) {
+          setError(`Order filled ✓ — but OCO protection order failed: ${(response as any).ocoError}. Please set a stop-loss manually.`);
+          // Still call onSuccess so the trade is recorded, but keep modal open so user sees the warning
+          onSuccess();
+        } else {
+          onSuccess();
+          onClose();
+        }
       } else {
         const response = await exchangesService.placeOrder(connectionId, {
           symbol,

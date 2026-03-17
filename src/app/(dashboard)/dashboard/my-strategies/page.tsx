@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiRequest } from "@/lib/api/client";
 import { useExchange } from "@/context/ExchangeContext";
-import { toast } from "react-toastify";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 
@@ -34,7 +33,6 @@ interface UserStrategy {
   created_at: string;
   updated_at?: string;
   metrics: StrategyMetrics;
-  signals?: any[];
 }
 
 export default function MyStrategiesPage() {
@@ -58,8 +56,9 @@ export default function MyStrategiesPage() {
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<UserStrategy | null>(null);
-  const [generatingSignals, setGeneratingSignals] = useState<string | null>(null);
   const [deletingStrategy, setDeletingStrategy] = useState<string | null>(null);
+  const [modalSignals, setModalSignals] = useState<any[]>([]);
+  const [loadingModalSignals, setLoadingModalSignals] = useState(false);
 
   const fetchStrategies = async () => {
     setLoading(true);
@@ -92,22 +91,6 @@ export default function MyStrategiesPage() {
     }
   }, [connectionType]);
 
-  const handleGenerateSignals = async (strategyId: string) => {
-    setGeneratingSignals(strategyId);
-    try {
-      const result = await apiRequest<never, any>({
-        path: `/strategies/my-strategies/${strategyId}/generate-signals`,
-        method: "POST",
-      });
-      toast.success(`Generated ${result.signals?.length || 0} signals successfully!`);
-      fetchStrategies(); // Refresh to show new signal counts
-    } catch (err: any) {
-      toast.error(`Failed to generate signals: ${err?.message || err}`);
-    } finally {
-      setGeneratingSignals(null);
-    }
-  };
-
   const handleToggleActive = async (strategyId: string) => {
     try {
       await apiRequest<never, any>({
@@ -117,6 +100,22 @@ export default function MyStrategiesPage() {
       fetchStrategies(); // Refresh
     } catch (err: any) {
       alert(`Failed to toggle strategy: ${err?.message || err}`);
+    }
+  };
+
+  const fetchStrategySignals = async (strategyId: string) => {
+    setLoadingModalSignals(true);
+    try {
+      const signals = await apiRequest<never, any[]>({
+        path: `/strategies/my-strategies/${strategyId}/signals?latest_only=true`,
+        method: "GET",
+      });
+      setModalSignals(signals || []);
+    } catch (err: any) {
+      console.error(`Failed to load signals for strategy ${strategyId}:`, err);
+      setModalSignals([]);
+    } finally {
+      setLoadingModalSignals(false);
     }
   };
 
@@ -311,26 +310,16 @@ export default function MyStrategiesPage() {
 
               {/* Actions */}
               <div className="flex gap-2 pt-2">
-                <button
-                  onClick={() => handleGenerateSignals(s.strategy_id)}
-                  disabled={generatingSignals === s.strategy_id}
-                  className="flex-1 rounded-xl px-3 py-2.5 text-xs bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 disabled:opacity-50 transition-all duration-200"
+                <Link
+                  href={`/dashboard/custom-strategies-trading?strategy=${s.strategy_id}&from=my-strategies&mode=${referrer === "top-trades" ? "live" : "paper"}`}
+                  className="flex-1 rounded-xl px-3 py-2.5 text-xs bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-200 flex items-center justify-center gap-1.5"
                 >
-                  {generatingSignals === s.strategy_id ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Generating...
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-1.5">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                      Generate
-                    </span>
-                  )}
-                </button>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                  View Signals
+                </Link>
                 <button
                   className="rounded-xl px-4 py-2.5 text-xs bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-200"
-                  onClick={() => { setSelected(s); setShowModal(true); }}
+                  onClick={() => { setSelected(s); setShowModal(true); fetchStrategySignals(s.strategy_id); }}
                 >
                   View
                 </button>
@@ -477,12 +466,19 @@ export default function MyStrategiesPage() {
             </div>
 
             {/* Recent Signals */}
-            {selected.signals && selected.signals.length > 0 && (
-              <div className="mb-4">
-                <p className="text-xs text-slate-400 mb-2">Recent Signals</p>
-                <div className="bg-black/20 p-3 rounded-lg max-h-40 overflow-auto">
+            <div className="mb-4">
+              <p className="text-xs text-slate-400 mb-2">Recent Signals</p>
+              <div className="bg-black/20 p-3 rounded-lg max-h-40 overflow-auto">
+                {loadingModalSignals ? (
+                  <div className="flex items-center justify-center py-3">
+                    <div className="w-4 h-4 border-2 border-[#fc4f02]/30 border-t-[#fc4f02] rounded-full animate-spin"></div>
+                    <span className="ml-2 text-sm text-slate-400">Loading signals...</span>
+                  </div>
+                ) : modalSignals.length === 0 ? (
+                  <p className="text-sm text-slate-500">No signals yet</p>
+                ) : (
                   <div className="space-y-2">
-                    {selected.signals.slice(0, 5).map((sig: any, i: number) => (
+                    {modalSignals.slice(0, 5).map((sig: any, i: number) => (
                       <div key={i} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
@@ -500,9 +496,9 @@ export default function MyStrategiesPage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Actions */}
             <div className="flex justify-between gap-3 pt-4 border-t border-white/10">
@@ -519,13 +515,6 @@ export default function MyStrategiesPage() {
                   onClick={() => { setShowModal(false); setSelected(null); }}
                 >
                   Close
-                </button>
-                <button
-                  onClick={() => handleGenerateSignals(selected.strategy_id)}
-                  disabled={generatingSignals === selected.strategy_id}
-                  className="rounded-lg px-4 py-2 bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
-                >
-                  {generatingSignals === selected.strategy_id ? 'Generating...' : '⚡ Generate Signals'}
                 </button>
               </div>
             </div>

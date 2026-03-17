@@ -314,25 +314,6 @@ export default function TradingPanel({
             placeholder="0.00"
             required
           />
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {[25, 50, 75, 100].map((percent) => (
-              <button
-                key={percent}
-                type="button"
-                onClick={() => setPercentage(percent)}
-                className={`rounded-lg backdrop-blur px-3 py-2 text-xs font-medium transition-all duration-300 relative overflow-hidden group ${
-                  side === "BUY"
-                    ? "bg-gradient-to-br from-green-500/10 to-transparent text-slate-300 hover:text-white hover:from-green-500/20 hover:to-transparent hover:border hover:border-green-500/30"
-                    : "bg-gradient-to-br from-red-500/10 to-transparent text-slate-300 hover:text-white hover:from-red-500/20 hover:to-transparent hover:border hover:border-red-500/30"
-                }`}
-              >
-                <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity ${
-                  side === "BUY" ? "bg-gradient-to-r from-green-500/10 to-transparent" : "bg-gradient-to-r from-red-500/10 to-transparent"
-                }`}></div>
-                <span className="relative">{percent}%</span>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Order Summary */}
