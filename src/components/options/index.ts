@@ -6,4 +6,5 @@ export { OptionsPositionsTable } from "./OptionsPositionsTable";
 export { OptionsOrdersTable } from "./OptionsOrdersTable";
 export { ExpiryTabs } from "./ExpiryTabs";
 export { OptionsEducationModal } from "./OptionsEducationModal";
+export { OptionsAISignals } from "./OptionsAISignals";
 export { Tooltip, InfoTip } from "./Tooltip";

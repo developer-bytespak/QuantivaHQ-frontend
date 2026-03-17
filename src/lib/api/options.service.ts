@@ -113,6 +113,50 @@ export interface OptionsRecommendation {
   confidenceAdjustment: number;
 }
 
+// ── AI Signal Types ──────────────────────────────────────────────────────────
+
+export interface AiSignalLeg {
+  type: "CALL" | "PUT";
+  side: "BUY" | "SELL";
+  strike: number;
+  expiry: string;
+  ratio: number;
+}
+
+export interface AiOptionsSignal {
+  id: string;
+  underlying: string;
+  strategy: string;
+  direction: "bullish" | "bearish" | "neutral";
+  score: number;
+  confidence: number;
+  iv_rank: number | null;
+  iv_value: number | null;
+  spot_price: number | null;
+  legs: AiSignalLeg[];
+  reasoning: string | null;
+  risk_reward: string | null;
+  max_profit: string | null;
+  max_loss: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface IvRankData {
+  underlying: string;
+  currentIv: number;
+  ivRank: number | null;
+  recordedAt: string;
+}
+
+export interface IvHistoryPoint {
+  id: string;
+  underlying: string;
+  iv_value: number;
+  iv_rank: number | null;
+  recorded_at: string;
+}
+
 export interface PlaceOptionOrderRequest {
   connectionId: string;
   contractSymbol: string;
@@ -305,6 +349,43 @@ export const optionsService = {
     if (underlying) params.append("underlying", underlying);
     return apiRequest<never, OptionsRecommendation[]>({
       path: `/options/recommendations?${params}`,
+      method: "GET",
+    });
+  },
+
+  // ── AI Signals ──────────────────────────────────────────
+
+  async getAiSignals(underlying?: string, limit?: number): Promise<AiOptionsSignal[]> {
+    const params = new URLSearchParams();
+    if (underlying) params.append("underlying", underlying);
+    if (limit) params.append("limit", String(limit));
+    return apiRequest<never, AiOptionsSignal[]>({
+      path: `/options/ai-signals?${params}`,
+      method: "GET",
+    });
+  },
+
+  async getAiSignalById(id: string): Promise<AiOptionsSignal> {
+    return apiRequest<never, AiOptionsSignal>({
+      path: `/options/ai-signals/${encodeURIComponent(id)}`,
+      method: "GET",
+    });
+  },
+
+  // ── IV Data ─────────────────────────────────────────────
+
+  async getIvRank(underlying: string): Promise<IvRankData | null> {
+    return apiRequest<never, IvRankData | null>({
+      path: `/options/iv/rank/${encodeURIComponent(underlying)}`,
+      method: "GET",
+    });
+  },
+
+  async getIvHistory(underlying: string, days?: number): Promise<IvHistoryPoint[]> {
+    const params = new URLSearchParams();
+    if (days) params.append("days", String(days));
+    return apiRequest<never, IvHistoryPoint[]>({
+      path: `/options/iv/history/${encodeURIComponent(underlying)}?${params}`,
       method: "GET",
     });
   },

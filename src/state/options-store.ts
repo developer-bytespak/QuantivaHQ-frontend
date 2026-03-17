@@ -8,11 +8,13 @@ import type {
   AvailableUnderlying,
   Greeks,
   OptionType,
+  AiOptionsSignal,
+  IvRankData,
 } from "@/lib/api/options.service";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type OptionsTab = "chain" | "positions" | "orders" | "recommendations";
+export type OptionsTab = "chain" | "positions" | "orders" | "recommendations" | "ai-signals";
 
 interface OptionsState {
   // ── Data ──────────────────────────────────────────────
@@ -26,6 +28,8 @@ interface OptionsState {
   positions: OptionsPosition[];
   orders: OptionsOrder[];
   recommendations: OptionsRecommendation[];
+  aiSignals: AiOptionsSignal[];
+  ivRankData: IvRankData | null;
   account: OptionsAccount | null;
   activeTab: OptionsTab;
 
@@ -42,6 +46,7 @@ interface OptionsState {
   isLoadingPositions: boolean;
   isLoadingOrders: boolean;
   isLoadingRecommendations: boolean;
+  isLoadingAiSignals: boolean;
   isLoadingAccount: boolean;
   isPlacingOrder: boolean;
   error: string | null;
@@ -57,6 +62,8 @@ interface OptionsState {
   setPositions: (p: OptionsPosition[]) => void;
   setOrders: (o: OptionsOrder[]) => void;
   setRecommendations: (r: OptionsRecommendation[]) => void;
+  setAiSignals: (s: AiOptionsSignal[]) => void;
+  setIvRankData: (d: IvRankData | null) => void;
   setAccount: (a: OptionsAccount | null) => void;
   setActiveTab: (tab: OptionsTab) => void;
   setOrderForm: (form: Partial<OptionsState["orderForm"]>) => void;
@@ -64,6 +71,7 @@ interface OptionsState {
   setIsLoadingPositions: (v: boolean) => void;
   setIsLoadingOrders: (v: boolean) => void;
   setIsLoadingRecommendations: (v: boolean) => void;
+  setIsLoadingAiSignals: (v: boolean) => void;
   setIsLoadingAccount: (v: boolean) => void;
   setIsPlacingOrder: (v: boolean) => void;
   setError: (e: string | null) => void;
@@ -90,6 +98,8 @@ const defaultState = {
   positions: [],
   orders: [],
   recommendations: [],
+  aiSignals: [],
+  ivRankData: null,
   account: null,
   activeTab: "chain" as OptionsTab,
   orderForm: { ...defaultOrderForm },
@@ -97,6 +107,7 @@ const defaultState = {
   isLoadingPositions: false,
   isLoadingOrders: false,
   isLoadingRecommendations: false,
+  isLoadingAiSignals: false,
   isLoadingAccount: false,
   isPlacingOrder: false,
   error: null,
@@ -117,6 +128,8 @@ export const useOptionsStore = create<OptionsState>((set) => ({
   setPositions: (positions) => set({ positions }),
   setOrders: (orders) => set({ orders }),
   setRecommendations: (recommendations) => set({ recommendations }),
+  setAiSignals: (aiSignals) => set({ aiSignals }),
+  setIvRankData: (ivRankData) => set({ ivRankData }),
   setAccount: (account) => set({ account }),
   setActiveTab: (activeTab) => set({ activeTab }),
   setOrderForm: (form) =>
@@ -126,6 +139,7 @@ export const useOptionsStore = create<OptionsState>((set) => ({
   setIsLoadingOrders: (isLoadingOrders) => set({ isLoadingOrders }),
   setIsLoadingRecommendations: (isLoadingRecommendations) =>
     set({ isLoadingRecommendations }),
+  setIsLoadingAiSignals: (isLoadingAiSignals) => set({ isLoadingAiSignals }),
   setIsLoadingAccount: (isLoadingAccount) => set({ isLoadingAccount }),
   setIsPlacingOrder: (isPlacingOrder) => set({ isPlacingOrder }),
   setError: (error) => set({ error }),
