@@ -12,6 +12,7 @@ import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
 import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -35,6 +36,16 @@ const formatPercent = (v: any) => {
   const n = Number(s);
   if (isNaN(n)) return s;
   return `${n}%`;
+};
+
+const formatQuantity = (v: number) => {
+  if (!Number.isFinite(v)) return "0";
+  if (v === 0) return "0";
+  return v.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 12,
+    useGrouping: true,
+  });
 };
 
 // Helper to get trend direction color and icon
@@ -96,6 +107,67 @@ interface Trade {
   volume_status?: "NORMAL" | "VOLUME_SURGE" | "MASSIVE_SURGE";
 }
 
+type ModalPosition = {
+  symbol: string;
+  quantity: number;
+  entryPrice: number;
+  currentPrice: number;
+  totalCost: number;
+  unrealizedPnl: number;
+  pnlPercent: number;
+};
+
+type ModalOrder = {
+  symbol: string;
+  quantity: number;
+  avgPrice: number;
+  status: string;
+  side: string;
+  createdAt?: string;
+};
+
+type ModalTradeHistory = {
+  symbol: string;
+  quantity: number;
+  entryPrice: number;
+  exitPrice: number;
+  closedAt?: string;
+  durationLabel: string;
+  durationMinutes: number;
+  profitLoss: number;
+  profitPercent: number;
+};
+
+const toArray = (value: any): any[] => {
+  if (Array.isArray(value)) return value;
+  if (Array.isArray(value?.data)) return value.data;
+  if (Array.isArray(value?.results)) return value.results;
+  if (Array.isArray(value?.items)) return value.items;
+  return [];
+};
+
+const toNumber = (value: any, fallback = 0): number => {
+  if (value === null || value === undefined || value === "") return fallback;
+  const n = Number(String(value).replace("%", "").trim());
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const toIso = (value: any): string | undefined => {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+};
+
+const toDurationLabel = (minutes: number): string => {
+  if (!Number.isFinite(minutes) || minutes <= 0) return "—";
+  const h = Math.floor(minutes / 60);
+  const m = Math.floor(minutes % 60);
+  if (h === 0) return `${m}m`;
+  return `${h}h ${m}m`;
+};
+
+const normalizeOrderStatus = (value: any): string => String(value ?? "UNKNOWN").toUpperCase();
+
 export default function TopTradesPage() {
   // Connection type detection - using global context
   const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
@@ -147,10 +219,44 @@ export default function TopTradesPage() {
   const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<any>(null);
 
+  // Paper trading mock usage detection and pagination
+  const searchParams = useSearchParams();
+  const forcePaperMock = !!(searchParams && searchParams.get && searchParams.get('paperMock') === '1');
+  const [paperMockEnabled, setPaperMockEnabled] = useState<boolean>(forcePaperMock || false);
+  useEffect(() => {
+    if (forcePaperMock) setPaperMockEnabled(true);
+  }, [forcePaperMock]);
+  const effectivePaperMock = paperMockEnabled || (!!(connectionType && String(connectionType).toLowerCase().includes('paper')));
+  const [paperPositionsPage, setPaperPositionsPage] = useState(1);
+  const PAPER_POS_PER_PAGE = 20;
+  const paperPositions = (paperTradingDummy.positions || []);
+  const paperPositionsTotalPages = Math.max(1, Math.ceil(paperPositions.length / PAPER_POS_PER_PAGE));
+  const pagedPaperPositions = useMemo(() => {
+    const s = (paperPositionsPage - 1) * PAPER_POS_PER_PAGE;
+    return paperPositions.slice(s, s + PAPER_POS_PER_PAGE);
+  }, [paperPositionsPage, paperPositions]);
+
   // Create strategy modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // Positions and Leaderboard modal state
+  const [showPositionsModal, setShowPositionsModal] = useState(false);
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+  const [positionsModalPage, setPositionsModalPage] = useState(1);
+  const [positionsModalTab, setPositionsModalTab] = useState<"positions" | "all" | "pending" | "filled" | "canceled">("positions");
+  const [leaderboardTab, setLeaderboardTab] = useState<"history" | "positions">("history");
+  const [historyFilter, setHistoryFilter] = useState<"all" | "profitable" | "loss" | "recent" | "p&l" | "duration">("all");
+  const [leaderboardHistoryPage, setLeaderboardHistoryPage] = useState(1);
+  const [leaderboardPositionsPage, setLeaderboardPositionsPage] = useState(1);
+  const LEADERBOARD_ITEMS_PER_PAGE = 20;
+  const [positionsModalLoading, setPositionsModalLoading] = useState(false);
+  const [positionsModalError, setPositionsModalError] = useState<string | null>(null);
+  const [modalPositions, setModalPositions] = useState<ModalPosition[]>([]);
+  const [modalOrders, setModalOrders] = useState<ModalOrder[]>([]);
+  const [modalTradeHistory, setModalTradeHistory] = useState<ModalTradeHistory[]>([]);
+  const [modalTradeSummary, setModalTradeSummary] = useState<any>(null);
 
   // Create strategy form state
   const [createName, setCreateName] = useState("");
@@ -736,6 +842,191 @@ export default function TopTradesPage() {
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedTrades.length / ITEMS_PER_PAGE));
   const paginatedTrades = filteredAndSortedTrades.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+  useEffect(() => {
+    if (!showPositionsModal && !showLeaderboardModal) return;
+
+    let cancelled = false;
+
+    const loadModalData = async () => {
+      try {
+        setPositionsModalLoading(true);
+        setPositionsModalError(null);
+
+        const [positionsResponse, ordersResponse, historyResponse] = await Promise.all([
+          apiRequest<never, any>({ path: "/binance-trading/positions", method: "GET" }),
+          apiRequest<never, any>({ path: "/binance-trading/orders/all?limit=200", method: "GET" }),
+          apiRequest<never, any>({ path: "/binance-trading/trade-history?limit=200", method: "GET" }),
+        ]);
+
+        if (cancelled) return;
+
+        const rawPositions = toArray(positionsResponse);
+        const rawOrders = toArray(ordersResponse);
+        const rawHistory = toArray(historyResponse);
+
+        const normalizedPositions: ModalPosition[] = rawPositions.map((p: any) => {
+          const quantity = toNumber(p.quantity ?? p.qty ?? p.free ?? p.amount, 0);
+          const entryPrice = toNumber(p.avgEntryPrice ?? p.avg_entry_price ?? p.entryPrice ?? p.entry_price, 0);
+          const currentPrice = toNumber(p.currentPrice ?? p.current_price ?? p.markPrice ?? p.price, 0);
+          const unrealizedPnl = toNumber(
+            p.unrealizedPnl ?? p.unrealized_pl ?? p.profitLoss ?? p.unrealizedProfit,
+            (currentPrice - entryPrice) * quantity,
+          );
+
+          let pnlPercent = toNumber(
+            p.pnlPercent ?? p.unrealizedPnlPercent ?? p.unrealized_plpc ?? p.profitPercent,
+            entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0,
+          );
+
+          if (pnlPercent > -1 && pnlPercent < 1 && Math.abs(pnlPercent) > 0) {
+            pnlPercent = pnlPercent * 100;
+          }
+
+          return {
+            symbol: String(p.symbol ?? p.asset ?? "—"),
+            quantity,
+            entryPrice,
+            currentPrice,
+            totalCost: entryPrice * quantity,
+            unrealizedPnl,
+            pnlPercent,
+          };
+        });
+
+        const normalizedOrders: ModalOrder[] = rawOrders.map((o: any) => ({
+          symbol: String(o.symbol ?? o.asset ?? "—"),
+          quantity: toNumber(o.origQty ?? o.executedQty ?? o.qty ?? o.quantity, 0),
+          avgPrice: toNumber(o.avgPrice ?? o.price ?? o.avgFillPrice ?? o.avg_fill_price, 0),
+          status: normalizeOrderStatus(o.status),
+          side: String(o.side ?? "").toUpperCase(),
+          createdAt: toIso(o.time ?? o.updateTime ?? o.createdAt ?? o.created_at),
+        }));
+
+        const normalizedHistory: ModalTradeHistory[] = rawHistory.map((t: any) => {
+          const entryPrice = toNumber(t.entryPrice ?? t.entry_price ?? t.buyPrice ?? t.buy_price, 0);
+          const exitPrice = toNumber(t.exitPrice ?? t.exit_price ?? t.sellPrice ?? t.sell_price, 0);
+          const quantity = toNumber(t.quantity ?? t.qty ?? t.executedQty ?? t.size, 0);
+          const closedAt = toIso(t.closedAt ?? t.closeTime ?? t.time ?? t.timestamp ?? t.soldAt);
+          const openedAt = toIso(t.openedAt ?? t.openTime ?? t.boughtAt);
+          const durationMinutes = openedAt && closedAt
+            ? Math.max(0, Math.floor((new Date(closedAt).getTime() - new Date(openedAt).getTime()) / 60000))
+            : toNumber(t.durationMinutes ?? t.duration_minutes ?? t.holdingMinutes, 0);
+          const profitLoss = toNumber(t.profitLoss ?? t.profit_loss ?? t.pnl ?? t.realizedPnl, (exitPrice - entryPrice) * quantity);
+          const fallbackPercent = entryPrice > 0 ? ((exitPrice - entryPrice) / entryPrice) * 100 : 0;
+          const profitPercent = toNumber(t.profitPercent ?? t.profit_percent ?? t.pnlPercent ?? t.pnl_percent, fallbackPercent);
+
+          return {
+            symbol: String(t.symbol ?? t.asset ?? "—"),
+            quantity,
+            entryPrice,
+            exitPrice,
+            closedAt,
+            durationLabel: toDurationLabel(durationMinutes),
+            durationMinutes,
+            profitLoss,
+            profitPercent,
+          };
+        });
+
+        setModalPositions(normalizedPositions);
+        setModalOrders(normalizedOrders);
+        setModalTradeHistory(normalizedHistory);
+        setModalTradeSummary(historyResponse?.summary ?? null);
+      } catch (err: any) {
+        if (cancelled) return;
+        setPositionsModalError(err?.message || "Failed to load position and leaderboard data");
+      } finally {
+        if (!cancelled) {
+          setPositionsModalLoading(false);
+        }
+      }
+    };
+
+    loadModalData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showPositionsModal, showLeaderboardModal]);
+
+  const ordersPending = useMemo(
+    () => modalOrders.filter((o) => ["NEW", "PARTIALLY_FILLED", "PENDING"].includes(o.status)),
+    [modalOrders],
+  );
+  const ordersFilled = useMemo(() => modalOrders.filter((o) => o.status === "FILLED"), [modalOrders]);
+  const ordersCanceled = useMemo(
+    () => modalOrders.filter((o) => ["CANCELED", "EXPIRED", "REJECTED"].includes(o.status)),
+    [modalOrders],
+  );
+
+  const positionsTabRows = useMemo(() => {
+    if (positionsModalTab === "positions") return modalPositions;
+    if (positionsModalTab === "all") return modalOrders;
+    if (positionsModalTab === "pending") return ordersPending;
+    if (positionsModalTab === "filled") return ordersFilled;
+    return ordersCanceled;
+  }, [modalPositions, modalOrders, ordersPending, ordersFilled, ordersCanceled, positionsModalTab]);
+
+  const pagedPositionsTabRows = useMemo(
+    () => positionsTabRows.slice((positionsModalPage - 1) * PAPER_POS_PER_PAGE, positionsModalPage * PAPER_POS_PER_PAGE),
+    [positionsTabRows, positionsModalPage],
+  );
+
+  const historyRowsFiltered = useMemo(() => {
+    let rows = [...modalTradeHistory];
+    if (historyFilter === "profitable") rows = rows.filter((r) => r.profitLoss > 0);
+    if (historyFilter === "loss") rows = rows.filter((r) => r.profitLoss < 0);
+    if (historyFilter === "recent") rows = rows.sort((a, b) => new Date(b.closedAt || 0).getTime() - new Date(a.closedAt || 0).getTime());
+    if (historyFilter === "p&l") rows = rows.sort((a, b) => b.profitLoss - a.profitLoss);
+    if (historyFilter === "duration") rows = rows.sort((a, b) => b.durationMinutes - a.durationMinutes);
+    return rows;
+  }, [modalTradeHistory, historyFilter]);
+
+  const pagedHistoryRows = useMemo(
+    () => historyRowsFiltered.slice((leaderboardHistoryPage - 1) * LEADERBOARD_ITEMS_PER_PAGE, leaderboardHistoryPage * LEADERBOARD_ITEMS_PER_PAGE),
+    [historyRowsFiltered, leaderboardHistoryPage],
+  );
+
+  const pagedLeaderboardPositions = useMemo(
+    () => modalPositions.slice((leaderboardPositionsPage - 1) * LEADERBOARD_ITEMS_PER_PAGE, leaderboardPositionsPage * LEADERBOARD_ITEMS_PER_PAGE),
+    [modalPositions, leaderboardPositionsPage],
+  );
+
+  const leaderboardTotalPnl = useMemo(
+    () => modalTradeHistory.reduce((sum, row) => sum + row.profitLoss, 0),
+    [modalTradeHistory],
+  );
+  const leaderboardAvgProfit = modalTradeHistory.length > 0 ? leaderboardTotalPnl / modalTradeHistory.length : 0;
+  const leaderboardUpPositions = useMemo(() => modalPositions.filter((p) => p.unrealizedPnl > 0).length, [modalPositions]);
+  const leaderboardDownPositions = useMemo(() => modalPositions.filter((p) => p.unrealizedPnl < 0).length, [modalPositions]);
+  const leaderboardUnrealizedTotal = useMemo(
+    () => modalPositions.reduce((sum, p) => sum + p.unrealizedPnl, 0),
+    [modalPositions],
+  );
+
+  useEffect(() => {
+    setPositionsModalPage(1);
+  }, [positionsModalTab]);
+
+  useEffect(() => {
+    setLeaderboardHistoryPage(1);
+  }, [historyFilter]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE));
+    if (positionsModalPage > maxPage) setPositionsModalPage(maxPage);
+  }, [positionsTabRows.length, positionsModalPage]);
+
+  useEffect(() => {
+    const maxHistoryPage = Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE));
+    if (leaderboardHistoryPage > maxHistoryPage) setLeaderboardHistoryPage(maxHistoryPage);
+  }, [historyRowsFiltered.length, leaderboardHistoryPage]);
+
+  useEffect(() => {
+    const maxPositionsPage = Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE));
+    if (leaderboardPositionsPage > maxPositionsPage) setLeaderboardPositionsPage(maxPositionsPage);
+  }, [modalPositions.length, leaderboardPositionsPage]);
+
   useEffect(() => { setCurrentPage(1); }, [timeFilter, sortBy, currentTrades.length, activeTab]);
 
   // --- View Trade handler ---
@@ -806,7 +1097,7 @@ export default function TopTradesPage() {
             }
           </p>
         </div>
-        <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
+        <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 items-center">
           <Link
             href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 whitespace-nowrap flex items-center gap-1.5 text-white"
@@ -817,6 +1108,26 @@ export default function TopTradesPage() {
             </svg>
             <span>Custom Strategy</span>
           </Link>
+          <button
+            onClick={() => setShowPositionsModal(true)}
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-blue-600/60 hover:bg-blue-600/80 border border-blue-500/50 hover:border-blue-400 whitespace-nowrap flex items-center gap-1.5 text-white"
+            title="View your open positions"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Positions</span>
+          </button>
+          <button
+            onClick={() => setShowLeaderboardModal(true)}
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/50 hover:border-slate-500 whitespace-nowrap flex items-center gap-1.5 text-slate-200 hover:text-white"
+            title="View leaderboard"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            <span>Leaderboard</span>
+          </button>
           {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}
@@ -829,8 +1140,80 @@ export default function TopTradesPage() {
               {period === "all" ? "All" : period}
             </button>
           ))}
+          <button
+            onClick={() => setPaperMockEnabled(p => !p)}
+            title="Toggle paper trading mock"
+            className="ml-2 rounded-md px-2 py-1 text-xs font-medium transition-all text-slate-300 bg-[--color-surface]/30 hover:bg-[--color-surface]/50"
+          >
+            Mock: {paperMockEnabled ? 'ON' : 'OFF'}
+          </button>
         </div>
       </div>
+
+      {/* Paper Trading - Open Positions & Leaderboard (dummy data) */}
+      {effectivePaperMock && (
+        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.03] to-transparent p-4 sm:p-6 backdrop-blur grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm sm:text-base font-semibold text-white">Paper Trading — Open Positions</h3>
+              <div className="text-xs text-slate-400">{paperPositions.length} positions</div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm">
+                <thead>
+                  <tr className="text-slate-400 text-[10px] sm:text-xs text-left">
+                    <th className="py-2">Symbol</th>
+                    <th className="py-2">Qty</th>
+                    <th className="py-2">Value</th>
+                    <th className="py-2">Entry</th>
+                    <th className="py-2">P/L</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[--color-border]">
+                  {pagedPaperPositions.map((p, i) => (
+                    <tr key={p.symbol + i} className="hover:bg-[--color-surface]/40">
+                      <td className="py-2 font-medium text-white">{p.symbol}</td>
+                      <td className="py-2 text-slate-300">{p.quantity}</td>
+                      <td className="py-2 text-slate-300">{formatCurrency(p.currentPrice * p.quantity)}</td>
+                      <td className="py-2 text-slate-300">{formatCurrency(p.entryPrice)}</td>
+                      <td className={`py-2 font-medium ${p.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(p.unrealizedPnl)} • {formatPercent(p.pnlPercent)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex items-center justify-between pt-3">
+              <div className="text-xs text-slate-400">Showing {(paperPositionsPage - 1) * PAPER_POS_PER_PAGE + 1} - {Math.min(paperPositionsPage * PAPER_POS_PER_PAGE, paperPositions.length)} of {paperPositions.length}</div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setPaperPositionsPage(p => Math.max(1, p - 1))} disabled={paperPositionsPage === 1} className={`px-3 py-1 rounded-md text-xs ${paperPositionsPage === 1 ? 'opacity-40' : 'bg-[--color-surface]/60'}`}>Prev</button>
+                <div className="text-xs text-slate-400">Page {paperPositionsPage} / {paperPositionsTotalPages}</div>
+                <button onClick={() => setPaperPositionsPage(p => Math.min(paperPositionsTotalPages, p + 1))} disabled={paperPositionsPage === paperPositionsTotalPages} className={`px-3 py-1 rounded-md text-xs ${paperPositionsPage === paperPositionsTotalPages ? 'opacity-40' : 'bg-[--color-surface]/60'}`}>Next</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-1">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-sm sm:text-base font-semibold text-white">Leaderboard</h3>
+              <div className="text-xs text-slate-400">Top traders</div>
+            </div>
+            <div className="space-y-2">
+              {paperTradingDummy.leaderboard.map((l, idx) => (
+                <div key={l.user + idx} className="flex items-center justify-between p-2 rounded-md bg-[--color-surface]/30">
+                  <div>
+                    <div className="text-sm font-medium text-white">{l.user}</div>
+                    <div className="text-xs text-slate-400">{l.trades} trades • {l.winrate}% winrate</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-white">{formatCurrency(l.profit)}</div>
+                    <div className="text-xs text-slate-400">Profit</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Strategy Tabs */}
       {loadingPreBuilt ? (
@@ -1414,6 +1797,454 @@ export default function TopTradesPage() {
           onSuccess={handleAutoTradeSuccess}
           strategy={currentStrategy ?? undefined}
         />
+      )}
+
+      {/* Positions Modal */}
+      {showPositionsModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+            <div className="sticky top-0 bg-[--color-surface] border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg sm:text-2xl font-semibold text-white">Order History</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">View all your Binance testnet orders</p>
+              </div>
+              <button
+                onClick={() => { setShowPositionsModal(false); setPositionsModalPage(1); setPositionsModalTab("positions"); }}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="sticky top-[76px] sm:top-[96px] z-20 border-b border-slate-700 px-4 sm:px-6 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
+              <button 
+                onClick={() => setPositionsModalTab("positions")}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all border-b-2 ${
+                  positionsModalTab === "positions"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
+                }`}
+              >
+                <span>Positions</span>
+                <span className={`text-xs px-2 py-0.5 rounded ${positionsModalTab === "positions" ? "bg-white/20" : "bg-slate-700/50"}`}>({modalPositions.length})</span>
+              </button>
+              <button 
+                onClick={() => setPositionsModalTab("all")}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                  positionsModalTab === "all"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
+                }`}
+              >
+                All Orders ({modalOrders.length})
+              </button>
+              <button 
+                onClick={() => setPositionsModalTab("pending")}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                  positionsModalTab === "pending"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
+                }`}
+              >
+                Pending ({ordersPending.length})
+              </button>
+              <button 
+                onClick={() => setPositionsModalTab("filled")}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                  positionsModalTab === "filled"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
+                }`}
+              >
+                Filled ({ordersFilled.length})
+              </button>
+              <button 
+                onClick={() => setPositionsModalTab("canceled")}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                  positionsModalTab === "canceled"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
+                }`}
+              >
+                Canceled ({ordersCanceled.length})
+              </button>
+            </div>
+
+            <div className="h-[calc(90vh-150px)] sm:h-[calc(90vh-190px)] flex flex-col">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                {positionsModalLoading && (
+                  <div className="text-sm text-slate-300">Loading latest positions and orders...</div>
+                )}
+                {positionsModalError && (
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                    {positionsModalError}
+                  </div>
+                )}
+
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="text-slate-400 text-[10px] sm:text-xs text-left border-b border-slate-700">
+                        <th className="py-3 px-3 font-medium">Symbol</th>
+                        <th className="py-3 px-3 font-medium">Quantity</th>
+                        <th className="py-3 px-3 font-medium">Avg Entry Price</th>
+                        <th className="py-3 px-3 font-medium">Total Cost</th>
+                        <th className="py-3 px-3 font-medium">Current Price</th>
+                        <th className="py-3 px-3 font-medium">Status</th>
+                        <th className="py-3 px-3 font-medium">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700">
+                      {pagedPositionsTabRows.map((row: any, i) => {
+                        if (positionsModalTab === "positions") {
+                          const position = row as ModalPosition;
+                          return (
+                            <tr key={`${position.symbol}-${i}`} className="hover:bg-slate-800/30 transition-colors">
+                              <td className="py-3 px-3 font-semibold text-white">{position.symbol}</td>
+                              <td className="py-3 px-3 text-slate-300">{formatQuantity(position.quantity)}</td>
+                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.entryPrice)}</td>
+                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.totalCost)}</td>
+                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.currentPrice)}</td>
+                              <td className="py-3 px-3">
+                                <span className="px-2 py-1 rounded text-xs font-medium bg-[#fc4f02]/20 text-[#fc4f02]">
+                                  HOLDING
+                                </span>
+                              </td>
+                              <td className="py-3 px-3">
+                                <button className="px-3 py-1 rounded text-xs font-medium bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors">
+                                  Close Position
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        const order = row as ModalOrder;
+                        return (
+                          <tr key={`${order.symbol}-${order.status}-${i}`} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="py-3 px-3 font-semibold text-white">{order.symbol}</td>
+                            <td className="py-3 px-3 text-slate-300">{formatQuantity(order.quantity)}</td>
+                            <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice)}</td>
+                            <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice * order.quantity)}</td>
+                            <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice)}</td>
+                            <td className="py-3 px-3">
+                              <span className="px-2 py-1 rounded text-xs font-medium bg-slate-700/60 text-slate-200">
+                                {order.status}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-slate-400 text-xs">{order.side || "—"}</td>
+                          </tr>
+                        );
+                      })}
+                      {!positionsModalLoading && pagedPositionsTabRows.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="py-8 px-3 text-center text-slate-400">
+                            No records found for this tab
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-700 bg-[--color-surface]/95 backdrop-blur p-4 sm:px-6 sm:py-4">
+                {/* Summary Stats */}
+                <div className="grid grid-cols-5 gap-4">
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">Open Positions</div>
+                    <div className="text-2xl font-bold text-white">{modalPositions.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">Total Orders</div>
+                    <div className="text-2xl font-bold text-white">{modalOrders.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">Pending</div>
+                    <div className="text-2xl font-bold text-slate-400">{ordersPending.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">Filled</div>
+                    <div className="text-2xl font-bold text-green-400">{ordersFilled.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-slate-400 text-xs mb-1">Canceled</div>
+                    <div className="text-2xl font-bold text-red-400">{ordersCanceled.length}</div>
+                  </div>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700 mt-4">
+                  <div className="text-xs text-slate-400">
+                    Showing {Math.min((positionsModalPage - 1) * PAPER_POS_PER_PAGE + 1, positionsTabRows.length)} - {Math.min(positionsModalPage * PAPER_POS_PER_PAGE, positionsTabRows.length)} of {positionsTabRows.length}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setPositionsModalPage(p => Math.max(1, p - 1))} 
+                      disabled={positionsModalPage === 1} 
+                      className={`px-3 py-1 rounded-md text-xs transition-colors ${positionsModalPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70'}`}
+                    >
+                      Prev
+                    </button>
+                    <div className="text-xs text-slate-400">Page {positionsModalPage} / {Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE))}</div>
+                    <button 
+                      onClick={() => setPositionsModalPage(p => Math.min(Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE)), p + 1))} 
+                      disabled={positionsModalPage >= Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE))} 
+                      className={`px-3 py-1 rounded-md text-xs transition-colors ${positionsModalPage >= Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70'}`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leaderboard Modal - Trading Performance */}
+      {showLeaderboardModal && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg sm:rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            {/* Fixed Header */}
+            <div className="flex-shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] flex items-center justify-center font-bold text-white">
+                  TH
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">Trading Performance</h2>
+                  <p className="text-xs sm:text-sm text-slate-400 mt-1">View closed trades and open positions</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowLeaderboardModal(false); setLeaderboardTab("history"); setHistoryFilter("all"); setLeaderboardHistoryPage(1); setLeaderboardPositionsPage(1); }}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Fixed Main Tabs */}
+            <div className="flex-shrink-0 px-4 sm:px-6 py-4 flex gap-3 overflow-x-auto bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700">
+              <button 
+                onClick={() => setLeaderboardTab("history")}
+                className={`px-6 py-3 text-sm font-medium whitespace-nowrap rounded-full transition-all flex-1 max-w-xs ${
+                  leaderboardTab === "history"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Trade History
+              </button>
+              <button 
+                onClick={() => setLeaderboardTab("positions")}
+                className={`px-6 py-3 text-sm font-medium whitespace-nowrap rounded-full transition-all flex-1 max-w-xs ${
+                  leaderboardTab === "positions"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                    : "text-slate-400 hover:text-white"
+                }`}
+              >
+                Open Positions ({modalPositions.length})
+              </button>
+            </div>
+
+            {/* Flex body: fills remaining height */}
+            <div className="flex-1 min-h-0 flex flex-col">
+
+              {/* Trade History Tab */}
+              {leaderboardTab === "history" && (
+                <>
+                  {/* Fixed: Stats + Filter Tabs */}
+                  <div className="flex-shrink-0 px-4 sm:px-6 pt-4 pb-4 space-y-4 border-b border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
+                    {positionsModalLoading && (
+                      <div className="text-sm text-slate-300">Loading trade history...</div>
+                    )}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-slate-400 text-sm mb-2">Total Trades</div>
+                        <div className="text-2xl font-bold text-white">{modalTradeSummary?.totalTrades ?? historyRowsFiltered.length}</div>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-slate-400 text-sm mb-2">Total P&L</div>
+                        <div className={`text-2xl font-bold ${leaderboardTotalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {formatCurrency(modalTradeSummary?.totalProfitLoss ?? leaderboardTotalPnl)}
+                        </div>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-slate-400 text-sm mb-2">Avg Profit</div>
+                        <div className={`text-2xl font-bold ${leaderboardAvgProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {formatCurrency(leaderboardAvgProfit)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {["all", "profitable", "loss", "recent", "p&l"].map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setHistoryFilter(filter as any)}
+                          className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap capitalize transition-all ${
+                            historyFilter === filter
+                              ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                              : "text-slate-400 hover:text-white bg-slate-700/50"
+                          }`}
+                        >
+                          {filter === "p&l" ? "P&L" : filter}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Scrollable: Trade List */}
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                    {pagedHistoryRows.map((trade, idx) => (
+                      <div key={`${trade.symbol}-${idx}`} className={`bg-slate-800/30 rounded-lg p-4 border-l-4 ${trade.profitLoss < 0 ? 'border-red-500' : 'border-green-500'}`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-lg font-bold text-white">{trade.symbol}</div>
+                            <div className="text-sm text-slate-400">{trade.quantity.toLocaleString()} shares • {trade.durationLabel}</div>
+                            <div className="text-sm text-slate-300 mt-1">
+                              Entry: <span className="text-white">{formatCurrency(trade.entryPrice)}</span> → Exit: <span className="text-white">{formatCurrency(trade.exitPrice)}</span>
+                              <span className="text-slate-400 ml-2">{trade.closedAt ? new Date(trade.closedAt).toLocaleString() : '—'}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-lg font-bold ${trade.profitLoss < 0 ? 'text-red-400' : 'text-green-400'}`}>{formatCurrency(trade.profitLoss)}</div>
+                            <div className={`text-sm ${trade.profitLoss < 0 ? 'text-red-400' : 'text-green-400'}`}>{formatPercent(trade.profitPercent)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {!positionsModalLoading && pagedHistoryRows.length === 0 && (
+                      <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4 text-center text-slate-400">
+                        No trade history found
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fixed: Pagination */}
+                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-between">
+                    <div className="text-sm text-slate-400">
+                      Showing {Math.min((leaderboardHistoryPage - 1) * LEADERBOARD_ITEMS_PER_PAGE + 1, historyRowsFiltered.length)} - {Math.min(leaderboardHistoryPage * LEADERBOARD_ITEMS_PER_PAGE, historyRowsFiltered.length)} of {historyRowsFiltered.length} trades
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setLeaderboardHistoryPage(p => Math.max(1, p - 1))} 
+                        disabled={leaderboardHistoryPage === 1} 
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                      >
+                        Prev
+                      </button>
+                      <div className="text-xs text-slate-400">Page {leaderboardHistoryPage} / {Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE))}</div>
+                      <button 
+                        onClick={() => setLeaderboardHistoryPage(p => Math.min(Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
+                        disabled={leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE))} 
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Open Positions Tab */}
+              {leaderboardTab === "positions" && (
+                <>
+                  {/* Fixed: Stats + Section Header */}
+                  <div className="flex-shrink-0 px-4 sm:px-6 pt-4 pb-4 space-y-4 border-b border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-slate-400 text-sm mb-2">Total Positions</div>
+                        <div className="text-2xl font-bold text-white">{modalPositions.length}</div>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-slate-400 text-sm mb-2">Positions Up</div>
+                        <div className="text-2xl font-bold text-green-400">{leaderboardUpPositions}</div>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-slate-400 text-sm mb-2">Positions Down</div>
+                        <div className="text-2xl font-bold text-red-400">{leaderboardDownPositions}</div>
+                      </div>
+                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                        <div className="text-slate-400 text-sm mb-2">Unrealized P&L</div>
+                        <div className={`text-2xl font-bold ${leaderboardUnrealizedTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {formatCurrency(leaderboardUnrealizedTotal)}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 bg-gradient-to-r from-[#fc4f02] to-[#fda300] rounded flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-bold text-white">CRYPTO POSITIONS</h3>
+                    </div>
+                  </div>
+
+                  {/* Scrollable: Positions List */}
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                    {pagedLeaderboardPositions.map((position, idx) => (
+                      <div key={`${position.symbol}-${idx}`} className="bg-slate-800/30 rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-xl font-bold text-white">{position.symbol}</div>
+                            <div className="text-sm text-slate-400 mb-2">{position.quantity.toLocaleString()} tokens</div>
+                            <div className="text-sm text-slate-300">
+                              Entry: <span className="text-white font-semibold">{formatCurrency(position.entryPrice)}</span> • Current: <span className="text-white font-semibold">{formatCurrency(position.currentPrice)}</span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-slate-400 mb-1">Value: <span className="text-white font-semibold">{formatCurrency(position.currentPrice * position.quantity)}</span></div>
+                            <div className={`px-3 py-1 rounded-lg text-sm font-medium ${position.unrealizedPnl < 0 ? 'bg-red-900/40 text-red-400' : 'bg-green-900/40 text-green-400'}`}>
+                              {formatCurrency(position.unrealizedPnl)} ({formatPercent(position.pnlPercent)})
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {!positionsModalLoading && pagedLeaderboardPositions.length === 0 && (
+                      <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4 text-center text-slate-400">
+                        No open positions found
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fixed: Pagination */}
+                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-between">
+                    <div className="text-sm text-slate-400">
+                      Showing {Math.min((leaderboardPositionsPage - 1) * LEADERBOARD_ITEMS_PER_PAGE + 1, modalPositions.length)} - {Math.min(leaderboardPositionsPage * LEADERBOARD_ITEMS_PER_PAGE, modalPositions.length)} of {modalPositions.length} positions
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setLeaderboardPositionsPage(p => Math.max(1, p - 1))} 
+                        disabled={leaderboardPositionsPage === 1} 
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                      >
+                        Prev
+                      </button>
+                      <div className="text-xs text-slate-400">Page {leaderboardPositionsPage} / {Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE))}</div>
+                      <button 
+                        onClick={() => setLeaderboardPositionsPage(p => Math.min(Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
+                        disabled={leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE))} 
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
