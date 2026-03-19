@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import axios from "axios";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier, BillingPeriod, getPlansByTier } from "@/mock-data/subscription-dummy-data";
 import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
@@ -12,14 +13,14 @@ import { toast } from "react-toastify";
 import { PRICE_IDS } from "@/constant";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 
-const TAB_IDS = ["current", "billing", "usage", "change"] as const;
+const TAB_IDS = ["current", "billing", "usage", "fees", "change"] as const;
 type TabId = (typeof TAB_IDS)[number];
 
 export function SubscriptionSettings() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
   const initialTab: TabId =
-    tabParam === "change" || tabParam === "billing" || tabParam === "usage" || tabParam === "current"
+    tabParam === "change" || tabParam === "billing" || tabParam === "usage" || tabParam === "current" || tabParam === "fees"
       ? tabParam
       : "current";
 
@@ -40,6 +41,38 @@ export function SubscriptionSettings() {
   } = useSubscriptionStore();
 
   const {  createCheckout, cancelSubscription } = useSubscription();
+
+  // ─── Trade Fees state ──────────────────────────────────────────────
+  const [feeData, setFeeData] = useState<any>(null);
+  const [feeHistory, setFeeHistory] = useState<any[]>([]);
+  const [feeLoading, setFeeLoading] = useState(false);
+  const hasFetchedFeesRef = useRef(false);
+
+  const fetchFeeData = useCallback(async () => {
+    setFeeLoading(true);
+    try {
+      const token = localStorage.getItem("quantivahq_access_token");
+      const headers = { Authorization: `Bearer ${token}` };
+      const base = process.env.NEXT_PUBLIC_API_URL;
+      const [cur, hist] = await Promise.all([
+        axios.get(`${base}/trade-fees/my-fees`, { headers, withCredentials: true }),
+        axios.get(`${base}/trade-fees/history?limit=6`, { headers, withCredentials: true }),
+      ]);
+      setFeeData(cur.data);
+      setFeeHistory(hist.data?.months ?? []);
+    } catch {
+      // user may not have fees yet — silent
+    } finally {
+      setFeeLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "fees" && !hasFetchedFeesRef.current) {
+      hasFetchedFeesRef.current = true;
+      fetchFeeData();
+    }
+  }, [activeTab, fetchFeeData]);
 
   // Open Change Plan tab when coming from Upgrade Now (?tab=change)
   useEffect(() => {
@@ -299,6 +332,7 @@ export function SubscriptionSettings() {
           { id: "current", label: "Current Plan" },
           { id: "billing", label: "Billing History" },
           { id: "usage", label: "Usage Analytics" },
+          { id: "fees", label: "Trade Fees" },
           { id: "change", label: "Change Plan" },
         ].map((tab) => (
           <button
@@ -583,6 +617,121 @@ export function SubscriptionSettings() {
                 <span className="font-semibold">💡 Tip:</span> Yearly plans offer the best savings with up to 20% discount. Subscribe today and start trading smarter!
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Trade Fees Tab */}
+        {activeTab === "fees" && (
+          <div className="space-y-6">
+            {feeLoading ? (
+              <div className="text-center py-8">
+                <div className="inline-block w-6 h-6 border-2 border-slate-600 border-t-[#fc4f02] rounded-full animate-spin" />
+                <p className="text-slate-400 mt-2 text-sm">Loading fee data...</p>
+              </div>
+            ) : (
+              <>
+                {/* Current Month Summary */}
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-5">
+                  <h3 className="text-lg font-semibold text-white mb-4">Current Month Fees</h3>
+                  {feeData ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Billing Month</p>
+                        <p className="text-sm font-medium text-white">{feeData.billing_month || "\u2014"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Total Trades</p>
+                        <p className="text-sm font-medium text-white">{feeData.total_trades ?? 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Trade Volume</p>
+                        <p className="text-sm font-medium text-white">${(feeData.total_trade_volume_usd ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400 mb-1">Total Fees (0.1%)</p>
+                        <p className="text-lg font-bold text-amber-400">${(feeData.total_fees_usd ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-400">No trade fees recorded this month.</p>
+                  )}
+                </div>
+
+                {/* How It Works */}
+                <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-5">
+                  <h4 className="text-sm font-semibold text-white mb-3">How Trade Fees Work</h4>
+                  <ul className="space-y-2 text-xs text-slate-400">
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-400 mt-0.5">\u2022</span>
+                      <span>A <strong className="text-slate-300">0.1% fee</strong> is charged on every top trade you execute.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-400 mt-0.5">\u2022</span>
+                      <span>Fees accumulate through the month and are billed via Stripe on the 1st.</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-amber-400 mt-0.5">\u2022</span>
+                      <span>Minimum invoice amount is $0.50. Below that, fees carry over to the next month.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Monthly History */}
+                {feeHistory.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-3">Monthly History</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-700">
+                            <th className="text-left text-slate-400 font-medium py-2 pr-4">Month</th>
+                            <th className="text-right text-slate-400 font-medium py-2 px-4">Trades</th>
+                            <th className="text-right text-slate-400 font-medium py-2 px-4">Volume</th>
+                            <th className="text-right text-slate-400 font-medium py-2 px-4">Fees</th>
+                            <th className="text-right text-slate-400 font-medium py-2 pl-4">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {feeHistory.map((m: any) => (
+                            <tr key={m.billing_month} className="border-b border-slate-800">
+                              <td className="py-2.5 pr-4 text-white">{m.billing_month}</td>
+                              <td className="py-2.5 px-4 text-right text-slate-300">{m.total_trades}</td>
+                              <td className="py-2.5 px-4 text-right text-slate-300">${(m.total_trade_volume_usd ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-2.5 px-4 text-right font-medium text-amber-400">${(m.total_fees_usd ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="py-2.5 pl-4 text-right">
+                                <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${m.status === "PAID" ? "bg-green-500/20 text-green-400" : m.status === "PENDING" || m.status === "ACCUMULATING" ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"}`}>{m.status}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent Trades */}
+                {feeData?.recent_fees?.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-3">Recent Trade Fees</h3>
+                    <div className="space-y-2">
+                      {feeData.recent_fees.slice(0, 10).map((f: any) => (
+                        <div key={f.fee_id} className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/30 px-4 py-2.5">
+                          <div className="flex items-center gap-3">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${f.side === "BUY" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{f.side || "\u2014"}</span>
+                            <span className="text-sm text-white font-medium">{f.asset_symbol}</span>
+                            <span className="text-xs text-slate-500">{new Date(f.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-slate-400">${(f.trade_value_usd ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })} trade</p>
+                            <p className="text-sm font-medium text-amber-400">${(f.fee_amount_usd ?? 0).toFixed(4)} fee</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
