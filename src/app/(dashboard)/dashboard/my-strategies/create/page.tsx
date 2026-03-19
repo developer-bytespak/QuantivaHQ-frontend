@@ -653,13 +653,71 @@ export default function CreateStrategyPage() {
         {/* Step 4: Entry & Exit Rules */}
         {currentStep === "rules" && (
           <div className="space-y-8">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-6 relative">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
                 <span className="text-[#fda300] font-bold">4</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">Entry & Exit Rules</h3>
                 <p className="text-sm text-slate-400">Define score thresholds for BUY and SELL signals</p>
+              </div>
+              {/* Info Icon with Hover Tooltip */}
+              <div className="relative group">
+  <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[#fda300]/50 group-hover:bg-[#fda300]/10">
+    
+    {/* Proper Info Icon */}
+    <svg 
+      className="w-4 h-4 text-slate-400 group-hover:text-[#fda300] transition-colors" 
+      fill="none" 
+      stroke="currentColor" 
+      viewBox="0 0 24 24"
+    >
+      <path 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        strokeWidth={2} 
+        d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" 
+      />
+    </svg>
+                </div>
+                <div className="absolute right-0 top-full mt-2 w-[340px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="rounded-xl border border-[#fda300]/20 bg-[#0a0a12] shadow-[0_8px_32px_rgba(0,0,0,0.9)] p-4 text-xs leading-relaxed">
+         <p className="text-[#fda300] font-semibold text-sm mb-3">📖 How Rules Work</p>
+
+                    <p className="text-slate-300 font-medium mb-1">🔢 Score Range</p>
+                    <p className="text-slate-400 mb-2">All scores range from <span className="text-red-400 font-semibold">-1</span> (very bearish) to <span className="text-emerald-400 font-semibold">+1</span> (very bullish). <span className="text-slate-300">0</span> means neutral — no clear direction.</p>
+
+                    <p className="text-slate-300 font-medium mb-1">📊 Fields</p>
+                    <ul className="text-slate-400 mb-2 space-y-0.5 pl-3">
+                      <li>• <span className="text-white">Final Score</span> — Combined weighted score from all engines</li>
+                      <li>• <span className="text-white">Sentiment</span> — News & social media analysis</li>
+                      <li>• <span className="text-white">Trend</span> — Technical trend indicators</li>
+                      <li>• <span className="text-white">Fundamental</span> — Earnings & financials</li>
+                      <li>• <span className="text-white">Event Risk</span> — Upcoming events impact</li>
+                      <li>• <span className="text-white">Liquidity</span> — Volume & market depth</li>
+                    </ul>
+
+                    <p className="text-slate-300 font-medium mb-1">⚡ Operators</p>
+                    <ul className="text-slate-400 mb-2 space-y-0.5 pl-3">
+                      <li>• <span className="text-emerald-400">Greater than (&gt;)</span> — BUY when score is above this value</li>
+                      <li>• <span className="text-red-400">Less than (&lt;)</span> — SELL when score drops below</li>
+                      <li>• <span className="text-emerald-400">≥</span> — BUY when score is at or above</li>
+                      <li>• <span className="text-red-400">≤</span> — SELL when score is at or below</li>
+                    </ul>
+
+                    <p className="text-slate-300 font-medium mb-1">💡 Examples</p>
+                    <ul className="text-slate-400 space-y-0.5 pl-3">
+                      <li>• <span className="text-white">Final Score &gt; 0.5</span> → BUY only on strong bullish signals</li>
+                      <li>• <span className="text-white">Final Score &gt; 0</span> → BUY on any positive signal (more trades)</li>
+                      <li>• <span className="text-white">Final Score &lt; -0.3</span> → SELL when moderately bearish</li>
+                      <li>• <span className="text-white">Sentiment &gt; 0.7</span> → BUY only on very positive news</li>
+                    </ul>
+
+                    <div className="mt-3 pt-2 border-t border-white/10 text-[10px] text-slate-500">
+                      Higher threshold = fewer but stronger signals. Lower threshold = more frequent trades.
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
