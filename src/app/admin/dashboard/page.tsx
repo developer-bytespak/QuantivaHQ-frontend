@@ -8,19 +8,31 @@ import { useNotification, Notification } from "@/components/common/notification"
 export default function AdminDashboardPage() {
   const { notification, showNotification, hideNotification } = useNotification();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [pools, setPools] = useState<AdminPoolSummary[]>([]);
 
+  const loadPools = async () => {
+    try {
+      const res = await adminListPools({ page: 1, limit: 20 });
+      setPools(res.pools);
+    } catch (err: unknown) {
+      showNotification(
+        (err as { message?: string })?.message ?? "Failed to load dashboard",
+        "error"
+      );
+    }
+  };
+
   useEffect(() => {
-    adminListPools({ page: 1, limit: 20 })
-      .then((res) => setPools(res.pools))
-      .catch((err: unknown) => {
-        showNotification(
-          (err as { message?: string })?.message ?? "Failed to load dashboard",
-          "error"
-        );
-      })
-      .finally(() => setLoading(false));
+    loadPools().finally(() => setLoading(false));
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadPools();
+    setRefreshing(false);
+    showNotification("Dashboard refreshed", "success");
+  };
 
   const stats = useMemo(() => {
     const byStatus = pools.reduce<Record<string, number>>((acc, p) => {
@@ -63,6 +75,16 @@ export default function AdminDashboardPage() {
               </svg>
               Manage Pools
             </Link>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/30 transition-all duration-200 border border-white/20 hover:border-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className={`h-5 w-5 transition-transform ${refreshing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
             <Link
               href="/admin/settings"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/20 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/30 transition-all duration-200 border border-white/20 hover:border-white/40 whitespace-nowrap"

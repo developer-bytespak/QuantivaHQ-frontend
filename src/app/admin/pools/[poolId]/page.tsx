@@ -483,6 +483,30 @@ export default function AdminPoolDetailsPage() {
     }
   };
 
+  const handleRefreshCurrentTab = async () => {
+    switch (activeTab) {
+      case "payments":
+        loadPayments();
+        break;
+      case "reservations":
+        loadReservations();
+        break;
+      case "members":
+        loadMembers();
+        break;
+      case "trades":
+        loadTrades();
+        break;
+      case "cancellations":
+        loadCancellations();
+        break;
+      case "payouts":
+        loadPayouts();
+        break;
+    }
+    showNotification(`${activeTab} refreshed`, "success");
+  };
+
   const handleApprove = async (submissionId: string) => {
     if (!poolId) return;
     setActionSubmitting(submissionId);
@@ -748,21 +772,33 @@ export default function AdminPoolDetailsPage() {
           {/* ═══════════ TABS & CONTENT ═══════════ */}
           {!isDraft && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
-              <div className="flex flex-wrap border-b border-[--color-border]">
-                {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "cancellations", "payouts"] as Tab[]).map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${
-                      activeTab === tab
-                        ? "bg-[#fc4f02]/20 text-[#fc4f02] border-b-2 border-[#fc4f02]"
-                        : "text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center justify-between border-b border-[--color-border]">
+                <div className="flex flex-wrap">
+                  {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "cancellations", "payouts"] as Tab[]).map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${
+                        activeTab === tab
+                          ? "bg-[#fc4f02]/20 text-[#fc4f02] border-b-2 border-[#fc4f02]"
+                          : "text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefreshCurrentTab}
+                  className="px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 transition-colors border-l border-[--color-border] flex items-center gap-2"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span className="text-xs hidden sm:inline">Refresh</span>
+                </button>
               </div>
               <div className="p-4">
                 {activeTab === "payments" && (
