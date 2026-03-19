@@ -578,21 +578,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
-            <div className="mb-3 sm:mb-4 flex items-center justify-between">
+            <div className="mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold text-white">Portfolio</h2>
-              <div className="flex items-center gap-2">
-                {lastUpdated && (
-                  <p className="text-[10px] sm:text-xs text-slate-400">
-                    Updated {lastUpdated.toLocaleTimeString()}
-                  </p>
-                )}
-                <button
-                  onClick={() => router.push("/dashboard/vc-pool/transaction")}
-                  className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:scale-105 shadow-lg shadow-[#fc4f02]/30"
-                >
-                  Transactions
-                </button>
-              </div>
             </div>
 
             {isLoading && !dashboardData ? (
@@ -642,58 +629,98 @@ export default function DashboardPage() {
 
           {/* Action Center - Recent Activities */}
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
-            <div className="mb-3 sm:mb-4 flex items-center justify-between">
+            <div className="mb-4 sm:mb-5 flex items-center justify-between">
+              <div>
                 <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
-                <div className="text-xs sm:text-sm text-slate-400">
-                  {(openOrders || []).length} open orders
-                </div>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Open limit &amp; market orders</p>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-full bg-[#fc4f02]/10 border border-[#fc4f02]/20 px-3 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#fc4f02] animate-pulse"></span>
+                <span className="text-[10px] sm:text-xs font-medium text-[#fda300]">{(openOrders || []).length} open</span>
+              </div>
             </div>
-              <div className="space-y-4">
-                {(!dashboardData || (openOrders || []).length === 0) ? (
-                  <div className="py-6 sm:py-8 text-center text-slate-400">
-                    <p className="text-xs sm:text-sm">No Open Orders yet</p>
+            <div className="space-y-2">
+              {(!dashboardData || (openOrders || []).length === 0) ? (
+                <div className="py-10 text-center">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/5">
+                    <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    <ul className="divide-y divide-[--color-border]">
-                      {paginatedOrders.map((order: any, idx: number) => (
-                        <li key={order.id || idx} className="py-3 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="text-sm font-medium text-white">{order.symbol}</div>
-                            <div className={`text-xs px-2 py-1 rounded-md font-medium ${order.side?.toLowerCase() === 'buy' ? 'bg-green-500/20 text-green-300' : 'bg-red-500/10 text-red-300'}`}>
-                              {order.side?.toUpperCase()}
+                  <p className="text-xs sm:text-sm text-slate-400">No open orders</p>
+                  <p className="text-[10px] text-slate-600 mt-1">Your active orders will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <ul className="space-y-2">
+                    {paginatedOrders.map((order: any, idx: number) => (
+                      <li key={order.id || idx} className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 sm:px-4 py-3 flex items-center justify-between hover:bg-white/[0.07] transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                            order.side?.toLowerCase() === 'buy'
+                              ? 'bg-green-500/15 text-green-400'
+                              : 'bg-[#fc4f02]/15 text-[#fda300]'
+                          }`}>
+                            {order.side?.toLowerCase() === 'buy' ? 'B' : 'S'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs sm:text-sm font-semibold text-white">{order.symbol}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                order.side?.toLowerCase() === 'buy'
+                                  ? 'bg-green-500/15 text-green-400'
+                                  : 'bg-[#fc4f02]/15 text-[#fda300]'
+                              }`}>{order.side?.toUpperCase()}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400 font-medium hidden sm:inline">{order.type || 'LIMIT'}</span>
                             </div>
-                            <div className="text-xs text-slate-400">{order.quantity} • {order.type || ''}</div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">
+                              Qty: <span className="text-slate-400">{order.quantity}</span>
+                              {order.created_at && <span className="ml-2">{new Date(order.created_at).toLocaleDateString()}</span>}
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-white">{formatCurrency(order.price || 0)}</div>
-                            <div className="text-xs text-slate-400">{order.status} • {order.created_at ? new Date(order.created_at).toLocaleString() : ''}</div>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs sm:text-sm font-semibold text-white">{formatCurrency(order.price || 0)}</div>
+                          <div className={`text-[10px] mt-0.5 font-medium ${
+                            order.status === 'NEW' ? 'text-blue-400' :
+                            order.status === 'PARTIALLY_FILLED' ? 'text-yellow-400' : 'text-slate-400'
+                          }`}>{order.status?.replace('_', ' ')}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
 
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="text-xs text-slate-400">Showing {(ordersPage - 1) * ORDERS_PER_PAGE + 1} - {Math.min(ordersPage * ORDERS_PER_PAGE, openOrders.length)} of {openOrders.length}</div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
-                          disabled={ordersPage === 1}
-                          className={`px-3 py-1 rounded-md text-xs transition ${ordersPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
-                          Prev
-                        </button>
-                        <div className="text-xs text-slate-400">Page {ordersPage} / {totalOrderPages}</div>
-                        <button
-                          onClick={() => setOrdersPage(p => Math.min(totalOrderPages, p + 1))}
-                          disabled={ordersPage === totalOrderPages}
-                          className={`px-3 py-1 rounded-md text-xs transition ${ordersPage === totalOrderPages ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
-                          Next
-                        </button>
-                      </div>
+                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                    <div className="text-[10px] sm:text-xs text-slate-500">
+                      {(ordersPage - 1) * ORDERS_PER_PAGE + 1}–{Math.min(ordersPage * ORDERS_PER_PAGE, openOrders.length)} of {openOrders.length}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+                        disabled={ordersPage === 1}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg text-xs font-medium transition ${
+                          ordersPage === 1
+                            ? 'opacity-30 cursor-not-allowed text-slate-400'
+                            : 'bg-white/[0.06] hover:bg-white/[0.1] text-white'
+                        }`}>
+                        ‹
+                      </button>
+                      <span className="text-[10px] sm:text-xs text-slate-400 px-2">{ordersPage} / {totalOrderPages}</span>
+                      <button
+                        onClick={() => setOrdersPage(p => Math.min(totalOrderPages, p + 1))}
+                        disabled={ordersPage === totalOrderPages}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg text-xs font-medium transition ${
+                          ordersPage === totalOrderPages
+                            ? 'opacity-30 cursor-not-allowed text-slate-400'
+                            : 'bg-white/[0.06] hover:bg-white/[0.1] text-white'
+                        }`}>
+                        ›
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Holdings & Market */}
@@ -728,14 +755,14 @@ export default function DashboardPage() {
               {activeTab === "holdings" ? (
               <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
-                <thead className="divide-y divide-[--color-border]">
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Assets</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Holding</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Values</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Entry</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">P/L</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left hidden sm:table-cell">P/L value</th>
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-left uppercase tracking-wider">Asset</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Holdings</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Value</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Price</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">24h %</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider hidden sm:table-cell">24h $</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
@@ -749,20 +776,26 @@ export default function DashboardPage() {
                     </tr>
                   ) : dashboardData && dashboardData.positions.length > 0 ? (
                     dashboardData.positions.slice(0, 3).map((position, index) => {
-                      const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
+                      const stripped = position.symbol.replace(/(USDT|BUSD)$/, '');
+                      const symbol = stripped || position.symbol;
                       return (
                         <tr
                           key={index}
-                          className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                          className="group border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors"
                         >
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white">{symbol}</td>
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{position.quantity.toFixed(4)}</td>
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{formatCurrency(position.entryPrice)}</td>
-                          <td className={`py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <td className="py-3 px-1 sm:px-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.07] text-[10px] font-bold text-white">{symbol.slice(0, 2)}</div>
+                              <span className="text-[10px] sm:text-sm font-semibold text-white">{symbol}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300 text-right">{position.quantity.toFixed(4)}</td>
+                          <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-right">{formatCurrency(position.currentPrice * position.quantity)}</td>
+                          <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-400 text-right">{formatCurrency(position.currentPrice)}</td>
+                          <td className={`py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-semibold text-right ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {formatPercent(position.pnlPercent)}
                           </td>
-                          <td className={`py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-400 ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'} hidden sm:table-cell`}>
+                          <td className={`py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-right hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {formatCurrency(position.unrealizedPnl)}
                           </td>
                         </tr>
@@ -778,12 +811,12 @@ export default function DashboardPage() {
                   </tbody>
                 </table>
                 {dashboardData && dashboardData.positions.length > 3 && (
-                  <div className="mt-3 flex justify-end">
+                  <div className="mt-3 pt-2 sm:pt-4 text-center">
                     <button
                       onClick={() => setShowHoldingsModal(true)}
-                      className="px-4 py-2 rounded-md bg-[#fc4f02] text-white text-sm font-medium hover:bg-[#e04502] transition-colors"
+                      className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105"
                     >
-                      View more
+                      View More
                     </button>
                   </div>
                 )}
@@ -1267,12 +1300,12 @@ export default function DashboardPage() {
               <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
                 <thead className="divide-y divide-[--color-border]">
                   <tr>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Holding</th>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Values</th>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Entry</th>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">P/L</th>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">P/L value</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Asset</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Holdings</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Value</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Price</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">24h %</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">24h $</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
@@ -1282,13 +1315,14 @@ export default function DashboardPage() {
                     </tr>
                   ) : (
                     paginatedHoldings.map((position: any, idx: number) => {
-                      const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
+                      const stripped = position.symbol.replace(/(USDT|BUSD)$/, '');
+                      const symbol = stripped || position.symbol;
                       return (
                         <tr key={position.symbol + idx} className="hover:bg-[--color-surface]/40">
                           <td className="py-2 px-2 text-white font-medium">{symbol}</td>
                           <td className="py-2 px-2 text-slate-300">{position.quantity.toFixed(4)}</td>
                           <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
-                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.entryPrice)}</td>
+                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice)}</td>
                           <td className={`py-2 px-2 font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(position.pnlPercent)}</td>
                           <td className={`py-2 px-2 text-slate-400 hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(position.unrealizedPnl)}</td>
                         </tr>
