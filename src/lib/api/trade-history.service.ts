@@ -52,6 +52,8 @@ export const tradeHistoryService = {
     return response;
   },
 
+  
+
   async getCryptoTradeHistory(params?: {
     limit?: number;
     after?: string;

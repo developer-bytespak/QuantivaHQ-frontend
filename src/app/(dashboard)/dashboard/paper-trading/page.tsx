@@ -21,6 +21,7 @@ import { OrdersPanel } from "./components/orders-panel";
 import { AIAutoTradePanel } from "./components/ai-auto-trade-panel";
 import { CryptoAIAutoTradePanel } from "./components/crypto-ai-auto-trade-panel";
 import { useRealtimeAccountStream } from "@/hooks/useRealtimeAccountStream";
+import axios from "axios";
 
 // ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
 const ACCOUNT_DATA_REFRESH_INTERVAL = 600000;  // 10 minutes - Fallback only
@@ -1230,6 +1231,8 @@ export default function PaperTradingPage() {
       </div>
     );
   }
+
+ 
 
   return (
     <div className="space-y-3 sm:space-y-6 pb-8 p-4 sm:p-0">
