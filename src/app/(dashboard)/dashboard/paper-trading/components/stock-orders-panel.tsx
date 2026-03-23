@@ -139,8 +139,10 @@ export function StockOrdersPanel({ onClose, refreshTrigger }: StockOrdersPanelPr
     return `$${num.toFixed(2)}`;
   };
 
-  const formatQuantity = (qty: string | number) => {
+  const formatQuantity = (qty: string | number | null) => {
+    if (qty === null || qty === undefined) return "—";
     const num = typeof qty === "string" ? parseFloat(qty) : qty;
+    if (isNaN(num)) return "—";
     return num.toFixed(num >= 1 ? 0 : 4);
   };
 
