@@ -52,7 +52,9 @@ export function StockExchangeAutoTradeModal({
   const potentialGainAmount = amountNum * (takeProfitPercent / 100);
   const riskRewardRatio = calculateRiskRewardRatio(maxLossAmount, potentialGainAmount);
   const quantityDisplay = quantity > 0 ? quantity.toFixed(4).replace(/\.?0+$/, "") : "—";
-
+  // Platform fee (0.1%)
+  const tradeFeePercent = 0.1;
+  const tradeFeeAmount = amountNum * (tradeFeePercent / 100);
   useEffect(() => {
     if (isPoolTrade) {
       setLoadingBalance(false);
@@ -211,6 +213,18 @@ export function StockExchangeAutoTradeModal({
               <span className="text-slate-400">Risk/Reward:</span>
               <span className="font-medium text-cyan-400">{riskRewardRatio}</span>
             </div>
+            {amountNum > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 flex items-center gap-1">
+                  Platform Fee ({tradeFeePercent}%)
+                  <span className="relative group">
+                    <svg className="w-3.5 h-3.5 text-slate-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-lg bg-black/95 px-3 py-2 text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">0.1% fee on every executed trade. Billed monthly via Stripe.</span>
+                  </span>
+                </span>
+                <span className="font-medium text-amber-400">${tradeFeeAmount.toFixed(5)}</span>
+              </div>
+            )}
           </div>
         </div>
 

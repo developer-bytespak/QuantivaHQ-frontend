@@ -472,7 +472,6 @@ export default function CreateStrategyPage() {
                 <p className="text-sm text-slate-400">Choose which {isStocksConnection ? 'stocks' : 'crypto assets'} this strategy will analyze</p>
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Search & Add {assetTypeLabel} *</label>
               <div className="relative">
