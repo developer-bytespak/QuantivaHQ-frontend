@@ -50,15 +50,27 @@ export default function AdminPoolsPage() {
   const { notification, showNotification, hideNotification } = useNotification();
   const [pools, setPools] = useState<AdminPoolSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadPools = async () => {
+    try {
+      const res = await adminListPools({ page: 1, limit: 20 });
+      setPools(res.pools);
+    } catch (err: unknown) {
+      showNotification((err as { message?: string })?.message ?? "Failed to load pools", "error");
+    }
+  };
 
   useEffect(() => {
-    adminListPools({ page: 1, limit: 20 })
-      .then((res) => setPools(res.pools))
-      .catch((err: unknown) => {
-        showNotification((err as { message?: string })?.message ?? "Failed to load pools", "error");
-      })
-      .finally(() => setLoading(false));
+    loadPools().finally(() => setLoading(false));
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadPools();
+    setRefreshing(false);
+    showNotification("Pools refreshed", "success");
+  };
 
   return (
     <div className="space-y-6">
@@ -78,15 +90,27 @@ export default function AdminPoolsPage() {
             Create, publish, and manage VC pools. Monitor status and performance.
           </p>
         </div>
-        <Link
-          href="/admin/pools/create"
-          className="inline-flex items-center gap-2 rounded-xl bg-[#fc4f02] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity w-fit"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Pool
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-3 w-fit">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className={`w-5 h-5 transition-transform ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <Link
+            href="/admin/pools/create"
+            className="inline-flex items-center gap-2 rounded-xl bg-[#fc4f02] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity w-fit"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Pool
+          </Link>
+        </div>
       </div>
 
       {loading && (

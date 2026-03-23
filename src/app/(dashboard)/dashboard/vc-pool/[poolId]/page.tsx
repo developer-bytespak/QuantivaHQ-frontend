@@ -86,6 +86,7 @@ export default function VcPoolDetailPage() {
   const [paymentStatus, setPaymentStatus] =
     useState<PaymentStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [myCancellation, setMyCancellation] =
     useState<MyCancellationResponse | null>(null);
@@ -175,6 +176,20 @@ export default function VcPoolDetailPage() {
   const isRejected = payment?.status === "rejected";
   const availableSeats = Number(pool?.available_seats ?? (pool as any)?.pool_details?.available_seats ?? 0);
   const poolStatus = String(pool?.status ?? (pool as any)?.pool_metadata?.status ?? "");
+  
+  // Safe field accessors with fallbacks for nested API responses
+  const poolName = pool?.name ?? (pool as any)?.pool_metadata?.name ?? (pool as any)?.pool_details?.name ?? "Untitled Pool";
+  const contributionAmount = pool?.contribution_amount ?? (pool as any)?.pool_metadata?.contribution_amount ?? (pool as any)?.pool_details?.contribution_amount ?? "0";
+  const durationDays = pool?.duration_days ?? (pool as any)?.pool_metadata?.duration_days ?? (pool as any)?.pool_details?.duration_days ?? 0;
+  const coinType = pool?.coin_type ?? (pool as any)?.pool_metadata?.coin_type ?? (pool as any)?.pool_details?.coin_type ?? "USDT";
+  const maxMembers = pool?.max_members ?? (pool as any)?.pool_metadata?.max_members ?? (pool as any)?.pool_details?.max_members;
+  const poolFeePct = pool?.pool_fee_percent ?? (pool as any)?.pool_metadata?.pool_fee_percent ?? (pool as any)?.pool_details?.pool_fee_percent;
+  const paymentWindow = pool?.payment_window_minutes ?? (pool as any)?.pool_metadata?.payment_window_minutes ?? (pool as any)?.pool_details?.payment_window_minutes;
+  const adminWalletAddr = pool?.admin_wallet_address ?? (pool as any)?.admin_info?.wallet_address ?? (pool as any)?.pool_details?.admin_wallet_address ?? joinResponse?.admin_wallet_address ?? null;
+  const adminBinanceUid = pool?.admin_binance_uid ?? (pool as any)?.admin_info?.binance_uid ?? (pool as any)?.pool_details?.admin_binance_uid;
+  const networkName = pool?.payment_network ?? (pool as any)?.admin_info?.payment_network ?? (pool as any)?.pool_details?.payment_network ?? (pool as any)?.pool_metadata?.payment_network;
+  const depositCoinName = pool?.deposit_coin ?? (pool as any)?.admin_info?.deposit_coin ?? (pool as any)?.pool_details?.deposit_coin ?? pool?.coin_type;
+  const depositMethodName = pool?.deposit_method ?? (pool as any)?.admin_info?.deposit_method ?? (pool as any)?.pool_details?.deposit_method;
 
   // Payout detection: backend may set paid timestamps in different places depending on API
   const paidAt =
@@ -220,12 +235,10 @@ export default function VcPoolDetailPage() {
     payment?.pool_fee_amount ??
     joinResponse?.pool_fee_amount?.toString() ??
     null;
-  const adminWalletAddr =
-    pool?.admin_wallet_address ?? joinResponse?.admin_wallet_address ?? null;
   const paymentNetwork =
-    pool?.payment_network ?? joinResponse?.payment_network ?? "BSC";
+    networkName ?? joinResponse?.payment_network ?? "BSC";
   const depositCoin =
-    pool?.deposit_coin ?? joinResponse?.deposit_coin ?? "USDT";
+    depositCoinName ?? joinResponse?.deposit_coin ?? "USDT";
   const currentStepIdx = stepIndex(joinStep);
 
   /* ──────── data loaders ──────── */
@@ -623,6 +636,29 @@ export default function VcPoolDetailPage() {
     }
   };
 
+  const handleRefresh = async () => {
+    if (!poolId) return;
+    setRefreshing(true);
+    try {
+      const [p, ps, cancellation] = await Promise.all([
+        getVcPoolById(poolId),
+        getPaymentStatus(poolId),
+        getMyCancellation(poolId).catch(() => null)
+      ]);
+      setPool(p);
+      setPaymentStatus(ps);
+      if (cancellation) setMyCancellation(cancellation);
+      showNotification("Pool data refreshed", "success");
+    } catch (err: unknown) {
+      showNotification(
+        getApiErrorMessage(err, "Failed to refresh pool data"),
+        "error"
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   /* Determine the effective payment verification state for UI */
   const effectiveStatus: PaymentStatus | "processing" | null = (() => {
     if (payment?.status === "verified") return "verified";
@@ -673,6 +709,29 @@ export default function VcPoolDetailPage() {
         </span>
       </button>
 
+      <button
+        onClick={handleRefresh}
+        disabled={refreshing || loading}
+        className="mb-4 ml-3 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <svg
+          className={`w-4 h-4 text-[#fc4f02] transition-transform ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+        <span className="text-white/90 group-hover:text-[#fda300]">
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </span>
+      </button>
+
       {/* ── Loading ── */}
       {loading && (
         <div className="flex min-h-[40vh] items-center justify-center">
@@ -693,7 +752,7 @@ export default function VcPoolDetailPage() {
           {/* ── Pool header ── */}
           <div className="rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-6 sm:p-8 border border-[#fc4f02]/30">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-              {pool.name}
+              {poolName}
             </h1>
             {pool.description && (
               <p className="text-sm text-white/90 max-w-2xl mb-4">
@@ -704,13 +763,13 @@ export default function VcPoolDetailPage() {
               <div>
                 <p className="mb-1 text-white/70">Contribution per seat</p>
                 <p className="text-lg font-semibold">
-                  ${pool.contribution_amount} {pool.coin_type}
+                  ${contributionAmount} {coinType}
                 </p>
               </div>
               <div>
                 <p className="mb-1 text-white/70">Duration</p>
                 <p className="text-lg font-semibold">
-                  {pool.duration_days} days
+                  {durationDays} days
                 </p>
               </div>
               <div>
@@ -1616,7 +1675,7 @@ export default function VcPoolDetailPage() {
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
                         <p className="text-xs text-slate-400">Network</p>
                         <p className="text-sm font-semibold text-white">
-                          {pool.payment_network || "BSC"} (BEP-20)
+                          {networkName || "BSC"} (BEP-20)
                         </p>
                       </div>
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
@@ -1624,15 +1683,15 @@ export default function VcPoolDetailPage() {
                           Deposit Coin
                         </p>
                         <p className="text-sm font-semibold text-white">
-                          {pool.deposit_coin || "USDT"}
+                          {depositCoinName || "USDT"}
                         </p>
                       </div>
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
                         <p className="text-xs text-slate-400">Method</p>
                         <p className="text-sm font-semibold text-white">
-                          {pool.deposit_method === "on_chain"
+                          {depositMethodName === "on_chain"
                             ? "On-Chain Deposit"
-                            : pool.deposit_method || "On-Chain Deposit"}
+                            : depositMethodName || "On-Chain Deposit"}
                         </p>
                       </div>
                     </div>
@@ -2267,18 +2326,18 @@ export default function VcPoolDetailPage() {
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Max members</dt>
-                  <dd className="font-medium">{pool.max_members}</dd>
+                  <dd className="font-medium">{maxMembers ?? "—"}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Pool fee</dt>
                   <dd className="font-medium">
-                    {pool.pool_fee_percent ?? "—"}%
+                    {poolFeePct ?? "—"}%
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Payment window</dt>
                   <dd className="font-medium">
-                    {pool.payment_window_minutes ?? "—"} min
+                    {paymentWindow ?? "—"} min
                   </dd>
                 </div>
               </dl>
@@ -2293,29 +2352,29 @@ export default function VcPoolDetailPage() {
                     Deposit Address
                   </dt>
                   <dd className="font-mono text-white break-all mt-0.5">
-                    {pool.admin_wallet_address ||
-                      pool.admin_binance_uid ||
+                    {adminWalletAddr ||
+                      adminBinanceUid ||
                       "Not set"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Network</dt>
                   <dd className="font-medium text-white">
-                    {pool.payment_network || "BSC"} (BEP-20)
+                    {networkName || "BSC"} (BEP-20)
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Deposit Coin</dt>
                   <dd className="font-medium text-white">
-                    {pool.deposit_coin || "USDT"}
+                    {depositCoinName || "USDT"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Method</dt>
                   <dd className="font-medium text-white capitalize">
-                    {pool.deposit_method === "on_chain"
+                    {depositMethodName === "on_chain"
                       ? "On-Chain Deposit"
-                      : pool.deposit_method || "On-Chain Deposit"}
+                      : depositMethodName || "On-Chain Deposit"}
                   </dd>
                 </div>
               </dl>
@@ -2347,15 +2406,6 @@ export default function VcPoolDetailPage() {
                   {investmentAmount} {pool?.coin_type || "USDT"}
                 </p>
               </div>
-              
-              {feeAmount && Number(feeAmount) > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Pool Management Fee</span>
-                  <span className="text-red-400">
-                    -{feeAmount} {pool?.coin_type || "USDT"}
-                  </span>
-                </div>
-              )}
 
               <div className="flex items-center justify-between text-sm border-t border-[--color-border] pt-3">
                 <span className="text-slate-400">Cancellation Fee</span>
@@ -2367,8 +2417,8 @@ export default function VcPoolDetailPage() {
               <div className="flex items-center justify-between font-semibold border-t border-[--color-border] pt-3">
                 <span className="text-white">You will receive</span>
                 <span className="text-green-400 text-lg">
-                  {investmentAmount && feeAmount
-                    ? (Number(investmentAmount) - Number(feeAmount) - (Number(paymentStatus?.payment?.pool_fee_amount) || 0)).toFixed(2)
+                  {investmentAmount
+                    ? (Number(investmentAmount) - (Number(paymentStatus?.payment?.pool_fee_amount) || 0)).toFixed(2)
                     : investmentAmount || "0"} {pool?.coin_type || "USDT"}
                 </span>
               </div>

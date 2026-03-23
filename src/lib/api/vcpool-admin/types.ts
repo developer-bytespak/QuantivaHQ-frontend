@@ -278,12 +278,24 @@ export interface AdminPoolTrade {
   notes: string | null;
   traded_at: string;
   closed_at: string | null;
+  binance_order_id: string | null;
+  strategy: { strategy_id: string; name: string } | null;
 }
 
 export interface AdminTradesSummary {
   open_trades: number;
   closed_trades: number;
   realized_pnl: number;
+  total_allocated_usdt: number;
+  available_capital_usdt: number;
+  utilization_pct: number;
+}
+
+export interface AdminPoolCapital {
+  total_usdt: number;
+  allocated_usdt: number;
+  available_usdt: number;
+  utilization_pct: number;
 }
 
 export interface AdminOpenTradeRequest {
@@ -302,6 +314,7 @@ export interface AdminCloseTradeRequest {
 export interface AdminTradesListResponse {
   trades: AdminPoolTrade[];
   summary: AdminTradesSummary;
+  pool_capital: AdminPoolCapital;
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
@@ -505,5 +518,62 @@ export interface AdminBinanceTransactionFilters {
   limit?: number;
   sort_by?: string;
   sort_order?: "asc" | "desc";
+}
+
+// ---- Exchange Orders (direct Binance MARKET/LIMIT orders) ----
+
+export interface AdminExchangeOrder {
+  order_id: string;
+  pool_id: string;
+  symbol: string;
+  side: "BUY" | "SELL";
+  order_type: "MARKET" | "LIMIT";
+  quantity: number;
+  entry_price_usdt: number;
+  exchange_order_id: string | null;
+  is_open: boolean;
+  exit_price_usdt: number | null;
+  realized_pnl_usdt: number | null;
+  opened_at: string;
+  closed_at: string | null;
+  price?: number | null;
+}
+
+export interface AdminPlaceExchangeOrderRequest {
+  symbol: string;
+  side: "BUY" | "SELL";
+  type: "MARKET" | "LIMIT";
+  quantity: number;
+  price?: number | null;
+}
+
+export interface AdminExchangeOrdersSummary {
+  open_positions: number;
+  closed_positions: number;
+  realized_pnl_usdt: number;
+}
+
+export interface AdminExchangeOrdersListResponse {
+  orders: AdminExchangeOrder[];
+  summary: AdminExchangeOrdersSummary;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+export interface AdminPlaceExchangeOrderResponse {
+  order: AdminExchangeOrder;
+  exchangeResponse: {
+    orderId: string;
+    symbol: string;
+    side: string;
+    type: string;
+    quantity: number;
+    price: number;
+    status: string;
+    time: number;
+  };
+}
+
+export interface AdminCloseExchangeOrderRequest {
+  exit_price_usdt: number;
 }
 

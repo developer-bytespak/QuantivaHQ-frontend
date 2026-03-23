@@ -4,7 +4,7 @@ import { useState } from "react";
 import type {
   AdminPoolTrade,
   AdminTradesSummary,
-  AdminOpenTradeRequest,
+  AdminPoolCapital,
   AdminPoolDetails,
 } from "@/lib/api/vcpool-admin";
 
@@ -27,141 +27,6 @@ function formatDate(value: string | null | undefined): string {
   });
 }
 
-// --- Open Trade Modal ---
-function OpenTradeModal({
-  open,
-  onClose,
-  onSubmit,
-  saving,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (body: AdminOpenTradeRequest) => void;
-  saving: boolean;
-}) {
-  const [assetPair, setAssetPair] = useState("BTCUSDT");
-  const [action, setAction] = useState<"BUY" | "SELL">("BUY");
-  const [quantity, setQuantity] = useState("");
-  const [entryPrice, setEntryPrice] = useState("");
-  const [notes, setNotes] = useState("");
-
-  if (!open) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = Number(quantity);
-    const p = Number(entryPrice);
-    if (!assetPair.trim() || (action !== "BUY" && action !== "SELL") || !(q > 0) || !(p > 0)) return;
-    onSubmit({
-      asset_pair: assetPair.trim(),
-      action,
-      quantity: q,
-      entry_price_usdt: p,
-      notes: notes.trim() || null,
-    });
-    onClose();
-    setQuantity("");
-    setEntryPrice("");
-    setNotes("");
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-xl">
-        <div className="flex items-center justify-between border-b border-[--color-border] px-5 py-4">
-          <h3 className="text-lg font-semibold text-white">Open trade</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
-            aria-label="Close"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <label className="block text-sm text-slate-400">
-            Asset pair
-            <input
-              type="text"
-              value={assetPair}
-              onChange={(e) => setAssetPair(e.target.value)}
-              placeholder="e.g. BTCUSDT"
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
-            />
-          </label>
-          <label className="block text-sm text-slate-400">
-            Action
-            <select
-              value={action}
-              onChange={(e) => setAction(e.target.value as "BUY" | "SELL")}
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white"
-            >
-              <option value="BUY">BUY</option>
-              <option value="SELL">SELL</option>
-            </select>
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            <label className="block text-sm text-slate-400">
-              Quantity
-              <input
-                type="number"
-                step="any"
-                min="0"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="0.001"
-                className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
-              />
-            </label>
-            <label className="block text-sm text-slate-400">
-              Entry price (USDT)
-              <input
-                type="number"
-                step="any"
-                min="0"
-                value={entryPrice}
-                onChange={(e) => setEntryPrice(e.target.value)}
-                placeholder="60000"
-                className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
-              />
-            </label>
-          </div>
-          <label className="block text-sm text-slate-400">
-            Notes (optional)
-            <input
-              type="text"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Test BTC buy"
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
-            />
-          </label>
-          <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 rounded-xl bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
-            >
-              {saving ? "Opening…" : "Open trade"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving}
-              className="rounded-xl border border-[--color-border] px-4 py-2.5 text-sm font-semibold text-slate-300 hover:bg-white/5 disabled:opacity-60"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // --- Close Trade Modal ---
 function CloseTradeModal({
   open,
@@ -177,6 +42,8 @@ function CloseTradeModal({
   submitting: boolean;
 }) {
   const [exitPrice, setExitPrice] = useState("");
+  const [fetchingPrice, setFetchingPrice] = useState(false);
+  const [priceError, setPriceError] = useState<string | null>(null);
 
   if (!open || !trade) return null;
 
@@ -187,6 +54,24 @@ function CloseTradeModal({
     onSubmit(trade.trade_id, p);
     onClose();
     setExitPrice("");
+  };
+
+  const handleFetchCurrentPrice = async () => {
+    const symbol = trade.asset_pair.replace(/\s*\/\s*/g, "").replace(/\s+/g, "").toUpperCase();
+    const pair = symbol.endsWith("USDT") ? symbol : symbol + "USDT";
+    setFetchingPrice(true);
+    setPriceError(null);
+    try {
+      const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pair}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data?.price) throw new Error("No price in response");
+      setExitPrice(String(parseFloat(data.price)));
+    } catch {
+      setPriceError("Could not fetch price. Enter manually.");
+    } finally {
+      setFetchingPrice(false);
+    }
   };
 
   return (
@@ -209,19 +94,44 @@ function CloseTradeModal({
           <p className="text-sm text-slate-400">
             {trade.asset_pair} · {trade.action} · qty {trade.quantity} @ {formatUsdt(trade.entry_price_usdt)} USDT
           </p>
-          <label className="block text-sm text-slate-400">
-            Exit price (USDT)
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-slate-400">Exit price (USDT)</label>
+              <button
+                type="button"
+                onClick={handleFetchCurrentPrice}
+                disabled={fetchingPrice || submitting}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/20 px-2.5 py-1 text-xs font-medium text-blue-300 hover:bg-blue-500/30 disabled:opacity-50 transition-colors"
+              >
+                {fetchingPrice ? (
+                  <>
+                    <span className="h-3 w-3 animate-spin rounded-full border border-blue-300 border-t-transparent" />
+                    Fetching…
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Use current price
+                  </>
+                )}
+              </button>
+            </div>
             <input
               type="number"
               step="any"
               min="0"
               value={exitPrice}
-              onChange={(e) => setExitPrice(e.target.value)}
+              onChange={(e) => { setExitPrice(e.target.value); setPriceError(null); }}
               placeholder="e.g. 62000"
-              className="mt-1.5 w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
+              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder:text-slate-500"
               autoFocus
             />
-          </label>
+            {priceError && (
+              <p className="text-xs text-red-400">{priceError}</p>
+            )}
+          </div>
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
@@ -252,10 +162,10 @@ export interface PoolTradesFlowProps {
   tradesLoading: boolean;
   tradeStatusFilter: "open" | "closed" | "all";
   onFilterChange: (f: "open" | "closed" | "all") => void;
-  onOpenTrade: (body: AdminOpenTradeRequest) => void;
   onCloseTrade: (tradeId: string, exitPrice: number) => void;
   saving: boolean;
   actionSubmitting: string | null;
+  poolCapital?: AdminPoolCapital | null;
 }
 
 export function PoolTradesFlow({
@@ -265,34 +175,20 @@ export function PoolTradesFlow({
   tradesLoading,
   tradeStatusFilter,
   onFilterChange,
-  onOpenTrade,
   onCloseTrade,
   saving,
   actionSubmitting,
+  poolCapital,
 }: PoolTradesFlowProps) {
-  const [showOpenModal, setShowOpenModal] = useState(false);
   const [closeModalTrade, setCloseModalTrade] = useState<AdminPoolTrade | null>(null);
 
   return (
     <div className="space-y-6">
-      {/* Header: title + CTA (Top Trades style) */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Open and close manual trades. Pool value updates after each closed trade.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowOpenModal(true)}
-          disabled={saving}
-          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 hover:opacity-90 disabled:opacity-60"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Open trade
-        </button>
+      {/* Header */}
+      <div>
+        <p className="text-xs sm:text-sm text-slate-400">
+          Trade history for this pool. Use Top Trades to execute new trades.
+        </p>
       </div>
 
       {/* Summary cards (Top Trades style) */}
@@ -323,6 +219,31 @@ export function PoolTradesFlow({
         </div>
       </div>
 
+      {/* Capital utilization bar */}
+      {poolCapital && (
+        <div className="rounded-xl border border-[--color-border] bg-[--color-surface-alt]/60 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm mb-2">
+            <span className="text-slate-400">Capital</span>
+            <span className="text-xs text-slate-500">
+              <span className="text-white font-medium">${formatUsdt(poolCapital.total_usdt)}</span> total
+              &nbsp;·&nbsp;
+              <span className="text-amber-400 font-medium">${formatUsdt(poolCapital.allocated_usdt)}</span> allocated
+              &nbsp;·&nbsp;
+              <span className="text-emerald-400 font-medium">${formatUsdt(poolCapital.available_usdt)}</span> available
+            </span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all"
+              style={{ width: `${Math.min(100, poolCapital.utilization_pct)}%` }}
+            />
+          </div>
+          <p className="mt-1 text-right text-xs text-slate-500">
+            {poolCapital.utilization_pct.toFixed(1)}% utilized
+          </p>
+        </div>
+      )}
+
       {/* Filter pills (Top Trades style) */}
       <div className="flex flex-wrap gap-1.5 rounded-xl bg-[--color-surface-alt]/60 p-1.5">
         {(["open", "closed", "all"] as const).map((f) => (
@@ -350,15 +271,7 @@ export function PoolTradesFlow({
       ) : trades.length === 0 ? (
         <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/50 py-16 text-center">
           <p className="text-sm text-slate-400">No trades yet.</p>
-          <p className="mt-1 text-xs text-slate-500">Open a trade to start tracking pool performance.</p>
-          <button
-            type="button"
-            onClick={() => setShowOpenModal(true)}
-            disabled={saving}
-            className="mt-4 rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
-          >
-            Open trade
-          </button>
+          <p className="mt-1 text-xs text-slate-500">Use the Top Trade screen to execute trades for this pool.</p>
         </div>
       ) : (
         <>
@@ -465,12 +378,6 @@ export function PoolTradesFlow({
         </>
       )}
 
-      <OpenTradeModal
-        open={showOpenModal}
-        onClose={() => setShowOpenModal(false)}
-        onSubmit={onOpenTrade}
-        saving={saving}
-      />
       <CloseTradeModal
         open={!!closeModalTrade}
         trade={closeModalTrade}

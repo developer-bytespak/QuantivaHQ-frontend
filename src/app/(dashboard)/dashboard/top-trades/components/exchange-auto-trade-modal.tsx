@@ -40,16 +40,32 @@ export function ExchangeAutoTradeModal({
   const symbol = base.endsWith("USDT") ? base : base + "USDT";
   const entryPrice = Number(signal?.entryPrice ?? signal?.entry ?? 0) || 0;
 
+  /** Round quantity to a step size that aligns with Binance LOT_SIZE for the asset's price range.
+   *  BTC ($10k+): 5 decimals (step 0.00001)
+   *  ETH/BNB ($100+): 4 decimals (step 0.0001)
+   *  Altcoins ($1+): 3 decimals (step 0.001)
+   *  Micro-caps (< $1): 0 decimals (whole units) */
+  const roundToLotSize = (qty: number, price: number): number => {
+    if (price >= 10000) return Math.floor(qty * 1e5) / 1e5;
+    if (price >= 100)   return Math.floor(qty * 1e4) / 1e4;
+    if (price >= 1)     return Math.floor(qty * 1e3) / 1e3;
+    return Math.floor(qty);
+  };
+
   const defaultStopLoss = strategy?.stop_loss_value ?? 5;
   const defaultTakeProfit = strategy?.take_profit_value ?? 10;
   const stopLossPercent = parsePercent(String(signal?.stopLoss ?? signal?.stop_loss_pct ?? defaultStopLoss)) || defaultStopLoss;
   const takeProfitPercent = parsePercent(String(signal?.takeProfit1 ?? signal?.take_profit_pct ?? defaultTakeProfit)) || defaultTakeProfit;
 
+  const BINANCE_FEE_RATE = 0.001; // 0.1% standard taker fee
+
   const amountNum = parseFloat(usdtAmount) || 0;
-  const quantity = entryPrice > 0 ? amountNum / entryPrice : 0;
+  const binanceFee = amountNum * BINANCE_FEE_RATE;
+  const netOrderValue = amountNum - binanceFee;
+  const quantity = entryPrice > 0 ? netOrderValue / entryPrice : 0;
   const prices = calculatePrices(entryPrice, stopLossPercent, takeProfitPercent, "BUY");
-  const maxLossAmount = amountNum * (stopLossPercent / 100);
-  const potentialGainAmount = amountNum * (takeProfitPercent / 100);
+  const maxLossAmount = netOrderValue * (stopLossPercent / 100);
+  const potentialGainAmount = netOrderValue * (takeProfitPercent / 100);
   const riskRewardRatio = calculateRiskRewardRatio(maxLossAmount, potentialGainAmount);
   const quantityDisplay = quantity > 0 ? quantity.toFixed(8).replace(/\.?0+$/, "") : "—";
 
@@ -72,58 +88,91 @@ export function ExchangeAutoTradeModal({
     e.preventDefault();
     setError(null);
     if (!amountNum || amountNum <= 0) {
-      setError("Enter a valid USDT amount");
+      setError("Enter a valid USDT amount.");
+      return;
+    }
+    if (amountNum < 5) {
+      setError("Minimum order value is $5 USDT. Please increase the amount.");
       return;
     }
     if (!isPoolTrade && amountNum > balance) {
-      setError(`Insufficient balance. Need ${formatCurrency(amountNum)} but only have ${formatCurrency(balance)}`);
+      setError(`Insufficient balance — need ${formatCurrency(amountNum)} but only ${formatCurrency(balance)} available.`);
       return;
     }
     if (!entryPrice || entryPrice <= 0) {
-      setError("Invalid entry price");
+      setError("Cannot determine entry price. Please refresh and try again.");
       return;
     }
     if (quantity < 0.00001) {
-      setError("Amount too small. Minimum order value may apply.");
+      setError("Amount too small — increase the USDT amount and try again.");
       return;
     }
     try {
       setExecuting(true);
-      const response = await exchangesService.placeOrder(connectionId, {
-        symbol,
-        side: "BUY",
-        type: "MARKET",
-        quantity: Math.floor(quantity * 100000000) / 100000000,
-      });
-      if (response?.success) {
-        // Show a warning if the OCO (stop-loss / take-profit) order failed
-        if ((response as any).ocoError) {
-          setError(`Order filled ✓ — but OCO protection order failed: ${(response as any).ocoError}. Please set a stop-loss manually.`);
-          // Still call onSuccess so the trade is recorded, but keep modal open so user sees the warning
-          onSuccess();
-        } else {
-          onSuccess();
-          onClose();
-        }
+
+      if (isPoolTrade) {
+        // Pool trade: call admin API, no exchange connection needed
+        await adminCreateTrade(vcPoolId!, {
+          asset_pair: symbol,
+          action: "BUY",
+          quantity: roundToLotSize(quantity, entryPrice),
+          entry_price_usdt: entryPrice,
+          notes: `From top-trades signal: ${pair}`,
+        });
+        onSuccess();
+        onClose();
       } else {
         const response = await exchangesService.placeOrder(connectionId, {
           symbol,
           side: "BUY",
           type: "MARKET",
-          quantity: Math.floor(quantity * 100000000) / 100000000,
+          quantity: roundToLotSize(quantity, entryPrice),
         });
         if (response?.success) {
-          onSuccess();
-          onClose();
+          // Show a warning if the OCO (stop-loss / take-profit) order failed
+          if ((response as any).ocoError) {
+            setError(`✅ Order filled — but OCO protection failed: ${(response as any).ocoError}. Set a stop-loss manually.`);
+            onSuccess();
+          } else {
+            onSuccess();
+            onClose();
+          }
         } else {
-          setError("Order failed");
+          const failMsg = (response as any)?.message || (response as any)?.error || "Order was rejected by the exchange.";
+          setError(failMsg);
         }
       }
     } catch (err: any) {
-      let msg = err?.message ?? "Failed to place order";
-      if (msg.includes("notional") || msg.includes("MIN_NOTIONAL")) msg = "Order value too small. Try increasing the amount.";
-      else if (msg.includes("LOT_SIZE") || msg.includes("quantity")) msg = "Invalid quantity size for this pair.";
-      else if (msg.includes("INSUFFICIENT") || msg.includes("insufficient")) msg = "Insufficient balance.";
+      // Extract the message from the axios response body first, then fall back to err.message
+      const data = err?.response?.data;
+      const raw: string = data?.message || data?.error || data?.detail || data?.msg || err?.message || "Failed to place order";
+      const status: number = err?.response?.status ?? 0;
+      // Whether the backend provided a specific, non-generic message
+      const hasBackendMessage = !!(data?.message || data?.error || data?.detail || data?.msg);
+
+      let msg = raw;
+      if (raw.includes("MIN_NOTIONAL") || raw.includes("min_notional") || raw.includes("notional") || raw.toLowerCase().includes("minimum required")) {
+        msg = "Order value is below the minimum. Increase the USDT amount and try again.";
+      } else if (raw.includes("MARKET_LOT_SIZE") || raw.includes("LOT_SIZE") || raw.includes("filter failure")) {
+        msg = "Quantity doesn't meet Binance's step size requirements. Try a slightly different amount.";
+      } else if (raw.includes("PERCENT_PRICE") || raw.includes("percent_price")) {
+        msg = "Order price deviates too far from the current market price. The price may have moved — try refreshing.";
+      } else if (raw.includes("PRICE_FILTER") || raw.includes("price_filter")) {
+        msg = "Price is outside the allowed range for this pair.";
+      } else if (raw.includes("MAX_NUM_ORDERS") || raw.includes("max_num_orders")) {
+        msg = "You've reached the maximum open orders limit on your exchange account. Cancel some orders first.";
+      } else if (raw.toLowerCase().includes("capital") || raw.toLowerCase().includes("pool")) {
+        msg = "Insufficient pool capital. The pool may not have enough available funds for this trade.";
+      } else if (raw.includes("INSUFFICIENT") || raw.includes("insufficient") || raw.toLowerCase().includes("balance")) {
+        msg = isPoolTrade ? "Insufficient pool capital for this trade." : "Insufficient balance in your exchange account.";
+      } else if (status === 401 || status === 403) {
+        msg = "Exchange connection expired or unauthorized. Please reconnect your exchange.";
+      } else if (status === 429) {
+        msg = "Too many requests. Wait a moment and try again.";
+      } else if (status >= 500 && !hasBackendMessage) {
+        // Only use generic message when backend sent no useful detail
+        msg = "Exchange service is temporarily unavailable. Please try again shortly.";
+      }
       setError(msg);
     } finally {
       setExecuting(false);
@@ -205,6 +254,14 @@ export function ExchangeAutoTradeModal({
             <div className="flex justify-between">
               <span className="text-slate-400">Investment:</span>
               <span className="font-medium text-white">{formatCurrency(amountNum)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Binance fee (0.1%):</span>
+              <span className="font-medium text-amber-400">-{formatCurrency(binanceFee)}</span>
+            </div>
+            <div className="flex justify-between border-b border-slate-700 pb-2">
+              <span className="text-slate-300 font-medium">Net order value:</span>
+              <span className="font-semibold text-white">{formatCurrency(netOrderValue)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Quantity:</span>
