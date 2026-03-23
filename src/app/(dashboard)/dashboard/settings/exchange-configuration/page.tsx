@@ -8,6 +8,7 @@ import { useNotification, Notification } from "@/components/common/notification"
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { exchangesService, Connection } from "@/lib/api/exchanges.service";
 import { useExchange } from "@/context/ExchangeContext";
+import { useUserNationality } from "@/hooks/useUserNationality";
 
 type ExchangeConnection = Connection;
 
@@ -40,10 +41,13 @@ export default function ExchangeConfigurationPage() {
   const router = useRouter();
   const { allConnections, isLoading, refetch } = useExchange();
   const { notification, showNotification, hideNotification } = useNotification();
+  const { isUS } = useUserNationality();
   const connections = allConnections;
   const [selectedConnection, setSelectedConnection] = useState<ExchangeConnection | null>(null);
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Form states
   const [formData, setFormData] = useState({
     api_key: "",
     api_secret: "",
@@ -155,7 +159,7 @@ export default function ExchangeConfigurationPage() {
       case "active":
         return "bg-green-900/30 border-green-500/30 text-green-400";
       case "pending":
-        return "bg-yellow-900/30 border-yellow-500/30 text-yellow-400";
+        return "bg-amber-900/30 border-amber-500/30 text-amber-400";
       case "invalid":
         return "bg-red-900/30 border-red-500/30 text-red-400";
       default:
@@ -168,6 +172,9 @@ export default function ExchangeConfigurationPage() {
       sessionStorage.setItem("quantivahq_restore_both_after_connect", "true");
     }
     localStorage.setItem("quantivahq_account_type", "crypto");
+    if (isUS) {
+      localStorage.setItem("quantivahq_selected_exchange", "binance.us");
+    }
     router.push("/onboarding/crypto-exchange");
   };
 
@@ -176,6 +183,9 @@ export default function ExchangeConfigurationPage() {
       sessionStorage.setItem("quantivahq_restore_both_after_connect", "true");
     }
     localStorage.setItem("quantivahq_account_type", "crypto");
+    if (isUS) {
+      localStorage.setItem("quantivahq_selected_exchange", "binance.us");
+    }
     router.push("/onboarding/crypto-exchange");
   };
 
@@ -440,19 +450,6 @@ export default function ExchangeConfigurationPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {notification && (
-        <Notification message={notification.message} type={notification.type} onClose={hideNotification} />
-      )}
-      <ConfirmationDialog
-        isOpen={deleteConfirmation.isOpen}
-        title="Delete Exchange Connection?"
-        message="Are you sure you want to delete this exchange connection? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteConfirmation({ isOpen: false, connectionId: null })}
-        type="danger"
-      />
       <SettingsBackButton />
 
       {/* Connection Details Overlay */}

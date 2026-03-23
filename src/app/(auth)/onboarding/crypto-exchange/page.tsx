@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState } from "react";
+import { useUserNationality } from "@/hooks/useUserNationality";
 
 interface ExchangeCardProps {
   name: string;
@@ -12,50 +13,62 @@ interface ExchangeCardProps {
   gradient: string;
   delay: string;
   onSelect: () => void;
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
-function ExchangeCard({ name, description, logo, gradient, delay, onSelect }: ExchangeCardProps) {
+function ExchangeCard({ name, description, logo, gradient, delay, onSelect, disabled = false, disabledReason }: ExchangeCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <button
-      onClick={onSelect}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group relative overflow-hidden rounded-lg sm:rounded-xl border-2 border-[--color-border] bg-[--color-surface-alt]/60 backdrop-blur transition-all duration-300 p-4 sm:p-6 md:p-7 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20 min-h-max"
-      style={{ animationDelay: delay }}
-    >
-      {/* Gradient overlay on hover */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${gradient} transition-opacity duration-300 ${
-          isHovered ? "opacity-10" : "opacity-0"
-        }`}
-      />
+    <div className="relative">
+      <button
+        onClick={disabled ? undefined : onSelect}
+        onMouseEnter={() => !disabled && setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        disabled={disabled}
+        className={`group relative overflow-hidden rounded-lg sm:rounded-xl border-2 ${
+          disabled
+            ? "border-[--color-border]/50 bg-[--color-surface-alt]/30 cursor-not-allowed opacity-50"
+            : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
+        } backdrop-blur transition-all duration-300 p-4 sm:p-6 md:p-7 min-h-max w-full`}
+        style={{ animationDelay: delay }}
+      >
+        {/* Gradient overlay on hover (only if not disabled) */}
+        {!disabled && (
+          <div
+            className={`absolute inset-0 bg-gradient-to-br ${gradient} transition-opacity duration-300 ${
+              isHovered ? "opacity-10" : "opacity-0"
+            }`}
+          />
+        )}
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center text-center">
-        <div className="mb-3 sm:mb-4 flex h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center transition-transform duration-300 group-hover:scale-110">
-          {logo}
+        {/* Content */}
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className={`mb-3 sm:mb-4 flex h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 items-center justify-center transition-transform duration-300 ${
+            !disabled ? "group-hover:scale-110" : ""
+          }`}>
+            {logo}
+          </div>
+          <h3 className="mb-2 sm:mb-2.5 text-sm sm:text-base md:text-lg font-semibold text-white">{name}</h3>
+          <p className="text-xs sm:text-sm md:text-sm leading-snug text-slate-300">{description}</p>
         </div>
-        <h3 className="mb-2 sm:mb-2.5 text-sm sm:text-base md:text-lg font-semibold text-white">{name}</h3>
-        <p className="text-xs sm:text-sm md:text-sm leading-snug text-slate-300">{description}</p>
-      </div>
 
-      {/* Shine effect */}
-      <div
-        className={`absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-700 ${
-          isHovered ? "translate-x-full" : ""
-        }`}
-      />
-    </button>
+        {/* Shine effect (only if not disabled) */}
+        {!disabled && (
+          <div className="absolute inset-0 opacity-0 pointer-events-none" aria-hidden />
+        )}
+      </button>
+    </div>
   );
 }
 
 export default function CryptoExchangePage() {
   const router = useRouter();
+  const { nationality, isUS, loading } = useUserNationality();
   const [showFAQModal, setShowFAQModal] = useState(false);
 
-  const handleExchangeSelect = (exchange: "binance" | "bybit") => {
+  const handleExchangeSelect = (exchange: "binance" | "bybit" | "binance.us") => {
     // Get existing selected exchanges
     const existingExchanges = JSON.parse(
       localStorage.getItem("quantivahq_selected_exchanges") || "[]"
@@ -63,7 +76,7 @@ export default function CryptoExchangePage() {
     
     // Add exchange if not already selected
     const exchangeData = {
-      name: exchange === "binance" ? "Binance" : "Bybit",
+      name: exchange === "binance" ? "Binance" : exchange === "binance.us" ? "Binance.US" : "Bybit",
       type: "crypto",
       code: exchange,
     };
@@ -81,7 +94,8 @@ export default function CryptoExchangePage() {
     router.push("/onboarding/api-key-tutorial");
   };
 
-  const exchanges = [
+  // Define available exchanges based on user's nationality
+  const allExchanges = [
     {
       name: "Binance",
       description: "The world's largest cryptocurrency exchange. Trade hundreds of cryptocurrencies with advanced trading tools and deep liquidity.",
@@ -96,6 +110,27 @@ export default function CryptoExchangePage() {
         />
       ),
       onSelect: () => handleExchangeSelect("binance"),
+      code: "binance",
+      disabled: isUS, // Disable Binance for US nationals
+      disabledReason: isUS ? "Not available for US residents" : undefined,
+    },
+    {
+      name: "Binance.US",
+      description: "Binance's US platform. Fully compliant with US regulations. Trade popular cryptocurrencies with confidence.",
+      gradient: "from-[#f0b90b] to-[#f8d33a]",
+      logo: (
+        <Image
+          src="/binance logo.png"
+          alt="Binance.US"
+          width={48}
+          height={48}
+          className="h-9 w-9 sm:h-12 sm:w-12 md:h-16 md:w-16 object-contain"
+        />
+      ),
+      onSelect: () => handleExchangeSelect("binance.us"),
+      code: "binance.us",
+      disabled: false, // Allowed for non-US too (e.g. when using a US client's API keys)
+      disabledReason: undefined,
     },
     {
       name: "Bybit",
@@ -111,11 +146,21 @@ export default function CryptoExchangePage() {
         />
       ),
       onSelect: () => handleExchangeSelect("bybit"),
+      code: "bybit",
+      disabled: false,
     },
   ];
 
+  // Filter exchanges: US must use Binance.US only; non-US can use Binance, Binance.US (e.g. US client keys), or Bybit
+  const exchanges = allExchanges.filter(exchange => {
+    if (isUS) {
+      return exchange.code === "binance.us" || exchange.code === "bybit";
+    }
+    return exchange.code === "binance" || exchange.code === "binance.us" || exchange.code === "bybit";
+  });
+
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       {/* Background matching design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
@@ -137,23 +182,39 @@ export default function CryptoExchangePage() {
             </h1>
             <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 animate-text-enter px-3 sm:px-2 leading-tight" style={{ animationDelay: "0.4s" }}>
               Select the platform you want to connect to your trading account.
+              {isUS && (
+                <span className="block mt-2 text-[#fc4f02] font-medium">
+                  🇺🇸 US Residents: Only Binance.US is available for regulatory compliance
+                </span>
+              )}
             </p>
           </div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fc4f02]" />
+            </div>
+          )}
+
           {/* Exchange Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 animate-text-enter mb-4 sm:mb-6 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
-            {exchanges.map((exchange, index) => (
-              <ExchangeCard
-                key={exchange.name}
-                name={exchange.name}
-                description={exchange.description}
-                logo={exchange.logo}
-                gradient={exchange.gradient}
-                delay={`${index * 0.1}s`}
-                onSelect={exchange.onSelect}
-              />
-            ))}
-          </div>
+          {!loading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-5 animate-text-enter mb-4 sm:mb-6 flex-shrink-0" style={{ animationDelay: "0.6s" }}>
+              {exchanges.map((exchange, index) => (
+                <ExchangeCard
+                  key={exchange.name}
+                  name={exchange.name}
+                  description={exchange.description}
+                  logo={exchange.logo}
+                  gradient={exchange.gradient}
+                  delay={`${index * 0.1}s`}
+                  onSelect={exchange.onSelect}
+                  disabled={exchange.disabled}
+                  disabledReason={exchange.disabledReason}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Help Link Section */}
           <div className="w-full flex-shrink-0 text-center animate-text-enter px-3" style={{ animationDelay: "0.8s" }}>
