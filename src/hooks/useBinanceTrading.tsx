@@ -8,6 +8,17 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+const authHeaders = () => ({
+    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
+});
+
+const fetchTradingData = async (path: string) => {
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
+        headers: authHeaders(),
+    });
+    return res.data;
+};
+
 
 export const SubsProvider = ({ children }: { children: ReactNode }) => {
 
@@ -33,14 +44,7 @@ export const useBinanceTrading = () => {
 export const useBinanceDashboard = () => {
     const query = useQuery({
         queryKey: ['binanceDashboard'],
-        queryFn: async () => {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/binance-trading/dashboard`,{
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-                }
-            })
-            return res.data;
-        }
+        queryFn: async () => fetchTradingData('/binance-trading/dashboard')
     });
     return query;
 };
@@ -48,14 +52,7 @@ export const useBinanceDashboard = () => {
 export const useBinanceBalance = () => {
     const query = useQuery({
         queryKey: ['binanceBalance'],
-        queryFn: async () => {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/binance-trading/balance`,{
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-                }
-            })
-            return res.data;
-        }
+        queryFn: async () => fetchTradingData('/binance-trading/balance')
     });
     return query;
 }
@@ -63,14 +60,7 @@ export const useBinanceBalance = () => {
 export const useBinancePosition = () => {
     const query = useQuery({
         queryKey: ['binancePosition'],
-        queryFn: async () => {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/binance-trading/positions`,{
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-                }
-            })
-            return res.data;
-        }
+        queryFn: async () => fetchTradingData('/binance-trading/positions')
     });
     return query;
 }
@@ -78,14 +68,7 @@ export const useBinancePosition = () => {
 export const useBinanceOrdersOpen = () => {
     const query = useQuery({
         queryKey: ['binanceOrdersOpen'],
-        queryFn: async () => {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/binance-trading/orders/open`,{
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-                }
-            })
-            return res.data;
-        }
+        queryFn: async () => fetchTradingData('/binance-trading/orders/open')
     });
     return query;
 }
@@ -93,14 +76,7 @@ export const useBinanceOrdersOpen = () => {
 export const useBinanceOrdersAll = () => {
     const query = useQuery({
         queryKey: ['binanceOrdersAll'],
-        queryFn: async () => {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/binance-trading/orders/all`,{
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-                }
-            })
-            return res.data;
-        }
+        queryFn: async () => fetchTradingData('/binance-trading/orders/all')
     });
     return query;
 }
@@ -108,14 +84,7 @@ export const useBinanceOrdersAll = () => {
 export const useBinanceOrdersHistory = () => {
     const query = useQuery({
         queryKey: ['binanceOrdersHistory'],
-        queryFn: async () => {
-            const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/binance-trading/trade-history`,{
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-                }
-            })
-            return res.data;
-        }
+        queryFn: async () => fetchTradingData('/binance-trading/trade-history')
     });
     return query;
 }
