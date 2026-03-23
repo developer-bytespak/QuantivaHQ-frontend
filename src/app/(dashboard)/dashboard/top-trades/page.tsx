@@ -864,10 +864,12 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         setPositionsModalLoading(true);
         setPositionsModalError(null);
 
+        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : "/binance-trading";
+
         const [positionsResponse, ordersResponse, historyResponse] = await Promise.all([
-          apiRequest<never, any>({ path: "/binance-trading/positions", method: "GET" }),
-          apiRequest<never, any>({ path: "/binance-trading/orders/all?limit=200", method: "GET" }),
-          apiRequest<never, any>({ path: "/binance-trading/trade-history?limit=200", method: "GET" }),
+          apiRequest<never, any>({ path: `${tradingApiBase}/positions`, method: "GET" }),
+          apiRequest<never, any>({ path: `${tradingApiBase}/orders/all?limit=200`, method: "GET" }),
+          apiRequest<never, any>({ path: `${tradingApiBase}/trade-history?limit=200`, method: "GET" }),
         ]);
 
         if (cancelled) return;
@@ -908,7 +910,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         const normalizedOrders: ModalOrder[] = rawOrders.map((o: any) => ({
           symbol: String(o.symbol ?? o.asset ?? "—"),
           quantity: toNumber(o.origQty ?? o.executedQty ?? o.qty ?? o.quantity, 0),
-          avgPrice: toNumber(o.avgPrice ?? o.price ?? o.avgFillPrice ?? o.avg_fill_price, 0),
+          avgPrice: toNumber(o.avgPrice ?? o.price ?? o.avgFillPrice ?? o.avg_fill_price ?? o.filled_avg_price, 0),
           status: normalizeOrderStatus(o.status),
           side: String(o.side ?? "").toUpperCase(),
           createdAt: toIso(o.time ?? o.updateTime ?? o.createdAt ?? o.created_at),
@@ -916,7 +918,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
         const normalizedHistory: ModalTradeHistory[] = rawHistory.map((t: any) => {
           const entryPrice = toNumber(t.entryPrice ?? t.entry_price ?? t.buyPrice ?? t.buy_price, 0);
-          const exitPrice = toNumber(t.exitPrice ?? t.exit_price ?? t.sellPrice ?? t.sell_price, 0);
+          const exitPrice = toNumber(t.exitPrice ?? t.exit_price ?? t.sellPrice ?? t.sell_price ?? t.filled_avg_price, 0);
           const quantity = toNumber(t.quantity ?? t.qty ?? t.executedQty ?? t.size, 0);
           const closedAt = toIso(t.closedAt ?? t.closeTime ?? t.time ?? t.timestamp ?? t.soldAt);
           const openedAt = toIso(t.openedAt ?? t.openTime ?? t.boughtAt);
@@ -959,7 +961,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [showPositionsModal, showLeaderboardModal]);
+  }, [showPositionsModal, showLeaderboardModal, isStocksConnection]);
 
   const ordersPending = useMemo(
     () => modalOrders.filter((o) => ["NEW", "PARTIALLY_FILLED", "PENDING"].includes(o.status)),
@@ -1818,7 +1820,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             <div className="sticky top-0 bg-[--color-surface] border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
               <div>
                 <h2 className="text-lg sm:text-2xl font-semibold text-white">Order History</h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">View all your Binance testnet orders</p>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                  {isStocksConnection ? "View all your Alpaca stock orders" : "View all your Binance testnet orders"}
+                </p>
               </div>
               <button
                 onClick={() => { setShowPositionsModal(false); setPositionsModalPage(1); setPositionsModalTab("positions"); }}
