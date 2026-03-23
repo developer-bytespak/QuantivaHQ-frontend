@@ -233,7 +233,7 @@ export function ExchangeAutoTradeModal({
                     <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-lg bg-black/95 px-3 py-2 text-[10px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">0.1% fee on every executed trade. Billed monthly via Stripe.</span>
                   </span>
                 </span>
-                <span className="font-medium text-amber-400">{formatCurrency(tradeFeeAmount)}</span>
+                <span className="font-medium text-amber-400">${tradeFeeAmount}</span>
               </div>
             )}
           </div>
