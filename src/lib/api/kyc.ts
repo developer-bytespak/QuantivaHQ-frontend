@@ -10,26 +10,47 @@ import type {
 } from "./types/kyc";
 
 /**
+ * Get a SumSub Web SDK access token for the current user.
+ * The token is short-lived and should be passed to the <SumsubWebSdk> component.
+ */
+export async function getSdkToken(): Promise<{
+  success: boolean;
+  token: string;
+  userId: string;
+}> {
+  return apiRequest<void, { success: boolean; token: string; userId: string }>({
+    path: "/kyc/sdk-token",
+    method: "GET",
+  });
+}
+
+/**
+ * @deprecated Use the SumSub Web SDK instead (getSdkToken + <SumsubWebSdk>).
+ *
  * Upload ID document for KYC verification
+ * @param file - The file to upload
+ * @param documentType - Type of document ('passport' | 'id_card' | 'drivers_license')
+ * @param documentSide - Side of document ('front' | 'back') - optional for passport
  */
 export async function uploadDocument(
   file: File,
-  documentType: string
+  documentType: string,
+  documentSide?: string
 ): Promise<DocumentUploadResponse> {
   return uploadFile<DocumentUploadResponse>({
     path: "/kyc/documents",
     file,
     additionalData: {
       document_type: documentType,
+      ...(documentSide && { document_side: documentSide }),
     },
   });
 }
 
 /**
+ * @deprecated Use the SumSub Web SDK instead (getSdkToken + <SumsubWebSdk>).
+ *
  * Upload selfie for liveness detection and face matching
- * Uses extended timeout (3 minutes) due to ML processing for:
- * - Liveness detection (anti-spoofing)
- * - Face matching against ID document
  */
 export async function uploadSelfie(file: File): Promise<void> {
   await uploadFile({
@@ -40,6 +61,8 @@ export async function uploadSelfie(file: File): Promise<void> {
 }
 
 /**
+ * @deprecated Use the SumSub Web SDK instead. The SDK submits automatically.
+ *
  * Submit complete KYC verification
  */
 export async function submitVerification(): Promise<void> {
@@ -70,4 +93,56 @@ export async function getVerificationDetails(
     method: "GET",
   });
 }
+
+/**
+ * Check document upload status for a specific document type
+ * @param documentType - Type of document ('passport' | 'id_card' | 'drivers_license')
+ */
+export async function getDocumentStatus(
+  documentType: string
+): Promise<{ frontUploaded: boolean; backUploaded: boolean; isComplete: boolean }> {
+  return apiRequest<void, { frontUploaded: boolean; backUploaded: boolean; isComplete: boolean }>({
+    path: `/kyc/documents/status/${documentType}`,
+    method: "GET",
+  });
+}
+
+/**
+ * Clear all KYC documents and reset the SumSub applicant so the user can
+ * submit again from scratch. Call this before redirecting to kyc-verification
+ * when the user clicks "Retry Verification" after a RETRY rejection.
+ */
+export async function clearKycForRetry(): Promise<{
+  success: boolean;
+  message: string;
+  deleted_documents?: number;
+  kyc_id?: string;
+}> {
+  return apiRequest<void, {
+    success: boolean;
+    message: string;
+    deleted_documents?: number;
+    kyc_id?: string;
+  }>({
+    path: "/kyc/documents/clear",
+    method: "POST",
+  });
+}
+
+/**
+ * Check if all required document sides are uploaded before proceeding
+ */
+export async function checkDocumentCompleteness(): Promise<{
+  isComplete: boolean;
+  missingDocuments: Array<{ type: string; missing: string[] }>;
+}> {
+  return apiRequest<void, {
+    isComplete: boolean;
+    missingDocuments: Array<{ type: string; missing: string[] }>;
+  }>({
+    path: "/kyc/documents/completeness",
+    method: "GET",
+  });
+}
+
 

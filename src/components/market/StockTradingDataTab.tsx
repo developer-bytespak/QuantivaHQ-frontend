@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { exchangesService } from "@/lib/api/exchanges.service";
 
 interface StockQuoteData {
   symbol: string;
@@ -24,62 +25,93 @@ interface RecentBar {
   volume: number;
 }
 
+/** Minimal stock detail shape from page (avoids refetch on tab switch when provided) */
+interface InitialStockDetail {
+  symbol: string;
+  price: number;
+  volume24h: number;
+  timestamp?: string;
+  bidPrice?: number;
+  askPrice?: number;
+  bidSize?: number;
+  askSize?: number;
+  spread?: number;
+  spreadPercent?: number;
+}
+
 interface StockTradingDataTabProps {
   symbol: string;
   currentPrice?: number;
+  /** When provided (Alpaca), stock data is fetched using the user's connection (rate limits per user). */
+  connectionId?: string | null;
+  /** Pre-fetched on page load; when set, no API call on mount (only 30s refresh). */
+  initialStockDetail?: InitialStockDetail | null;
+  /** Pre-fetched bars from page; when set with initialStockDetail, no bars fetch on mount. */
+  initialBars?: RecentBar[];
 }
 
-export default function StockTradingDataTab({ symbol, currentPrice }: StockTradingDataTabProps) {
-  const [quoteData, setQuoteData] = useState<StockQuoteData | null>(null);
-  const [recentBars, setRecentBars] = useState<RecentBar[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+function buildQuoteFromDetail(detailData: InitialStockDetail): StockQuoteData {
+  const hasRealQuote =
+    detailData.bidPrice != null &&
+    detailData.askPrice != null &&
+    typeof detailData.bidPrice === "number" &&
+    typeof detailData.askPrice === "number";
+  return {
+    symbol: detailData.symbol,
+    askPrice: hasRealQuote ? (detailData.askPrice as number) : detailData.price * 1.0001,
+    bidPrice: hasRealQuote ? (detailData.bidPrice as number) : detailData.price * 0.9999,
+    askSize: detailData.askSize ?? 100,
+    bidSize: detailData.bidSize ?? 100,
+    spread: detailData.spread != null ? detailData.spread : detailData.price * 0.0002,
+    spreadPercent: detailData.spreadPercent != null ? detailData.spreadPercent : 0.02,
+    lastPrice: detailData.price,
+    volume: detailData.volume24h,
+    timestamp: detailData.timestamp || new Date().toISOString(),
+  };
+}
+
+export default function StockTradingDataTab({ symbol, currentPrice, connectionId, initialStockDetail, initialBars }: StockTradingDataTabProps) {
+  const hasInitial = initialStockDetail && initialStockDetail.symbol === symbol;
+  const [quoteData, setQuoteData] = useState<StockQuoteData | null>(() =>
+    hasInitial ? buildQuoteFromDetail(initialStockDetail) : null
+  );
+  const [recentBars, setRecentBars] = useState<RecentBar[]>(() => initialBars ?? []);
+  const [isLoading, setIsLoading] = useState(!hasInitial);
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<"quote" | "activity">("quote");
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!symbol) return;
+    if (!symbol) return;
 
-      setIsLoading(true);
-      setError(null);
-
+    const fetchData = async (isRefresh = false) => {
+      if (!isRefresh) {
+        setIsLoading(true);
+        setError(null);
+      }
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-        
-        // Fetch stock detail which includes quote data
-        const detailResponse = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
-        
-        if (!detailResponse.ok) {
-          throw new Error(`Failed to fetch stock data: ${detailResponse.status}`);
+        let detailData: InitialStockDetail;
+        if (connectionId) {
+          detailData = await exchangesService.getStockDetail(connectionId, symbol.toUpperCase());
+        } else {
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+          const detailResponse = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
+          if (!detailResponse.ok) throw new Error(`Failed to fetch stock data: ${detailResponse.status}`);
+          detailData = await detailResponse.json();
         }
+        setQuoteData(buildQuoteFromDetail(detailData));
 
-        const detailData = await detailResponse.json();
-        
-        // Create quote data from detail response
-        // Note: Alpaca free tier provides bid/ask in snapshot quotes
-        const quote: StockQuoteData = {
-          symbol: detailData.symbol,
-          askPrice: detailData.price * 1.0001, // Estimate if not available
-          bidPrice: detailData.price * 0.9999, // Estimate if not available
-          askSize: 100,
-          bidSize: 100,
-          spread: detailData.price * 0.0002,
-          spreadPercent: 0.02,
-          lastPrice: detailData.price,
-          volume: detailData.volume24h,
-          timestamp: detailData.timestamp || new Date().toISOString(),
-        };
-        
-        setQuoteData(quote);
-
-        // Fetch recent bars for activity
-        const barsResponse = await fetch(
-          `${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}/bars?timeframe=1Hour&limit=10`
-        );
-        
-        if (barsResponse.ok) {
-          const barsData = await barsResponse.json();
+        if (connectionId) {
+          const barsData = await exchangesService.getStockBars(connectionId, symbol.toUpperCase(), "1Hour", 10);
           setRecentBars(barsData.bars || []);
+        } else {
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+          const barsResponse = await fetch(
+            `${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}/bars?timeframe=1Hour&limit=10`
+          );
+          if (barsResponse.ok) {
+            const barsData = await barsResponse.json();
+            setRecentBars(barsData.bars || []);
+          }
         }
       } catch (err: any) {
         console.error("Failed to fetch trading data:", err);
@@ -89,12 +121,16 @@ export default function StockTradingDataTab({ symbol, currentPrice }: StockTradi
       }
     };
 
-    fetchData();
+    if (hasInitial) {
+      // Use pre-fetched data from page; only refresh every 30s (silent, no spinner)
+      const interval = setInterval(() => fetchData(true), 30000);
+      return () => clearInterval(interval);
+    }
 
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    fetchData(false);
+    const interval = setInterval(() => fetchData(true), 30000);
     return () => clearInterval(interval);
-  }, [symbol]);
+  }, [symbol, connectionId]);
 
   if (isLoading && !quoteData) {
     return (

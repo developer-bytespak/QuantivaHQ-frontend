@@ -55,15 +55,18 @@ export default function ConnectingPage() {
           // These are just UI flags, not sensitive data - connection status is in backend
           if (exchange === "binance" || exchange === "bybit") {
             sessionStorage.setItem("quantivahq_crypto_connected", "true");
+            if (sessionStorage.getItem("quantivahq_restore_both_after_connect") === "true") {
+              sessionStorage.removeItem("quantivahq_restore_both_after_connect");
+              localStorage.setItem("quantivahq_account_type", "both");
+            }
           } else if (exchange === "ibkr" || exchange === "alpaca") {
             sessionStorage.setItem("quantivahq_stocks_connected", "true");
+            if (sessionStorage.getItem("quantivahq_restore_both_after_connect") === "true") {
+              sessionStorage.removeItem("quantivahq_restore_both_after_connect");
+              localStorage.setItem("quantivahq_account_type", "both");
+            }
           }
 
-          // Navigate to dashboard after successful connection for all account types
-          // Small delay before navigation to show success message
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 1000);
         } else {
           // Invalid API keys
           setErrorType("invalid_api_key");

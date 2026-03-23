@@ -401,16 +401,6 @@ export default function AITradingPage() {
           </div>
 
           <div className="bg-[#12121a] rounded-xl p-5 border border-gray-800">
-            <p className="text-gray-500 text-sm mb-1">Win Rate</p>
-            <p className="text-2xl font-bold text-green-400">
-              {(status?.stats?.winRate || 0).toFixed(1)}%
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {status?.stats?.successfulTrades || 0} successful
-            </p>
-          </div>
-
-          <div className="bg-[#12121a] rounded-xl p-5 border border-gray-800">
             <p className="text-gray-500 text-sm mb-1">Total Volume</p>
             <p className="text-2xl font-bold text-blue-400">
               {formatCurrency(status?.stats?.totalVolume || 0)}
@@ -600,12 +590,6 @@ export default function AITradingPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-500">Total Trades</span>
                     <span className="text-white">{strategy.totalTrades}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Win Rate</span>
-                    <span className="text-green-400">
-                      {strategy.winRate.toFixed(1)}%
-                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Volume</span>

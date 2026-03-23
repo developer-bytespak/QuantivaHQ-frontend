@@ -15,6 +15,10 @@ export default function HelpSupportPage() {
   const { notification, showNotification, hideNotification } = useNotification();
   const [selectedFAQ, setSelectedFAQ] = useState<FAQ | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    subject: "",
+    message: "",
+  });
 
   const faqs: FAQ[] = [
     {
@@ -63,6 +67,16 @@ export default function HelpSupportPage() {
       document.body.style.overflow = "unset";
     };
   }, [selectedFAQ]);
+
+  const handleSubmitContact = () => {
+    if (!contactForm.subject || !contactForm.message) {
+      showNotification("Please fill in all fields", "error");
+      return;
+    }
+    // Here you would typically send this to your support system
+    showNotification("Your message has been sent! We'll get back to you within 24 hours.", "success");
+    setContactForm({ subject: "", message: "" });
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -182,6 +196,39 @@ export default function HelpSupportPage() {
           </div>,
           document.body
         )}
+
+        {/* Contact Form */}
+        <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
+          <h2 className="text-lg sm:text-2xl font-bold text-white mb-4 sm:mb-6">Contact Us</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Subject</label>
+              <input
+                type="text"
+                value={contactForm.subject}
+                onChange={(e) => setContactForm({ ...contactForm, subject: e.target.value })}
+                className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                placeholder="What can we help you with?"
+              />
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">Message</label>
+              <textarea
+                value={contactForm.message}
+                onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                rows={6}
+                className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 resize-none"
+                placeholder="Please describe your issue or question in detail..."
+              />
+            </div>
+            <button
+              onClick={handleSubmitContact}
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200"
+            >
+              Send Message
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

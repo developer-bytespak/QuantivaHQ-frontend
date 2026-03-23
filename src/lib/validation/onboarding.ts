@@ -55,8 +55,8 @@ export const changePasswordSchema = z
     confirmPassword: z.string().min(1, "Please confirm your new password"),
     twoFactorCode: z
       .string()
-      .regex(/^\d+$/, "2FA code must contain only digits")
-      .optional(),
+      .length(6, "2FA code must be exactly 6 digits")
+      .regex(/^\d+$/, "2FA code must contain only digits"),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "New passwords do not match",

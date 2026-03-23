@@ -213,6 +213,10 @@ export default function ApiKeysPage() {
         errorMessage = "Too many requests. Please wait a moment and try again.";
       } else if (error.message?.includes("Invalid API Key") || error.message?.includes("invalid")) {
         errorMessage = "Invalid API Key. Please check and try again.";
+      } else if (error.message?.includes("IP banned") || error.message?.includes("Too many requests") || error.message?.includes("rate limit") || error.message?.includes("rate") || error.message?.includes("429")) {
+        errorMessage = "Binance has temporarily blocked our server due to too many requests. Please wait a few minutes and try again.";
+      } else if (error.message?.includes("whitelist") || error.message?.includes("IP")) {
+        errorMessage = "IP address not whitelisted. Please add your IP to the exchange API key settings.";
       }
       
       setErrors({

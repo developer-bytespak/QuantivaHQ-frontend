@@ -7,7 +7,7 @@ import { alpacaPaperTradingService, type AlpacaPosition, type AlpacaOrder, type 
 import { apiRequest } from "@/lib/api/client";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { BalanceOverview } from "./components/balance-overview";
 import { StrategyCard } from "./components/strategy-card";
@@ -20,7 +20,8 @@ import TradeLeaderboard from "./components/trade-leaderboard";
 import { OrdersPanel } from "./components/orders-panel";
 import { AIAutoTradePanel } from "./components/ai-auto-trade-panel";
 import { CryptoAIAutoTradePanel } from "./components/crypto-ai-auto-trade-panel";
-import { useRealtimePaperTrading } from "@/hooks/useRealtimePaperTrading";
+import { useRealtimeAccountStream } from "@/hooks/useRealtimeAccountStream";
+import axios from "axios";
 
 // ⏱️ API Refresh Intervals (in milliseconds) - Increased since WebSocket provides real-time updates
 const ACCOUNT_DATA_REFRESH_INTERVAL = 600000;  // 10 minutes - Fallback only
@@ -93,14 +94,13 @@ type TradeRecord = {
 };
 
 export default function PaperTradingPage() {
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  // Connection type detection - using global context
+  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
 
   // WebSocket connection for real-time updates (only for crypto, not stocks)
   const [socketKey, setSocketKey] = useState(0);
   const isCryptoMode = connectionType === "crypto";
-  const realtimeData = useRealtimePaperTrading('default-user', socketKey, isCryptoMode);
+  const realtimeData = useRealtimeAccountStream('default-user', socketKey, isCryptoMode);
   
   // Refs to track last fetch times and prevent aggressive reloads
   const lastAccountDataFetch = useRef<number>(0);
@@ -110,37 +110,6 @@ export default function PaperTradingPage() {
   
   // Rate limit protection - global lock to prevent any API calls during cooldown
   const [isRateLimited, setIsRateLimited] = useState(false);
-  
-  // Check connection type on mount
-  useEffect(() => {
-    let isMounted = true;
-    
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        if (isMounted) {
-          setConnectionType(response.data?.exchange?.type || null);
-        }
-      } catch (error: any) {
-        // Don't redirect on error - just log and allow page to render
-        console.error("Failed to check connection type:", error);
-        // Set connection type to null so page can still render
-        if (isMounted) {
-          setConnectionType(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsCheckingConnection(false);
-        }
-      }
-    };
-    
-    checkConnection();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Account data
   const [balance, setBalance] = useState(0);
@@ -937,9 +906,8 @@ export default function PaperTradingPage() {
         // For user strategies, fetch from /strategies/{id}/signals
         signals = await apiRequest<never, any[]>({ path: `/strategies/${strategyId}/signals`, method: "GET" });
       } else {
-        // For pre-built strategies, use the existing function with asset type
-        const assetType = "crypto";
-        signals = await getPreBuiltStrategySignals(strategyId, assetType);
+        // For pre-built strategies, use the existing function
+        signals = await getPreBuiltStrategySignals(strategyId);
       }
       
       setStrategySignals((p) => ({ ...p, [strategyId]: signals || [] }));
@@ -999,7 +967,7 @@ export default function PaperTradingPage() {
       
       // Format pair based on asset type
       const pair = isStock 
-        ? cleanSymbol 
+        ? `${cleanSymbol} / USD` 
         : `${cleanSymbol} / USDT`;
       
       const score = Number(signal.final_score ?? 0);
@@ -1264,6 +1232,8 @@ export default function PaperTradingPage() {
     );
   }
 
+ 
+
   return (
     <div className="space-y-3 sm:space-y-6 pb-8 p-4 sm:p-0">
 
@@ -1388,10 +1358,10 @@ export default function PaperTradingPage() {
 
         {/* Buttons - Show for both crypto and stocks */}
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
-          {/* Trade Custom Strategies Button */}
+          {/* Custom Strategy Button - Links to custom strategies trading */}
           <Link
             href="/dashboard/custom-strategies-trading?mode=paper&from=paper-trading"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-purple-600/30 to-purple-500/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-purple-600/40 hover:to-purple-500/30 transition-all border border-purple-500/40 hover:border-purple-500/60 shadow-lg shadow-purple-500/10 w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 transition-all border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 shadow-lg shadow-[#fc4f02]/10 w-full sm:w-auto"
             title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1653,10 +1623,6 @@ export default function PaperTradingPage() {
                         <span className="text-slate-400">Volume</span>
                         <span className="font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].volume}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-slate-400">Win Rate</span>
-                        <span className="font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].winRate}</span>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -1811,4 +1777,3 @@ export default function PaperTradingPage() {
     </div>
   );
 }
-

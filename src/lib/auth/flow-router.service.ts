@@ -10,8 +10,9 @@ import { exchangesService } from "../api/exchanges.service";
 
 export type FlowRoute =
   | "/onboarding/personal-info"
-  | "/onboarding/proof-upload"
+  | "/onboarding/kyc-verification"
   | "/onboarding/verification-status"
+  | "/onboarding/choose-plan"
   | "/onboarding/account-type"
   | "/dashboard";
 
@@ -25,7 +26,7 @@ export interface FlowCheckResult {
  * Flow logic:
  * 1. Check KYC status:
  *    - No KYC record → Check personal info, if missing go to /onboarding/personal-info
- *    - No KYC record + has personal info → /onboarding/proof-upload (start KYC)
+ *    - No KYC record + has personal info → /onboarding/kyc-verification (start KYC)
  *    - KYC pending/review → /onboarding/verification-status
  *    - KYC approved → Continue to step 2
  * 2. Check exchange connection:
@@ -34,7 +35,7 @@ export interface FlowCheckResult {
  */
 export async function determineNextRoute(): Promise<FlowCheckResult> {
   try {
-    // Check if this is a new signup (always show personal-info for new signups)
+    // Check if this is a new signup (isNewUser: true → personal-info)
     const isNewSignup = typeof window !== "undefined" && 
                         localStorage.getItem("quantivahq_is_new_signup") === "true";
     
@@ -93,47 +94,54 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     const isKycApproved = kycStatus === "approved";
 
     if (!isKycApproved) {
-      // KYC is not approved, check if KYC record exists
-      if (hasKycRecord && kycId) {
-        // Check if documents have been uploaded
-        try {
-          const { getVerificationDetails } = await import("../api/kyc");
-          const verification = await getVerificationDetails(kycId);
-          
-          const hasDocuments = verification.documents && verification.documents.length > 0;
-          const hasFaceMatch = verification.face_matches && verification.face_matches.length > 0;
-          
-          if (!hasDocuments || !hasFaceMatch) {
-            // KYC record exists but no documents uploaded yet
-            return {
-              route: "/onboarding/proof-upload",
-              reason: "KYC record exists but documents not uploaded",
-            };
-          }
-          
-          // Documents uploaded, show verification status
-          return {
-            route: "/onboarding/verification-status",
-            reason: "KYC documents uploaded, pending verification",
-          };
-        } catch (verifyError) {
-          console.log("Error checking verification details:", verifyError);
-          // If we can't get verification details, default to proof upload
-          return {
-            route: "/onboarding/proof-upload",
-            reason: "Cannot verify document upload status",
-          };
-        }
-      } else {
-        // No KYC record, start KYC flow
+      // If KYC is pending/review and was submitted to SumSub, show status page
+      if (
+        hasKycRecord &&
+        (kycStatus === "pending" || kycStatus === "review")
+      ) {
         return {
-          route: "/onboarding/proof-upload",
-          reason: "No KYC record found, starting KYC process",
+          route: "/onboarding/verification-status",
+          reason: "KYC submitted, awaiting verification result",
         };
       }
+
+      // Otherwise launch the SumSub SDK verification flow
+      return {
+        route: "/onboarding/kyc-verification",
+        reason: "KYC not started or rejected, launching SDK verification",
+      };
     }
 
-    // Step 2: Check exchange connection (only if KYC is approved)
+    // Step 2: Subscription GET API – use hasPlan: true = skip choose-plan, hasPlan false/missing = show choose-plan
+    let shouldShowChoosePlan = true;
+    try {
+      const subsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/subscriptions`,
+        {
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("quantivahq_access_token") : ""}`,
+          },
+        }
+      );
+      if (subsRes.ok) {
+        const subsData = await subsRes.json();
+        // hasPlan true = user already has a plan → don't show choose-plan; false/missing → show
+        if (subsData?.hasPlan === true) {
+          shouldShowChoosePlan = false;
+        }
+      }
+    } catch {
+      // API fail – show choose-plan
+    }
+    if (shouldShowChoosePlan) {
+      return {
+        route: "/onboarding/choose-plan",
+        reason: "KYC approved – hasPlan false, show choose-plan",
+      };
+    }
+
+    // Step 3: Check exchange connection (only if KYC approved and plan chosen)
     let hasActiveConnection = false;
     let exchangeType: "crypto" | "stocks" | null = null;
     try {
@@ -155,7 +163,7 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     if (!hasActiveConnection) {
       return {
         route: "/onboarding/account-type",
-        reason: "KYC approved but no exchange connection",
+        reason: "Plan chosen but no exchange connection",
       };
     }
 
@@ -166,8 +174,13 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       reason: `User is fully onboarded with ${exchangeType || 'crypto'} exchange connected`,
     };
   } catch (error: any) {
-    // If checks fail, default to proof-upload (KYC start)
-    console.error("[FlowRouter] Could not verify user status:", error);
+    // If checks fail, provide detailed error info
+    console.error("[FlowRouter] Error determining next route:", error);
+    console.error("[FlowRouter] Error details:", {
+      message: error?.message,
+      status: error?.status || error?.statusCode,
+      stack: error?.stack,
+    });
     
     // If it's a 401/unauthorized error, user needs to re-authenticate
     if (error?.status === 401 || error?.statusCode === 401 || 
@@ -181,9 +194,12 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
       throw error;
     }
     
+    // For network errors or API failures, default to personal-info as safest starting point
+    // This won't cause issues for KYC-approved users since personal-info page will redirect them
+    console.warn("[FlowRouter] Defaulting to personal-info due to error checking user status");
     return {
       route: "/onboarding/personal-info",
-      reason: "Error checking user status, defaulting to personal info",
+      reason: `Error checking user status: ${error?.message || 'Unknown error'}`,
     };
   }
 }

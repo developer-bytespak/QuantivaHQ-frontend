@@ -119,7 +119,7 @@ export default function TermsPage() {
               </p>
               <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-lg">
                 <p className="text-sm sm:text-base text-white font-medium">Email: legal@quantivahq.com</p>
-                {/* <p className="text-sm sm:text-base text-white font-medium mt-2">Address: in process</p> */}
+                <p className="text-sm sm:text-base text-white font-medium mt-2">Address: [Your Company Address]</p>
               </div>
             </section>
 

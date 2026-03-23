@@ -292,7 +292,7 @@ export async function deleteAccount(
   reason?: string
 ): Promise<DeleteAccountResponse> {
   try {
-    return await apiRequest<DeleteAccountRequest, DeleteAccountResponse>({
+    const response = await apiRequest<DeleteAccountRequest, DeleteAccountResponse>({
       path: "/auth/delete-account",
       method: "DELETE",
       body: {
@@ -302,6 +302,8 @@ export async function deleteAccount(
       },
       credentials: "include",
     });
+    console.log("[Delete Account] Response:", response);
+    return response;
   } catch (error: any) {
     // If we get a 401, try to refresh the token and retry once
     if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { exchangesService, DashboardData, Connection } from "@/lib/api/exchanges.service";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
+import { useExchange } from "@/context/ExchangeContext";
 import { getCryptoNews, getGeneralCryptoNews, getGeneralStockNews, CryptoNewsResponse, CryptoNewsItem, StockNewsItem } from "@/lib/api/news.service";
 import { SentimentBadge } from "@/components/news/sentiment-badge";
 import { useStocksMarket } from "@/hooks/useStocksMarket";
@@ -32,6 +33,10 @@ interface Activity {
 
 export default function DashboardPage() {
   const router = useRouter();
+  
+  // Get connection from global context (fetched once on app start)
+  const { connectionType, connectionId, activeConnection, isLoading: isLoadingConnection, refetch: refetchConnection } = useExchange();
+  
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
@@ -44,15 +49,9 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
-  // Store connection ID and type in component state
-  const [connectionId, setConnectionId] = useState<string | null>(null);
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [activeConnection, setActiveConnection] = useState<Connection | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
   // Ref to track if initialization has happened (prevents duplicate calls)
   const hasInitialized = useRef(false);
-  
+
   // Market data state - different sources based on type
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
   const [isLoadingMarket, setIsLoadingMarket] = useState(false);
@@ -139,6 +138,26 @@ export default function DashboardPage() {
   }>>([]);
   const [isLoadingStockSignals, setIsLoadingStockSignals] = useState(false);
 
+  // Crypto: 1 actual signal (same API as stocks, different strategy filter)
+  const [cryptoSignals, setCryptoSignals] = useState<Array<{
+    id: number;
+    pair: string;
+    type: "BUY" | "SELL";
+    confidence: "HIGH" | "MEDIUM" | "LOW";
+    ext: string;
+    entryShort: string;
+    stopLossShort: string;
+    progressMin: string;
+    progressMax: string;
+    progressPercent: number;
+    entry: string;
+    stopLoss: string;
+    takeProfit1: string;
+    additionalInfo: string;
+    reasons: string[];
+  }>>([]);
+  const [isLoadingCryptoSignals, setIsLoadingCryptoSignals] = useState(false);
+
   const trades = [
     {
       id: 1,
@@ -184,31 +203,6 @@ export default function DashboardPage() {
     },
   ];
 
-  // Fetch active connection from backend (secure, no localStorage)
-  const fetchActiveConnection = useCallback(async () => {
-    try {
-      const response = await exchangesService.getActiveConnection();
-      const connection = response.data;
-      setConnectionId(connection.connection_id);
-      setActiveConnection(connection as Connection);
-      setConnectionType(connection.exchange?.type || null);
-      return connection.connection_id;
-    } catch (err: any) {
-      // Silently handle 401 (not logged in) and 404 (no connection) - both are expected
-      if (
-        err?.status !== 401 &&
-        err?.statusCode !== 401 &&
-        err?.status !== 404 &&
-        err?.statusCode !== 404
-      ) {
-        console.error("Failed to fetch active connection:", err);
-      }
-      setError("No active connection found. Please connect your exchange account.");
-      setIsLoading(false);
-      return null;
-    }
-  }, []);
-
   // Fetch dashboard data (only uses combined dashboard API)
   const fetchDashboardData = useCallback(async (connId: string, isInitial = false) => {
     try {
@@ -239,43 +233,47 @@ export default function DashboardPage() {
     } finally {
       if (isInitial) {
         setIsLoading(false);
-        setIsInitialLoad(false);
       }
     }
   }, []);
 
-  // Initial load: fetch connection, then fetch data (runs only once on mount)
+  // Initial load: fetch data when connectionId is available
   useEffect(() => {
     // Prevent re-initialization (especially in React Strict Mode)
     if (hasInitialized.current) return;
     
+    // Wait until connection check is complete
+    if (isLoadingConnection) {
+      return; // Still loading, don't do anything yet
+    }
+    
+    // Connection check is done - if no connectionId, user has no exchange connected
+    // Dashboard will show the "Connect Exchange" component based on connectionId value
+    if (!connectionId) {
+      setIsLoading(false);
+      return; // Let the UI show "Connect Exchange" component
+    }
+    
     const initializeDashboard = async () => {
       hasInitialized.current = true;
-      const connId = await fetchActiveConnection();
-      if (connId) {
-        await fetchDashboardData(connId, true);
-      }
+      await fetchDashboardData(connectionId, true);
     };
     
     initializeDashboard();
-    // Empty deps - run only once on mount
-  }, []);
+  }, [connectionId, isLoadingConnection, fetchDashboardData]);
 
   // Polling: only update data, no loading state, no connection fetch
   useEffect(() => {
-    if (!connectionId || isInitialLoad) return;
+    if (!connectionId) return;
 
     // Set up polling every 30 seconds (reduced from 8s to save resources)
     // Silent updates - no loading state, smooth transitions
     const pollInterval = setInterval(() => {
-      if (connectionId) {
-        fetchDashboardData(connectionId, false);
-      }
+      fetchDashboardData(connectionId, false);
     }, 30000); // 30 seconds instead of 8 seconds
 
     return () => clearInterval(pollInterval);
-    // Remove fetchDashboardData from deps - it's stable with useCallback
-  }, [connectionId, isInitialLoad]);
+  }, [connectionId, fetchDashboardData]);
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -414,6 +412,61 @@ export default function DashboardPage() {
     fetchStockSignals();
   }, [connectionType]);
 
+  // Fetch crypto signals for dashboard (1 actual trade, same pattern as stocks)
+  useEffect(() => {
+    if (connectionType !== "crypto") return;
+
+    const fetchCryptoSignals = async () => {
+      setIsLoadingCryptoSignals(true);
+      try {
+        const strategies = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
+        const cryptoStrategies = (strategies || []).filter((s: Strategy) => s?.type === "admin" && !s?.name?.includes("(Stocks)"));
+        if (cryptoStrategies.length === 0) {
+          setCryptoSignals([]);
+          return;
+        }
+        const strategyId = cryptoStrategies[0].strategy_id;
+        const response = await getTrendingAssetsWithInsights(strategyId, 10);
+        const assets = response.assets || [];
+        const mapped = assets.slice(0, 1).map((asset, idx) => {
+          const price = asset.price_usd || 0;
+          const score = asset.signal?.final_score ?? asset.trend_score ?? 0;
+          const confidence = score >= 70 ? "HIGH" : score >= 40 ? "MEDIUM" : "LOW";
+          const action = asset.signal?.action?.toUpperCase() === "SELL" ? "SELL" : "BUY";
+          const stopLossPct = asset.signal?.stop_loss_pct ?? 5;
+          const takeProfitPct = asset.signal?.take_profit_pct ?? 10;
+          const stopLoss = action === "BUY" ? price * (1 - stopLossPct / 100) : price * (1 + stopLossPct / 100);
+          const takeProfit = action === "BUY" ? price * (1 + takeProfitPct / 100) : price * (1 - takeProfitPct / 100);
+          const pair = `${asset.symbol} / USDT`;
+          return {
+            id: idx + 1,
+            pair,
+            type: action as "BUY" | "SELL",
+            confidence: confidence as "HIGH" | "MEDIUM" | "LOW",
+            ext: price.toFixed(2),
+            entryShort: price.toFixed(2),
+            stopLossShort: `${stopLoss.toFixed(2)} $`,
+            progressMin: `$${stopLoss.toFixed(0)}`,
+            progressMax: `$${takeProfit.toFixed(0)}`,
+            progressPercent: Math.min(100, Math.max(0, Math.floor(score))),
+            entry: `$${price.toFixed(2)}`,
+            stopLoss: `$${stopLoss.toFixed(2)}`,
+            takeProfit1: `$${takeProfit.toFixed(2)}`,
+            additionalInfo: asset.price_change_24h != null ? `${asset.price_change_24h >= 0 ? "+" : ""}${asset.price_change_24h.toFixed(2)}% 24h` : "-",
+            reasons: asset.aiInsight ? [asset.aiInsight] : [],
+          };
+        });
+        setCryptoSignals(mapped);
+      } catch (err) {
+        console.error("Failed to fetch crypto signals:", err);
+        setCryptoSignals([]);
+      } finally {
+        setIsLoadingCryptoSignals(false);
+      }
+    };
+    fetchCryptoSignals();
+  }, [connectionType]);
+
   // Auto-refresh news every 5 minutes
   useEffect(() => {
     if (!connectionType) return;
@@ -425,10 +478,50 @@ export default function DashboardPage() {
     return () => clearInterval(refreshInterval);
   }, [connectionType, fetchNews]);
 
+  // Orders pagination for Action Center
+  const [ordersPage, setOrdersPage] = useState(1);
+  const ORDERS_PER_PAGE = 5;
+
+  const openOrders = useMemo(() => {
+    if (!dashboardData || !dashboardData.orders) return [];
+    return (dashboardData.orders || []).filter(
+      (o: any) => o.status === "NEW" || o.status === "PARTIALLY_FILLED" || o.status === "OPEN"
+    );
+  }, [dashboardData]);
+
+  const totalOrderPages = Math.max(1, Math.ceil((openOrders || []).length / ORDERS_PER_PAGE));
+
+  const paginatedOrders = useMemo(() => {
+    const start = (ordersPage - 1) * ORDERS_PER_PAGE;
+    return (openOrders || []).slice(start, start + ORDERS_PER_PAGE);
+  }, [openOrders, ordersPage]);
+
+  useEffect(() => {
+    // reset page when orders change
+    setOrdersPage(1);
+  }, [openOrders.length]);
+
+  // Holdings modal + pagination
+  const [showHoldingsModal, setShowHoldingsModal] = useState(false);
+  const [holdingsPage, setHoldingsPage] = useState(1);
+  const HOLDINGS_PER_PAGE = 5;
+
+  const totalHoldingsPages = Math.max(1, Math.ceil((dashboardData?.positions?.length || 0) / HOLDINGS_PER_PAGE));
+
+  const paginatedHoldings = useMemo(() => {
+    if (!dashboardData || !dashboardData.positions) return [];
+    const start = (holdingsPage - 1) * HOLDINGS_PER_PAGE;
+    return dashboardData.positions.slice(start, start + HOLDINGS_PER_PAGE);
+  }, [dashboardData, holdingsPage]);
+
+  useEffect(() => {
+    setHoldingsPage(1);
+  }, [dashboardData?.positions?.length]);
+
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
-      {/* Exchange Account Connection Required */}
-      {error && error.includes("No active connection") && (
+      {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
+      {!isLoadingConnection && !connectionId && (
         <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 p-4 sm:p-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-orange-500/20 flex-shrink-0">
@@ -442,7 +535,7 @@ export default function DashboardPage() {
                 To start trading and accessing your portfolio, please connect your Binance or Bybit exchange account. You'll need to provide your API keys.
               </p>
               <button
-                onClick={() => router.push("/onboarding/crypto-exchange")}
+                onClick={() => router.push("/onboarding/account-type")}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#fc4f02] hover:bg-[#ff5f12] text-white font-medium text-sm transition-colors duration-200"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -468,12 +561,6 @@ export default function DashboardPage() {
                 onClick={() => {
                   if (connectionId) {
                     fetchDashboardData(connectionId, true);
-                  } else {
-                    fetchActiveConnection().then((connId) => {
-                      if (connId) {
-                        fetchDashboardData(connId, true);
-                      }
-                    });
                   }
                 }}
                 className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
@@ -491,13 +578,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
-            <div className="mb-3 sm:mb-4 flex items-center justify-between">
+            <div className="mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold text-white">Portfolio</h2>
-              {lastUpdated && (
-                <p className="text-[10px] sm:text-xs text-slate-400">
-                  Updated {lastUpdated.toLocaleTimeString()}
-                </p>
-              )}
             </div>
 
             {isLoading && !dashboardData ? (
@@ -547,14 +629,97 @@ export default function DashboardPage() {
 
           {/* Action Center - Recent Activities */}
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
-            <div className="mb-3 sm:mb-4 flex items-center justify-between">
-              <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="py-6 sm:py-8 text-center text-slate-400">
-                <p className="text-xs sm:text-sm">No activities yet</p>
-                <p className="mt-1 text-[10px] sm:text-xs text-slate-500">Activities will appear here when available</p>
+            <div className="mb-4 sm:mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Open limit &amp; market orders</p>
               </div>
+              <div className="flex items-center gap-1.5 rounded-full bg-[#fc4f02]/10 border border-[#fc4f02]/20 px-3 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#fc4f02] animate-pulse"></span>
+                <span className="text-[10px] sm:text-xs font-medium text-[#fda300]">{(openOrders || []).length} open</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {(!dashboardData || (openOrders || []).length === 0) ? (
+                <div className="py-10 text-center">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/5">
+                    <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-400">No open orders</p>
+                  <p className="text-[10px] text-slate-600 mt-1">Your active orders will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <ul className="space-y-2">
+                    {paginatedOrders.map((order: any, idx: number) => (
+                      <li key={order.id || idx} className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 sm:px-4 py-3 flex items-center justify-between hover:bg-white/[0.07] transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                            order.side?.toLowerCase() === 'buy'
+                              ? 'bg-green-500/15 text-green-400'
+                              : 'bg-[#fc4f02]/15 text-[#fda300]'
+                          }`}>
+                            {order.side?.toLowerCase() === 'buy' ? 'B' : 'S'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs sm:text-sm font-semibold text-white">{order.symbol}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                order.side?.toLowerCase() === 'buy'
+                                  ? 'bg-green-500/15 text-green-400'
+                                  : 'bg-[#fc4f02]/15 text-[#fda300]'
+                              }`}>{order.side?.toUpperCase()}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400 font-medium hidden sm:inline">{order.type || 'LIMIT'}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">
+                              Qty: <span className="text-slate-400">{order.quantity}</span>
+                              {order.created_at && <span className="ml-2">{new Date(order.created_at).toLocaleDateString()}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs sm:text-sm font-semibold text-white">{formatCurrency(order.price || 0)}</div>
+                          <div className={`text-[10px] mt-0.5 font-medium ${
+                            order.status === 'NEW' ? 'text-blue-400' :
+                            order.status === 'PARTIALLY_FILLED' ? 'text-yellow-400' : 'text-slate-400'
+                          }`}>{order.status?.replace('_', ' ')}</div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
+                    <div className="text-[10px] sm:text-xs text-slate-500">
+                      {(ordersPage - 1) * ORDERS_PER_PAGE + 1}–{Math.min(ordersPage * ORDERS_PER_PAGE, openOrders.length)} of {openOrders.length}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setOrdersPage(p => Math.max(1, p - 1))}
+                        disabled={ordersPage === 1}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg text-xs font-medium transition ${
+                          ordersPage === 1
+                            ? 'opacity-30 cursor-not-allowed text-slate-400'
+                            : 'bg-white/[0.06] hover:bg-white/[0.1] text-white'
+                        }`}>
+                        ‹
+                      </button>
+                      <span className="text-[10px] sm:text-xs text-slate-400 px-2">{ordersPage} / {totalOrderPages}</span>
+                      <button
+                        onClick={() => setOrdersPage(p => Math.min(totalOrderPages, p + 1))}
+                        disabled={ordersPage === totalOrderPages}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg text-xs font-medium transition ${
+                          ordersPage === totalOrderPages
+                            ? 'opacity-30 cursor-not-allowed text-slate-400'
+                            : 'bg-white/[0.06] hover:bg-white/[0.1] text-white'
+                        }`}>
+                        ›
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -590,14 +755,14 @@ export default function DashboardPage() {
               {activeTab === "holdings" ? (
               <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
               <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
-                <thead className="divide-y divide-[--color-border]">
-                  <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Assets</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Holding</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Values</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">Entry</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left">P/L</th>
-                    <th className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-left hidden sm:table-cell">P/L value</th>
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-left uppercase tracking-wider">Asset</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Holdings</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Value</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Price</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">24h %</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider hidden sm:table-cell">24h $</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
@@ -610,21 +775,27 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ) : dashboardData && dashboardData.positions.length > 0 ? (
-                    dashboardData.positions.map((position, index) => {
-                      const symbol = position.symbol.replace('USDT', '').replace('BUSD', '');
+                    dashboardData.positions.slice(0, 3).map((position, index) => {
+                      const stripped = position.symbol.replace(/(USDT|BUSD)$/, '');
+                      const symbol = stripped || position.symbol;
                       return (
                         <tr
                           key={index}
-                          className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                          className="group border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors"
                         >
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white">{symbol}</td>
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{position.quantity.toFixed(4)}</td>
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
-                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300">{formatCurrency(position.entryPrice)}</td>
-                          <td className={`py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <td className="py-3 px-1 sm:px-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.07] text-[10px] font-bold text-white">{symbol.slice(0, 2)}</div>
+                              <span className="text-[10px] sm:text-sm font-semibold text-white">{symbol}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300 text-right">{position.quantity.toFixed(4)}</td>
+                          <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-right">{formatCurrency(position.currentPrice * position.quantity)}</td>
+                          <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-400 text-right">{formatCurrency(position.currentPrice)}</td>
+                          <td className={`py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-semibold text-right ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {formatPercent(position.pnlPercent)}
                           </td>
-                          <td className={`py-2 sm:py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-400 ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'} hidden sm:table-cell`}>
+                          <td className={`py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-right hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {formatCurrency(position.unrealizedPnl)}
                           </td>
                         </tr>
@@ -639,6 +810,16 @@ export default function DashboardPage() {
                   )}
                   </tbody>
                 </table>
+                {dashboardData && dashboardData.positions.length > 3 && (
+                  <div className="mt-3 pt-2 sm:pt-4 text-center">
+                    <button
+                      onClick={() => setShowHoldingsModal(true)}
+                      className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105"
+                    >
+                      View More
+                    </button>
+                  </div>
+                )}
               </div>
               ) : (
                 <div className="space-y-4">
@@ -846,7 +1027,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Trade Cards - For both Crypto and Stocks */}
+            {/* Trade Cards - For both Crypto and Stocks (1 actual trade each) */}
             {connectionType === "stocks" ? (
               isLoadingStockSignals ? (
                 <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
@@ -922,72 +1103,90 @@ export default function DashboardPage() {
                 </div>
               )
             ) : (
-              <div className="space-y-2 sm:space-y-3">
-                {trades.map((trade, index) => (
-                 <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
-                  {/* Top Trade Opportunity */}
-                  <div className="space-y-3 sm:space-y-4">
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
-                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                        : "bg-gradient-to-r from-red-500 to-red-600"
-                        }`}>
-                        {trade.type}
-                      </span>
-                      <span className="text-xs sm:text-sm font-medium text-white">{trade.pair}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
-                        }`}>{trade.confidence}</span>
-                    </div>
-
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <p className="text-[10px] sm:text-xs text-slate-400">Ext. {trade.ext}</p>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <span className="text-slate-400">Entry</span>
-                        <span className="font-medium text-white">{trade.entryShort}</span>
-                        <span className="text-slate-500">&gt;</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs sm:text-sm">
-                        <span className="text-slate-400">Stop Loss</span>
-                        <span className="font-medium text-white">{trade.stopLossShort}</span>
-                      </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-400">
-                        <span>{trade.progressMin}</span>
-                        <span>{trade.progressMax}</span>
-                      </div>
-                      <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800">
-                        <div
-                          className={`h-full bg-gradient-to-r ${trade.type === "BUY"
-                            ? "from-green-500 to-emerald-500"
-                            : "from-red-500 to-red-600"
-                            }`}
-                          style={{ width: `${trade.progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-1.5 sm:gap-2 pt-2">
-                      <button className="flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40">
-                        Auto Trade
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedTrade(index);
-                          setShowTradeOverlay(true);
-                        }}
-                         className="rounded-lg sm:rounded-xl bg-[--color-surface] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-300 transition-all duration-300  hover:text-white"
-                      >
-                        View Trade
-                      </button>
-                    </div>
+              isLoadingCryptoSignals ? (
+                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-8 w-8 border-2 border-[#fc4f02] border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm text-slate-400">Loading crypto signal...</p>
                   </div>
                 </div>
-              ))}
-              </div>
+              ) : cryptoSignals.length > 0 ? (
+                <div className="space-y-2 sm:space-y-3">
+                  {cryptoSignals.map((trade) => (
+                    <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+                      <div className="space-y-3 sm:space-y-4">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                          <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
+                            ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                            : "bg-gradient-to-r from-red-500 to-red-600"
+                            }`}>
+                            {trade.type}
+                          </span>
+                          <span className="text-xs sm:text-sm font-medium text-white">{trade.pair}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
+                            }`}>{trade.confidence}</span>
+                        </div>
+
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <p className="text-[10px] sm:text-xs text-slate-400">Price: ${trade.ext}</p>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <span className="text-slate-400">Entry</span>
+                            <span className="font-medium text-white">${trade.entryShort}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <span className="text-slate-400">Stop Loss</span>
+                            <span className="font-medium text-white">{trade.stopLossShort}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5 sm:space-y-2">
+                          <div className="flex items-center justify-between text-[10px] sm:text-xs text-slate-400">
+                            <span>{trade.progressMin}</span>
+                            <span>{trade.progressMax}</span>
+                          </div>
+                          <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                            <div
+                              className={`h-full bg-gradient-to-r ${trade.type === "BUY"
+                                ? "from-green-500 to-emerald-500"
+                                : "from-red-500 to-red-600"
+                                }`}
+                              style={{ width: `${trade.progressPercent}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1.5 sm:gap-2 pt-2">
+                          <button
+                            onClick={() => {
+                              setSelectedTrade(0);
+                              setShowTradeOverlay(true);
+                            }}
+                            className="rounded-lg sm:rounded-xl bg-[--color-surface] px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white"
+                          >
+                            View Trade
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <h3 className="text-lg font-semibold text-white">No Signals Available</h3>
+                    <p className="text-sm text-slate-400 max-w-md">Visit Top Trades to generate crypto signals and view trading opportunities.</p>
+                    <button
+                      onClick={() => router.push("/dashboard/top-trades")}
+                      className="mt-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:scale-105"
+                    >
+                      Go to Top Trades
+                    </button>
+                  </div>
+                </div>
+              )
             )}
           </div>
 
@@ -1076,88 +1275,167 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Trade Details Overlay */}
-      {showTradeOverlay && (
+      {/* Holdings Modal */}
+      {showHoldingsModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-          onClick={() => setShowTradeOverlay(false)}
+          onClick={() => setShowHoldingsModal(false)}
         >
           <div
-             className="relative w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
+            className="relative w-full max-w-3xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.03] to-transparent p-4 sm:p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="mb-4 sm:mb-6 flex items-center justify-between">
-              <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
+              <h2 className="text-lg sm:text-2xl font-bold text-white">All Holdings</h2>
               <button
-                onClick={() => setShowTradeOverlay(false)}
+                onClick={() => setShowHoldingsModal(false)}
                 className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
                 aria-label="Close"
               >
-                <svg
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                ✕
               </button>
             </div>
 
-            {/* Trade Info */}
-            <div className="space-y-4 sm:space-y-6">
-              {/* Pair and Type */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-semibold text-white ${trades[selectedTrade].type === "BUY"
-                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                    : "bg-gradient-to-r from-red-500 to-red-600"
-                  }`}>
-                  {trades[selectedTrade].type}
-                </span>
-                <span className="text-base sm:text-lg font-medium text-white">{trades[selectedTrade].pair}</span>
-                <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{trades[selectedTrade].confidence}</span>
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
+                <thead className="divide-y divide-[--color-border]">
+                  <tr>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Asset</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Holdings</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Value</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Price</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">24h %</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">24h $</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[--color-border]">
+                  {paginatedHoldings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-slate-400">No positions found</td>
+                    </tr>
+                  ) : (
+                    paginatedHoldings.map((position: any, idx: number) => {
+                      const stripped = position.symbol.replace(/(USDT|BUSD)$/, '');
+                      const symbol = stripped || position.symbol;
+                      return (
+                        <tr key={position.symbol + idx} className="hover:bg-[--color-surface]/40">
+                          <td className="py-2 px-2 text-white font-medium">{symbol}</td>
+                          <td className="py-2 px-2 text-slate-300">{position.quantity.toFixed(4)}</td>
+                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
+                          <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice)}</td>
+                          <td className={`py-2 px-2 font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(position.pnlPercent)}</td>
+                          <td className={`py-2 px-2 text-slate-400 hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(position.unrealizedPnl)}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-              {/* Trade Details */}
-               <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Entry</span>
-                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].entry}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Stop-Loss</span>
-                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].stopLoss}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Take Profit 1</span>
-                  <span className="text-sm sm:text-base font-medium text-white">{trades[selectedTrade].takeProfit1}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm text-slate-400">Additional Info</span>
-                  <span className="text-sm sm:text-base font-medium text-slate-300">{trades[selectedTrade].additionalInfo}</span>
-                </div>
-              </div>
-
-              {/* Reasons */}
-              <div className="space-y-2 sm:space-y-3">
-                <h3 className="text-sm sm:text-base font-semibold text-white">Reasons</h3>
-                {trades[selectedTrade].reasons.map((reason: string, index: number) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <span className="mt-1 sm:mt-1.5 h-1 w-1 sm:h-1.5 sm:w-1.5 flex-shrink-0 rounded-full bg-green-400" />
-                    <p className="text-xs sm:text-sm text-slate-300">{reason}</p>
-                  </div>
-                ))}
+            <div className="flex items-center justify-between pt-4">
+              <div className="text-xs text-slate-400">Showing {(holdingsPage - 1) * HOLDINGS_PER_PAGE + 1} - {Math.min(holdingsPage * HOLDINGS_PER_PAGE, (dashboardData?.positions?.length || 0))} of {dashboardData?.positions?.length || 0}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setHoldingsPage(p => Math.max(1, p - 1))}
+                  disabled={holdingsPage === 1}
+                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                  Prev
+                </button>
+                <div className="text-xs text-slate-400">Page {holdingsPage} / {totalHoldingsPages}</div>
+                <button
+                  onClick={() => setHoldingsPage(p => Math.min(totalHoldingsPages, p + 1))}
+                  disabled={holdingsPage === totalHoldingsPages}
+                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === totalHoldingsPages ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
+                  Next
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Trade Details Overlay (crypto: uses cryptoSignals) */}
+      {showTradeOverlay && (() => {
+        const overlayTrade = connectionType === "crypto" && cryptoSignals.length > 0
+          ? cryptoSignals[selectedTrade]
+          : connectionType === "stocks"
+            ? null
+            : trades[selectedTrade];
+        if (!overlayTrade) return null;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowTradeOverlay(false)}
+          >
+            <div
+              className="relative w-full max-w-2xl rounded-xl sm:rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 sm:mb-6 flex items-center justify-between">
+                <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
+                <button
+                  onClick={() => setShowTradeOverlay(false)}
+                  className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white"
+                  aria-label="Close"
+                >
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-semibold text-white ${overlayTrade.type === "BUY"
+                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                    : "bg-gradient-to-r from-red-500 to-red-600"
+                  }`}>
+                    {overlayTrade.type}
+                  </span>
+                  <span className="text-base sm:text-lg font-medium text-white">{overlayTrade.pair}</span>
+                  <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{overlayTrade.confidence}</span>
+                </div>
+
+                <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-slate-400">Entry</span>
+                    <span className="text-sm sm:text-base font-medium text-white">{"entry" in overlayTrade ? overlayTrade.entry : `$${(overlayTrade as { entryShort: string }).entryShort}`}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-slate-400">Stop-Loss</span>
+                    <span className="text-sm sm:text-base font-medium text-white">{"stopLoss" in overlayTrade ? overlayTrade.stopLoss : (overlayTrade as { stopLossShort: string }).stopLossShort}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-slate-400">Take Profit 1</span>
+                    <span className="text-sm sm:text-base font-medium text-white">{"takeProfit1" in overlayTrade ? overlayTrade.takeProfit1 : "-"}</span>
+                  </div>
+                  {"additionalInfo" in overlayTrade && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm text-slate-400">Additional Info</span>
+                      <span className="text-sm sm:text-base font-medium text-slate-300">{overlayTrade.additionalInfo}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-sm sm:text-base font-semibold text-white">Reasons</h3>
+                  {"reasons" in overlayTrade && overlayTrade.reasons.length > 0
+                    ? overlayTrade.reasons.map((reason: string, index: number) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <span className="mt-1 sm:mt-1.5 h-1 w-1 sm:h-1.5 sm:w-1.5 flex-shrink-0 rounded-full bg-green-400" />
+                          <p className="text-xs sm:text-sm text-slate-300">{reason}</p>
+                        </div>
+                      ))
+                    : (
+                      <p className="text-xs sm:text-sm text-slate-400">No insight available for this signal.</p>
+                    )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* News Overlay */}
       {showNewsOverlay && (

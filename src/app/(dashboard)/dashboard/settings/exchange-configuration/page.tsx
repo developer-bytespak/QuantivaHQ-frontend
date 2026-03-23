@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { SettingsBackButton } from "@/components/settings/settings-back-button";
@@ -8,6 +8,8 @@ import { useNotification, Notification } from "@/components/common/notification"
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import { useUserNationality } from "@/hooks/useUserNationality";
+import { exchangesService, Connection } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
 interface ExchangeConnection {
   connection_id: string;
@@ -41,14 +43,42 @@ const getExchangeIcon = (exchangeName: string) => {
   }
 };
 
+type ExchangeConnection = Connection;
+
+type AccountType = "crypto" | "stocks" | "both";
+
+function getEffectiveAccountType(
+  connections: ExchangeConnection[],
+): AccountType {
+  const hasCrypto = connections.some(
+    (c) => c.exchange?.type === "crypto",
+  );
+  const hasStocks = connections.some(
+    (c) => c.exchange?.type === "stocks",
+  );
+
+  if (hasCrypto && hasStocks) return "both";
+
+  const stored = typeof window !== "undefined"
+    ? localStorage.getItem("quantivahq_account_type")
+    : null;
+  if (stored === "crypto" || stored === "stocks" || stored === "both")
+    return stored;
+
+  if (hasCrypto) return "crypto";
+  if (hasStocks) return "stocks";
+  return "crypto";
+}
+
 export default function ExchangeConfigurationPage() {
   const router = useRouter();
+  const { allConnections, isLoading, refetch } = useExchange();
   const { notification, showNotification, hideNotification } = useNotification();
   const { nationality, isUS, loading: nationalityLoading } = useUserNationality();
   const [connections, setConnections] = useState<ExchangeConnection[]>([]);
+  const connections = allConnections;
   const [selectedConnection, setSelectedConnection] = useState<ExchangeConnection | null>(null);
   const [showUpdateForm, setShowUpdateForm] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [exchangeType, setExchangeType] = useState<"crypto" | "stocks">("crypto");
   const [cryptoToggle, setCryptoToggle] = useState<"binance" | "bybit" | "binance.us">("binance");
@@ -59,20 +89,34 @@ export default function ExchangeConfigurationPage() {
   const [formData, setFormData] = useState({
     api_key: "",
     api_secret: "",
-    password: "",
     passphrase: "",
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; connectionId: string | null }>({
-    isOpen: false,
-    connectionId: null,
-  });
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    connectionId: string | null;
+  }>({ isOpen: false, connectionId: null });
+
+  const effectiveAccountType = useMemo(
+    () => getEffectiveAccountType(connections),
+    [connections],
+  );
+
+  const cryptoConnections = useMemo(
+    () => connections.filter((c) => c.exchange?.type === "crypto"),
+    [connections],
+  );
+  const stockConnections = useMemo(
+    () => connections.filter((c) => c.exchange?.type === "stocks"),
+    [connections],
+  );
+
+  const showCrypto = effectiveAccountType === "crypto" || effectiveAccountType === "both";
+  const showStocks = effectiveAccountType === "stocks" || effectiveAccountType === "both";
 
   useEffect(() => {
     setMounted(true);
-    loadConnections();
   }, []);
 
   // Set default toggle based on nationality when nationality loads
@@ -86,138 +130,50 @@ export default function ExchangeConfigurationPage() {
     }
   }, [isUS, nationalityLoading]);
 
+  // Sync localStorage with effective account type (so deleting one of "both" updates to crypto/stocks)
   useEffect(() => {
-    // First priority: Check URL params for explicit type
-    const params = new URLSearchParams(window.location.search);
-    const typeParam = params.get('type');
-    
-    if (typeParam === 'stocks' || typeParam === 'crypto') {
-      setExchangeType(typeParam);
-      
-      // Find matching connection if exists
-      if (connections.length > 0) {
-        const matchingConn = connections.find(c => 
-          c.status === 'active' && 
-          c.exchange?.type === typeParam &&
-          c.exchange_name
-        );
-        
-        if (matchingConn) {
-          const exchangeName = matchingConn.exchange_name.toLowerCase();
-          setHasActiveConnection(true);
-          setActiveExchange(exchangeName);
-          
-          if (typeParam === 'crypto' && (exchangeName === 'binance' || exchangeName === 'bybit')) {
-            setCryptoToggle(exchangeName as 'binance' | 'bybit');
-          }
-        } else {
-          setHasActiveConnection(false);
-          setActiveExchange(null);
-        }
-      }
-    } else if (connections.length > 0) {
-      // Fallback: Detect from connections if no URL param
-      const activeConn = connections.find(c => c.status === 'active');
-      if (activeConn && activeConn.exchange_name) {
-        const connType = activeConn.exchange?.type || 'crypto';
-        const exchangeName = activeConn.exchange_name.toLowerCase();
-        
-        setExchangeType(connType);
-        setHasActiveConnection(true);
-        setActiveExchange(exchangeName);
-        
-        if (connType === 'crypto' && (exchangeName === 'binance' || exchangeName === 'bybit')) {
-          setCryptoToggle(exchangeName as 'binance' | 'bybit');
-        }
-      }
-    }
-  }, [connections]);
+    if (connections.length === 0) return;
 
-  const loadConnections = async () => {
-    try {
-      setIsLoading(true);
-      const data = await exchangesService.getConnections();
-      console.log('[loadConnections] Response:', data);
-      
-      // Handle both array and object responses
-      let connectionsList: any[] = [];
-      if (Array.isArray(data)) {
-        connectionsList = data;
-      } else if (data && typeof data === 'object' && 'data' in data) {
-        const dataObj = data as any;
-        if (Array.isArray(dataObj.data)) {
-          connectionsList = dataObj.data;
-        }
-      }
-      
-      setConnections(connectionsList);
-    } catch (error: any) {
-      console.error("Failed to load connections:", error);
-      showNotification("Failed to load exchange connections", "error");
-    } finally {
-      setIsLoading(false);
+    if (effectiveAccountType === "both" || effectiveAccountType === "crypto" || effectiveAccountType === "stocks") {
+      localStorage.setItem("quantivahq_account_type", effectiveAccountType);
     }
-  };
+  }, [connections, effectiveAccountType]);
 
   const handleSelectConnection = (connection: ExchangeConnection) => {
     setSelectedConnection(connection);
     setShowUpdateForm(true);
-    setFormData({
-      api_key: "",
-      api_secret: "",
-      password: "",
-      passphrase: "",
-    });
+    setFormData({ api_key: "", api_secret: "", passphrase: "" });
     setFormErrors({});
   };
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
-
-    if (!formData.api_key.trim()) {
-      errors.api_key = "API Key is required";
-    } else if (formData.api_key.length < 10) {
-      errors.api_key = "API Key must be at least 10 characters";
-    }
-
-    if (!formData.api_secret.trim()) {
-      errors.api_secret = "API Secret is required";
-    } else if (formData.api_secret.length < 10) {
-      errors.api_secret = "API Secret must be at least 10 characters";
-    }
-
-    if (!formData.password.trim()) {
-      errors.password = "Password is required";
-    } else if (formData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
-    }
-
+    if (!formData.api_key.trim()) errors.api_key = "API Key is required";
+    else if (formData.api_key.length < 10) errors.api_key = "API Key must be at least 10 characters";
+    if (!formData.api_secret.trim()) errors.api_secret = "API Secret is required";
+    else if (formData.api_secret.length < 10) errors.api_secret = "API Secret must be at least 10 characters";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleUpdateConnection = async () => {
     if (!validateForm() || !selectedConnection) return;
-
     try {
       setIsSubmitting(true);
       await exchangesService.updateConnection(selectedConnection.connection_id, {
         api_key: formData.api_key,
         api_secret: formData.api_secret,
-        password: formData.password,
         ...(formData.passphrase && { passphrase: formData.passphrase }),
       });
-
       showNotification("Exchange connection updated successfully", "success");
       setShowUpdateForm(false);
       setSelectedConnection(null);
-      loadConnections();
+      refetch();
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to update exchange connection";
-      showNotification(errorMessage, "error");
+      showNotification(
+        error?.response?.data?.message ?? error?.message ?? "Failed to update exchange connection",
+        "error",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -229,19 +185,19 @@ export default function ExchangeConfigurationPage() {
 
   const confirmDelete = async () => {
     if (!deleteConfirmation.connectionId) return;
-
     try {
       setIsSubmitting(true);
       await exchangesService.deleteConnection(deleteConfirmation.connectionId);
       showNotification("Exchange connection deleted successfully", "success");
       setDeleteConfirmation({ isOpen: false, connectionId: null });
-      loadConnections();
+      setSelectedConnection(null);
+      setShowUpdateForm(false);
+      window.location.reload();
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to delete exchange connection";
-      showNotification(errorMessage, "error");
+      showNotification(
+        error?.response?.data?.message ?? error?.message ?? "Failed to delete exchange connection",
+        "error",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -274,45 +230,285 @@ export default function ExchangeConfigurationPage() {
     } else {
       localStorage.setItem("quantivahq_selected_stocks_exchange", "alpaca");
       router.push("/onboarding/stock-exchange");
+  const handleCryptoConnect = () => {
+    if (effectiveAccountType === "both") {
+      sessionStorage.setItem("quantivahq_restore_both_after_connect", "true");
     }
+    localStorage.setItem("quantivahq_account_type", "crypto");
+    router.push("/onboarding/crypto-exchange");
   };
 
-  const handleExchangeSwitch = () => {
-    if (exchangeType === "crypto") {
-      localStorage.setItem("quantivahq_selected_exchange", cryptoToggle);
-      router.push("/onboarding/crypto-exchange");
-    } else {
-      localStorage.setItem("quantivahq_selected_stocks_exchange", "alpaca");
-      router.push("/onboarding/stock-exchange");
+  const handleCryptoSwitchExchange = () => {
+    if (effectiveAccountType === "both") {
+      sessionStorage.setItem("quantivahq_restore_both_after_connect", "true");
     }
+    localStorage.setItem("quantivahq_account_type", "crypto");
+    router.push("/onboarding/crypto-exchange");
   };
 
-  const getActiveCryptoConnection = () => {
-    return connections.find(c => 
-      c.status === 'active' && 
-      c.exchange?.type === 'crypto'
+  const handleStocksConnect = () => {
+    if (effectiveAccountType === "both") {
+      sessionStorage.setItem("quantivahq_restore_both_after_connect", "true");
+    }
+    localStorage.setItem("quantivahq_account_type", "stocks");
+    localStorage.setItem("quantivahq_selected_stocks_exchange", "alpaca");
+    router.push("/onboarding/stock-exchange");
+  };
+
+  const handleAddStockBroker = () => {
+    localStorage.setItem("quantivahq_account_type", "both");
+    router.push("/onboarding/stock-exchange");
+  };
+
+  const handleAddCryptoExchange = () => {
+    localStorage.setItem("quantivahq_account_type", "both");
+    router.push("/onboarding/crypto-exchange");
+  };
+
+  // ── Reusable connection list ──────────────────────────────────
+  const renderConnectionList = (list: ExchangeConnection[], emptyLabel: string) => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-8 sm:py-10 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl mt-4">
+          <div className="animate-spin w-7 h-7 mx-auto mb-3">
+            <svg className="w-full h-full text-[#fc4f02]" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+          <p className="text-slate-400 text-sm sm:text-base">Loading connections...</p>
+        </div>
+      );
+    }
+
+    if (list.length === 0) {
+      return (
+        <div className="text-center py-8 sm:py-10 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl mt-4">
+          <svg className="w-10 sm:w-12 h-10 sm:h-12 text-slate-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <p className="text-slate-400 text-sm sm:text-base">{emptyLabel}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3 mt-4">
+        {list.map((connection) => (
+          <div
+            key={connection.connection_id}
+            onClick={() => { setSelectedConnection(connection); setShowUpdateForm(false); }}
+            className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5 hover:border-[#fc4f02]/30 transition-all duration-200 cursor-pointer"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold text-white truncate">{connection.exchange_name}</h3>
+                  {connection.verified && (
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30 flex-shrink-0">
+                      Verified
+                    </span>
+                  )}
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0 border ${getStatusColor(connection.status)}`}>
+                    {connection.status.charAt(0).toUpperCase() + connection.status.slice(1)}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Connected {new Date(connection.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                </p>
+              </div>
+              <svg className="w-4 sm:w-5 h-4 sm:h-5 text-slate-400 mt-1 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        ))}
+      </div>
     );
   };
 
-  const getActiveStocksConnection = () => {
-    return connections.find(c => 
-      c.status === 'active' && 
-      c.exchange?.type === 'stocks'
-    );
-  };
+  // ── Crypto exchange section ───────────────────────────────────
+  const activeCrypto = cryptoConnections.find((c) => c.status === "active") ?? cryptoConnections[0] ?? null;
+  const activeCryptoName = activeCrypto
+    ? (activeCrypto.exchange?.name ?? activeCrypto.exchange_name ?? "").toLowerCase()
+    : null;
+  const cryptoIsBinance = activeCryptoName?.includes("binance") ?? true;
 
-  const getFilteredConnections = () => {
-    return connections.filter(c => c.exchange?.type === exchangeType);
-  };
+  const renderCryptoSection = () => (
+    <div className="bg-gradient-to-br from-[#fc4f02]/10 to-[#fc4f02]/5 border border-[#fc4f02]/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-semibold text-white mb-1 flex items-center gap-2">
+        <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Crypto Exchange
+      </h2>
+      <p className="text-sm text-slate-400 mb-5">
+        {activeCrypto
+          ? `Connected to ${activeCrypto.exchange?.name ?? activeCrypto.exchange_name}`
+          : "Connect a crypto exchange to start trading"}
+      </p>
+
+      {activeCrypto ? (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              cryptoIsBinance ? "bg-[#f7931a] text-white" : "bg-[#f0b90b] text-white"
+            }`}>
+              <span className="text-lg font-bold">{cryptoIsBinance ? "B" : "\u20BF"}</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm sm:text-base font-semibold text-white">
+                {activeCrypto.exchange?.name ?? activeCrypto.exchange_name}
+              </p>
+              <p className="text-xs text-slate-400">
+                Connected {new Date(activeCrypto.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={() => handleSelectConnection(activeCrypto)}
+              className="px-4 py-2 rounded-lg border border-[#fc4f02]/40 text-[#fc4f02] text-sm font-semibold hover:bg-[#fc4f02]/10 transition-all duration-200"
+            >
+              Switch Credentials
+            </button>
+            <button
+              onClick={handleCryptoSwitchExchange}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
+            >
+              Switch Exchange
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
+          <p className="text-sm text-slate-400">No crypto exchange connected yet</p>
+          <button
+            onClick={handleCryptoConnect}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
+          >
+            Connect
+          </button>
+        </div>
+      )}
+
+      {renderConnectionList(cryptoConnections, "No crypto connections yet")}
+    </div>
+  );
+
+  // ── Stocks broker section ─────────────────────────────────────
+  const activeStock = stockConnections.find((c) => c.status === "active") ?? stockConnections[0] ?? null;
+
+  const renderStocksSection = () => (
+    <div className="bg-gradient-to-br from-[#10b981]/10 to-[#10b981]/5 border border-[#10b981]/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+      <h2 className="text-lg sm:text-xl font-semibold text-white mb-1 flex items-center gap-2">
+        <svg className="w-5 h-5 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+        </svg>
+        Stock Broker
+      </h2>
+      <p className="text-sm text-slate-400 mb-5">
+        {activeStock
+          ? `Connected to ${activeStock.exchange?.name ?? activeStock.exchange_name}`
+          : "Connect a stock broker to start trading"}
+      </p>
+
+      {activeStock ? (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#fcda03] text-slate-900">
+              <span className="text-lg font-bold">A</span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm sm:text-base font-semibold text-white">
+                {activeStock.exchange?.name ?? activeStock.exchange_name}
+              </p>
+              <p className="text-xs text-slate-400">
+                Connected {new Date(activeStock.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={() => handleSelectConnection(activeStock)}
+              className="px-4 py-2 rounded-lg border border-[#10b981]/40 text-[#10b981] text-sm font-semibold hover:bg-[#10b981]/10 transition-all duration-200"
+            >
+              Switch Credentials
+            </button>
+            <button
+              disabled
+              title="Only one stock broker available"
+              className="px-4 py-2 rounded-lg border border-slate-700 text-slate-500 text-sm font-semibold cursor-not-allowed opacity-50"
+            >
+              Switch Exchange
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-5">
+          <p className="text-sm text-slate-400">No stock broker connected yet</p>
+          <button
+            onClick={handleStocksConnect}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#10b981] to-[#34d399] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#10b981]/30 transition-all duration-300"
+          >
+            Connect
+          </button>
+        </div>
+      )}
+
+      {renderConnectionList(stockConnections, "No stock connections yet")}
+    </div>
+  );
+
+  // ── "Add other type" CTA ──────────────────────────────────────
+  const renderAddStockCTA = () => (
+    <div className="relative overflow-hidden bg-gradient-to-br from-[#10b981]/10 to-transparent border border-dashed border-[#10b981]/30 rounded-xl sm:rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#10b981]/15 border border-[#10b981]/20 flex items-center justify-center flex-shrink-0">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Add Stock Broker</h3>
+        <p className="text-sm text-slate-400">
+          Trade both crypto and stocks in one platform. Add a stock broker to upgrade to <span className="text-[#10b981] font-medium">Both</span> account type.
+        </p>
+      </div>
+      <button
+        onClick={handleAddStockBroker}
+        className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#10b981] to-[#34d399] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#10b981]/30 transition-all duration-300 flex-shrink-0"
+      >
+        Add Stock Broker
+      </button>
+    </div>
+  );
+
+  const renderAddCryptoCTA = () => (
+    <div className="relative overflow-hidden bg-gradient-to-br from-[#fc4f02]/10 to-transparent border border-dashed border-[#fc4f02]/30 rounded-xl sm:rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#fc4f02]/15 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Add Crypto Exchange</h3>
+        <p className="text-sm text-slate-400">
+          Trade both crypto and stocks in one platform. Add a crypto exchange to upgrade to <span className="text-[#fc4f02] font-medium">Both</span> account type.
+        </p>
+      </div>
+      <button
+        onClick={handleAddCryptoExchange}
+        className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 flex-shrink-0"
+      >
+        Add Crypto Exchange
+      </button>
+    </div>
+  );
 
   return (
     <div className="space-y-4 sm:space-y-6">
       {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={hideNotification}
-        />
+        <Notification message={notification.message} type={notification.type} onClose={hideNotification} />
       )}
       <ConfirmationDialog
         isOpen={deleteConfirmation.isOpen}
@@ -325,17 +521,17 @@ export default function ExchangeConfigurationPage() {
         type="danger"
       />
       <SettingsBackButton />
-      
+
       {/* Connection Details Overlay */}
-      {selectedConnection && mounted && typeof window !== "undefined" && createPortal(
+      {selectedConnection && !showUpdateForm && mounted && typeof window !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedConnection(null)}
         >
-            <div
-              className="relative mx-auto w-full max-w-2xl rounded-lg sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 shadow-2xl shadow-black/50 backdrop-blur animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
+          <div
+            className="relative mx-auto w-full max-w-2xl rounded-lg sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/95 to-[--color-surface-alt]/90 shadow-2xl shadow-black/50 backdrop-blur animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="border-b border-[--color-border]/30 bg-gradient-to-br from-[--color-surface-alt] to-[--color-surface-alt]/90 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -366,7 +562,6 @@ export default function ExchangeConfigurationPage() {
 
             {/* Content */}
             <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-6">
-              {/* Status Details Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
                 <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Status</p>
@@ -374,22 +569,17 @@ export default function ExchangeConfigurationPage() {
                 </div>
                 <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Account Type</p>
-                  <p className="text-base sm:text-lg font-semibold text-white">{selectedConnection.account_type || 'Standard'}</p>
+                  <p className="text-base sm:text-lg font-semibold text-white">{selectedConnection.account_type || "Standard"}</p>
                 </div>
                 <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Connected</p>
-                  <p className="text-base sm:text-lg font-semibold text-white">{new Date(selectedConnection.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                  <p className="text-base sm:text-lg font-semibold text-white">{new Date(selectedConnection.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</p>
                 </div>
                 <div className="bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
                   <p className="text-xs uppercase tracking-wider text-slate-400 mb-2">Connection ID</p>
                   <p className="text-base sm:text-lg font-semibold text-white font-mono text-xs truncate">{selectedConnection.connection_id.substring(0, 12)}...</p>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
 
       <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -482,17 +672,21 @@ export default function ExchangeConfigurationPage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
+              <div className="pt-4 sm:pt-6 border-t border-[--color-border]/50 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <button
+                  onClick={() => handleSelectConnection(selectedConnection)}
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
+                >
+                  Update Credentials
+                </button>
                 <button
                   onClick={() => {
-                    const conn = exchangeType === 'crypto' ? getActiveCryptoConnection() : getActiveStocksConnection();
-                    if (conn) handleSelectConnection(conn);
+                    setShowUpdateForm(false);
+                    handleDeleteConnection(selectedConnection.connection_id);
                   }}
-                  className="flex-1 px-4 py-3 rounded-lg bg-[--color-surface] border border-[--color-border] text-white font-medium hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm sm:text-base hover:bg-red-500/30 transition-all duration-200 font-medium"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Reconnect / Update Credentials
+                  Delete Connection
                 </button>
                 {exchangeType === "crypto" && (
                   <button
@@ -566,75 +760,40 @@ export default function ExchangeConfigurationPage() {
                   </div>
                 )}
               </div>
-
-              {/* Connect Button */}
-              <button
-                onClick={handleExchangeSwitch}
-                className="w-full sm:w-auto px-4 sm:px-5 py-2.5 sm:py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
-              >
-                Connect
-              </button>
             </div>
-          )}
-        </div>
-
-        {isLoading ? (
-          <div className="text-center py-8 sm:py-12 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl">
-            <div className="animate-spin w-8 h-8 mx-auto mb-3">
-              <svg className="w-full h-full text-[#fc4f02]" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            </div>
-            <p className="text-slate-400 text-base sm:text-lg">Loading connections...</p>
           </div>
-        ) : connections.length === 0 ? (
-          <div className="text-center py-8 sm:py-12 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl">
-            <svg className="w-12 sm:w-16 h-12 sm:h-16 text-slate-500 mx-auto mb-3 sm:mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        </div>,
+        document.body,
+      )}
+
+      {/* Main Page Content */}
+      <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <p className="text-slate-400 text-base sm:text-lg">No exchange connections yet</p>
-            <p className="text-slate-500 text-xs sm:text-sm mt-2">Connect your exchange account to get started</p>
           </div>
-        ) : (
-          <div className="space-y-3 sm:space-y-4">
-            {getFilteredConnections().map((connection) => (
-              <div
-                key={connection.connection_id}
-                onClick={() => {
-                  setSelectedConnection(connection);
-                  setShowUpdateForm(false);
-                }}
-                className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6 hover:border-[#fc4f02]/30 transition-all duration-200 cursor-pointer"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h3 className="text-lg sm:text-xl font-semibold text-white truncate">{connection.exchange_name}</h3>
-                      {connection.verified && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30 flex-shrink-0">
-                          Verified
-                        </span>
-                      )}
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 border ${getStatusColor(connection.status)}`}>
-                        {connection.status.charAt(0).toUpperCase() + connection.status.slice(1)}
-                      </span>
-                    </div>
-                    <div className="mt-3 sm:mt-4">
-                      <p className="text-xs sm:text-sm text-slate-400 mb-1">Type</p>
-                      <p className="text-sm sm:text-base text-white font-medium capitalize">{connection.exchange?.type || 'crypto'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                    <svg className="w-4 sm:w-5 h-4 sm:h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div>
+            <h1 className="text-xl sm:text-3xl font-bold text-white">Exchange Connections</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+              {effectiveAccountType === "both"
+                ? "Manage your crypto and stock broker connections"
+                : effectiveAccountType === "crypto"
+                  ? "Manage your crypto exchange connection"
+                  : "Manage your stock broker connection"}
+            </p>
           </div>
-        )}
+        </div>
+
+        {/* Sections driven by account type */}
+        {showCrypto && renderCryptoSection()}
+        {showStocks && renderStocksSection()}
+
+        {/* Add-other-type CTAs */}
+        {effectiveAccountType === "crypto" && renderAddStockCTA()}
+        {effectiveAccountType === "stocks" && renderAddCryptoCTA()}
       </div>
 
       {/* Update Form Modal */}
@@ -649,10 +808,7 @@ export default function ExchangeConfigurationPage() {
                   <p className="text-xs sm:text-sm text-slate-400 mt-1 truncate">{selectedConnection.exchange_name}</p>
                 </div>
                 <button
-                  onClick={() => {
-                    setShowUpdateForm(false);
-                    setSelectedConnection(null);
-                  }}
+                  onClick={() => { setShowUpdateForm(false); setSelectedConnection(null); }}
                   className="text-slate-400 hover:text-white transition-colors flex-shrink-0"
                   aria-label="Close"
                 >
@@ -664,66 +820,45 @@ export default function ExchangeConfigurationPage() {
 
               {/* Modal Body */}
               <div className="overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1">
-                {/* Warning Box */}
                 <div className="bg-[#fc4f02]/10 border border-[#fc4f02]/30 rounded-lg p-3 sm:p-4">
                   <p className="text-[#fc4f02] text-xs sm:text-sm font-semibold flex items-center gap-2">
-                    <span>⚠️</span> Security Notice
+                    <span>&#9888;&#65039;</span> Security Notice
                   </p>
                   <p className="text-slate-300 text-xs sm:text-sm mt-2">
-                    Credentials are AES-256 encrypted. Your password is required for verification.
+                    Credentials are encrypted and stored securely.
                   </p>
                 </div>
 
                 {/* API Key */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
-                    API Key
-                  </label>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">API Key</label>
                   <input
                     type="password"
                     value={formData.api_key}
-                    onChange={(e) => {
-                      setFormData({ ...formData, api_key: e.target.value });
-                      if (formErrors.api_key) setFormErrors({ ...formErrors, api_key: "" });
-                    }}
+                    onChange={(e) => { setFormData({ ...formData, api_key: e.target.value }); if (formErrors.api_key) setFormErrors({ ...formErrors, api_key: "" }); }}
                     placeholder="Enter new API key"
-                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${
-                      formErrors.api_key ? "border-red-500/50" : "border-[--color-border]"
-                    } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${formErrors.api_key ? "border-red-500/50" : "border-[--color-border]"} focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
                   />
-                  {formErrors.api_key && (
-                    <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_key}</p>
-                  )}
+                  {formErrors.api_key && <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_key}</p>}
                 </div>
 
                 {/* API Secret */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
-                    API Secret
-                  </label>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">API Secret</label>
                   <input
                     type="password"
                     value={formData.api_secret}
-                    onChange={(e) => {
-                      setFormData({ ...formData, api_secret: e.target.value });
-                      if (formErrors.api_secret) setFormErrors({ ...formErrors, api_secret: "" });
-                    }}
+                    onChange={(e) => { setFormData({ ...formData, api_secret: e.target.value }); if (formErrors.api_secret) setFormErrors({ ...formErrors, api_secret: "" }); }}
                     placeholder="Enter new API secret"
-                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${
-                      formErrors.api_secret ? "border-red-500/50" : "border-[--color-border]"
-                    } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${formErrors.api_secret ? "border-red-500/50" : "border-[--color-border]"} focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
                   />
-                  {formErrors.api_secret && (
-                    <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_secret}</p>
-                  )}
+                  {formErrors.api_secret && <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_secret}</p>}
                 </div>
 
                 {/* Passphrase for Bybit */}
                 {selectedConnection.exchange_name?.toLowerCase() === "bybit" && (
                   <div>
-                    <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
-                      Passphrase (Optional)
-                    </label>
+                    <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">Passphrase (Optional)</label>
                     <input
                       type="password"
                       value={formData.passphrase}
@@ -734,55 +869,12 @@ export default function ExchangeConfigurationPage() {
                   </div>
                 )}
 
-                {/* Password Verification Box */}
-                <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg p-4">
-                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
-                    Your Password (Required)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => {
-                        setFormData({ ...formData, password: e.target.value });
-                        if (formErrors.password) setFormErrors({ ...formErrors, password: "" });
-                      }}
-                      placeholder="Enter your password"
-                      className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 rounded-lg bg-[--color-surface-alt] border ${
-                        formErrors.password ? "border-red-500/50" : "border-[--color-border]"
-                      } focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors flex-shrink-0"
-                      aria-label="Toggle password visibility"
-                    >
-                      {showPassword ? (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-4.803m5.596-3.856a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0z" />
-                        </svg>
-                      ) : (
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {formErrors.password && (
-                    <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.password}</p>
-                  )}
-                </div>
               </div>
 
               {/* Modal Footer */}
               <div className="border-t border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-4 sm:p-6 flex gap-3 flex-shrink-0">
                 <button
-                  onClick={() => {
-                    setShowUpdateForm(false);
-                    setSelectedConnection(null);
-                  }}
+                  onClick={() => { setShowUpdateForm(false); setSelectedConnection(null); }}
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg border border-[--color-border] bg-[--color-surface] hover:bg-[--color-surface-alt] disabled:opacity-50 text-white text-sm font-medium transition-colors"
                 >
@@ -798,7 +890,7 @@ export default function ExchangeConfigurationPage() {
               </div>
             </div>
           </div>,
-          document.body
+          document.body,
         )}
 
       {/* Delete Confirmation Dialog */}
@@ -815,13 +907,8 @@ export default function ExchangeConfigurationPage() {
         />
       )}
 
-      {/* Notification */}
       {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={hideNotification}
-        />
+        <Notification message={notification.message} type={notification.type} onClose={hideNotification} />
       )}
     </div>
   );

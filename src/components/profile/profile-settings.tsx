@@ -100,6 +100,8 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const [deleteError, setDeleteError] = useState<string>("");
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
   const [isCodeSent, setIsCodeSent] = useState<boolean>(false);
+  /** null = not yet fetched, true = Google user (skip password), false = require password */
+  const [deleteIsGoogleUser, setDeleteIsGoogleUser] = useState<boolean | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
@@ -338,7 +340,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const handleDeleteAccountClick = () => {
+  const handleDeleteAccountClick = async () => {
     // Reset form fields and errors when opening modal
     setDeletePassword("");
     setDeleteTwoFactorCode("");
@@ -347,40 +349,50 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     setDeleteError("");
     setDeleteStep(1);
     setIsCodeSent(false);
+    setDeleteIsGoogleUser(null);
     setShowDeleteConfirmation(true);
+    try {
+      const { verifyGoogleEmail } = await import("@/lib/api/auth");
+      const res = await verifyGoogleEmail();
+      setDeleteIsGoogleUser(res.google_email);
+      if (res.google_email) {
+        console.log("[Delete Account] Google email user – skipping password step", res);
+      }
+    } catch {
+      setDeleteIsGoogleUser(false);
+    }
   };
 
   const handleSendVerificationCode = async () => {
-    // Validate password
     setDeleteError("");
 
-    if (!deletePassword) {
-      setDeleteError("Password is required");
-      return;
-    }
-
-    if (deletePassword.length < 8) {
-      setDeleteError("Password must be at least 8 characters");
-      return;
+    const isGoogleUser = deleteIsGoogleUser === true;
+    if (!isGoogleUser) {
+      if (!deletePassword) {
+        setDeleteError("Password is required");
+        return;
+      }
+      if (deletePassword.length < 8) {
+        setDeleteError("Password must be at least 8 characters");
+        return;
+      }
     }
 
     try {
       setIsLoading(true);
-      
-      // Step 1: Verify password first
-      const { verifyPassword } = await import("@/lib/api/auth");
-      const verifyResult = await verifyPassword(deletePassword);
-      
-      if (!verifyResult.success) {
-        setDeleteError("Please enter your correct password.");
-        return;
+
+      if (!isGoogleUser) {
+        const { verifyPassword } = await import("@/lib/api/auth");
+        const verifyResult = await verifyPassword(deletePassword);
+        if (!verifyResult.success) {
+          setDeleteError("Please enter your correct password.");
+          return;
+        }
       }
-      
-      // Step 2: Password verified, now send 2FA code
+
       const { requestDeleteAccountCode } = await import("@/lib/api/user");
       await requestDeleteAccountCode();
-      
-      // Show success and move to step 2
+
       setIsCodeSent(true);
       setDeleteStep(2);
       setNotificationMessage("Verification code sent to your email");
@@ -409,17 +421,18 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   };
 
   const handleConfirmDeleteAccount = async () => {
-    // Validate inputs
     setDeleteError("");
 
-    if (!deletePassword) {
-      setDeleteError("Password is required");
-      return;
-    }
-
-    if (deletePassword.length < 8) {
-      setDeleteError("Password must be at least 8 characters");
-      return;
+    const isGoogleUser = deleteIsGoogleUser === true;
+    if (!isGoogleUser) {
+      if (!deletePassword) {
+        setDeleteError("Password is required");
+        return;
+      }
+      if (deletePassword.length < 8) {
+        setDeleteError("Password must be at least 8 characters");
+        return;
+      }
     }
 
     if (!deleteTwoFactorCode) {
@@ -435,9 +448,8 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
     try {
       setIsLoading(true);
       const { deleteAccount } = await import("@/lib/api/user");
-      
-      // Call API with password and 2FA code
-      const result = await deleteAccount(deletePassword, deleteTwoFactorCode, deleteReason);
+      const passwordToSend = isGoogleUser ? "" : deletePassword;
+      const result = await deleteAccount(passwordToSend, deleteTwoFactorCode, deleteReason);
       
       // Clear all local storage and session storage
       if (typeof window !== "undefined") {
@@ -460,8 +472,10 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       
       // Handle specific error cases based on API documentation
       const errorMessage = error.message || error.toString();
-      
-      if (errorMessage.includes("Invalid password") || errorMessage.includes("password")) {
+
+      if (deleteIsGoogleUser && (errorMessage.includes("password") || errorMessage.includes("Password"))) {
+        setDeleteError("This account uses Google sign-in. Please try again or contact support if the problem continues.");
+      } else if (!deleteIsGoogleUser && (errorMessage.includes("Invalid password") || errorMessage.includes("password"))) {
         setDeleteError("Incorrect password. Please try again.");
       } else if (errorMessage.includes("Invalid 2FA code") || errorMessage.includes("Invalid verification code")) {
         setDeleteError("Invalid or expired verification code. Please request a new code.");
@@ -509,6 +523,18 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       },
     },
     {
+      id: "bank-details",
+      label: "Bank Details",
+      icon: (
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        </svg>
+      ),
+      onClick: () => {
+        router.push("/dashboard/settings/bank-details");
+      },
+    },
+    {
       id: "notifications",
       label: "Notifications",
       icon: (
@@ -521,15 +547,15 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       },
     },
     {
-      id: "password",
-      label: "Account Password",
+      id: "security",
+      label: "Security",
       icon: (
         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       ),
       onClick: () => {
-        router.push("/dashboard/settings/password");
+        router.push("/dashboard/settings/security");
       },
     },
     {
@@ -566,28 +592,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         </svg>
       ),
       onClick: () => {
-        // Detect connection type from localStorage or fetch it
-        const getConnectionType = async () => {
-          try {
-            const { exchangesService } = await import("@/lib/api/exchanges.service");
-            const connections = await exchangesService.getConnections();
-            let connectionsArray: any[] = [];
-            
-            if (Array.isArray(connections)) {
-              connectionsArray = connections;
-            } else if (connections && typeof connections === 'object' && 'data' in connections) {
-              connectionsArray = (connections as any).data || [];
-            }
-            
-            const activeConn = connectionsArray.find((c: any) => c.status === 'active');
-            const type = activeConn?.exchange?.type || 'crypto';
-            router.push(`/dashboard/settings/exchange-configuration?type=${type}`);
-          } catch (error) {
-            // Fallback to crypto if we can't detect
-            router.push("/dashboard/settings/exchange-configuration?type=crypto");
-          }
-        };
-        getConnectionType();
+        router.push("/dashboard/settings/exchange-configuration");
       },
     },
     {
@@ -1067,6 +1072,27 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   </svg>
                   <span className="text-xs sm:text-sm font-medium text-white">Capture Photo</span>
                 </button>
+                {profileImage && (
+                  <button
+                    onClick={handleRemoveImage}
+                    className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-red-500/20 transition-colors text-red-400 border-t border-slate-700"
+                  >
+                    <svg
+                      className="w-4 sm:w-5 h-4 sm:h-5 text-red-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    <span className="text-xs sm:text-sm font-medium text-red-400">Remove Photo</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -1675,44 +1701,57 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                     <p className="text-[#fc4f02] text-xs sm:text-sm font-semibold mb-1">⚠️ This action cannot be undone!</p>
                     <p className="text-slate-300 text-xs sm:text-sm">All your data, trading history, and connections will be permanently deleted.</p>
                   </div>
-                  {/* ...account details removed... */}
 
-                  {/* Password Input */}
-                  <div className="mb-3 sm:mb-4">
-                    <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
-                      Password <span className="text-[#fc4f02]">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showDeletePassword ? "text" : "password"}
-                        value={deletePassword}
-                        onChange={(e) => setDeletePassword(e.target.value)}
-                        placeholder="Enter password"
-                        disabled={isLoading}
-                        className="w-full px-3 py-2 pr-10 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowDeletePassword(!showDeletePassword)}
-                        disabled={isLoading}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#fc4f02] transition-colors disabled:opacity-50"
-                        tabIndex={-1}
-                      >
-                        {showDeletePassword ? (
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                          </svg>
-                        ) : (
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                        )}
-                      </button>
+                  {deleteIsGoogleUser === null ? (
+                    <div className="mb-4 sm:mb-6 flex items-center justify-center gap-2 text-slate-400 text-sm">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Checking account...
                     </div>
-                  </div>
+                  ) : (
+                    <>
+                      {!deleteIsGoogleUser && (
+                        <>
+                          {/* Password Input - only for non-Google users */}
+                          <div className="mb-3 sm:mb-4">
+                            <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                              Password <span className="text-[#fc4f02]">*</span>
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showDeletePassword ? "text" : "password"}
+                                value={deletePassword}
+                                onChange={(e) => setDeletePassword(e.target.value)}
+                                placeholder="Enter password"
+                                disabled={isLoading}
+                                className="w-full px-3 py-2 pr-10 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowDeletePassword(!showDeletePassword)}
+                                disabled={isLoading}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#fc4f02] transition-colors disabled:opacity-50"
+                                tabIndex={-1}
+                              >
+                                {showDeletePassword ? (
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268-2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                  </svg>
+                                ) : (
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
 
-                  {/* Reason Input (Optional) */}
+                      {/* Reason Input (Optional) */}
                   <div className="mb-4 sm:mb-6">
                     <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
                       Why are you leaving? (Optional)
@@ -1730,6 +1769,8 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       {deleteReason.length}/500
                     </p>
                   </div>
+                    </>
+                  )}
                 </>
               )}
 
@@ -1817,6 +1858,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                     setDeleteError("");
                     setDeleteStep(1);
                     setIsCodeSent(false);
+                    setDeleteIsGoogleUser(null);
                   }}
                   disabled={isLoading}
                   className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-white font-medium text-sm sm:text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1825,7 +1867,12 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                 </button>
                 <button
                   onClick={deleteStep === 1 ? handleSendVerificationCode : handleConfirmDeleteAccount}
-                  disabled={isLoading || (deleteStep === 1 ? !deletePassword : !deleteTwoFactorCode)}
+                  disabled={
+                    isLoading ||
+                    (deleteStep === 1
+                      ? deleteIsGoogleUser === null || (!deleteIsGoogleUser && !deletePassword)
+                      : !deleteTwoFactorCode)
+                  }
                   className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] hover:from-[#fd6a00] hover:to-[#fe8410] text-white font-bold text-sm sm:text-base transition-all duration-200 shadow-[0_0_20px_rgba(252,79,2,0.3)] hover:shadow-[0_0_30px_rgba(252,79,2,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[#fc4f02] disabled:hover:to-[#fd6a00] disabled:shadow-none"
                 >
                   {isLoading ? (
@@ -1837,7 +1884,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       {deleteStep === 1 ? "Processing..." : "Deleting..."}
                     </span>
                   ) : (
-                    deleteStep === 1 ? "Delete Account" : "Delete My Account"
+                    deleteStep === 1
+                      ? deleteIsGoogleUser === true
+                        ? "Send verification code"
+                        : "Delete Account"
+                      : "Delete My Account"
                   )}
                 </button>
               </div>

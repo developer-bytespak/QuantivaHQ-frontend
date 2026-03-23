@@ -23,6 +23,23 @@ export interface ChangePasswordResponse {
   message: string;
 }
 
+export interface VerifyGoogleEmailResponse {
+  message: string;
+  email_verified: boolean;
+  google_email: boolean;
+}
+
+/**
+ * Check if current user signed up with Google (no password). Used to skip password step in delete-account flow.
+ */
+export async function verifyGoogleEmail(): Promise<VerifyGoogleEmailResponse> {
+  return apiRequest<never, VerifyGoogleEmailResponse>({
+    path: "/auth/check-google-email",
+    method: "POST",
+    credentials: "include",
+  });
+}
+
 /**
  * Request a 2FA code for password change
  * The code will be sent to the user's email
@@ -46,6 +63,46 @@ export async function changePassword(
     path: "/auth/change-password",
     method: "POST",
     body: data,
+    credentials: "include",
+  });
+}
+
+/** Forgot password: check by email if account is Google. Uses same check-google-email API with body { email }. */
+export async function checkGoogleEmailByEmail(email: string): Promise<VerifyGoogleEmailResponse> {
+  return apiRequest<{ email: string }, VerifyGoogleEmailResponse>({
+    path: "/auth/check-google-email",
+    method: "POST",
+    body: { email: email.trim() },
+    credentials: "include",
+  });
+}
+
+/** Forgot password: send OTP to email. Call after check-email returns google_email: false. */
+export async function sendForgotPasswordOtp(email: string): Promise<{ message: string }> {
+  return apiRequest<{ email: string }, { message: string }>({
+    path: "/auth/forgot-password/send-otp",
+    method: "POST",
+    body: { email: email.trim() },
+    credentials: "include",
+  });
+}
+
+/** Forgot password: verify OTP sent to email. */
+export async function verifyForgotPasswordOtp(email: string, otp: string): Promise<{ message: string }> {
+  return apiRequest<{ email: string; otp: string }, { message: string }>({
+    path: "/auth/forgot-password/verify-otp",
+    method: "POST",
+    body: { email: email.trim(), otp: otp.trim() },
+    credentials: "include",
+  });
+}
+
+/** Forgot password: set new password after OTP verified. */
+export async function resetPasswordForgot(email: string, otp: string, newPassword: string): Promise<{ message: string }> {
+  return apiRequest<{ email: string; otp: string; newPassword: string }, { message: string }>({
+    path: "/auth/forgot-password/reset",
+    method: "POST",
+    body: { email: email.trim(), otp: otp.trim(), newPassword },
     credentials: "include",
   });
 }

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api/client";
-import { exchangesService } from "@/lib/api/exchanges.service";
+import { useExchange } from "@/context/ExchangeContext";
 
 // Engine-based fields that actually work in the signal generation system
 // These match the pre-built strategies format exactly
@@ -24,9 +24,9 @@ const OPERATORS = [
   { value: "<=", label: "Less or equal (≤)" },
 ];
 
-// Popular crypto symbols for quick add - TO BE REPLACED WITH REAL API DATA
+// Popular crypto symbols for quick add
 const POPULAR_CRYPTO = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"];
-// Popular stock symbols for quick add - TO BE REPLACED WITH REAL API DATA
+// Popular stock symbols for quick add
 const POPULAR_STOCKS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD"];
 
 interface Rule {
@@ -55,7 +55,7 @@ export default function CreateStrategyPage() {
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "my-strategies"; // Original source (paper-trading, top-trades, or my-strategies)
   const via = searchParams.get("via") || null; // Whether we came via my-strategies
-  
+
   // Get page name for display
   const pageNames: Record<string, string> = {
     "paper-trading": "Paper Trading",
@@ -63,26 +63,25 @@ export default function CreateStrategyPage() {
     "my-strategies": "My Strategies",
     "custom-strategies-trading": "Custom Trading",
   };
-  
+
   // Determine back navigation
-  const backUrl = via === "my-strategies" 
-    ? `/dashboard/my-strategies?from=${from}` 
+  const backUrl = via === "my-strategies"
+    ? `/dashboard/my-strategies?from=${from}`
     : via === "custom-strategies-trading"
-    ? `/dashboard/custom-strategies-trading?from=${from}`
-    : `/dashboard/${from}`;
-  const backPageName = via === "my-strategies" 
-    ? "My Strategies" 
+      ? `/dashboard/custom-strategies-trading?mode=${from === "top-trades" ? "live" : "paper"}&from=${from}`
+      : `/dashboard/${from}`;
+  const backPageName = via === "my-strategies"
+    ? "My Strategies"
     : via === "custom-strategies-trading"
-    ? "Custom Trading"
-    : pageNames[from] || "My Strategies";
-  
+      ? "Custom Trading"
+      : pageNames[from] || "My Strategies";
+
+  // Get connection type from global context
+  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+
   const [currentStep, setCurrentStep] = useState<Step>("basics");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Connection type detection
-  const [connectionType, setConnectionType] = useState<"crypto" | "stocks" | null>(null);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
 
   // Form state
   const [name, setName] = useState("");
@@ -91,7 +90,7 @@ export default function CreateStrategyPage() {
   const [stopLoss, setStopLoss] = useState<number>(5);
   const [takeProfit, setTakeProfit] = useState<number>(15);
   const [targetAssets, setTargetAssets] = useState<string[]>([]);
-  
+
   // Engine weights (must sum to 1.0)
   const [engineWeights, setEngineWeights] = useState<EngineWeights>({
     sentiment: 0.35,
@@ -100,7 +99,7 @@ export default function CreateStrategyPage() {
     event_risk: 0.15,
     liquidity: 0.10,
   });
-  
+
   // Entry and exit rules based on scores (matching pre-built strategy format)
   const [entryRules, setEntryRules] = useState<Rule[]>([
     { field: "final_score", operator: ">", value: 0.5 }
@@ -113,34 +112,10 @@ export default function CreateStrategyPage() {
   const [assetSearch, setAssetSearch] = useState("");
   const [assetResults, setAssetResults] = useState<AssetOption[]>([]);
   const [searchingAssets, setSearchingAssets] = useState(false);
-  const [realPopularStocks, setRealPopularStocks] = useState<string[]>(POPULAR_STOCKS);
-  const [realPopularCrypto, setRealPopularCrypto] = useState<string[]>(POPULAR_CRYPTO);
 
-  // Check connection type on mount
-  useEffect(() => {
-    const checkConnection = async () => {
-      try {
-        const response = await exchangesService.getActiveConnection();
-        // ✅ Backend correction: Check exchange.name for type detection
-        const exchangeName = response.data?.exchange?.name;
-        const connType = exchangeName === "Alpaca" ? "stocks" : 
-                        (exchangeName === "Binance" || exchangeName === "Bybit") ? "crypto" : null;
-        setConnectionType(connType);
-
-        // Fetch real assets based on connection type
-        if (connType === "stocks") {
-          fetchRealAssets("stock");
-        } else if (connType === "crypto") {
-          fetchRealAssets("crypto");
-        }
-      } catch (error) {
-        console.error("Failed to check connection type:", error);
-      } finally {
-        setIsCheckingConnection(false);
-      }
-    };
-    checkConnection();
-  }, []);
+  // Popular assets (can be replaced by API when real data is fetched)
+  const [popularCrypto, setPopularCrypto] = useState<string[]>(POPULAR_CRYPTO);
+  const [popularStocks, setPopularStocks] = useState<string[]>(POPULAR_STOCKS);
 
   // Fetch real assets from your assets API
   const fetchRealAssets = async (assetType: "stock" | "crypto") => {
@@ -150,17 +125,17 @@ export default function CreateStrategyPage() {
         path: `/assets?asset_type=${assetType}&limit=1000`,
         method: "GET",
       });
-      
+
       if (Array.isArray(response) && response.length > 0) {
         // Take first 8 symbols for popular list
         const realSymbols = response.slice(0, 8).map((asset: any) => asset.symbol || asset.asset_id);
         console.log(`✅ Real ${assetType} symbols:`, realSymbols);
         console.log(`🔄 Old hardcoded ${assetType}:`, assetType === "stock" ? POPULAR_STOCKS : POPULAR_CRYPTO);
-        
+
         if (assetType === "stock") {
-          setRealPopularStocks(realSymbols);
+          setPopularStocks(realSymbols);
         } else {
-          setRealPopularCrypto(realSymbols);
+          setPopularCrypto(realSymbols);
         }
       } else {
         console.log(`⚠️ No real ${assetType} assets found, keeping hardcoded symbols`);
@@ -171,45 +146,47 @@ export default function CreateStrategyPage() {
     }
   };
 
+  // Fetch real assets based on connection type when it's loaded
+  useEffect(() => {
+    if (connectionType === "stocks") {
+      fetchRealAssets("stock");
+    } else if (connectionType === "crypto") {
+      fetchRealAssets("crypto");
+    }
+  }, [connectionType]);
+
   // Derived values
   const isStocksConnection = connectionType === "stocks";
   const assetTypeLabel = isStocksConnection ? "Stocks" : "Crypto Assets";
-  const popularAssets = isStocksConnection ? realPopularStocks : realPopularCrypto;
+  const popularAssets = isStocksConnection ? popularStocks : popularCrypto;
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
   const weightsValid = Math.abs(totalWeight - 1.0) < 0.01;
 
-  // Search assets from backend - debounced to prevent excessive API calls
+  // Search assets from backend
   useEffect(() => {
-    if (assetSearch.length < 2) { // Require at least 2 characters before searching
+    if (assetSearch.length < 1) {
       setAssetResults([]);
       return;
     }
-    
-    // Debounce API calls - only search after user stops typing for 800ms
+
     const timer = setTimeout(async () => {
       setSearchingAssets(true);
       try {
-        // Use the universal assets endpoint with search parameter
-        const assetType = isStocksConnection ? "stock" : "crypto";
-        const searchEndpoint = `/assets?asset_type=${assetType}&limit=50&search=${encodeURIComponent(assetSearch)}`;
-        
-        const results = await apiRequest<never, any[]>({
+        // Use different endpoint based on connection type
+        const searchEndpoint = isStocksConnection
+          ? `/strategies/available-stocks?search=${encodeURIComponent(assetSearch)}`
+          : `/strategies/available-crypto?search=${encodeURIComponent(assetSearch)}`;
+
+        const results = await apiRequest<never, AssetOption[]>({
           path: searchEndpoint,
           method: "GET",
         });
-        
-        // Transform API response to AssetOption format
-        const assetOptions = (results || []).map((asset: any) => ({
-          symbol: asset.symbol || asset.asset_id,
-          name: asset.name || asset.display_name || asset.symbol || asset.asset_id
-        }));
-        
-        setAssetResults(assetOptions);
+        setAssetResults(results || []);
       } catch (err) {
         console.error("Asset search error:", err);
-        // Fallback: allow manual entry for crypto, empty for stocks
+        // For crypto, if endpoint doesn't exist, allow manual entry
         if (!isStocksConnection) {
           setAssetResults([{ symbol: assetSearch.toUpperCase(), name: assetSearch.toUpperCase() }]);
         } else {
@@ -218,7 +195,7 @@ export default function CreateStrategyPage() {
       } finally {
         setSearchingAssets(false);
       }
-    }, 800); // Debounce search API calls - wait 0.8 seconds after user stops typing
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [assetSearch, isStocksConnection]);
@@ -280,7 +257,7 @@ export default function CreateStrategyPage() {
     try {
       // Use correct endpoint based on connection type
       const endpoint = isStocksConnection ? "/strategies/custom/stocks" : "/strategies/custom/crypto";
-      
+
       await apiRequest({
         path: endpoint,
         method: "POST",
@@ -384,7 +361,7 @@ export default function CreateStrategyPage() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative">
-          <Link 
+          <Link
             href={backUrl}
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors mb-3 group"
           >
@@ -403,11 +380,10 @@ export default function CreateStrategyPage() {
               <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
                 Create {isStocksConnection ? 'Stock' : 'Crypto'} Strategy
               </h1>
-              <span className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                isStocksConnection 
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+              <span className={`inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${isStocksConnection
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                   : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-              }`}>
+                }`}>
                 {isStocksConnection ? '📈 Stocks Mode' : '₿ Crypto Mode'}
               </span>
             </div>
@@ -427,17 +403,15 @@ export default function CreateStrategyPage() {
             <button
               key={step.key}
               onClick={() => isPast && setCurrentStep(step.key)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
-                isCurrent
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${isCurrent
                   ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
                   : isPast
-                  ? "bg-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/30 border border-emerald-500/30"
-                  : "bg-white/5 text-slate-400 border border-white/10"
-              }`}
+                    ? "bg-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/30 border border-emerald-500/30"
+                    : "bg-white/5 text-slate-400 border border-white/10"
+                }`}
             >
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
-                isCurrent ? "bg-white/20" : isPast ? "bg-emerald-500/30" : "bg-white/10"
-              }`}>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${isCurrent ? "bg-white/20" : isPast ? "bg-emerald-500/30" : "bg-white/10"
+                }`}>
                 {isPast ? "✓" : idx + 1}
               </span>
               {step.label}
@@ -448,7 +422,7 @@ export default function CreateStrategyPage() {
 
       {/* Step Content */}
       <div className="rounded-2xl bg-gradient-to-br from-white/[0.07] via-white/[0.03] to-transparent p-6 sm:p-8 border border-white/10 backdrop-blur">
-        
+
         {/* Step 1: Basics */}
         {currentStep === "basics" && (
           <div className="space-y-6">
@@ -461,7 +435,7 @@ export default function CreateStrategyPage() {
                 <p className="text-sm text-slate-400">Name and describe your strategy</p>
               </div>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Strategy Name *</label>
               <input
@@ -523,9 +497,8 @@ export default function CreateStrategyPage() {
                       key={asset.symbol}
                       onClick={() => addAsset(asset.symbol)}
                       disabled={targetAssets.includes(asset.symbol)}
-                      className={`w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between border-b border-white/5 last:border-0 ${
-                        targetAssets.includes(asset.symbol) ? "opacity-50" : ""
-                      }`}
+                      className={`w-full text-left px-4 py-3 hover:bg-white/5 flex items-center justify-between border-b border-white/5 last:border-0 ${targetAssets.includes(asset.symbol) ? "opacity-50" : ""
+                        }`}
                     >
                       <div>
                         <span className="text-white font-medium">{asset.symbol}</span>
@@ -573,11 +546,10 @@ export default function CreateStrategyPage() {
                     key={symbol}
                     onClick={() => addAsset(symbol)}
                     disabled={targetAssets.includes(symbol)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                      targetAssets.includes(symbol)
+                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${targetAssets.includes(symbol)
                         ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                         : "bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10 hover:border-[#fc4f02]/30"
-                    }`}
+                      }`}
                   >
                     {symbol}
                   </button>
@@ -676,13 +648,91 @@ export default function CreateStrategyPage() {
         {/* Step 4: Entry & Exit Rules */}
         {currentStep === "rules" && (
           <div className="space-y-8">
-            <div className="flex items-center gap-3 mb-6">
+            <div className="flex items-center gap-3 mb-6 relative">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
                 <span className="text-[#fda300] font-bold">4</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">Entry & Exit Rules</h3>
                 <p className="text-sm text-slate-400">Define score thresholds for BUY and SELL signals</p>
+              </div>
+              {/* Info Icon with Hover Tooltip */}
+              <div className="relative group">
+                <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[#fda300]/50 group-hover:bg-[#fda300]/10">
+                  <svg
+                    className="w-8 h-8 text-slate-400 group-hover:text-[#fda300]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M12 8h.01M11 12h2v6h-2"
+                    />
+                  </svg>
+                </div>
+                <div className="absolute right-0 top-full mt-2 w-[370px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="rounded-xl border border-[#fda300]/20 bg-[#0a0a12] shadow-[0_8px_32px_rgba(0,0,0,0.9)] p-4 text-xs leading-relaxed">
+                    <p className="text-[#fda300] font-semibold text-sm mb-3">📖 How Rules Work</p>
+
+                    {/* What each field in a rule row does */}
+                    <p className="text-slate-300 font-medium mb-1">🧩 Each Rule Has 3 Fields</p>
+                    <div className="text-slate-400 mb-3 space-y-1.5 pl-3">
+                      <div className="flex gap-2">
+                        <span className="text-[#fda300] font-semibold shrink-0">1.</span>
+                        <div><span className="text-white font-medium">Score Field</span> <span className="text-slate-500">(1st dropdown)</span> — Pick <em>which</em> AI engine score to check. e.g. &quot;Final Score&quot; is the overall combined score, &quot;Sentiment&quot; is news-based, etc.</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-[#fda300] font-semibold shrink-0">2.</span>
+                        <div><span className="text-white font-medium">Operator</span> <span className="text-slate-500">(2nd dropdown)</span> — Choose <em>how</em> to compare. Use <span className="text-emerald-400">&gt;</span> or <span className="text-emerald-400">≥</span> for entry (BUY), and <span className="text-red-400">&lt;</span> or <span className="text-red-400">≤</span> for exit (SELL).</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-[#fda300] font-semibold shrink-0">3.</span>
+                        <div><span className="text-white font-medium">Threshold Value</span> <span className="text-slate-500">(number input)</span> — The target number between <span className="text-red-400">-1</span> and <span className="text-emerald-400">+1</span>. Higher = stricter &amp; fewer trades. Lower = looser &amp; more trades.</div>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-white/10 pt-2 mb-2"></div>
+
+                    <p className="text-slate-300 font-medium mb-1">🔢 Score Range</p>
+                    <p className="text-slate-400 mb-2">All scores range from <span className="text-red-400 font-semibold">-1</span> (very bearish) to <span className="text-emerald-400 font-semibold">+1</span> (very bullish). <span className="text-slate-300">0</span> means neutral — no clear direction.</p>
+
+                    <p className="text-slate-300 font-medium mb-1">📊 Available Score Fields</p>
+                    <ul className="text-slate-400 mb-2 space-y-0.5 pl-3">
+                      <li>• <span className="text-white">Final Score</span> — Combined weighted score from all engines</li>
+                      <li>• <span className="text-white">Sentiment</span> — News & social media analysis</li>
+                      <li>• <span className="text-white">Trend</span> — Technical trend indicators</li>
+                      <li>• <span className="text-white">Fundamental</span> — Earnings & financials</li>
+                      <li>• <span className="text-white">Event Risk</span> — Upcoming events impact</li>
+                      <li>• <span className="text-white">Liquidity</span> — Volume & market depth</li>
+                    </ul>
+
+                    <p className="text-slate-300 font-medium mb-1">⚡ Operators Explained</p>
+                    <ul className="text-slate-400 mb-2 space-y-0.5 pl-3">
+                      <li>• <span className="text-emerald-400">Greater than (&gt;)</span> — Triggers when score is above the value</li>
+                      <li>• <span className="text-red-400">Less than (&lt;)</span> — Triggers when score drops below the value</li>
+                      <li>• <span className="text-emerald-400">≥</span> — Triggers when score equals or exceeds the value</li>
+                      <li>• <span className="text-red-400">≤</span> — Triggers when score equals or is below the value</li>
+                    </ul>
+
+                    <p className="text-slate-300 font-medium mb-1">💡 Example Rules</p>
+                    <ul className="text-slate-400 space-y-0.5 pl-3">
+                      <li>• <span className="text-white">Final Score &gt; 0.5</span> → BUY only on strong bullish signals</li>
+                      <li>• <span className="text-white">Final Score &gt; 0</span> → BUY on any positive signal (more trades)</li>
+                      <li>• <span className="text-white">Final Score &lt; -0.3</span> → SELL when moderately bearish</li>
+                      <li>• <span className="text-white">Sentiment &gt; 0.7</span> → BUY only on very positive news</li>
+                    </ul>
+
+                    <div className="mt-3 pt-2 border-t border-white/10">
+                      <p className="text-slate-300 font-medium mb-1">📌 Entry vs Exit</p>
+                      <p className="text-slate-400"><span className="text-emerald-400">Entry rules</span> — ALL conditions must be true to trigger a BUY.</p>
+                      <p className="text-slate-400"><span className="text-red-400">Exit rules</span> — ANY single condition being true triggers a SELL.</p>
+                      <p className="text-slate-500 mt-1.5 text-[10px]">Higher threshold = fewer but stronger signals. Lower threshold = more frequent trades.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -702,7 +752,7 @@ export default function CreateStrategyPage() {
                   + Add
                 </button>
               </div>
-              
+
               <div className="space-y-2">
                 {entryRules.map((rule, idx) => (
                   <div key={idx} className="flex items-center gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
@@ -759,7 +809,7 @@ export default function CreateStrategyPage() {
                   + Add
                 </button>
               </div>
-              
+
               <div className="space-y-2">
                 {exitRules.map((rule, idx) => (
                   <div key={idx} className="flex items-center gap-2 p-3 bg-red-500/5 border border-red-500/20 rounded-xl">
@@ -803,7 +853,7 @@ export default function CreateStrategyPage() {
             {/* Info Box */}
             <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
               <p className="text-sm text-blue-300">
-                <strong>💡 Tip:</strong> Scores range from -1 (very bearish) to +1 (very bullish). 
+                <strong>💡 Tip:</strong> Scores range from -1 (very bearish) to +1 (very bullish).
                 A final_score &gt; 0.5 typically indicates a strong BUY signal.
               </p>
             </div>
@@ -835,17 +885,15 @@ export default function CreateStrategyPage() {
                       if (level === "medium") { setStopLoss(5); setTakeProfit(15); }
                       if (level === "high") { setStopLoss(7); setTakeProfit(20); }
                     }}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      riskLevel === level
+                    className={`p-4 rounded-xl border-2 transition-all ${riskLevel === level
                         ? level === "low" ? "border-emerald-500 bg-emerald-500/10"
-                        : level === "medium" ? "border-yellow-500 bg-yellow-500/10"
-                        : "border-red-500 bg-red-500/10"
+                          : level === "medium" ? "border-yellow-500 bg-yellow-500/10"
+                            : "border-red-500 bg-red-500/10"
                         : "border-white/10 bg-white/5 hover:border-white/20"
-                    }`}
+                      }`}
                   >
-                    <p className={`font-semibold capitalize ${
-                      level === "low" ? "text-emerald-400" : level === "medium" ? "text-yellow-400" : "text-red-400"
-                    }`}>{level}</p>
+                    <p className={`font-semibold capitalize ${level === "low" ? "text-emerald-400" : level === "medium" ? "text-yellow-400" : "text-red-400"
+                      }`}>{level}</p>
                     <p className="text-xs text-slate-400 mt-1">
                       {level === "low" && "Conservative, tighter stops"}
                       {level === "medium" && "Balanced risk/reward"}
@@ -916,9 +964,8 @@ export default function CreateStrategyPage() {
               </div>
               <div className="p-4 bg-black/20 rounded-xl border border-white/5">
                 <p className="text-xs text-slate-400">Risk Level</p>
-                <p className={`font-medium capitalize ${
-                  riskLevel === "low" ? "text-emerald-400" : riskLevel === "medium" ? "text-yellow-400" : "text-red-400"
-                }`}>{riskLevel}</p>
+                <p className={`font-medium capitalize ${riskLevel === "low" ? "text-emerald-400" : riskLevel === "medium" ? "text-yellow-400" : "text-red-400"
+                  }`}>{riskLevel}</p>
               </div>
               <div className="p-4 bg-black/20 rounded-xl border border-white/5">
                 <p className="text-xs text-slate-400">Stop Loss</p>
@@ -984,7 +1031,7 @@ export default function CreateStrategyPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             Previous
           </button>
-          
+
           {currentStep === "review" ? (
             <button
               onClick={handleSubmit}

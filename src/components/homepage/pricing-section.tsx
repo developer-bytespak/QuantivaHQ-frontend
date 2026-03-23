@@ -192,20 +192,26 @@ export function PricingSection() {
   const getTierFeatures = (tier: PlanTier): string[] => {
     const tiers: Record<PlanTier, string[]> = {
       [PlanTier.FREE]: [
-        "✓ AI Trading",
-        "✓ Auto Execution",
         "✓ Real-Time Data",
         "✓ Mobile Access",
         "✓ Web Access",
-        "✓ Community Access",
         "✓ Multi-Exchange Support",
       ],
       [PlanTier.PRO]: [
         "✓ Everything in FREE, PLUS:",
+        "✓ AI Trading",
+        "✓ Auto Execution",
         "✓ Up to 5 Custom Strategies",
       ],
       [PlanTier.ELITE]: [
         "✓ Everything in PRO, PLUS:",
+        "✓ Unlimited Strategies",
+        "✓ Early Access to Features",
+        "✓ VC Pool Access",
+      ],
+      [PlanTier.ELITE_PLUS]: [
+        "✓ Everything in ELITE, PLUS:",
+        "✓ Option Trading",
         "✓ Unlimited Strategies",
         "✓ Early Access to Features",
         "✓ VC Pool Access",
@@ -239,6 +245,14 @@ export function PricingSection() {
       description: "For professional traders",
       features: getTierFeatures(PlanTier.ELITE),
       gradient: "from-[#1d4ed8] to-[#3b82f6]",
+    },
+    {
+      name: "ELITE Plus",
+      price: `$${calculatePrice(PlanTier.ELITE_PLUS, billingPeriod).price.toFixed(2)}`,
+      period: billingPeriod === BillingPeriod.MONTHLY ? "month" : billingPeriod === BillingPeriod.QUARTERLY ? "3 months" : "year",
+      description: "For advanced traders with option trading",
+      features: getTierFeatures(PlanTier.ELITE_PLUS),
+      gradient: "from-emerald-600 to-emerald-500",
     },
   ];
 
@@ -281,15 +295,15 @@ export function PricingSection() {
           </div>
         </div>
 
-        {/* Pricing Grid - Mobile responsive */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-5xl mx-auto">
+        {/* Pricing Grid - Mobile responsive (4 plans: Free, PRO, ELITE, ELITE Plus) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
           {tiers.map((tier, index) => (
             <PricingCard
               key={index}
               tier={tier}
               delay="animate-fade-in"
               index={index}
-              isCurrentPlan={currentTier ? tier.name.toUpperCase() === currentTier : false}
+              isCurrentPlan={currentTier ? tier.name.toUpperCase().replace(/\s+/g, "_") === currentTier : false}
             />
           ))}
         </div>

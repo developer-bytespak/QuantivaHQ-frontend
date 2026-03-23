@@ -19,8 +19,11 @@ export interface Connection {
   connection_id: string;
   user_id: string;
   exchange_id: string;
+  exchange_name: string;
   auth_type: string;
   status: "pending" | "active" | "invalid" | "revoked";
+  verified: boolean;
+  account_type?: string;
   connection_metadata?: {
     enable_trading?: boolean;
     permissions?: string[];
@@ -51,6 +54,8 @@ export interface AccountBalance {
     total: string;
   }>;
   totalValueUSD: number;
+  /** Alpaca: buying power (when present, use for stock trading panel) */
+  buyingPower?: number;
 }
 
 export interface Position {
@@ -60,8 +65,6 @@ export interface Position {
   currentPrice: number;
   unrealizedPnl: number;
   pnlPercent: number;
-  asset_type?: "crypto" | "stock";
-  logoUrl?: string; // Logo URL returned from backend
 }
 
 export interface Order {
@@ -103,8 +106,6 @@ export interface DashboardData {
   orders: Order[];
   portfolio: Portfolio;
   prices: TickerPrice[];
-  logos: Record<string, string>;
-  asset_types?: Record<string, "crypto" | "stock">;
 }
 
 export interface ApiResponse<T> {
@@ -194,6 +195,31 @@ export const exchangesService = {
       };
     }>({
       path: "/exchanges/connections/active",
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Get active connection for a specific exchange type (crypto or stocks)
+   */
+  async getActiveConnectionByType(type: "crypto" | "stocks"): Promise<{
+    success: boolean;
+    data: {
+      connection_id: string;
+      exchange: Exchange;
+      status: string;
+    };
+  }> {
+    return apiRequest<never, {
+      success: boolean;
+      data: {
+        connection_id: string;
+        exchange: Exchange;
+        status: string;
+      };
+    }>({
+      path: `/exchanges/connections/active?type=${type}`,
       method: "GET",
       credentials: "include",
     });
@@ -350,49 +376,30 @@ export const exchangesService = {
   async getCoinDetail(
     connectionId: string,
     symbol: string
-  ): Promise<ApiResponse<{
-    symbol: string;
-    tradingPair: string;
-    currentPrice: number;
-    change24h: number;
-    changePercent24h: number;
-    high24h: number;
-    low24h: number;
-    volume24h: number;
-    availableBalance: number;
-    quoteCurrency: string;
-    candles: Array<{
-      openTime: number;
-      open: number;
-      high: number;
-      low: number;
-      close: number;
-      volume: number;
-      closeTime: number;
-    }>;
-  }>> {
-    return apiRequest<never, ApiResponse<{
-      symbol: string;
-      tradingPair: string;
-      currentPrice: number;
-      change24h: number;
-      changePercent24h: number;
-      high24h: number;
-      low24h: number;
-      volume24h: number;
-      availableBalance: number;
-      quoteCurrency: string;
-      candles: Array<{
-        openTime: number;
-        open: number;
-        high: number;
-        low: number;
-        close: number;
-        volume: number;
-        closeTime: number;
-      }>;
-    }>>({
+  ): Promise<ApiResponse<CoinDetailResponse>> {
+    return apiRequest<never, ApiResponse<CoinDetailResponse>>({
       path: `/exchanges/connections/${connectionId}/coin/${symbol}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Phase 5: Unified market detail endpoint
+   * Fetches ALL market data in a single API call:
+   * coin data, candles (multi-interval), CoinGecko market data,
+   * order book, recent trades, and trading permissions.
+   *
+   * @param include - Array of data sections to include (default: all)
+   */
+  async getMarketDetail(
+    connectionId: string,
+    symbol: string,
+    include: MarketDetailInclude[] = ['all']
+  ): Promise<ApiResponse<MarketDetailResponse>> {
+    const includeParam = include.join(',');
+    return apiRequest<never, ApiResponse<MarketDetailResponse>>({
+      path: `/exchanges/connections/${connectionId}/market-detail/${symbol}?include=${includeParam}`,
       method: "GET",
       credentials: "include",
     });
@@ -467,6 +474,38 @@ export const exchangesService = {
   },
 
   /**
+   * Get stock detail using the user's Alpaca connection (rate limits are per user).
+   * Only for Alpaca connections.
+   */
+  async getStockDetail(connectionId: string, symbol: string) {
+    return apiRequest<never, any>({
+      path: `/exchanges/connections/${connectionId}/stock/${symbol.toUpperCase()}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Get stock historical bars using the user's Alpaca connection.
+   */
+  async getStockBars(
+    connectionId: string,
+    symbol: string,
+    timeframe?: string,
+    limit?: number,
+  ) {
+    const params = new URLSearchParams();
+    if (timeframe) params.set("timeframe", timeframe);
+    if (limit != null) params.set("limit", String(limit));
+    const qs = params.toString();
+    return apiRequest<never, any>({
+      path: `/exchanges/connections/${connectionId}/stock/${symbol.toUpperCase()}/bars${qs ? `?${qs}` : ""}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
    * Get all user connections for current authenticated user
    */
   async getConnections(): Promise<any[]> {
@@ -490,7 +529,10 @@ export const exchangesService = {
       console.warn("Unexpected response format for getConnections:", response);
       return [];
     } catch (error: any) {
-      console.error("Failed to fetch connections:", error);
+      const status = error?.status || error?.statusCode || error?.response?.status;
+      if (status !== 401 && status !== 404) {
+        console.error("Failed to fetch connections:", error);
+      }
       return [];
     }
   },
@@ -503,7 +545,7 @@ export const exchangesService = {
     data: {
       api_key: string;
       api_secret: string;
-      password: string;
+      password?: string;
       passphrase?: string;
     }
   ): Promise<any> {
@@ -548,6 +590,121 @@ export const exchangesService = {
     });
   },
 };
+
+// ── Candle & Market Data Types (Backend Optimization Phase 2-3) ──────────────
+
+export interface CandleData {
+  openTime: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  closeTime: number;
+}
+
+/** Multi-interval candle data returned by optimized getCoinDetail endpoint */
+export type CandlesByInterval = Record<string, CandleData[]>;
+
+/** CoinGecko market data embedded in getCoinDetail response (Phase 3) */
+export interface EmbeddedMarketData {
+  market_cap?: { usd: number };
+  fully_diluted_valuation?: { usd: number };
+  total_volume?: { usd: number };
+  circulating_supply?: number;
+  total_supply?: number | null;
+  max_supply?: number | null;
+  ath?: { usd: number };
+  ath_date?: { usd: string };
+  ath_change_percentage?: { usd: number };
+  atl?: { usd: number };
+  atl_date?: { usd: string };
+  atl_change_percentage?: { usd: number };
+  price_change_percentage_1h_in_currency?: { usd: number };
+  price_change_percentage_24h_in_currency?: { usd: number };
+  price_change_percentage_7d_in_currency?: { usd: number };
+  price_change_percentage_30d_in_currency?: { usd: number };
+  price_change_percentage_1y_in_currency?: { usd: number };
+}
+
+/** Full coin detail response from optimized backend endpoint */
+export interface CoinDetailResponse {
+  symbol: string;
+  tradingPair: string;
+  currentPrice: number;
+  change24h: number;
+  changePercent24h: number;
+  high24h: number;
+  low24h: number;
+  volume24h: number;
+  availableBalance: number;
+  quoteCurrency: string;
+  candles: CandleData[];
+  // ── New fields from backend optimization ──
+  candles_by_interval?: CandlesByInterval;
+  marketData?: EmbeddedMarketData;
+  coinGeckoData?: {
+    name: string;
+    symbol: string;
+    market_cap_rank: number;
+    description?: { en: string };
+    links?: {
+      homepage?: string[];
+      twitter_screen_name?: string;
+      subreddit_url?: string;
+      repos_url?: { github?: string[] };
+    };
+    market_data: EmbeddedMarketData;
+  };
+  cached?: boolean;
+}
+
+/** Phase 5: Unified market detail response from /market-detail/:symbol */
+export interface MarketDetailResponse {
+  symbol: string;
+  tradingPair: string;
+  exchange: string;
+  currentPrice: number;
+  change24h: number;
+  changePercent24h: number;
+  high24h: number;
+  low24h: number;
+  volume24h: number;
+  availableBalance?: number;
+  quoteCurrency: string;
+  candlesByInterval?: CandlesByInterval;
+  candles: CandleData[];
+  marketData?: EmbeddedMarketData;
+  coinGeckoData?: {
+    name: string;
+    symbol: string;
+    market_cap_rank: number;
+    description?: { en: string };
+    links?: {
+      homepage?: string[];
+      twitter_screen_name?: string;
+      subreddit_url?: string;
+      repos_url?: { github?: string[] };
+    };
+    market_data: EmbeddedMarketData;
+  };
+  orderBook?: OrderBook;
+  recentTrades?: RecentTrade[];
+  tradingPermissions?: {
+    canTrade: boolean;
+    reason?: string;
+  };
+  cached?: boolean;
+}
+
+/** Include options for the unified market-detail endpoint */
+export type MarketDetailInclude = 
+  | 'candles'
+  | 'orderbook'
+  | 'market-data'
+  | 'trades'
+  | 'permissions'
+  | 'all';
 
 export interface OrderBook {
   bids: Array<{
