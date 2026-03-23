@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { logger } from '@/lib/utils/logger';
 
 interface BalanceUpdate {
   asset: string;
@@ -43,7 +44,7 @@ interface UseRealtimeAccountStream {
   error: string | null;
 }
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 const RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 2000;
 
@@ -74,8 +75,9 @@ export function useRealtimeAccountStream(userId: string = 'default-user', key?: 
     }
 
     // Create Socket.IO connection
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('quantivahq_access_token') : null;
     const newSocket = io(`${SOCKET_URL}/account-stream`, {
-      auth: { userId },
+      auth: { token: accessToken, userId },
       query: { userId },
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -87,7 +89,7 @@ export function useRealtimeAccountStream(userId: string = 'default-user', key?: 
 
     // Connection established
     newSocket.on('connect', () => {
-      console.log('[WebSocket] Connected to account stream');
+      logger.info('[WebSocket] Connected to account stream');
       setConnected(true);
       setReconnecting(false);
       setError(null);
@@ -99,7 +101,7 @@ export function useRealtimeAccountStream(userId: string = 'default-user', key?: 
 
     // Connection lost
     newSocket.on('disconnect', (reason) => {
-      console.log('[WebSocket] Disconnected:', reason);
+      logger.info('[WebSocket] Disconnected:', reason);
       setConnected(false);
       
       if (reason === 'io server disconnect') {
@@ -110,34 +112,34 @@ export function useRealtimeAccountStream(userId: string = 'default-user', key?: 
 
     // Reconnection attempt
     newSocket.on('reconnect_attempt', (attempt) => {
-      console.log(`[WebSocket] Reconnection attempt ${attempt}`);
+      logger.info(`[WebSocket] Reconnection attempt ${attempt}`);
       setReconnecting(true);
       reconnectAttempts.current = attempt;
     });
 
     // Reconnection failed
     newSocket.on('reconnect_failed', () => {
-      console.error('[WebSocket] Reconnection failed after all attempts');
+      logger.error('[WebSocket] Reconnection failed after all attempts');
       setError('Failed to reconnect to server');
       setReconnecting(false);
     });
 
     // Reconnected successfully
     newSocket.on('reconnect', (attempt) => {
-      console.log(`[WebSocket] Reconnected after ${attempt} attempts`);
+      logger.info(`[WebSocket] Reconnected after ${attempt} attempts`);
       setReconnecting(false);
       reconnectAttempts.current = 0;
     });
 
     // Connection error
     newSocket.on('connect_error', (err) => {
-      console.error('[WebSocket] Connection error:', err.message);
+      logger.error('[WebSocket] Connection error:', err.message);
       setError(`Connection error: ${err.message}`);
     });
 
     // Connection status updates from server
     newSocket.on('connection:status', (data: ConnectionStatus) => {
-      console.log('[WebSocket] Status update:', data);
+      logger.info('[WebSocket] Status update:', data);
       setConnectionStatus(data);
       if (data.connected === false) {
         setError(data.message || 'Disconnected from data stream');
@@ -146,7 +148,7 @@ export function useRealtimeAccountStream(userId: string = 'default-user', key?: 
 
     // Balance updates
     newSocket.on('balance:update', (data: BalanceUpdate) => {
-      console.log('[WebSocket] Balance update:', data);
+      logger.info('[WebSocket] Balance update:', data);
       setBalance((prev) => ({
         ...prev,
         [data.asset]: {
@@ -158,7 +160,7 @@ export function useRealtimeAccountStream(userId: string = 'default-user', key?: 
 
     // Order updates
     newSocket.on('order:update', (data: OrderUpdate) => {
-      console.log('[WebSocket] Order update:', data);
+      logger.info('[WebSocket] Order update:', data);
       setOrders((prev) => {
         // Check if order already exists
         const existingIndex = prev.findIndex((o) => o.orderId === data.orderId);
@@ -177,7 +179,7 @@ export function useRealtimeAccountStream(userId: string = 'default-user', key?: 
 
     // Binance data source status (state-based, not error-based)
     newSocket.on('binance:status', (data: BinanceStatus) => {
-      console.log('[WebSocket] Binance status:', data);
+      logger.info('[WebSocket] Binance status:', data);
       setBinanceStatus(data);
       
       // Update UI based on Binance state (for display purposes only)

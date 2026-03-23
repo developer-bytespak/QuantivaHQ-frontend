@@ -5,6 +5,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, u
 import { toast } from "react-toastify";
 import { io, Socket } from "socket.io-client";
 import { getCurrentUser } from "@/lib/api/user";
+import { logger } from "@/lib/utils/logger";
 
 interface ISocketContext {
     sendMessage: (msg: string) => any;
@@ -50,7 +51,7 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
             if(response.status === 200){
                 setNotificationCount(response.data);
             }else{
-                console.log("error",response);
+                logger.error("error",response);
                 toast.error("Error fetching notifications");
             }
         }
@@ -63,14 +64,21 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
         // while the first one is still being established or is already live
         if (socketRef.current) return;
 
-        const _socket = io(process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000", {
+        const socketUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!socketUrl) {
+            logger.error("NEXT_PUBLIC_API_URL is not set — cannot connect to socket.");
+            return;
+        }
+        const accessToken = localStorage.getItem("quantivahq_access_token");
+        const _socket = io(socketUrl, {
+            auth: { token: accessToken },
             query: { userId }
         });
         socketRef.current = _socket;
         setSocket(_socket);
 
             _socket.on("connection:status", (data) => {
-                console.log("connection:status", data);
+                logger.info("connection:status", data);
             });
 
             _socket.on("notification:count", (data: any) => {
@@ -78,17 +86,17 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
                 if (!isNotificationDropdownOpenRef.current) {
                     setNotificationCount((prev: number) => prev + data.count);
                 }else{
-                    console.log("data.payload",data.payload);
+                    logger.info("data.payload",data.payload);
                     setNotifications(data.payload);
                 }
             });
 
             _socket.on("notification:read", (payload: any) => {
-                console.log("notification:read", payload);
+                logger.info("notification:read", payload);
             });
 
             _socket.on("mark_notification_read", (payload: any) => {
-                console.log("mark_notification_read", payload);
+                logger.info("mark_notification_read", payload);
             });
 
             return () => {

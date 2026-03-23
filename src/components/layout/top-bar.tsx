@@ -9,6 +9,7 @@ import { useMobileNav } from "@/hooks/useMobileNav";
 import { SubscriptionBadge } from "@/components/common/subscription-badge";
 import { NotificationDropdown } from "@/components/common/notification-dropdown";
 import { useExchange } from "@/context/ExchangeContext";
+import { isValidImageUrl } from "@/lib/utils/security";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -237,11 +238,12 @@ function UserProfileSection() {
           className="flex items-center gap-2 sm:gap-3 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2 sm:px-3 py-1.5 sm:py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
         >
           <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
-            {profileImage ? (
+            {isValidImageUrl(profileImage) ? (
               <img
-                src={profileImage}
+                src={profileImage!}
                 alt={userName}
                 className="h-full w-full object-cover rounded-full"
+                onError={() => setProfileImage(null)}
               />
             ) : (
               userInitial

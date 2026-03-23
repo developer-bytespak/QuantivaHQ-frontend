@@ -11,14 +11,20 @@ type RequestParams<T> = {
   timeout?: number; // Timeout in milliseconds (default: 30000 for regular requests, 180000 for ML operations)
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+if (!API_BASE_URL && typeof window !== "undefined") {
+  console.warn("NEXT_PUBLIC_API_URL is not set — API calls will fail in production.");
+}
+const RESOLVED_API_URL = API_BASE_URL ?? "http://localhost:3000";
 
-// Helper function to get or create device ID
+// Helper function to get or create device ID (crypto-secure)
 function getDeviceId(): string {
   if (typeof window !== "undefined") {
     let deviceId = localStorage.getItem("quantivahq_device_id");
     if (!deviceId) {
-      deviceId = `device-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      deviceId = Array.from(array, (b) => b.toString(16).padStart(2, "0")).join("");
       localStorage.setItem("quantivahq_device_id", deviceId);
     }
     return deviceId;
@@ -28,9 +34,11 @@ function getDeviceId(): string {
 
 // Create axios instance with defaults
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: RESOLVED_API_URL,
   withCredentials: true, // Include cookies (refresh token)
   timeout: 30000,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
   headers: {
     // Note: Browsers automatically handle Accept-Encoding for compression
     // Manual setting causes "unsafe header" warnings in console
@@ -155,7 +163,7 @@ export async function uploadFile<TResponse = unknown>({
   const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
 
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(`${RESOLVED_API_URL}${path}`, {
       method: "POST",
       headers,
       body: formData,

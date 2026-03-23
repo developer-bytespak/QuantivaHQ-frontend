@@ -48,7 +48,7 @@ import type {
   AdminBinanceTransactionFilters,
 } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const ADMIN_ACCESS_KEY = "quantivahq_admin_access_token";
 const ADMIN_REFRESH_KEY = "quantivahq_admin_refresh_token";
 

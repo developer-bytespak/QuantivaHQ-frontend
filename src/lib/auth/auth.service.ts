@@ -1,4 +1,5 @@
 import { apiRequest } from "../api/client";
+import { logger } from "../utils/logger";
 
 export interface RegisterData {
   email: string;
@@ -46,7 +47,7 @@ export const authService = {
       method: "POST",
       body: data,
     });
-    console.log("[Login] Response:", response);
+    logger.info("[Login] Response:", response);
     return response;
   },
 

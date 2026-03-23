@@ -116,7 +116,7 @@ export async function resetPasswordForgot(email: string, otp: string, newPasswor
 export async function verifyPassword(
   password: string
 ): Promise<VerifyPasswordResponse> {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
   
   const headers: HeadersInit = {
     "Content-Type": "application/json",

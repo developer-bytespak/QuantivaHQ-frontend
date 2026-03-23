@@ -8,6 +8,7 @@ import { apiRequest } from "@/lib/api/client";
 import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
 import { getCurrentUser } from "@/lib/api/user";
 import { useNotification, Notification } from "@/components/common/notification";
+import { logger } from "@/lib/utils/logger";
 import {
   sendForgotPasswordOtp,
   verifyForgotPasswordOtp,
@@ -171,23 +172,19 @@ export default function SignUpPage() {
             credentials: "include",
           });
 
-          console.log("[Signup] Login response:", loginResponse);
-
-          // Debug: Log cookies and response
-          console.log("[Signup] Cookies after auto-login:", document.cookie);
-          console.log("[Signup] Login response:", loginResponse);
+          logger.info("[Signup] Login response received");
 
           // Check if 2FA is required
           if (loginResponse.requires2FA) {
-            // Store pending email and password for 2FA verification
+            // Store pending email for 2FA verification (password kept in memory only)
             localStorage.setItem("quantivahq_pending_email", email);
-            localStorage.setItem("quantivahq_pending_password", password);
+            sessionStorage.setItem("quantivahq_pending_password", password);
             
             // Navigate to 2FA verification page
             router.push("/onboarding/verify-2fa");
           } else if (loginResponse.accessToken) {
             // 2FA is disabled - store tokens from response as fallback
-            console.log("[Signup] Storing tokens from response body as fallback");
+            logger.info("[Signup] Storing tokens from response body as fallback");
             localStorage.setItem("quantivahq_access_token", loginResponse.accessToken);
             if (loginResponse.refreshToken) {
               localStorage.setItem("quantivahq_refresh_token", loginResponse.refreshToken);
@@ -203,14 +200,14 @@ export default function SignUpPage() {
             try {
               await navigateToNextRoute(router);
             } catch (navError: any) {
-              console.error("[Signup] Navigation error:", navError);
+              logger.error("[Signup] Navigation error:", navError);
               // If navigation fails, show error - don't assume they need proof upload
               setError("Registration successful but couldn't determine next step. This may be a temporary issue. Please refresh the page.");
               setIsLoading(false);
             }
           }
         } catch (loginError: any) {
-          console.error("[Signup] Auto-login error:", loginError);
+          logger.error("[Signup] Auto-login error:", loginError);
           // If auto-login fails, show error but don't switch tabs
           setError(loginError.message || "Registration successful, but automatic login failed. Please log in manually.");
           setIsLoading(false);
@@ -253,17 +250,13 @@ export default function SignUpPage() {
           credentials: "include",
         });
 
-        console.log("[Login] Response:", response);
-
-        // Debug: Log cookies and response
-        console.log("[Login] Cookies after login:", document.cookie);
-        console.log("[Login] Login response:", response);
+        logger.info("[Login] Response received");
 
         // Check if 2FA is required
         if (response.requires2FA) {
-          // Store pending email and password for 2FA verification
+          // Store pending email for 2FA verification (password in sessionStorage, not localStorage)
           localStorage.setItem("quantivahq_pending_email", email);
-          localStorage.setItem("quantivahq_pending_password", password);
+          sessionStorage.setItem("quantivahq_pending_password", password);
           localStorage.setItem("quantivahq_user_email", email);
           localStorage.setItem("quantivahq_auth_method", "email");
           
@@ -277,7 +270,7 @@ export default function SignUpPage() {
           localStorage.setItem("quantivahq_is_authenticated", "true");
           
           // Store tokens from response as fallback
-          console.log("[Login] Storing tokens from response body as fallback");
+          logger.info("[Login] Storing tokens from response body as fallback");
           localStorage.setItem("quantivahq_access_token", response.accessToken);
           if (response.refreshToken) {
             localStorage.setItem("quantivahq_refresh_token", response.refreshToken);
@@ -293,12 +286,7 @@ export default function SignUpPage() {
           try {
             await navigateToNextRoute(router);
           } catch (navError: any) {
-            console.error("[Login] Navigation error:", navError);
-            console.error("[Login] Error details:", {
-              status: navError.status,
-              statusCode: navError.statusCode,
-              message: navError.message,
-            });
+            logger.error("[Login] Navigation error:", navError);
             // If authentication failed (401), show error to user
             if (navError.status === 401 || navError.statusCode === 401) {
               setError("Login succeeded but session couldn't be established. This may be a cookie/CORS issue. Please try again or contact support.");
@@ -311,7 +299,7 @@ export default function SignUpPage() {
           }
         }
       } catch (error: any) {
-        console.error("[Login] Login error:", error);
+        logger.error("[Login] Login error");
         const errMsg = error.message || "Login failed. Please check your credentials.";
         setError(errMsg);
         const isPasswordIncorrect =
@@ -335,7 +323,7 @@ export default function SignUpPage() {
       await navigateToNextRoute(router);
     } catch (error) {
       // If checks fail, go to KYC verification
-      console.log("Error checking user status:", error);
+      logger.error("Error checking user status:", error);
       router.push("/onboarding/kyc-verification");
     }
   };
