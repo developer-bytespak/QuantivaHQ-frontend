@@ -45,8 +45,7 @@ const stepIndex = (s: JoinFlowStep): number =>
 
 /* ──────── helpers ──────── */
 const pad2 = (n: number) => n.toString().padStart(2, "0");
-const fmtCountdown = (sec: number) =>
-  `${pad2(Math.floor(sec / 60))}:${pad2(sec % 60)}`;
+const fmtCountdown = (sec: number) => `${sec}s`;
 const truncAddr = (addr: string) =>
   addr.length > 14 ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : addr;
 
@@ -142,23 +141,36 @@ export default function VcPoolDetailPage() {
     myCancellation?.cancellation?.status ?? 
     "";
   
-  // membership: prefer paymentStatus, fall back to pool.user_context (GET /api/vc-pools/:id)
+  // Backend sends is_historical=true during rejoin (Step 14) — old cancellation should be ignored
+  const isHistoricalCancellation = Boolean(
+    paymentStatus?.cancellation?.is_historical
+  );
+
+  // membership: trust paymentStatus when loaded, fall back to pool.user_context only before paymentStatus arrives
   const isMember = Boolean(
     (paymentStatus?.membership?.exists && paymentStatus?.membership?.is_active === true) ||
-      pool?.user_context?.is_member === true
+      // Fallback only when paymentStatus not yet loaded
+      (!paymentStatus && pool?.user_context?.is_member === true) ||
+      // Keep as member while cancellation is pending/approved (is_active stays true per backend doc)
+      (paymentStatus?.membership?.exists &&
+        (paymentStatus?.cancellation?.status === "pending" ||
+          paymentStatus?.cancellation?.status === "approved"))
   );
 
-  const hasExitedByCancellation =
-    cancellationStatus === "approved" || cancellationStatus === "processed";
-
-  // Check if user previously was a member but has now exited
+  // User has fully exited: is_active false + cancellation processed + NOT a historical (rejoin-in-progress) cancellation
   const userHasExitedPool = Boolean(
-    (paymentStatus?.membership?.exists && paymentStatus?.membership?.is_active === false) ||
-      (pool?.user_context && pool.user_context.is_member === false && pool.user_context.exited_at)
+    (paymentStatus?.membership?.exists &&
+      paymentStatus?.membership?.is_active === false &&
+      cancellationStatus === "processed" &&
+      !isHistoricalCancellation) ||
+    (pool?.user_context && pool.user_context.is_member === false && pool.user_context.exited_at)
   );
 
-  const isMemberEffective = isMember && !hasExitedByCancellation;
-  const hasReservation = Boolean(paymentStatus?.reservation);
+  const isMemberEffective = isMember;
+  // Only treat reservation as active when status is "reserved" (not old "confirmed" ones)
+  const hasReservation = Boolean(
+    paymentStatus?.reservation && paymentStatus.reservation.status === "reserved"
+  );
   const payment = paymentStatus?.payment ?? null;
   const isRejected = payment?.status === "rejected";
   const availableSeats = Number(pool?.available_seats ?? (pool as any)?.pool_details?.available_seats ?? 0);
@@ -274,15 +286,36 @@ export default function VcPoolDetailPage() {
   /* ──────── auto-detect step on data load ──────── */
   useEffect(() => {
     if (loading || !pool || !canAccessVCPool) return;
-    if (isMember || isRejected) {
+    if (isMemberEffective || isRejected) {
       setJoinStep("idle");
+      return;
+    }
+    // Rejoin after page refresh: cancellation is processed, user has a FRESH reservation
+    // (isRejoin state is lost on refresh, so we restore it here)
+    if (cancellationStatus === "processed" &&
+        (isHistoricalCancellation || paymentStatus?.reservation?.status === "reserved") &&
+        payment &&
+        (payment.status === "pending" || payment.status === "processing")) {
+      if (!isRejoin) {
+        setIsRejoin(true);
+      }
+      const hasTx =
+        Boolean(payment.tx_hash) || Boolean(payment.binance_tx_id);
+      if (hasTx) {
+        setTxSubmitted(true);
+        setJoinStep("submit-tx");
+      } else {
+        setJoinStep("payment-details");
+      }
       return;
     }
     // Don't override step if user is already in the middle of join flow
     if (joinStep !== "idle") {
       return;
     }
-    if (hasReservation && payment) {
+    // Only auto-detect into join flow for active reservations with pending/processing payments
+    if (hasReservation && payment &&
+        (payment.status === "pending" || payment.status === "processing")) {
       const hasTx =
         Boolean(payment.tx_hash) || Boolean(payment.binance_tx_id);
       if (hasTx) {
@@ -308,8 +341,12 @@ export default function VcPoolDetailPage() {
     isMember,
     isRejected,
     hasReservation,
+    cancellationStatus,
+    isHistoricalCancellation,
     // eslint-disable-next-line react-hooks/exhaustive-deps
     !!payment,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    payment?.status,
   ]);
 
   /* ──────── sync payment status from polling ──────── */
@@ -973,9 +1010,9 @@ export default function VcPoolDetailPage() {
           )}
 
           {/* ═══════════ MEMBER STATUS & CANCELLATION MANAGEMENT ═══════════ */}
-          {(isMember || userHasExitedPool) && (
+          {(isMember || (userHasExitedPool && joinStep === "idle")) && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
-              {userHasExitedPool && !isMember && (
+              {userHasExitedPool && !isMember && cancellationStatus !== "pending" && !hasReservation && (
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500/20">
                     <svg
@@ -1154,7 +1191,8 @@ export default function VcPoolDetailPage() {
                             You have successfully exited the pool.
                           </p>
 
-                          {/* REJOIN BUTTON */}
+                          {/* REJOIN BUTTON — only show when not already in join flow */}
+                          {joinStep === "idle" && !hasReservation && (
                           <button
                             type="button"
                             onClick={() => {
@@ -1179,6 +1217,7 @@ export default function VcPoolDetailPage() {
                           >
                             Rejoin this pool
                           </button>
+                          )}
                         </div>
                       )}
 
@@ -1472,7 +1511,7 @@ export default function VcPoolDetailPage() {
           {/* ═══════════════════════════════════════════════════
               3-SCREEN JOIN FLOW
               ═══════════════════════════════════════════════════ */}
-          {!isMember && joinStep !== "idle" && (isRejoin || !hasExitedByCancellation) && (
+          {!isMemberEffective && joinStep !== "idle" && (
             <>
               {/* ── Step indicator ── */}
               <div className="flex items-center justify-center gap-0 py-2">
@@ -2176,6 +2215,7 @@ export default function VcPoolDetailPage() {
           {!isMember &&
             joinStep === "idle" &&
             !hasReservation &&
+            !userHasExitedPool &&
             poolStatus === "open" &&
             availableSeats > 0 && (
               <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 text-center space-y-4">
@@ -2202,6 +2242,7 @@ export default function VcPoolDetailPage() {
           {!isMember &&
             !hasReservation &&
             joinStep === "idle" &&
+            !userHasExitedPool &&
             (poolStatus !== "open" || availableSeats <= 0) &&
             !isRejected && (
               <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 text-center text-slate-400 text-sm">
@@ -2285,7 +2326,7 @@ export default function VcPoolDetailPage() {
 
       {/* ═══════════ EXIT CONFIRMATION MODAL ═══════════ */}
       {showExitConfirmModal && isMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] p-6 space-y-5">
             <div>
               <h2 className="text-xl font-bold text-white">

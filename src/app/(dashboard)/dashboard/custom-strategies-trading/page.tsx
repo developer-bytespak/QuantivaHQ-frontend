@@ -95,22 +95,26 @@ export default function CustomStrategiesTradingPage() {
   // Mode: "paper" for testnet/paper trading, "live" for real trading
   const mode = searchParams.get("mode") || "paper";
   const isPaperMode = mode === "paper";
+
+  // Pre-select a specific strategy tab via ?strategy=<strategy_id>
+  const initialStrategyId = searchParams.get("strategy") || null;
   
   // Referrer tracking - where did the user come from?
   const referrer = searchParams.get("from") || (isPaperMode ? "paper-trading" : "top-trades");
   const pageNames: Record<string, string> = {
     "paper-trading": "Paper Trading",
     "top-trades": "Top Trades",
+    "my-strategies": "My Strategies",
   };
   const previousPageName = pageNames[referrer] || "Dashboard";
 
   // Connection type detection - using global context
-  const { connectionType, isLoading: isCheckingConnection } = useExchange();
+  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
   const isStocksConnection = connectionType === "stocks";
 
-  // Account data
+  // Account data (balance kept for trade modal position sizing, not displayed in header)
   const [balance, setBalance] = useState(0);
-  const [loadingBalance, setLoadingBalance] = useState(true);
+  const [marketOpen, setMarketOpen] = useState(true);
 
   // Custom strategies
   const [strategies, setStrategies] = useState<UserStrategy[]>([]);
@@ -130,7 +134,6 @@ export default function CustomStrategiesTradingPage() {
   const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
   const [showManualTradeModal, setShowManualTradeModal] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<Trade | null>(null);
-  const [marketOpen, setMarketOpen] = useState(true);
 
   // View modal for signal details
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -145,49 +148,25 @@ export default function CustomStrategiesTradingPage() {
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
 
-  // Fetch balance based on mode and connection type
+  // Fetch balance (for trade modals) and market open status
   useEffect(() => {
-    const fetchBalance = async () => {
+    const fetchBalanceAndStatus = async () => {
       if (!connectionType) return;
-      
-      setLoadingBalance(true);
       try {
-        if (isPaperMode) {
-          // Paper trading mode - use testnet services
-          if (isStocksConnection) {
-            const dashboard = await alpacaPaperTradingService.getDashboard();
-            setBalance(parseFloat(dashboard.account?.cash || "0"));
-            setMarketOpen(dashboard.clock?.isOpen || false);
-          } else {
-            const balanceData = await alpacaCryptoService.getAccountBalance();
-            setBalance(balanceData.totalBalanceUSD || 0);
-          }
+        if (isStocksConnection) {
+          const dashboard = await alpacaPaperTradingService.getDashboard();
+          setBalance(parseFloat(dashboard.account?.cash || "0"));
+          setMarketOpen(dashboard.clock?.isOpen || false);
         } else {
-          // Live trading mode - use main exchange APIs
-          if (isStocksConnection) {
-            // For live stocks, still using Alpaca but could be different account
-            const dashboard = await alpacaPaperTradingService.getDashboard();
-            setBalance(parseFloat(dashboard.account?.cash || "0"));
-            setMarketOpen(dashboard.clock?.isOpen || false);
-          } else {
-            // For live crypto - would use main Binance API
-            // For now, using same Alpaca paper for demo
-            const balanceData = await alpacaCryptoService.getAccountBalance();
-            setBalance(balanceData.totalBalanceUSD || 0);
-          }
+          const balanceData = await alpacaCryptoService.getAccountBalance();
+          setBalance(balanceData.totalBalanceUSD || 0);
         }
-      } catch (error: any) {
-        console.error("Failed to fetch balance:", error);
-        setBalance(0);
-      } finally {
-        setLoadingBalance(false);
+      } catch {
+        // ignore — balance display removed from header; modals will show 0 as fallback
       }
     };
-
-    if (connectionType) {
-      fetchBalance();
-    }
-  }, [connectionType, isPaperMode, isStocksConnection]);
+    if (connectionType) fetchBalanceAndStatus();
+  }, [connectionType, isStocksConnection]);
 
   // Fetch custom strategies
   useEffect(() => {
@@ -203,9 +182,13 @@ export default function CustomStrategiesTradingPage() {
         if (!Array.isArray(data)) {
           setStrategies([]);
         } else {
-          // Log each strategy's type
           data.forEach(s => console.log(`Strategy "${s.name}" (${s.strategy_id}): type=${s.type}`));
           setStrategies(data);
+          // If a strategy_id was passed via URL, jump to that tab
+          if (initialStrategyId) {
+            const idx = data.findIndex(s => s.strategy_id === initialStrategyId);
+            if (idx !== -1) setActiveTab(idx);
+          }
         }
       } catch (err: any) {
         console.error("Failed to load strategies:", err);
@@ -476,9 +459,13 @@ export default function CustomStrategiesTradingPage() {
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
         <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative">
-          {/* Back Button - Goes to Paper Trading or Top Trades */}
+          {/* Back Button - Goes to My Strategies, Top Trades, or Paper Trading */}
           <Link
-            href={referrer === "top-trades" ? "/dashboard/top-trades" : "/dashboard/paper-trading"}
+            href={
+              referrer === "my-strategies" ? "/dashboard/my-strategies"
+              : referrer === "top-trades" ? "/dashboard/top-trades"
+              : "/dashboard/paper-trading"
+            }
             className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors mb-3 group"
           >
             <svg
@@ -525,46 +512,30 @@ export default function CustomStrategiesTradingPage() {
               </p>
             </div>
 
-            {/* Action Buttons + Balance */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
               {/* My Strategies Button */}
               <Link
                 href={`/dashboard/my-strategies?from=${referrer}`}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-slate-800 to-slate-700 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-slate-700 hover:to-slate-600 transition-all border border-slate-600/50 hover:border-slate-500/50 shadow-lg shadow-slate-900/30"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/15 border border-white/25 hover:bg-white/20 hover:border-white/40 px-4 py-2.5 text-sm font-semibold text-[#fda300] transition-all duration-200 group"
                 title="View and manage your strategies"
               >
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <span className="text-white">My Strategies</span>
+                <span>My Strategies</span>
               </Link>
               {/* Create Strategy Button */}
               <Link
                 href={`/dashboard/my-strategies/create?from=${referrer}&via=custom-strategies-trading`}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:shadow-xl hover:shadow-[#fc4f02]/30 transition-all"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-[#fc4f02]/30 hover:scale-[1.02] transition-all duration-200 group"
                 title="Create a new custom strategy"
               >
-                <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
-                <span className="text-white">Create Strategy</span>
+                <span>Create Strategy</span>
               </Link>
-              {/* Balance Display */}
-              <div className="bg-white/5 rounded-xl px-5 py-3 border border-white/10">
-                <p className="text-xs text-slate-400 mb-1">Available Balance</p>
-                <p className="text-2xl font-bold text-white">
-                  {loadingBalance ? (
-                    <span className="inline-block w-24 h-7 bg-white/10 rounded animate-pulse"></span>
-                  ) : (
-                    formatCurrency(balance)
-                  )}
-                </p>
-                {isStocksConnection && (
-                  <p className={`text-xs mt-1 ${marketOpen ? "text-green-400" : "text-yellow-400"}`}>
-                    Market {marketOpen ? "Open" : "Closed"}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         </div>
@@ -669,7 +640,7 @@ export default function CustomStrategiesTradingPage() {
             ))}
           </div>
         ) : currentTrades.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-4">
             {currentTrades.map((trade, idx) => (
               <StrategyCard
                 key={trade.id}
@@ -684,24 +655,23 @@ export default function CustomStrategiesTradingPage() {
           </div>
         ) : (
           <div className="text-center py-16 rounded-2xl bg-white/5 border border-white/5">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#fc4f02]/20 flex items-center justify-center">
-              <svg className="w-8 h-8 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+              <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  strokeWidth={1.5}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Signals Coming Soon</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">No Buy Signals Right Now</h3>
             <p className="text-slate-400 mb-4 max-w-md mx-auto">
-              Signals are generated automatically every 10 minutes. Your strategy is active and 
-              signals will appear here shortly.
+              No actionable buy signals have been detected for this strategy yet. Signals will appear here automatically when the market conditions match your strategy rules.
             </p>
             <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              Auto-refresh enabled • Check back in a few minutes
+              Monitoring active • Signals update every 10 minutes
             </div>
           </div>
         )}

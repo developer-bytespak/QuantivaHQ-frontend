@@ -38,9 +38,8 @@ import {
 } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
 import { PoolTradesFlow } from "@/components/vcpool/pool-trades-flow";
-import { PoolSignalsTab } from "@/components/vcpool/pool-signals-tab";
 
-type Tab = "payments" | "reservations" | "members" | "trades" | "signals" | "cancellations" | "payouts";
+type Tab = "payments" | "reservations" | "members" | "trades" | "cancellations" | "payouts";
 
 function EditPoolModal({
   pool,
@@ -143,7 +142,7 @@ function EditPoolModal({
             </div>
             <div>
               <label className="block text-sm text-slate-400">Payment window (min)</label>
-              <input type="number" min={5} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <input type="number" min={1} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
@@ -592,7 +591,17 @@ export default function AdminPoolDetailsPage() {
           </div>
 
           {/* ═══════════ ACTION BUTTONS ═══════════ */}
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex flex-wrap gap-2 items-center items-center">
+              {/* Top Trade: show when pool is open, full, or active (not draft) */}
+              {(isOpen || isFull || isActive) && (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/admin/pools/${poolId}/top-trade`)}
+                  className="rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-xs font-semibold text-white hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                >
+                  Top Trade
+                </button>
+              )}
             {isDraft && (
               <button
                 type="button"
@@ -740,7 +749,7 @@ export default function AdminPoolDetailsPage() {
           {!isDraft && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
               <div className="flex flex-wrap border-b border-[--color-border]">
-                {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "signals", "cancellations", "payouts"] as Tab[]).map((tab) => (
+                {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "cancellations", "payouts"] as Tab[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"
@@ -774,9 +783,14 @@ export default function AdminPoolDetailsPage() {
                           >
                             <div>
                               <p className="font-medium text-white">
-                                {p.user_email ?? p.user_username ?? p.user_id}
+                                {(p as any).user?.username || (p as any).user?.full_name || p.user_username || p.user_email || p.user_id}
                               </p>
-                              <p className="text-xs text-slate-400">
+                              {((p as any).user?.email || p.user_email) && (
+                                <p className="text-xs text-slate-400 mt-0.5">
+                                  {(p as any).user?.email || p.user_email}
+                                </p>
+                              )}
+                              <p className="text-xs text-slate-400 mt-1">
                                 {p.payment_method} · {p.total_amount} ·{" "}
                                 <span className="capitalize">{p.status}</span>
                               </p>
@@ -845,15 +859,24 @@ export default function AdminPoolDetailsPage() {
                         {reservations.map((r) => (
                           <div
                             key={r.reservation_id}
-                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
+                            className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[--color-surface-alt] px-4 py-3 text-sm"
                           >
-                            <span className="font-medium text-white">
-                              {r.user_email ?? r.user_username ?? r.user_id}
-                            </span>
-                            <span className="text-xs capitalize">{r.status}</span>
-                            <span className="text-xs text-slate-400">
-                              Expires: {new Date(r.expires_at).toLocaleString()}
-                            </span>
+                            <div className="min-w-0">
+                              <p className="font-medium text-white truncate">
+                                {(r as any).user?.username || (r as any).user?.full_name || r.user_username || (r as any).user?.email || r.user_email || r.user_id}
+                              </p>
+                              {((r as any).user?.email || r.user_email) && (
+                                <p className="text-xs text-slate-400 truncate">
+                                  {(r as any).user?.email || r.user_email}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-slate-300">
+                              <span className="text-xs capitalize">{r.status}</span>
+                              <span className="text-xs text-slate-400">
+                                Expires: {new Date(r.expires_at).toLocaleString()}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -866,20 +889,49 @@ export default function AdminPoolDetailsPage() {
                       <p className="text-sm text-slate-400 py-4">No members yet.</p>
                     ) : (
                       <div className="space-y-2 overflow-x-auto">
-                        {members.map((m) => (
-                          <div
-                            key={m.member_id}
-                            className="flex items-center justify-between rounded-lg bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-300"
-                          >
-                            <span className="font-medium text-white">
-                              {m.user_email ?? m.user_username ?? m.user_id}
-                            </span>
-                            <span className="text-xs">Share: {m.share_percent}%</span>
-                            <span className="text-xs text-slate-400">
-                              Joined {new Date(m.joined_at).toLocaleDateString()}
-                            </span>
-                          </div>
-                        ))}
+                        {members.map((m) => {
+                          const displayName =
+                            m.user?.full_name?.trim() ||
+                            m.user?.username ||
+                            `Member ${m.member_id.slice(0, 8)}`;
+                          const invested =
+                            m.invested_amount_usdt != null
+                              ? Number(m.invested_amount_usdt).toFixed(2)
+                              : "—";
+                          return (
+                            <div
+                              key={m.member_id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[--color-surface-alt] px-4 py-3 text-sm"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-medium text-white truncate">
+                                  {displayName}
+                                </p>
+                                {m.user?.email && (
+                                  <p className="text-xs text-slate-400 truncate">
+                                    {m.user.email}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-4 text-slate-300">
+                                <span className="text-xs">
+                                  Invested: <span className="text-white font-medium">{invested} USDT</span>
+                                </span>
+                                <span className="text-xs">
+                                  Share: <span className="text-white font-medium">{Number(m.share_percent).toFixed(2)}%</span>
+                                </span>
+                                <span className="text-xs text-slate-400">
+                                  Joined {new Date(m.joined_at).toLocaleDateString()}
+                                </span>
+                                {m.is_active === false && (
+                                  <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs text-amber-300">
+                                    Exited
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </>
@@ -896,16 +948,6 @@ export default function AdminPoolDetailsPage() {
                     onCloseTrade={handleCloseTrade}
                     saving={saving}
                     actionSubmitting={actionSubmitting}
-                  />
-                )}
-                {activeTab === "signals" && (
-                  <PoolSignalsTab
-                    poolId={poolId}
-                    pool={pool}
-                    onTradePlaced={() => {
-                      load();
-                      loadTrades();
-                    }}
                   />
                 )}
                 {activeTab === "cancellations" && (
@@ -977,8 +1019,13 @@ export default function AdminPoolDetailsPage() {
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div>
                                 <p className="font-medium text-white">
-                                  {p.member?.user?.email ?? p.member?.user?.full_name ?? p.member?.member_id}
+                                  {p.member?.user?.full_name?.trim() || p.member?.user?.email?.split("@")[0] || p.member?.member_id}
                                 </p>
+                                {p.member?.user?.email && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    {p.member.user.email}
+                                  </p>
+                                )}
                                 <p className="text-xs text-slate-400 mt-1">
                                   Type: <span className="capitalize">{p.payout_type.replace("_", " ")}</span> · Net: {p.net_payout} · P/L: {p.profit_loss} · Status: <span className="capitalize">{p.status}</span>
                                 </p>

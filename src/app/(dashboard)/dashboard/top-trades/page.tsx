@@ -10,9 +10,18 @@ import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
 import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
 import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
+import { TopTradeVcPoolContext } from "./context/top-trade-vc-pool-context";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
+
+export interface TopTradesPageProps {
+  /** When set, page runs in admin VC Pool mode: trades execute via adminCreateTrade(poolId, body) */
+  vcPoolId?: string;
+  /** Override connection (used in admin mode when user context has no connection) */
+  connectionId?: string;
+  connectionType?: "crypto" | "stocks";
+}
 
 // --- Formatting helpers ---
 const formatCurrency = (v: any) => {
@@ -168,12 +177,15 @@ const toDurationLabel = (minutes: number): string => {
 
 const normalizeOrderStatus = (value: any): string => String(value ?? "UNKNOWN").toUpperCase();
 
-export default function TopTradesPage() {
+export default function TopTradesPage(props?: TopTradesPageProps) {
   // Connection type detection - using global context
-  const { connectionType, connectionId, isLoading: isCheckingConnection } = useExchange();
+  const { vcPoolId, connectionId: propConnectionId, connectionType: propConnectionType } = props ?? {};
+  const { connectionType: ctxConnectionType, connectionId: ctxConnectionId, isLoading: isCheckingConnection } = useExchange();
+  const connectionId = propConnectionId ?? ctxConnectionId;
+  const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
   const { currentSubscription } = useSubscriptionStore();
-  const canAccessTopTrades = currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE);
+  const canAccessTopTrades = !!vcPoolId || (currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE));
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -1046,8 +1058,8 @@ export default function TopTradesPage() {
     if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
   };
 
-  // Show loading while checking connection
-  if (isCheckingConnection) {
+  // Show loading while checking connection (skip when admin pool mode with connection override)
+  if (!vcPoolId && isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -1055,8 +1067,8 @@ export default function TopTradesPage() {
     );
   }
 
-  // Top Trades is PRO and ELITE only
-  if (!currentSubscription) {
+  // Top Trades is PRO and ELITE only (skip when admin VC Pool mode)
+  if (!vcPoolId && !currentSubscription) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
@@ -1083,7 +1095,7 @@ export default function TopTradesPage() {
   }
 
   // --- UI Rendering (reuse existing layout and style) ---
-  return (
+  const content = (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
       {/* Stocks Info Banner removed per user request */}
 
@@ -1100,7 +1112,7 @@ export default function TopTradesPage() {
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 items-center">
           <Link
             href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 whitespace-nowrap flex items-center gap-1.5 text-white"
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:opacity-90 shadow-lg shadow-[#fc4f02]/30 whitespace-nowrap flex items-center gap-1.5 text-white"
             title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2247,5 +2259,12 @@ export default function TopTradesPage() {
         </div>
       )}
     </div>
+  );
+  return vcPoolId ? (
+    <TopTradeVcPoolContext.Provider value={vcPoolId}>
+      {content}
+    </TopTradeVcPoolContext.Provider>
+  ) : (
+    content
   );
 }

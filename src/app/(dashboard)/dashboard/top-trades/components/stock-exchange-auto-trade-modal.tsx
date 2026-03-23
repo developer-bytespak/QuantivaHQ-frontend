@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { adminCreateTrade } from "@/lib/api/vcpool-admin";
+import { useTopTradeVcPoolId } from "../context/top-trade-vc-pool-context";
 import {
   formatCurrency,
   formatPercent,
@@ -25,6 +27,8 @@ export function StockExchangeAutoTradeModal({
   onSuccess,
   strategy,
 }: StockExchangeAutoTradeModalProps) {
+  const vcPoolId = useTopTradeVcPoolId();
+  const isPoolTrade = !!vcPoolId;
   const [balance, setBalance] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [usdAmount, setUsdAmount] = useState("");
@@ -50,6 +54,10 @@ export function StockExchangeAutoTradeModal({
   const quantityDisplay = quantity > 0 ? quantity.toFixed(4).replace(/\.?0+$/, "") : "—";
 
   useEffect(() => {
+    if (isPoolTrade) {
+      setLoadingBalance(false);
+      return;
+    }
     let cancelled = false;
     exchangesService.getBalance(connectionId).then((res) => {
       if (cancelled || !res?.data?.assets) return;
@@ -58,7 +66,7 @@ export function StockExchangeAutoTradeModal({
     }).catch(() => { if (!cancelled) setBalance(0); })
       .finally(() => { if (!cancelled) setLoadingBalance(false); });
     return () => { cancelled = true; };
-  }, [connectionId]);
+  }, [connectionId, isPoolTrade]);
 
   const handleExecute = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +75,7 @@ export function StockExchangeAutoTradeModal({
       setError("Enter a valid USD amount");
       return;
     }
-    if (amountNum > balance) {
+    if (!isPoolTrade && amountNum > balance) {
       setError(`Insufficient balance. Need ${formatCurrency(amountNum)} but only have ${formatCurrency(balance)}`);
       return;
     }
@@ -82,17 +90,29 @@ export function StockExchangeAutoTradeModal({
     }
     try {
       setExecuting(true);
-      const response = await exchangesService.placeOrder(connectionId, {
-        symbol,
-        side: "BUY",
-        type: "MARKET",
-        quantity: shares,
-      });
-      if (response?.success) {
+      if (vcPoolId) {
+        await adminCreateTrade(vcPoolId, {
+          asset_pair: symbol,
+          action: "BUY",
+          quantity: shares,
+          entry_price_usdt: entryPrice,
+          notes: null,
+        });
         onSuccess();
         onClose();
       } else {
-        setError("Order failed");
+        const response = await exchangesService.placeOrder(connectionId, {
+          symbol,
+          side: "BUY",
+          type: "MARKET",
+          quantity: shares,
+        });
+        if (response?.success) {
+          onSuccess();
+          onClose();
+        } else {
+          setError("Order failed");
+        }
       }
     } catch (err: any) {
       let msg = err?.message ?? "Failed to place order";

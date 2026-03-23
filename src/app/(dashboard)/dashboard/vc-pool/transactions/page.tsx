@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getMyTransactions, type MyTransaction } from "@/lib/api/vc-pools";
+import {
+  getAllTransactions,
+  getTransactionSummary,
+  type MyTransaction,
+  type TransactionFilters,
+  type TransactionSummary,
+} from "@/lib/api/vc-pools";
 import { getApiErrorMessage } from "@/lib/utils/errors";
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
@@ -72,33 +78,72 @@ function formatTransactionType(type: string): string {
   return labels[type] ?? type;
 }
 
+function SummaryCard({
+  label,
+  value,
+  sub,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  color: string;
+}) {
+  return (
+    <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-4">
+      <p className="text-xs text-slate-400 mb-1">{label}</p>
+      <p className={`text-xl font-bold ${color}`}>{value}</p>
+      {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
 export default function TransactionsPage() {
   const router = useRouter();
   const { canAccessFeature } = useSubscriptionStore();
   const canAccessVCPool = canAccessFeature(FeatureType.VC_POOL_ACCESS);
+
   const [transactions, setTransactions] = useState<MyTransaction[]>([]);
+  const [summary, setSummary] = useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTransactions = () => {
+  // Filters
+  const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 20;
+
+  const fetchData = useCallback(() => {
     if (!canAccessVCPool) return;
     setLoading(true);
     setError(null);
-    getMyTransactions()
-      .then(setTransactions)
-      .catch((err: unknown) =>
-        setError(getApiErrorMessage(err, "Failed to load transactions"))
-      )
+
+    const filters: TransactionFilters = { page, limit };
+    if (statusFilter) filters.status = statusFilter;
+    if (typeFilter) filters.type = typeFilter;
+
+    Promise.all([getAllTransactions(filters), getTransactionSummary()])
+      .then(([txRes, summaryRes]) => {
+        setTransactions(txRes.transactions ?? txRes as unknown as MyTransaction[]);
+        setTotalPages(txRes.pagination?.totalPages ?? 1);
+        setSummary(summaryRes);
+      })
+      .catch((err: unknown) => {
+        // Fallback: if the enhanced endpoints are not available, use the array response
+        setError(getApiErrorMessage(err, "Failed to load transactions"));
+      })
       .finally(() => setLoading(false));
-  };
+  }, [canAccessVCPool, page, statusFilter, typeFilter]);
 
   useEffect(() => {
     if (!canAccessVCPool) {
       setLoading(false);
       return;
     }
-    fetchTransactions();
-  }, [canAccessVCPool]);
+    fetchData();
+  }, [fetchData, canAccessVCPool]);
 
   return (
     <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
@@ -121,6 +166,7 @@ export default function TransactionsPage() {
           <span className="text-white/90 group-hover:text-[#fda300]">Back to VC pools</span>
         </Link>
 
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Transaction History</h1>
@@ -128,35 +174,84 @@ export default function TransactionsPage() {
               Audit log of all your VC Pool payment events.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={fetchTransactions}
-            disabled={loading}
-            className="rounded-xl border border-[--color-border] px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60 transition-colors"
-          >
-            {loading ? "Loading…" : "Refresh"}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/vc-pool/my-submissions")}
-            className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-          >
-            My submissions
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={fetchData}
+              disabled={loading}
+              className="rounded-xl border border-[--color-border] px-4 py-2 text-sm font-medium text-slate-300 hover:bg-white/5 disabled:opacity-60 transition-colors"
+            >
+              {loading ? "Loading…" : "Refresh"}
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/vc-pool/my-submissions")}
+              className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            >
+              My submissions
+            </button>
+          </div>
         </div>
 
+        {/* Summary Cards */}
+        {summary && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+            <SummaryCard label="Total" value={summary.total_transactions} color="text-white" />
+            <SummaryCard label="Deposited" value={`$${summary.total_deposited.toLocaleString()}`} color="text-green-400" />
+            <SummaryCard label="Withdrawn" value={`$${summary.total_withdrawn.toLocaleString()}`} color="text-blue-400" />
+            <SummaryCard label="Pending" value={summary.pending_count} color="text-yellow-400" />
+            <SummaryCard label="Verified" value={summary.verified_count} color="text-green-400" />
+            <SummaryCard label="Rejected" value={summary.rejected_count} color="text-red-400" />
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-200 focus:border-[#fc4f02] focus:outline-none"
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="verified">Verified</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <select
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
+            className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-200 focus:border-[#fc4f02] focus:outline-none"
+          >
+            <option value="">All Types</option>
+            <option value="payment_submitted">Payment Submitted</option>
+            <option value="payment_verified">Payment Verified</option>
+            <option value="payment_rejected">Payment Rejected</option>
+          </select>
+          {(statusFilter || typeFilter) && (
+            <button
+              type="button"
+              onClick={() => { setStatusFilter(""); setTypeFilter(""); setPage(1); }}
+              className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-16">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
           </div>
         )}
 
+        {/* Error */}
         {!loading && error && (
           <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100 flex flex-wrap items-center justify-between gap-3">
             <span>{error}</span>
             <button
               type="button"
-              onClick={() => { setError(null); fetchTransactions(); }}
+              onClick={() => { setError(null); fetchData(); }}
               className="shrink-0 rounded-lg bg-red-500/20 border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-200 hover:bg-red-500/30 transition-colors"
             >
               Try again
@@ -164,73 +259,98 @@ export default function TransactionsPage() {
           </div>
         )}
 
+        {/* Empty */}
         {!loading && !error && transactions.length === 0 && (
           <div className="rounded-xl border border-[--color-border] bg-[--color-surface-alt] p-8 text-center text-slate-400">
             <svg className="mx-auto h-12 w-12 text-slate-600 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
-            <p>No transactions yet.</p>
+            <p>No transactions found.</p>
             <Link href="/dashboard/vc-pool" className="mt-4 inline-block text-[#fc4f02] hover:underline font-medium">
               Browse available pools
             </Link>
           </div>
         )}
 
+        {/* Transaction List */}
         {!loading && !error && transactions.length > 0 && (
-          <div className="space-y-3">
-            {transactions.map((tx) => (
-              <div
-                key={tx.transaction_id}
-                className="rounded-xl border border-[--color-border] bg-[--color-surface] p-4 hover:border-[--color-border] transition-colors"
-              >
-                <div className="flex items-start gap-4">
-                  <TransactionTypeIcon type={tx.transaction_type} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-white">
-                          {formatTransactionType(tx.transaction_type)}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">{tx.pool_name}</p>
+          <>
+            <div className="space-y-3">
+              {transactions.map((tx) => (
+                <Link
+                  key={tx.transaction_id}
+                  href={`/dashboard/vc-pool/transactions/${tx.transaction_id}`}
+                  className="block rounded-xl border border-[--color-border] bg-[--color-surface] p-4 hover:border-[#fc4f02]/40 transition-colors"
+                >
+                  <div className="flex items-start gap-4">
+                    <TransactionTypeIcon type={tx.transaction_type} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-white">
+                            {formatTransactionType(tx.transaction_type)}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">{tx.pool_name}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm font-mono font-semibold text-white">
+                            {tx.amount_usdt} USDT
+                          </span>
+                          <StatusBadge status={tx.status} />
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-mono font-semibold text-white">
-                          {tx.amount_usdt} USDT
-                        </span>
-                        <StatusBadge status={tx.status} />
+
+                      <p className="text-xs text-slate-300 mt-2">{tx.description}</p>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                        {(tx.tx_hash || tx.binance_tx_id) && (
+                          <span>
+                            TX: <span className="font-mono text-slate-400">{(tx.tx_hash || tx.binance_tx_id || "").slice(0, 16)}…</span>
+                          </span>
+                        )}
+                        {tx.expected_amount && (
+                          <span>
+                            Expected: <span className="font-mono text-slate-400">{tx.expected_amount}</span>
+                          </span>
+                        )}
+                        {tx.actual_amount_received && (
+                          <span>
+                            Received: <span className="font-mono text-slate-400">{tx.actual_amount_received}</span>
+                          </span>
+                        )}
+                        <span>{new Date(tx.created_at).toLocaleString()}</span>
                       </div>
-                    </div>
-
-                    <p className="text-xs text-slate-300 mt-2">{tx.description}</p>
-
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                      {(tx.tx_hash || tx.binance_tx_id) && (
-                        <span>
-                          TX Hash: <span className="font-mono text-slate-400">{tx.tx_hash || tx.binance_tx_id}</span>
-                        </span>
-                      )}
-                      {tx.expected_amount && (
-                        <span>
-                          Expected: <span className="font-mono text-slate-400">{tx.expected_amount}</span>
-                        </span>
-                      )}
-                      {tx.actual_amount_received && (
-                        <span>
-                          Received: <span className="font-mono text-slate-400">{tx.actual_amount_received}</span>
-                        </span>
-                      )}
-                      <span>{new Date(tx.created_at).toLocaleString()}</span>
-                      {tx.resolved_at && (
-                        <span>
-                          Resolved: {new Date(tx.resolved_at).toLocaleString()}
-                        </span>
-                      )}
                     </div>
                   </div>
-                </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-6">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="rounded-lg border border-[--color-border] px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40 transition-colors"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-slate-400">
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="rounded-lg border border-[--color-border] px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40 transition-colors"
+                >
+                  Next
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

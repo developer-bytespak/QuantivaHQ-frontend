@@ -42,7 +42,11 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
 
     useEffect(() => {
         const getAllNotifications = async () => {
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifications/unread`);
+            const accessToken = localStorage.getItem("quantivahq_access_token");
+            if (!accessToken) return;
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifications/unread`, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
             if(response.status === 200){
                 setNotificationCount(response.data);
             }else{

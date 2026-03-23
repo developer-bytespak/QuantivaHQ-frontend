@@ -112,10 +112,8 @@ export default function AdminPoolsPage() {
             <Link
               key={pool.pool_id}
               href={`/admin/pools/${pool.pool_id}`}
-              className="group relative rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden hover:border-[#fc4f02]/50 transition-all hover:shadow-lg hover:shadow-[#fc4f02]/10"
+              className="group relative rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden hover:border-[#fc4f02] transition-all"
             >
-              {/* Gradient background overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
               {/* ── Pool header with gradient ── */}
               <div className="relative bg-gradient-to-r from-[#fc4f02]/80 via-[#fc4f02]/60 to-[#fda300]/40 p-4 border-b border-[#fc4f02]/30">
@@ -161,13 +159,13 @@ export default function AdminPoolsPage() {
                 </div>
 
                 {/* Financial metrics if available */}
-                {(pool.total_invested_usdt || pool.current_pool_value_usdt) && (
+                {(pool.total_invested_usdt || pool.current_pool_value_usdt) ? (
                   <>
-                    <div className="border-t border-[--color-border] pt-3">
-                      <p className="text-xs text-slate-400 font-medium mb-2">Performance</p>
-                      <div className="grid grid-cols-2 gap-2">
+                    <div className="border-t border-[--color-border] pt-2">
+                      <p className="text-xs text-slate-400 font-medium mb-1">Performance</p>
+                      <div className="grid grid-cols-2 gap-1.5">
                         {pool.total_invested_usdt && (
-                          <div className="rounded-lg bg-[--color-surface-alt] p-2">
+                          <div className="rounded-lg bg-[--color-surface-alt] p-1.5">
                             <p className="text-xs text-slate-400">Invested</p>
                             <p className="text-sm font-semibold text-white">
                               ${Number(pool.total_invested_usdt).toLocaleString(undefined, {
@@ -177,7 +175,7 @@ export default function AdminPoolsPage() {
                           </div>
                         )}
                         {pool.current_pool_value_usdt && (
-                          <div className="rounded-lg bg-[--color-surface-alt] p-2">
+                          <div className="rounded-lg bg-[--color-surface-alt] p-1.5">
                             <p className="text-xs text-slate-400">Current</p>
                             <p className="text-sm font-semibold text-white">
                               ${Number(pool.current_pool_value_usdt).toLocaleString(undefined, {
@@ -191,7 +189,7 @@ export default function AdminPoolsPage() {
 
                     {/* Profit/Loss */}
                     {pool.total_profit_usdt && (
-                      <div className={`rounded-lg p-3 ${
+                      <div className={`rounded-lg p-2 ${
                         Number(pool.total_profit_usdt) >= 0
                           ? 'bg-green-500/10 border border-green-500/20'
                           : 'bg-red-500/10 border border-red-500/20'
@@ -209,6 +207,14 @@ export default function AdminPoolsPage() {
                       </div>
                     )}
                   </>
+                ) : (
+                  <div className="border-t border-[--color-border] pt-2">
+                    <p className="text-xs text-slate-400 font-medium mb-1">Performance</p>
+                    <div className="rounded-lg bg-[--color-surface-alt]/40 p-2.5 text-center">
+                      <p className="text-xs text-slate-500">Awaiting pool launch</p>
+                      <p className="text-xs text-slate-600 mt-1">Performance data will appear here</p>
+                    </div>
+                  </div>
                 )}
 
                 {/* Footer with timestamps */}
@@ -223,16 +229,6 @@ export default function AdminPoolsPage() {
                       <span>{new Date(pool.started_at).toLocaleDateString()}</span>
                     </p>
                   )}
-                </div>
-              </div>
-
-              {/* ── Hover action indicator ── */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-sm rounded-xl">
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-white mb-1">View Details</p>
-                  <svg className="w-5 h-5 text-[#fc4f02] mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
                 </div>
               </div>
             </Link>
