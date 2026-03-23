@@ -31,6 +31,7 @@ import {
   type AdminPoolMember,
   type AdminPoolTrade,
   type AdminTradesSummary,
+  type AdminPoolCapital,
   type AdminOpenTradeRequest,
   type UpdatePoolRequest,
   type AdminCancellation,
@@ -39,7 +40,7 @@ import {
 import { useNotification, Notification } from "@/components/common/notification";
 import { PoolTradesFlow } from "@/components/vcpool/pool-trades-flow";
 
-type Tab = "payments" | "reservations" | "members" | "trades" | "cancellations" | "payouts";
+type Tab = "payments" | "reservations" | "members" | "orders" | "cancellations" | "payouts";
 
 function EditPoolModal({
   pool,
@@ -172,6 +173,7 @@ export default function AdminPoolDetailsPage() {
   // Phase 1D: Start pool + Trades
   const [trades, setTrades] = useState<AdminPoolTrade[]>([]);
   const [tradesSummary, setTradesSummary] = useState<AdminTradesSummary | null>(null);
+  const [poolCapital, setPoolCapital] = useState<AdminPoolCapital | null>(null);
   const [tradesLoading, setTradesLoading] = useState(false);
   const [tradeStatusFilter, setTradeStatusFilter] = useState<"open" | "closed" | "all">("open");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -238,10 +240,12 @@ export default function AdminPoolDetailsPage() {
       .then((r) => {
         setTrades(r.trades);
         setTradesSummary(r.summary);
+        setPoolCapital(r.pool_capital ?? null);
       })
       .catch(() => {
         setTrades([]);
         setTradesSummary(null);
+        setPoolCapital(null);
       })
       .finally(() => setTradesLoading(false));
   };
@@ -494,7 +498,7 @@ export default function AdminPoolDetailsPage() {
       case "members":
         loadMembers();
         break;
-      case "trades":
+      case "orders":
         loadTrades();
         break;
       case "cancellations":
@@ -774,7 +778,14 @@ export default function AdminPoolDetailsPage() {
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] overflow-hidden">
               <div className="flex flex-wrap items-center justify-between border-b border-[--color-border]">
                 <div className="flex flex-wrap">
-                  {(["payments", "reservations", "members", ...(isActive ? ["trades"] : []), "cancellations", "payouts"] as Tab[]).map((tab) => (
+                  {([
+                    "payments",
+                    "reservations",
+                    "members",
+                    ...(isActive ? ["orders"] : []),
+                    "cancellations",
+                    "payouts",
+                  ] as Tab[]).map((tab) => (
                     <button
                       key={tab}
                       type="button"
@@ -972,7 +983,7 @@ export default function AdminPoolDetailsPage() {
                     )}
                   </>
                 )}
-                {activeTab === "trades" && isActive && (
+                {activeTab === "orders" && isActive && (
                   <PoolTradesFlow
                     pool={pool}
                     trades={trades}
@@ -980,10 +991,10 @@ export default function AdminPoolDetailsPage() {
                     tradesLoading={tradesLoading}
                     tradeStatusFilter={tradeStatusFilter}
                     onFilterChange={setTradeStatusFilter}
-                    onOpenTrade={handleOpenTrade}
                     onCloseTrade={handleCloseTrade}
                     saving={saving}
                     actionSubmitting={actionSubmitting}
+                    poolCapital={poolCapital}
                   />
                 )}
                 {activeTab === "cancellations" && (

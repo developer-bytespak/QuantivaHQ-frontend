@@ -1405,10 +1405,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         </div>
       )}
 
-      {/* Crypto Auto Trade: uses user's Binance/Bybit connection */}
-      {showAutoTradeModal && selectedSignal && !isStocksConnection && connectionId && (
+      {/* Crypto Auto Trade: uses user's Binance/Bybit connection (or admin pool trade) */}
+      {showAutoTradeModal && selectedSignal && !isStocksConnection && (connectionId || vcPoolId) && (
         <ExchangeAutoTradeModal
-          connectionId={connectionId}
+          connectionId={connectionId ?? ""}
           signal={selectedSignal}
           onClose={() => { setShowAutoTradeModal(false); setSelectedSignal(null); }}
           onSuccess={handleAutoTradeSuccess}

@@ -46,6 +46,11 @@ import type {
   AdminBinanceWithdrawalsResponse,
   AdminBinanceAnalytics,
   AdminBinanceTransactionFilters,
+  AdminExchangeOrder,
+  AdminPlaceExchangeOrderRequest,
+  AdminPlaceExchangeOrderResponse,
+  AdminExchangeOrdersListResponse,
+  AdminCloseExchangeOrderRequest,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
@@ -397,7 +402,58 @@ export async function adminCloseTrade(
   return data;
 }
 
-// ---- Phase 1E: Cancellations, Payouts, Complete, Cancel pool ----
+/** POST /admin/pools/:poolId/trades/from-signal — Open a trade from a strategy signal */
+export async function adminTradeFromSignal(
+  poolId: string,
+  signalId: string
+): Promise<AdminPoolTrade> {
+  const { data } = await adminAxios.post<AdminPoolTrade>(
+    `/admin/pools/${poolId}/trades/from-signal`,
+    { signal_id: signalId }
+  );
+  return data;
+}
+
+/** POST /admin/pools/:poolId/orders/place — Place a direct MARKET or LIMIT order on Binance */
+export async function adminPlaceExchangeOrder(
+  poolId: string,
+  body: AdminPlaceExchangeOrderRequest
+): Promise<AdminPlaceExchangeOrderResponse> {
+  const { data } = await adminAxios.post<AdminPlaceExchangeOrderResponse>(
+    `/admin/pools/${poolId}/orders/place`,
+    body
+  );
+  return data;
+}
+
+/** GET /admin/pools/:poolId/exchange-trades?status=&page=&limit= */
+export async function adminListExchangeOrders(
+  poolId: string,
+  params?: { status?: "open" | "closed"; page?: number; limit?: number }
+): Promise<AdminExchangeOrdersListResponse> {
+  const search = new URLSearchParams();
+  if (params?.status) search.set("status", params.status);
+  if (params?.page != null) search.set("page", String(params.page));
+  if (params?.limit != null) search.set("limit", String(params.limit));
+  const query = search.toString();
+  const { data } = await adminAxios.get<AdminExchangeOrdersListResponse>(
+    `/admin/pools/${poolId}/exchange-trades${query ? `?${query}` : ""}`
+  );
+  return data;
+}
+
+/** PUT /admin/pools/:poolId/exchange-orders/:orderId/close — Close an exchange order */
+export async function adminCloseExchangeOrder(
+  poolId: string,
+  orderId: string,
+  body: AdminCloseExchangeOrderRequest
+): Promise<AdminExchangeOrder> {
+  const { data } = await adminAxios.put<AdminExchangeOrder>(
+    `/admin/pools/${poolId}/exchange-orders/${orderId}/close`,
+    body
+  );
+  return data;
+}
 
 /** GET /admin/pools/:id/cancellations */
 export async function adminListCancellations(poolId: string): Promise<AdminCancellationsListResponse> {
