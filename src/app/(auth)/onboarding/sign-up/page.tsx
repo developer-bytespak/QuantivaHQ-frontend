@@ -100,14 +100,25 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const USERNAME_BLOCKED_CHARS = /[@#$%!]/;
+  const normalizeUsername = (value: string) =>
+    value.toLowerCase().replace(/\s+/g, "").replace(/[@#$%!]/g, "");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setShowForgotPasswordLink(false);
 
     if (activeTab === "signup") {
+      const normalizedUsername = normalizeUsername(fullName);
+      const emailFallbackUsername = normalizeUsername(email.split("@")[0] || "");
+
       if (!fullName || !email || !password || !confirmPassword) {
         setError("Please fill in all fields");
+        return;
+      }
+      if (!normalizedUsername) {
+        setError("Username cannot contain spaces only");
         return;
       }
       if (password !== confirmPassword) {
@@ -132,7 +143,7 @@ export default function SignUpPage() {
           method: "POST",
           body: {
             email,
-            username: fullName.split(" ")[0] || email.split("@")[0],
+            username: normalizedUsername || emailFallbackUsername,
             password,
           },
           credentials: "include",
@@ -140,7 +151,7 @@ export default function SignUpPage() {
 
         // Store user info
         localStorage.setItem("quantivahq_user_email", email);
-        localStorage.setItem("quantivahq_user_name", fullName || email.split("@")[0]);
+        localStorage.setItem("quantivahq_user_name", normalizedUsername || emailFallbackUsername);
         localStorage.setItem("quantivahq_auth_method", "email");
         localStorage.setItem("quantivahq_is_authenticated", "true");
         localStorage.setItem("quantivahq_is_new_signup", "true"); // Flag for new signup
@@ -681,9 +692,16 @@ export default function SignUpPage() {
                           id="fullName"
                           type="text"
                           value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
+                          onChange={(e) => setFullName(normalizeUsername(e.target.value))}
+                          onKeyDown={(e) => {
+                            if (e.key === " " || USERNAME_BLOCKED_CHARS.test(e.key)) {
+                              e.preventDefault();
+                            }
+                          }}
                           className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
                           placeholder="johndoe"
+                          autoCapitalize="none"
+                          autoCorrect="off"
                           required={activeTab === "signup"}
                         />
                       </div>
