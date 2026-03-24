@@ -31,6 +31,7 @@ export default function SignUpPage() {
   const [forgotOtp, setForgotOtp] = useState("");
   const [forgotNewPassword, setForgotNewPassword] = useState("");
   const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [forgotResetToken, setForgotResetToken] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotError, setForgotError] = useState("");
   /** Show "Forgot password?" only when login failed with password incorrect error */
@@ -364,7 +365,8 @@ export default function SignUpPage() {
     setForgotError("");
     setForgotLoading(true);
     try {
-      await verifyForgotPasswordOtp(forgotEmail.trim(), forgotOtp.trim());
+      const result = await verifyForgotPasswordOtp(forgotEmail.trim(), forgotOtp.trim());
+      setForgotResetToken(result.resetToken);
       setForgotStep("password");
     } catch (e: any) {
       setForgotError(e?.message || "Invalid or expired OTP. Please try again.");
@@ -385,11 +387,7 @@ export default function SignUpPage() {
     setForgotError("");
     setForgotLoading(true);
     try {
-      await resetPasswordForgot(forgotEmail.trim(), forgotOtp.trim(), forgotNewPassword);
-      console.log("[Forgot Password] Password changed successfully", {
-        email: forgotEmail.trim(),
-        step: "reset_done",
-      });
+      await resetPasswordForgot(forgotResetToken, forgotNewPassword);
       setShowForgotPopup(false);
       showNotification("Password changed successfully. You can sign in with your new password.", "success");
     } catch (e: any) {
