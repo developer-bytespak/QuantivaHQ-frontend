@@ -99,8 +99,9 @@ function UserProfileSection() {
       try {
         // Try to get profile from API first (includes profile_pic_url)
         const profile = await getUserProfile();
-        setUserName(profile.full_name || profile.username || "User");
-        setUserInitial((profile.full_name || profile.username || "User").charAt(0).toUpperCase());
+        const displayName = profile.username || profile.full_name || "User";
+        setUserName(displayName);
+        setUserInitial(displayName.charAt(0).toUpperCase());
         
         // Use profile_pic_url from API if available
         if (profile.profile_pic_url) {

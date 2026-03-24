@@ -28,6 +28,7 @@ export default function TradingPanel({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [canTrade, setCanTrade] = useState<boolean | null>(null);
+  const [displayBalance, setDisplayBalance] = useState<number>(availableBalance || 0);
 
   useEffect(() => {
     // Check trading permissions
@@ -51,6 +52,35 @@ export default function TradingPanel({
       setPrice(currentPrice.toFixed(2));
     }
   }, [currentPrice]);
+
+  useEffect(() => {
+    setDisplayBalance(availableBalance || 0);
+  }, [availableBalance]);
+
+  const refreshAvailableBalance = async () => {
+    try {
+      const balanceResponse = await exchangesService.getBalance(connectionId);
+      if (!balanceResponse.success || !balanceResponse.data) return;
+
+      const quoteAsset = balanceResponse.data.assets?.find(
+        (asset) => asset.symbol.toUpperCase() === quoteCurrency.toUpperCase()
+      );
+
+      if (quoteAsset) {
+        const parsedBalance = parseFloat(quoteAsset.free);
+        if (Number.isFinite(parsedBalance)) {
+          setDisplayBalance(parsedBalance);
+          return;
+        }
+      }
+
+      if (typeof balanceResponse.data.buyingPower === "number" && Number.isFinite(balanceResponse.data.buyingPower)) {
+        setDisplayBalance(balanceResponse.data.buyingPower);
+      }
+    } catch (refreshError) {
+      console.error("Failed to refresh available balance after order:", refreshError);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,10 +122,7 @@ export default function TradingPanel({
       if (response.success) {
         setSuccess(`Order placed successfully! Order ID: ${response.data.orderId}`);
         setQuantity("");
-        // Refresh balance after order
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        void refreshAvailableBalance();
       } else {
         setError("Failed to place order");
       }
@@ -336,7 +363,7 @@ export default function TradingPanel({
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Available Balance</span>
             <span className="text-sm font-semibold text-slate-300">
-              {(availableBalance || 0).toFixed(2)} <span className="text-slate-500">{quoteCurrency}</span>
+              {displayBalance.toFixed(2)} <span className="text-slate-500">{quoteCurrency}</span>
             </span>
           </div>
           {orderType === "MARKET" && (
