@@ -1815,7 +1815,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
       {/* Positions Modal */}
       {showPositionsModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl flex items-center justify-center z-[10000] p-4">
           <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
             <div className="sticky top-0 bg-[--color-surface] border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
               <div>
@@ -1835,7 +1835,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </div>
 
             {/* Tabs */}
-            <div className="sticky top-[76px] sm:top-[96px] z-20 border-b border-slate-700 px-4 sm:px-6 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
+            <div className="sticky top-[88px] sm:top-[116px] z-20 border-b border-slate-700 px-4 sm:px-6 py-2 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
               <button 
                 onClick={() => setPositionsModalTab("positions")}
                 className={`px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all border-b-2 ${
@@ -2024,18 +2024,13 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
       {/* Leaderboard Modal - Trading Performance */}
       {showLeaderboardModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg sm:rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl flex items-center justify-center z-[10000] p-4">
+          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
             {/* Fixed Header */}
-            <div className="flex-shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] flex items-center justify-center font-bold text-white">
-                  TH
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-white">Trading Performance</h2>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-1">View closed trades and open positions</p>
-                </div>
+            <div className="sticky top-0 flex-shrink-0 bg-[--color-surface] border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg sm:text-2xl font-semibold text-white">Trading Performance</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">View closed trades and open positions</p>
               </div>
               <button
                 onClick={() => { setShowLeaderboardModal(false); setLeaderboardTab("history"); setHistoryFilter("all"); setLeaderboardHistoryPage(1); setLeaderboardPositionsPage(1); }}
@@ -2048,23 +2043,23 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </div>
 
             {/* Fixed Main Tabs */}
-            <div className="flex-shrink-0 px-4 sm:px-6 py-4 flex gap-3 overflow-x-auto bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700">
+            <div className="sticky top-[76px] sm:top-[96px] z-20 border-b border-slate-700 px-4 sm:px-6 py-2 min-h-[72px] sm:min-h-[80px] flex items-end gap-3 overflow-x-auto overflow-y-hidden bg-[--color-surface]/95 backdrop-blur">
               <button 
                 onClick={() => setLeaderboardTab("history")}
-                className={`px-6 py-3 text-sm font-medium whitespace-nowrap rounded-full transition-all flex-1 max-w-xs ${
+                className={`px-6 h-[52px] sm:h-[56px] text-base sm:text-lg font-semibold whitespace-nowrap border-b-2 transition-all ${
                   leaderboardTab === "history"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent "
                 }`}
               >
                 Trade History
               </button>
               <button 
                 onClick={() => setLeaderboardTab("positions")}
-                className={`px-6 py-3 text-sm font-medium whitespace-nowrap rounded-full transition-all flex-1 max-w-xs ${
+                className={`px-6 h-[52px] sm:h-[56px] text-base sm:text-lg font-semibold whitespace-nowrap border-b-2 transition-all ${
                   leaderboardTab === "positions"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
                 Open Positions ({modalPositions.length})
@@ -2078,22 +2073,22 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               {leaderboardTab === "history" && (
                 <>
                   {/* Fixed: Stats + Filter Tabs */}
-                  <div className="flex-shrink-0 px-4 sm:px-6 pt-4 pb-4 space-y-4 border-b border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
+                  <div className="flex-shrink-0 px-4 sm:px-6 pt-5 pb-5 space-y-4 border-b border-slate-700 bg-[--color-surface]/95 backdrop-blur">
                     {positionsModalLoading && (
                       <div className="text-sm text-slate-300">Loading trade history...</div>
                     )}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 p-4 text-center">
                         <div className="text-slate-400 text-sm mb-2">Total Trades</div>
                         <div className="text-2xl font-bold text-white">{modalTradeSummary?.totalTrades ?? historyRowsFiltered.length}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 p-4 text-center">
                         <div className="text-slate-400 text-sm mb-2">Total P&L</div>
                         <div className={`text-2xl font-bold ${leaderboardTotalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(modalTradeSummary?.totalProfitLoss ?? leaderboardTotalPnl)}
                         </div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 p-4 text-center">
                         <div className="text-slate-400 text-sm mb-2">Avg Profit</div>
                         <div className={`text-2xl font-bold ${leaderboardAvgProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(leaderboardAvgProfit)}
@@ -2118,7 +2113,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   </div>
 
                   {/* Scrollable: Trade List */}
-                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                     {pagedHistoryRows.map((trade, idx) => (
                       <div key={`${trade.symbol}-${idx}`} className={`bg-slate-800/30 rounded-lg p-4 border-l-4 ${trade.profitLoss < 0 ? 'border-red-500' : 'border-green-500'}`}>
                         <div className="flex items-center justify-between">
@@ -2145,7 +2140,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   </div>
 
                   {/* Fixed: Pagination */}
-                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-between">
+                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-5 bg-[--color-surface]/95 backdrop-blur flex items-center justify-between">
                     <div className="text-sm text-slate-400">
                       Showing {Math.min((leaderboardHistoryPage - 1) * LEADERBOARD_ITEMS_PER_PAGE + 1, historyRowsFiltered.length)} - {Math.min(leaderboardHistoryPage * LEADERBOARD_ITEMS_PER_PAGE, historyRowsFiltered.length)} of {historyRowsFiltered.length} trades
                     </div>
@@ -2153,7 +2148,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardHistoryPage(p => Math.max(1, p - 1))} 
                         disabled={leaderboardHistoryPage === 1} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Prev
                       </button>
@@ -2161,7 +2156,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardHistoryPage(p => Math.min(Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
                         disabled={leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE))} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Next
                       </button>
@@ -2174,21 +2169,21 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               {leaderboardTab === "positions" && (
                 <>
                   {/* Fixed: Stats + Section Header */}
-                  <div className="flex-shrink-0 px-4 sm:px-6 pt-4 pb-4 space-y-4 border-b border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
+                  <div className="flex-shrink-0 px-4 sm:px-6 pt-5 pb-5 space-y-4 border-b border-slate-700 bg-[--color-surface]/95 backdrop-blur">
                     <div className="grid grid-cols-4 gap-4">
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 p-4 text-center">
                         <div className="text-slate-400 text-sm mb-2">Total Positions</div>
                         <div className="text-2xl font-bold text-white">{modalPositions.length}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 p-4 text-center">
                         <div className="text-slate-400 text-sm mb-2">Positions Up</div>
                         <div className="text-2xl font-bold text-green-400">{leaderboardUpPositions}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 p-4 text-center">
                         <div className="text-slate-400 text-sm mb-2">Positions Down</div>
                         <div className="text-2xl font-bold text-red-400">{leaderboardDownPositions}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 p-4 text-center">
                         <div className="text-slate-400 text-sm mb-2">Unrealized P&L</div>
                         <div className={`text-2xl font-bold ${leaderboardUnrealizedTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(leaderboardUnrealizedTotal)}
@@ -2206,7 +2201,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   </div>
 
                   {/* Scrollable: Positions List */}
-                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
                     {pagedLeaderboardPositions.map((position, idx) => (
                       <div key={`${position.symbol}-${idx}`} className="bg-slate-800/30 rounded-lg p-4">
                         <div className="flex items-start justify-between">
@@ -2234,7 +2229,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   </div>
 
                   {/* Fixed: Pagination */}
-                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-between">
+                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-5 bg-[--color-surface]/95 backdrop-blur flex items-center justify-between">
                     <div className="text-sm text-slate-400">
                       Showing {Math.min((leaderboardPositionsPage - 1) * LEADERBOARD_ITEMS_PER_PAGE + 1, modalPositions.length)} - {Math.min(leaderboardPositionsPage * LEADERBOARD_ITEMS_PER_PAGE, modalPositions.length)} of {modalPositions.length} positions
                     </div>
@@ -2242,7 +2237,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardPositionsPage(p => Math.max(1, p - 1))} 
                         disabled={leaderboardPositionsPage === 1} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Prev
                       </button>
@@ -2250,7 +2245,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardPositionsPage(p => Math.min(Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
                         disabled={leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE))} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Next
                       </button>
