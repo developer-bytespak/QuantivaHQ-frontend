@@ -219,15 +219,15 @@ export async function navigateToNextRoute(
     if (returnTo) {
       try {
         const decodedPath = decodeURIComponent(returnTo);
-        // Only use return path if it's a valid dashboard route
-        if (decodedPath.startsWith('/dashboard')) {
-          console.log(`Flow router: Returning to stored path → ${decodedPath}`);
+        // Validate the path is same-origin and starts with /dashboard
+        const url = new URL(decodedPath, window.location.origin);
+        if (url.origin === window.location.origin && url.pathname.startsWith('/dashboard')) {
           sessionStorage.removeItem('quantivahq_return_to'); // Clear after use
-          router.push(decodedPath);
+          router.push(url.pathname);
           return;
         }
       } catch (e) {
-        console.warn('Failed to decode return path:', e);
+        // Invalid path — ignore
         sessionStorage.removeItem('quantivahq_return_to');
       }
     }
@@ -235,7 +235,6 @@ export async function navigateToNextRoute(
 
   // No stored return path, use normal flow logic
   const result = await determineNextRoute();
-  console.log(`Flow router: ${result.reason} → ${result.route}`);
   router.push(result.route);
 }
 

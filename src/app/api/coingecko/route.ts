@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Strict allowlist of permitted CoinGecko endpoints to prevent SSRF
+const ALLOWED_STATIC_ENDPOINTS = new Set([
+  "coins/markets",
+  "coins/list",
+  "search/trending",
+  "simple/price",
+  "simple/supported_vs_currencies",
+  "global",
+  "search",
+]);
+
+// Pattern for coin detail endpoints: coins/{id} where id is alphanumeric with hyphens
+const COIN_DETAIL_REGEX = /^coins\/[a-z0-9-]+$/;
+
 /**
  * CoinGecko API Proxy
  * This endpoint proxies requests to CoinGecko API to avoid CORS issues
@@ -13,12 +27,18 @@ export async function GET(request: NextRequest) {
 
     // Handle special case where endpoint contains path parameters (e.g., coins/bitcoin)
     if (endpoint.includes("/") && !endpoint.startsWith("coins/markets")) {
-      // Endpoint like "coins/bitcoin" - extract the coin ID
       const endpointParts = endpoint.split("/");
       if (endpointParts[0] === "coins" && endpointParts.length > 1) {
-        // This is a coin detail request
         endpoint = `coins/${endpointParts[1]}`;
       }
+    }
+
+    // Validate endpoint against allowlist to prevent SSRF
+    if (!ALLOWED_STATIC_ENDPOINTS.has(endpoint) && !COIN_DETAIL_REGEX.test(endpoint)) {
+      return NextResponse.json(
+        { error: "Invalid endpoint" },
+        { status: 400 }
+      );
     }
 
     // Copy all query parameters except 'endpoint'
@@ -39,15 +59,12 @@ export async function GET(request: NextRequest) {
       ? "https://pro-api.coingecko.com/api/v3"
       : "https://api.coingecko.com/api/v3";
 
-    // Debug logging in development
+    // Debug logging in development (no sensitive data)
     if (process.env.NODE_ENV === "development") {
       console.log("CoinGecko Proxy Request:", {
         endpoint,
         hasApiKey: !!COINGECKO_API_KEY,
-        keyLength: COINGECKO_API_KEY?.length || 0,
-        keyPrefix: COINGECKO_API_KEY?.substring(0, 3) || "none",
         isProApiKey,
-        baseUrl,
       });
     }
 

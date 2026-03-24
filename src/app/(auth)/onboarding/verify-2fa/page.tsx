@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api/client";
 import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
 import { getCurrentUser } from "@/lib/api/user";
+import { logger } from "@/lib/utils/logger";
 
 export default function Verify2FAPage() {
   const router = useRouter();
@@ -79,23 +80,11 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_user_id", userData.user_id);
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
-      localStorage.removeItem("quantivahq_pending_password");
+      sessionStorage.removeItem("quantivahq_pending_password");
 
       // Store tokens from response as fallback if cookies don't work (cross-origin issue)
       if (response.accessToken) {
-        console.log("[2FA] Storing tokens from response body as fallback");
-        localStorage.setItem("quantivahq_access_token", response.accessToken);
-        if (response.refreshToken) {
-          localStorage.setItem("quantivahq_refresh_token", response.refreshToken);
-        }
-        if (response.sessionId) {
-          localStorage.setItem("quantivahq_session_id", response.sessionId);
-        }
-      }
-
-      // Store tokens from response as fallback if cookies don't work (cross-origin issue)
-      if (response.accessToken) {
-        console.log("[2FA] Storing tokens from response body as fallback");
+        logger.info("[2FA] Storing tokens from response body as fallback");
         localStorage.setItem("quantivahq_access_token", response.accessToken);
         if (response.refreshToken) {
           localStorage.setItem("quantivahq_refresh_token", response.refreshToken);
@@ -107,7 +96,7 @@ export default function Verify2FAPage() {
 
       // Debug: Log cookies to verify they're being set
       if (process.env.NODE_ENV === "development") {
-        console.log("[2FA] Cookies after verification:", document.cookie);
+        logger.info("[2FA] Cookies after verification: [redacted]");
       }
 
       // Wait for cookies to be properly stored by the browser before navigation
@@ -117,9 +106,9 @@ export default function Verify2FAPage() {
       // Verify authentication before navigating
       try {
         await getCurrentUser();
-        console.log("[2FA] Authentication verified successfully");
+        logger.info("[2FA] Authentication verified successfully");
       } catch (authError: any) {
-        console.error("[2FA] Authentication verification failed:", authError);
+        logger.error("[2FA] Authentication verification failed");
         // If auth verification fails, still try to navigate but log the issue
         // The flow router will handle redirects if needed
       }
@@ -127,7 +116,7 @@ export default function Verify2FAPage() {
       // Use flow router to determine next step
       await navigateToNextRoute(router);
     } catch (error: any) {
-      console.error("[2FA] Verification error:", error);
+      logger.error("[2FA] Verification error");
       setError(error.message || "Invalid verification code. Please try again.");
     } finally {
       setIsLoading(false);
@@ -142,7 +131,7 @@ export default function Verify2FAPage() {
 
     try {
       // Re-login to trigger new 2FA code
-      const password = localStorage.getItem("quantivahq_pending_password");
+      const password = sessionStorage.getItem("quantivahq_pending_password");
       if (!password) {
         setError("Please go back and login again");
         setIsLoading(false);

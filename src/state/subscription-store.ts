@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { logger } from '@/lib/utils/logger';
 import { 
   PlanTier, 
   BillingPeriod, 
@@ -282,14 +283,14 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         }
       );
 
-      console.log('API response status:', response);
+      logger.info('API response status:', response);
 
       if (!response.ok) {
         throw new Error(`API error: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('Fetched subscription data:', data);
+      logger.info('Fetched subscription data:', data);
 
       // Convert date strings to Date objects for currentSubscription
       let currentSubscription = data.current ? {

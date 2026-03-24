@@ -3,7 +3,7 @@
  * Frontend service for Alpaca paper trading automation (stocks + crypto)
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 const AUTO_TRADING_URL = `${BASE_URL}/alpaca-paper-trading/auto-trading`;
 
 export const alpacaAutoTradingService = {

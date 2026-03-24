@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { adminLogin } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
+import { getSafeRedirect } from "@/lib/utils/security";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function AdminLoginPage() {
     try {
       await adminLogin({ email: email.trim(), password });
       showNotification("Login successful", "success");
-      router.replace(returnTo.startsWith("/admin") ? returnTo : "/admin/dashboard");
+      router.replace(getSafeRedirect(returnTo, "/admin/dashboard", "/admin"));
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message ?? "Login failed";
       showNotification(message, "error");

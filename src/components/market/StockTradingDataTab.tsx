@@ -93,7 +93,7 @@ export default function StockTradingDataTab({ symbol, currentPrice, connectionId
         if (connectionId) {
           detailData = await exchangesService.getStockDetail(connectionId, symbol.toUpperCase());
         } else {
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
           const detailResponse = await fetch(`${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}`);
           if (!detailResponse.ok) throw new Error(`Failed to fetch stock data: ${detailResponse.status}`);
           detailData = await detailResponse.json();
@@ -104,7 +104,7 @@ export default function StockTradingDataTab({ symbol, currentPrice, connectionId
           const barsData = await exchangesService.getStockBars(connectionId, symbol.toUpperCase(), "1Hour", 10);
           setRecentBars(barsData.bars || []);
         } else {
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
           const barsResponse = await fetch(
             `${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}/bars?timeframe=1Hour&limit=10`
           );

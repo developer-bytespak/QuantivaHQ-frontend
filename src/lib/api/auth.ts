@@ -87,22 +87,22 @@ export async function sendForgotPasswordOtp(email: string): Promise<{ message: s
   });
 }
 
-/** Forgot password: verify OTP sent to email. */
-export async function verifyForgotPasswordOtp(email: string, otp: string): Promise<{ message: string }> {
-  return apiRequest<{ email: string; otp: string }, { message: string }>({
+/** Forgot password: verify OTP sent to email. Returns a resetToken for the next step. */
+export async function verifyForgotPasswordOtp(email: string, otp: string): Promise<{ message: string; resetToken: string }> {
+  return apiRequest<{ email: string; code: string }, { message: string; resetToken: string }>({
     path: "/auth/forgot-password/verify-otp",
     method: "POST",
-    body: { email: email.trim(), otp: otp.trim() },
+    body: { email: email.trim(), code: otp.trim() },
     credentials: "include",
   });
 }
 
-/** Forgot password: set new password after OTP verified. */
-export async function resetPasswordForgot(email: string, otp: string, newPassword: string): Promise<{ message: string }> {
-  return apiRequest<{ email: string; otp: string; newPassword: string }, { message: string }>({
+/** Forgot password: set new password using the resetToken from verify-otp. */
+export async function resetPasswordForgot(resetToken: string, newPassword: string): Promise<{ message: string }> {
+  return apiRequest<{ resetToken: string; newPassword: string }, { message: string }>({
     path: "/auth/forgot-password/reset",
     method: "POST",
-    body: { email: email.trim(), otp: otp.trim(), newPassword },
+    body: { resetToken, newPassword },
     credentials: "include",
   });
 }
@@ -116,7 +116,7 @@ export async function resetPasswordForgot(email: string, otp: string, newPasswor
 export async function verifyPassword(
   password: string
 ): Promise<VerifyPasswordResponse> {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
   
   const headers: HeadersInit = {
     "Content-Type": "application/json",
