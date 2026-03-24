@@ -170,12 +170,15 @@ export default function CustomStrategiesTradingPage() {
 
   // Fetch custom strategies
   useEffect(() => {
+    if (connectionType === null) return;
     const fetchStrategies = async () => {
       setLoadingStrategies(true);
       setStrategiesError(null);
       try {
+        const assetType = connectionType === "stocks" ? "stock" : connectionType === "crypto" ? "crypto" : null;
+        const queryParam = assetType ? `?asset_type=${assetType}` : "";
         const data = await apiRequest<never, UserStrategy[]>({
-          path: "/strategies/my-strategies",
+          path: `/strategies/my-strategies${queryParam}`,
           method: "GET",
         });
         console.log("📊 Fetched strategies:", data);
@@ -199,7 +202,7 @@ export default function CustomStrategiesTradingPage() {
     };
 
     fetchStrategies();
-  }, []);
+  }, [connectionType]);
 
   // Fetch signals for a strategy
   const fetchStrategySignals = async (strategyId: string, isRefresh = false) => {
