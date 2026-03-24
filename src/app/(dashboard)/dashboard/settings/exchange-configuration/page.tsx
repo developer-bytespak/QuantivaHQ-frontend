@@ -24,16 +24,18 @@ function getEffectiveAccountType(
     (c) => c.exchange?.type === "stocks",
   );
 
+  // Always prefer actual connection data over localStorage
   if (hasCrypto && hasStocks) return "both";
+  if (hasCrypto) return "crypto";
+  if (hasStocks) return "stocks";
 
+  // No connections at all — fall back to localStorage
   const stored = typeof window !== "undefined"
     ? localStorage.getItem("quantivahq_account_type")
     : null;
   if (stored === "crypto" || stored === "stocks" || stored === "both")
     return stored;
 
-  if (hasCrypto) return "crypto";
-  if (hasStocks) return "stocks";
   return "crypto";
 }
 
@@ -79,6 +81,7 @@ export default function ExchangeConfigurationPage() {
 
   useEffect(() => {
     setMounted(true);
+    refetch();
   }, []);
 
   // Sync localStorage with effective account type (so deleting one of "both" updates to crypto/stocks)
