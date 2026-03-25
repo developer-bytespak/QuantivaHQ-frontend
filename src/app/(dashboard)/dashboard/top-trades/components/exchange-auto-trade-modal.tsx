@@ -38,7 +38,11 @@ export function ExchangeAutoTradeModal({
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
-  const symbol = base.endsWith("USDT") ? base : base + "USDT";
+  const normalizedBase = base.toUpperCase();
+  const knownQuotes = ["USDT", "USDC", "BUSD", "TUSD", "USDP", "DAI", "FDUSD", "USD"];
+  const currentQuote = knownQuotes.find((q) => normalizedBase.endsWith(q));
+  const baseAsset = currentQuote ? normalizedBase.slice(0, normalizedBase.length - currentQuote.length) : normalizedBase;
+  const symbol = `${baseAsset}${quoteAsset}`;
   const entryPrice = Number(signal?.entryPrice ?? signal?.entry ?? 0) || 0;
 
   /** Round quantity to a step size that aligns with Binance LOT_SIZE for the asset's price range.

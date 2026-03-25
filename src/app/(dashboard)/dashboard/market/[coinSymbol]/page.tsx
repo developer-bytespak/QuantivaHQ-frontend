@@ -84,7 +84,7 @@ export default function MarketDetailPage() {
   const symbol = params.coinSymbol as string;
 
   // Get connection from global context (fetched once on app start)
-  const { connectionId, connectionType } = useExchange();
+  const { connectionId, connectionType, activeConnection } = useExchange();
   
   const [coinData, setCoinData] = useState<CoinDetailData | null>(null);
   const [stockData, setStockData] = useState<StockDetailData | null>(null);
@@ -103,8 +103,16 @@ export default function MarketDetailPage() {
   const [coinGeckoDataFallback, setCoinGeckoDataFallback] = useState<Awaited<ReturnType<typeof getCoinDetails>> | null>(null);
 
   // Phase 6: Real-time price streaming via WebSocket
+  const defaultQuote = (() => {
+    const exchangeName = activeConnection?.exchange?.name?.toLowerCase() || "";
+    if (exchangeName === "binance.us" || exchangeName === "binanceus" || exchangeName === "binance-us") {
+      return "USD";
+    }
+    return "USDT";
+  })();
+
   const realtimePrice = useRealtimePrice({
-    symbol: coinData?.tradingPair || `${symbol.toUpperCase()}USDT`,
+    symbol: coinData?.tradingPair || `${symbol.toUpperCase()}${defaultQuote}`,
     connectionId: connectionId || '',
     enabled: connectionType === 'crypto' && !!connectionId && !!coinData,
     initialPrice: coinData?.currentPrice,
@@ -167,7 +175,7 @@ export default function MarketDetailPage() {
           }
         } else {
           // Crypto logic
-          const tradingPair = `${symbol.toUpperCase()}USDT`;
+          const tradingPair = `${symbol.toUpperCase()}${defaultQuote}`;
           
           // Phase 5: Try unified endpoint first, fallback to legacy
           let coinDetailData: CoinDetailData | null = null;
