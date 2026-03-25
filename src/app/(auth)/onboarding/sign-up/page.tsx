@@ -190,8 +190,7 @@ export default function SignUpPage() {
           if (loginResponse.requires2FA) {
             // Store pending email for 2FA verification (password kept in memory only)
             localStorage.setItem("quantivahq_pending_email", email);
-            sessionStorage.setItem("quantivahq_pending_password", password);
-            
+
             // Navigate to 2FA verification page
             router.push("/onboarding/verify-2fa");
           } else if (loginResponse.accessToken) {
@@ -266,9 +265,8 @@ export default function SignUpPage() {
 
         // Check if 2FA is required
         if (response.requires2FA) {
-          // Store pending email for 2FA verification (password in sessionStorage, not localStorage)
+          // Store pending email for 2FA verification (password kept in memory only)
           localStorage.setItem("quantivahq_pending_email", email);
-          sessionStorage.setItem("quantivahq_pending_password", password);
           localStorage.setItem("quantivahq_user_email", email);
           localStorage.setItem("quantivahq_auth_method", "email");
           
