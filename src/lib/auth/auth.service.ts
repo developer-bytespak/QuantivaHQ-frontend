@@ -94,15 +94,14 @@ export const authService = {
 
   async logout() {
     // Call backend logout API FIRST (with access token still in localStorage)
+    // Authorization header is automatically added by axios interceptor
     // This allows the server to clean up sessions using the session_id from the access token
     if (typeof window !== "undefined") {
       try {
-        const accessToken = localStorage.getItem("quantivahq_access_token");
         await apiRequest<never, { message: string }>({
           path: "/auth/logout",
           method: "POST",
           credentials: "include",
-          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
         });
       } catch (err) {
         // Logout API errors are OK, we'll still clear client state
