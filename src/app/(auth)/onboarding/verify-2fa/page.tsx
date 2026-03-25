@@ -80,7 +80,6 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_user_id", userData.user_id);
       localStorage.setItem("quantivahq_is_authenticated", "true");
       localStorage.removeItem("quantivahq_pending_email");
-      sessionStorage.removeItem("quantivahq_pending_password");
 
       // Store tokens from response as fallback if cookies don't work (cross-origin issue)
       if (response.accessToken) {
@@ -130,29 +129,20 @@ export default function Verify2FAPage() {
     setIsLoading(true);
 
     try {
-      // Re-login to trigger new 2FA code
-      const password = sessionStorage.getItem("quantivahq_pending_password");
-      if (!password) {
-        setError("Please go back and login again");
-        setIsLoading(false);
-        return;
-      }
-
-      await apiRequest<{
-        emailOrUsername: string;
-        password: string;
-      }>({
-        path: "/auth/login",
+      // Call resend endpoint - 2fa_token is automatically sent in cookies
+      await apiRequest({
+        path: "/auth/resend-2fa-code",
         method: "POST",
         body: {
           emailOrUsername,
-          password,
         },
+        credentials: "include",
       });
 
       setResendCooldown(60); // 60 second cooldown
-      setError(""); // Clear any previous errors
+      setError(""); // Clear any errors
     } catch (error: any) {
+      logger.error("[2FA] Resend error:", error);
       setError(error.message || "Failed to resend code. Please try again.");
     } finally {
       setIsLoading(false);
