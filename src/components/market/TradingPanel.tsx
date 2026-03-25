@@ -30,6 +30,15 @@ export default function TradingPanel({
   const [canTrade, setCanTrade] = useState<boolean | null>(null);
   const [displayBalance, setDisplayBalance] = useState<number>(availableBalance || 0);
 
+  const resolvedTradingSymbol = (() => {
+    const upper = (symbol || "").toUpperCase();
+    const quote = (quoteCurrency || "USDT").toUpperCase();
+    const knownQuotes = ["USDT", "USDC", "BUSD", "TUSD", "USDP", "DAI", "FDUSD", "USD"];
+    const existingQuote = knownQuotes.find((q) => upper.endsWith(q));
+    const base = existingQuote ? upper.slice(0, upper.length - existingQuote.length) : upper;
+    return `${base}${quote}`;
+  })();
+
   useEffect(() => {
     // Check trading permissions
     const checkPermissions = async () => {
@@ -110,7 +119,7 @@ export default function TradingPanel({
       setIsSubmitting(true);
 
       const orderData = {
-        symbol,
+        symbol: resolvedTradingSymbol,
         side,
         type: orderType,
         quantity: quantityNum,
