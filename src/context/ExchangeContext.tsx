@@ -154,7 +154,7 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchConnectionInfo();
-  }, []);
+  }, [fetchConnectionInfo]);
 
   const setSelectedDashboardType = useCallback((type: "crypto" | "stocks") => {
     localStorage.setItem(DASHBOARD_TYPE_KEY, type);
