@@ -1,10 +1,10 @@
 'use client'
 
-import axios from "axios";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { io, Socket } from "socket.io-client";
 import { getCurrentUser } from "@/lib/api/user";
+import { apiRequest } from "@/lib/api/client";
 import { logger } from "@/lib/utils/logger";
 
 interface ISocketContext {
@@ -45,13 +45,11 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
         const getAllNotifications = async () => {
             const accessToken = localStorage.getItem("quantivahq_access_token");
             if (!accessToken) return;
-            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/notifications/unread`, {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-            if(response.status === 200){
-                setNotificationCount(response.data);
-            }else{
-                logger.error("error",response);
+            try {
+                const count = await apiRequest<void, number>({ path: '/notifications/unread' });
+                setNotificationCount(count);
+            } catch (error) {
+                logger.error("error", error);
                 toast.error("Error fetching notifications");
             }
         }
