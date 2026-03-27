@@ -98,6 +98,10 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
             });
 
             return () => {
+                _socket.off('connection:status');
+                _socket.off('notification:count');
+                _socket.off('notification:read');
+                _socket.off('mark_notification_read');
                 _socket.disconnect();
                 socketRef.current = null;
                 setSocket(undefined);
