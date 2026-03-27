@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, ReactNode } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
 
 interface AuthGuardProps {
@@ -11,7 +11,6 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children, redirectTo = "/onboarding/sign-up?tab=login" }: AuthGuardProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(true);
 
@@ -60,8 +59,9 @@ export function AuthGuard({ children, redirectTo = "/onboarding/sign-up?tab=logi
             
             // Store the current path so we can redirect back after login
             // Only store if it's a dashboard route (not auth routes)
-            if (pathname && pathname.startsWith('/dashboard')) {
-              const returnTo = encodeURIComponent(pathname);
+            const currentPath = window.location.pathname;
+            if (currentPath && currentPath.startsWith('/dashboard')) {
+              const returnTo = encodeURIComponent(currentPath);
               // Store in sessionStorage (cleared on tab close) to preserve during redirect
               sessionStorage.setItem('quantivahq_return_to', returnTo);
             }
@@ -83,7 +83,12 @@ export function AuthGuard({ children, redirectTo = "/onboarding/sign-up?tab=logi
     return () => {
       isMounted = false;
     };
-  }, [router, redirectTo, pathname]);
+  // Only check auth on mount — not on every pathname change.
+  // Re-checking on navigation causes a redundant /auth/me call on every
+  // client-side route change, which can make pages appear stuck while the
+  // request is in-flight.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, redirectTo]);
 
   // Show loading state while checking authentication
   if (isChecking) {

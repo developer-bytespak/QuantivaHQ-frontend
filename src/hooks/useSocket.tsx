@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import { io, Socket } from "socket.io-client";
 import { getCurrentUser } from "@/lib/api/user";
@@ -98,6 +98,10 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
             });
 
             return () => {
+                _socket.off('connection:status');
+                _socket.off('notification:count');
+                _socket.off('notification:read');
+                _socket.off('mark_notification_read');
                 _socket.disconnect();
                 socketRef.current = null;
                 setSocket(undefined);
@@ -109,8 +113,13 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
     }, [socket])
 
 
+    const value = useMemo<ISocketContext>(() => ({
+        sendMessage, socket, onlineUsers, notificationCount,
+        notifications, setNotifications, setNotificationDropdownOpen, setNotificationCount,
+    }), [sendMessage, socket, onlineUsers, notificationCount, notifications, setNotifications, setNotificationDropdownOpen, setNotificationCount]);
+
     return (
-        <SocketContext.Provider value={{ sendMessage, socket, onlineUsers, notificationCount, notifications, setNotifications, setNotificationDropdownOpen,setNotificationCount }}>
+        <SocketContext.Provider value={value}>
             { children }
         </SocketContext.Provider>
     )
