@@ -9,6 +9,7 @@ import { useMobileNav } from "@/hooks/useMobileNav";
 import { SubscriptionBadge } from "@/components/common/subscription-badge";
 import { NotificationDropdown } from "@/components/common/notification-dropdown";
 import { useExchange } from "@/context/ExchangeContext";
+import { QhqBalanceChip } from "@/components/common/qhq-balance-chip";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -25,6 +26,7 @@ const pageTitles: Record<string, string> = {
   "/dashboard/settings/security": "Security",
   "/dashboard/settings/help-support": "Help and Support",
   "/dashboard/settings/terms": "Terms and Conditions",
+  "/dashboard/qhq": "QHQ Token Wallet",
   "/ai/strategy-mode": "Strategy Mode",
   "/sentiment/news": "Live News",
   "/charts/advanced": "Advanced Charts",
@@ -448,6 +450,7 @@ export function TopBar() {
         <DashboardSwitcher headingRef={headingRef} />
       </div>
       <div className="flex items-center gap-2 sm:gap-3 sm:gap-4">
+        <QhqBalanceChip />
         <NotificationDropdown />
         <SubscriptionBadge />
         <MobileMenuButton />
