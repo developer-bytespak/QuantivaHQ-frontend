@@ -152,6 +152,7 @@ export function ExchangeAutoTradeModal({
           side: "BUY",
           type: "MARKET",
           quantity: roundToLotSize(quantity, entryPrice),
+          source: "top_trade",  // 👈 Signal backend to auto-place OCO
         });
         if (response?.success) {
           // Show a warning if the OCO (stop-loss / take-profit) order failed

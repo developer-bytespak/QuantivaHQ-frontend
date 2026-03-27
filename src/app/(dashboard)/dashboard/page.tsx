@@ -489,10 +489,10 @@ export default function DashboardPage() {
     );
   }, [dashboardData]);
 
-  const recentOrders = useMemo(() => {
+  const otherStatusOrders = useMemo(() => {
     if (!dashboardData || !dashboardData.orders) return [];
     return (dashboardData.orders || [])
-      .filter((o: any) => o.status !== "CANCELED" && o.status !== "EXPIRED")
+      .filter((o: any) => o.status !== "FILLED" && o.status !== "CANCELED" && o.status !== "EXPIRED")
       .slice()
       .sort((a: any, b: any) => {
         const at = Number(a?.time || a?.created_at || 0);
@@ -501,7 +501,7 @@ export default function DashboardPage() {
       });
   }, [dashboardData]);
 
-  const actionOrders = openOrders.length > 0 ? openOrders : recentOrders;
+  const actionOrders = openOrders.length > 0 ? openOrders : otherStatusOrders;
 
   const totalOrderPages = Math.max(1, Math.ceil((actionOrders || []).length / ORDERS_PER_PAGE));
 
@@ -647,13 +647,13 @@ export default function DashboardPage() {
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
                 <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
-                  {openOrders.length > 0 ? "Open limit & market orders" : "Recent exchange orders"}
+                  {openOrders.length > 0 ? "Open limit & market orders" : "All exchange orders"}
                 </p>
               </div>
               <div className="flex items-center gap-1.5 rounded-full bg-[#fc4f02]/10 border border-[#fc4f02]/20 px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#fc4f02] animate-pulse"></span>
                 <span className="text-[10px] sm:text-xs font-medium text-[#fda300]">
-                  {openOrders.length > 0 ? `${(openOrders || []).length} open` : `${(actionOrders || []).length} recent`}
+                  {openOrders.length > 0 ? `${(openOrders || []).length} open` : `${(otherStatusOrders || []).length} orders`}
                 </span>
               </div>
             </div>

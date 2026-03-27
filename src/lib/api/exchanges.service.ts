@@ -434,6 +434,7 @@ export const exchangesService = {
       quantity: number;
       price?: number;
       autoOco?: boolean;
+      source?: string;
     }
   ): Promise<ApiResponse<Order>> {
     return apiRequest<{
@@ -443,6 +444,7 @@ export const exchangesService = {
       quantity: number;
       price?: number;
       autoOco?: boolean;
+      source?: string;
     }, ApiResponse<Order>>({
       path: `/exchanges/connections/${connectionId}/orders/place`,
       method: "POST",
