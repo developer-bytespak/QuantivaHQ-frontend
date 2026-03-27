@@ -6,8 +6,16 @@ import { exchangesService, CoinDetailResponse, CandlesByInterval, EmbeddedMarket
 import { useExchange } from "@/context/ExchangeContext";
 import { useRealtimePrice } from "@/hooks/useRealtimePrice";
 import CoinDetailHeader from "@/components/market/CoinDetailHeader";
-import CoinPriceChart from "@/components/market/CoinPriceChart";
-import StockPriceChart from "@/components/market/StockPriceChart";
+import dynamic from "next/dynamic";
+
+const CoinPriceChart = dynamic(() => import("@/components/market/CoinPriceChart"), {
+  ssr: false,
+  loading: () => <div className="h-[400px] animate-pulse rounded-xl bg-[--color-surface-alt]/60" />,
+});
+const StockPriceChart = dynamic(() => import("@/components/market/StockPriceChart"), {
+  ssr: false,
+  loading: () => <div className="h-[400px] animate-pulse rounded-xl bg-[--color-surface-alt]/60" />,
+});
 import TradingPanel from "@/components/market/TradingPanel";
 import StockTradingPanel from "@/components/market/StockTradingPanel";
 import InfoTab from "@/components/market/InfoTab";
