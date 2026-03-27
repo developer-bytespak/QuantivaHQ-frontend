@@ -257,7 +257,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [showPositionsModal, setShowPositionsModal] = useState(false);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [positionsModalPage, setPositionsModalPage] = useState(1);
-  const [positionsModalTab, setPositionsModalTab] = useState<"positions" | "all" | "pending" | "filled" | "canceled">("positions");
+  const [positionsModalTab, setPositionsModalTab] = useState<"all" | "pending" | "filled" | "canceled">("all");
   const [leaderboardTab, setLeaderboardTab] = useState<"history" | "positions">("history");
   const [historyFilter, setHistoryFilter] = useState<"all" | "profitable" | "loss" | "recent" | "p&l" | "duration">("all");
   const [leaderboardHistoryPage, setLeaderboardHistoryPage] = useState(1);
@@ -973,13 +973,22 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     [modalOrders],
   );
 
+  const currentPriceBySymbol = useMemo(() => {
+    const priceMap: Record<string, number> = {};
+    for (const p of modalPositions) {
+      const key = String(p.symbol ?? "").trim().toUpperCase();
+      if (!key) continue;
+      priceMap[key] = p.currentPrice;
+    }
+    return priceMap;
+  }, [modalPositions]);
+
   const positionsTabRows = useMemo(() => {
-    if (positionsModalTab === "positions") return modalPositions;
     if (positionsModalTab === "all") return modalOrders;
     if (positionsModalTab === "pending") return ordersPending;
     if (positionsModalTab === "filled") return ordersFilled;
     return ordersCanceled;
-  }, [modalPositions, modalOrders, ordersPending, ordersFilled, ordersCanceled, positionsModalTab]);
+  }, [modalOrders, ordersPending, ordersFilled, ordersCanceled, positionsModalTab]);
 
   const pagedPositionsTabRows = useMemo(
     () => positionsTabRows.slice((positionsModalPage - 1) * PAPER_POS_PER_PAGE, positionsModalPage * PAPER_POS_PER_PAGE),
@@ -1114,7 +1123,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 items-center">
           <Link
             href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:opacity-90 shadow-lg shadow-[#fc4f02]/30 whitespace-nowrap flex items-center gap-1.5 text-white"
+            className="rounded-md px-2 sm:px-4 py-2 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:opacity-90 shadow-lg shadow-[#fc4f02]/30 whitespace-nowrap flex items-center gap-1.5 text-white"
             title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1123,18 +1132,22 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             <span>Custom Strategy</span>
           </Link>
           <button
-            onClick={() => setShowPositionsModal(true)}
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-blue-600/60 hover:bg-blue-600/80 border border-blue-500/50 hover:border-blue-400 whitespace-nowrap flex items-center gap-1.5 text-white"
-            title="View your open positions"
+            onClick={() => {
+              setPositionsModalTab("all");
+              setPositionsModalPage(1);
+              setShowPositionsModal(true);
+            }}
+            className="rounded-md px-2 sm:px-4 py-2 sm:py-2 text-xs font-medium transition-all bg-blue-600/60 hover:bg-blue-600/80 border border-blue-500/50 hover:border-blue-400 whitespace-nowrap flex items-center gap-1.5 text-white"
+            title="View your order history"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Positions</span>
+            <span>Order History</span>
           </button>
           <button
             onClick={() => setShowLeaderboardModal(true)}
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/50 hover:border-slate-500 whitespace-nowrap flex items-center gap-1.5 text-slate-200 hover:text-white"
+            className="rounded-md px-2 sm:px-4 py-2 sm:py-2 text-xs font-medium transition-all bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/50 hover:border-slate-500 whitespace-nowrap flex items-center gap-1.5 text-slate-200 hover:text-white"
             title="View leaderboard"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1142,7 +1155,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </svg>
             <span>Leaderboard</span>
           </button>
-          {(["24h", "7d", "30d", "all"] as const).map((period) => (
+          {/* {(["24h", "7d", "30d", "all"] as const).map((period) => (
             <button
               key={period}
               onClick={() => setTimeFilter(period)}
@@ -1160,7 +1173,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             className="ml-2 rounded-md px-2 py-1 text-xs font-medium transition-all text-slate-300 bg-[--color-surface]/30 hover:bg-[--color-surface]/50"
           >
             Mock: {paperMockEnabled ? 'ON' : 'OFF'}
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -1825,7 +1838,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 </p>
               </div>
               <button
-                onClick={() => { setShowPositionsModal(false); setPositionsModalPage(1); setPositionsModalTab("positions"); }}
+                onClick={() => { setShowPositionsModal(false); setPositionsModalPage(1); setPositionsModalTab("all"); }}
                 className="text-slate-400 hover:text-white transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1836,17 +1849,6 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
             {/* Tabs */}
             <div className="sticky top-[88px] sm:top-[116px] z-20 border-b border-slate-700 px-4 sm:px-6 py-2 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
-              <button 
-                onClick={() => setPositionsModalTab("positions")}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all border-b-2 ${
-                  positionsModalTab === "positions"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
-                    : "text-slate-400 hover:text-white border-transparent"
-                }`}
-              >
-                <span>Positions</span>
-                <span className={`text-xs px-2 py-0.5 rounded ${positionsModalTab === "positions" ? "bg-white/20" : "bg-slate-700/50"}`}>({modalPositions.length})</span>
-              </button>
               <button 
                 onClick={() => setPositionsModalTab("all")}
                 className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
@@ -1916,37 +1918,16 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                     </thead>
                     <tbody className="divide-y divide-slate-700">
                       {pagedPositionsTabRows.map((row: any, i) => {
-                        if (positionsModalTab === "positions") {
-                          const position = row as ModalPosition;
-                          return (
-                            <tr key={`${position.symbol}-${i}`} className="hover:bg-slate-800/30 transition-colors">
-                              <td className="py-3 px-3 font-semibold text-white">{position.symbol}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatQuantity(position.quantity)}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.entryPrice)}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.totalCost)}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.currentPrice)}</td>
-                              <td className="py-3 px-3">
-                                <span className="px-2 py-1 rounded text-xs font-medium bg-[#fc4f02]/20 text-[#fc4f02]">
-                                  HOLDING
-                                </span>
-                              </td>
-                              <td className="py-3 px-3">
-                                <button className="px-3 py-1 rounded text-xs font-medium bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors">
-                                  Close Position
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        }
-
                         const order = row as ModalOrder;
+                        const symbolKey = String(order.symbol ?? "").trim().toUpperCase();
+                        const currentPrice = currentPriceBySymbol[symbolKey] ?? order.avgPrice;
                         return (
                           <tr key={`${order.symbol}-${order.status}-${i}`} className="hover:bg-slate-800/30 transition-colors">
                             <td className="py-3 px-3 font-semibold text-white">{order.symbol}</td>
                             <td className="py-3 px-3 text-slate-300">{formatQuantity(order.quantity)}</td>
                             <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice)}</td>
                             <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice * order.quantity)}</td>
-                            <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice)}</td>
+                            <td className="py-3 px-3 text-slate-300">{formatCurrency(currentPrice)}</td>
                             <td className="py-3 px-3">
                               <span className="px-2 py-1 rounded text-xs font-medium bg-slate-700/60 text-slate-200">
                                 {order.status}
