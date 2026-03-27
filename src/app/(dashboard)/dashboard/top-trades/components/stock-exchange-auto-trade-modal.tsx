@@ -108,6 +108,7 @@ export function StockExchangeAutoTradeModal({
           side: "BUY",
           type: "MARKET",
           quantity: shares,
+          autoOco: true,
         });
         if (response?.success) {
           onSuccess();

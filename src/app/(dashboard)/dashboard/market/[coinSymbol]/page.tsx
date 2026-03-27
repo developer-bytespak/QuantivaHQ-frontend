@@ -25,6 +25,10 @@ interface CoinDetailData {
   low24h: number;
   volume24h: number;
   availableBalance: number;
+  availableQuoteBalance?: number;
+  availableBaseBalance?: number;
+  lockedBaseBalance?: number;
+  baseCurrency?: string;
   quoteCurrency: string;
   candles: Array<{
     openTime: number;
@@ -200,6 +204,10 @@ export default function MarketDetailPage() {
                 low24h: ud.low24h,
                 volume24h: ud.volume24h,
                 availableBalance: ud.availableBalance || 0,
+                availableQuoteBalance: ud.availableQuoteBalance,
+                availableBaseBalance: ud.availableBaseBalance,
+                lockedBaseBalance: ud.lockedBaseBalance,
+                baseCurrency: ud.baseCurrency,
                 quoteCurrency: ud.quoteCurrency,
                 candles: ud.candles || [],
                 candles_by_interval: ud.candlesByInterval,
@@ -688,6 +696,9 @@ export default function MarketDetailPage() {
           baseSymbol={symbol.toUpperCase()}
           currentPrice={livePrice}
           availableBalance={coinData.availableBalance || 0}
+          availableQuoteBalance={coinData.availableQuoteBalance}
+          availableBaseBalance={coinData.availableBaseBalance}
+          lockedBaseBalance={coinData.lockedBaseBalance}
           quoteCurrency={coinData.quoteCurrency || "USDT"}
         />
       )}
