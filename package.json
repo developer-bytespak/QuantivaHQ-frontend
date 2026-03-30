@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "echo 'postinstall complete'"
+    "postinstall": "echo 'dependencies installed'"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.4",
