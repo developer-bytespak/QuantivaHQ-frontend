@@ -8,7 +8,6 @@ const RULE_DESCRIPTIONS: Record<string, { label: string; description: string }> 
   MONTHLY_ELITE: { label: 'ELITE Subscription', description: 'Earn QHQ each billing cycle on ELITE plan' },
   TRADE_EXECUTED: { label: 'Execute a Live Trade', description: 'Up to 10 rewards per day' },
   STRATEGY_CREATED: { label: 'Create a Strategy', description: 'Earn when you build a custom strategy' },
-  BACKTEST_RUN: { label: 'Run a Backtest', description: 'Earn for each backtest you run' },
   REFERRAL_SIGNUP: { label: 'Refer a Friend', description: 'When your referral subscribes' },
   LOYALTY_12_MONTHS: { label: '12-Month Loyalty Bonus', description: 'One-time bonus for 12+ months tenure' },
 };

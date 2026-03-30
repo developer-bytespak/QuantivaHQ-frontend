@@ -21,7 +21,6 @@ export const DASHBOARD_NAV: NavSection[] = [
       // { label: "Options", href: "/dashboard/options" },
       { label: "VC pool", href: "/dashboard/vc-pool" },
       { label: "Paper Trading", href: "/dashboard/paper-trading" },
-      { label: "QHQ Token", href: "/dashboard/qhq" },
       { label: "Profile", href: "/dashboard/profile" },
     ],
   },
