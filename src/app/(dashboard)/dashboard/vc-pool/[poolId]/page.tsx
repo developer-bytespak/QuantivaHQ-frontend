@@ -782,7 +782,14 @@ export default function VcPoolDetailPage() {
           {/* ═══════════ POOL FINANCIALS CARD ═══════════ */}
           {pool.pool_financials && (
             <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-6 space-y-4">
-              <h2 className="text-lg font-bold text-white mb-4">Pool Performance</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-white">Pool Performance</h2>
+                {(poolStatus === "open" || poolStatus === "full") && (
+                  <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                    Trading not started
+                  </span>
+                )}
+              </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {/* Total Invested */}
                 <div className="rounded-lg bg-[--color-surface-alt] p-4 space-y-1">
@@ -798,59 +805,87 @@ export default function VcPoolDetailPage() {
 
                 {/* Current Pool Value */}
                 <div className="rounded-lg bg-[--color-surface-alt] p-4 space-y-1">
-                  <p className="text-xs text-slate-400 font-medium">Current Value</p>
+                  <p className="text-xs text-slate-400 font-medium">
+                    {poolStatus === "open" || poolStatus === "full" ? "Pool Capital" : "Current Value"}
+                  </p>
                   <p className="text-lg font-bold text-white">
                     ${pool.pool_financials.current_pool_value_usdt.toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </p>
-                  <p className="text-xs text-slate-500">Current holdings</p>
+                  <p className="text-xs text-slate-500">
+                    {poolStatus === "open" || poolStatus === "full" ? "Funds collected" : "Current holdings"}
+                  </p>
                 </div>
 
                 {/* Total Profit/Loss */}
                 <div className={`rounded-lg p-4 space-y-1 ${
-                  pool.pool_financials.total_profit_usdt >= 0
-                    ? 'bg-green-500/10 border border-green-500/20'
-                    : 'bg-red-500/10 border border-red-500/20'
+                  poolStatus === "open" || poolStatus === "full"
+                    ? 'bg-slate-500/10 border border-slate-500/20'
+                    : pool.pool_financials.total_profit_usdt >= 0
+                      ? 'bg-green-500/10 border border-green-500/20'
+                      : 'bg-red-500/10 border border-red-500/20'
                 }`}>
-                  <p className="text-xs font-medium mb-1">
-                    {pool.pool_financials.total_profit_usdt >= 0
-                      ? 'Total Profit'
-                      : 'Total Loss'}
+                  <p className="text-xs text-slate-500 font-medium mb-1">
+                    {poolStatus === "open" || poolStatus === "full"
+                      ? 'Profit / Loss'
+                      : pool.pool_financials.total_profit_usdt >= 0
+                        ? 'Total Profit'
+                        : 'Total Loss'}
                   </p>
-                  <p className={`text-lg font-bold ${
-                    pool.pool_financials.total_profit_usdt >= 0
-                      ? 'text-green-400'
-                      : 'text-red-400'
-                  }`}>
-                    {pool.pool_financials.total_profit_usdt >= 0 ? '+' : ''}${Math.abs(pool.pool_financials.total_profit_usdt).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
-                  <p className="text-xs text-slate-500">All members</p>
+                  {poolStatus === "open" || poolStatus === "full" ? (
+                    <>
+                      <p className="text-lg font-bold text-slate-400">--</p>
+                      <p className="text-xs text-slate-500">Starts after trading begins</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className={`text-lg font-bold ${
+                        pool.pool_financials.total_profit_usdt >= 0
+                          ? 'text-green-400'
+                          : 'text-red-400'
+                      }`}>
+                        {pool.pool_financials.total_profit_usdt >= 0 ? '+' : ''}${Math.abs(pool.pool_financials.total_profit_usdt).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                      <p className="text-xs text-slate-500">All members</p>
+                    </>
+                  )}
                 </div>
 
                 {/* Pool ROI */}
                 <div className={`rounded-lg p-4 space-y-1 ${
-                  pool.pool_financials.pool_roi_pct >= 0
-                    ? 'bg-emerald-500/10 border border-emerald-500/20'
-                    : 'bg-orange-500/10 border border-orange-500/20'
+                  poolStatus === "open" || poolStatus === "full"
+                    ? 'bg-slate-500/10 border border-slate-500/20'
+                    : pool.pool_financials.pool_roi_pct >= 0
+                      ? 'bg-emerald-500/10 border border-emerald-500/20'
+                      : 'bg-orange-500/10 border border-orange-500/20'
                 }`}>
-                  <p className="text-xs font-medium mb-1">Pool ROI</p>
-                  <p className={`text-lg font-bold ${
-                    pool.pool_financials.pool_roi_pct >= 0
-                      ? 'text-emerald-400'
-                      : 'text-orange-400'
-                  }`}>
-                    {pool.pool_financials.pool_roi_pct >= 0 ? '+' : ''}{pool.pool_financials.pool_roi_pct.toFixed(2)}%
-                  </p>
-                  <p className="text-xs text-slate-500">Return on investment</p>
+                  <p className="text-xs text-slate-500 font-medium mb-1">Pool ROI</p>
+                  {poolStatus === "open" || poolStatus === "full" ? (
+                    <>
+                      <p className="text-lg font-bold text-slate-400">--</p>
+                      <p className="text-xs text-slate-500">Starts after trading begins</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className={`text-lg font-bold ${
+                        pool.pool_financials.pool_roi_pct >= 0
+                          ? 'text-emerald-400'
+                          : 'text-orange-400'
+                      }`}>
+                        {pool.pool_financials.pool_roi_pct >= 0 ? '+' : ''}{pool.pool_financials.pool_roi_pct.toFixed(2)}%
+                      </p>
+                      <p className="text-xs text-slate-500">Return on investment</p>
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Fee Summary */}
+              {/* Fee Summary
               <div className="pt-4 border-t border-[--color-border] text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-400">Pool Fees Collected:</span>
@@ -861,7 +896,7 @@ export default function VcPoolDetailPage() {
                     })}
                   </span>
                 </div>
-              </div>
+              </div> */}
             </div>
           )}
 
@@ -922,14 +957,37 @@ export default function VcPoolDetailPage() {
                 {/* Your Ownership */}
                 <div className="rounded-lg bg-white/5 border border-blue-500/20 p-4 space-y-1">
                   <p className="text-xs text-slate-400 font-medium">Your Ownership</p>
-                  <p className="text-lg font-bold text-white">
-                    {pool.user_context.current_share_percent.toFixed(2)}%
-                  </p>
-                  <p className="text-xs text-slate-500">Pool share</p>
+                  {poolStatus === "open" || poolStatus === "full" ? (
+                    <>
+                      <p className="text-lg font-bold text-slate-400">Pending</p>
+                      <p className="text-xs text-slate-500">Calculated at pool start</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg font-bold text-white">
+                        {pool.user_context.current_share_percent.toFixed(2)}%
+                      </p>
+                      <p className="text-xs text-slate-500">Pool share</p>
+                    </>
+                  )}
                 </div>
               </div>
 
               {/* P&L Summary */}
+              {poolStatus === "open" || poolStatus === "full" ? (
+                <div className="rounded-lg border-l-4 border-l-slate-500 bg-slate-500/5 p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-slate-400 font-medium">Unrealized Profit / Loss</p>
+                      <p className="text-lg font-bold mt-1 text-slate-400">No trading activity yet</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-slate-400">--</p>
+                      <p className="text-xs text-slate-500 mt-1">Return</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <div className={`rounded-lg border-l-4 p-4 ${
                 pool.user_context.unrealized_pnl_usdt >= 0
                   ? 'border-l-green-500 bg-green-500/5'
@@ -961,6 +1019,7 @@ export default function VcPoolDetailPage() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           )}
 

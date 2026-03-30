@@ -83,13 +83,14 @@ export function useOptionsSocket({
       socketRef.current = null;
     }
 
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('quantivahq_access_token') : null;
     const socket = io(`${WS_URL}/options`, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: RECONNECT_DELAY,
       reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
       timeout: 10000,
-      auth: { connectionId },
+      auth: { token: accessToken, connectionId },
       withCredentials: true,
     });
 

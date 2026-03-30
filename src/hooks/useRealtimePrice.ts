@@ -85,13 +85,14 @@ export function useRealtimePrice({
       socketRef.current = null;
     }
 
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('quantivahq_access_token') : null;
     const socket = io(`${WS_URL}/market`, {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 3000,
       reconnectionAttempts: 5,
       timeout: 10000,
-      auth: { connectionId },
+      auth: { token: accessToken, connectionId },
       withCredentials: true,
     });
 

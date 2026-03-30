@@ -25,6 +25,7 @@
     "react-dom": "^19.2.1",
     "react-phone-number-input": "^3.4.16",
     "react-toastify": "^11.0.5",
+    "recharts": "^3.8.1",
     "socket.io-client": "^4.8.3",
     "viem": "^2.21.51",
     "wagmi": "^2.14.8",
