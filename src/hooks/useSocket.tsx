@@ -34,14 +34,20 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
         isNotificationDropdownOpenRef.current = open;
     }, []);
 
-    // Fetch the real authenticated userId on mount
+    // Fetch the real authenticated userId on mount (skip on admin-only pages)
     useEffect(() => {
+        if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+            return; // Admin pages don't use user auth — skip to avoid 401 errors
+        }
         getCurrentUser()
             .then((user) => setUserId(user.user_id))
             .catch(() => setUserId(null));
     }, []);
 
     useEffect(() => {
+        if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+            return; // Admin pages don't use user notifications
+        }
         const getAllNotifications = async () => {
             const accessToken = localStorage.getItem("quantivahq_access_token");
             if (!accessToken) return;
