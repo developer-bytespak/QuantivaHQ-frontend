@@ -7,18 +7,29 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useMobileNav } from "@/hooks/useMobileNav";
 
-const ADMIN_NAV = [
+const BASE_ADMIN_NAV = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
   { label: "Pools", href: "/admin/pools", icon: "pools" },
   { label: "Binance", href: "/admin/binance", icon: "binance" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
 ];
 
-function AdminLogo({ collapsed }: { collapsed: boolean }) {
+const SUPER_ADMIN_NAV = [
+  { label: "Users", href: "/super/admin/users", icon: "users" },
+  { label: "VC Pool Admins", href: "/super/admin/vc-pool-admins", icon: "shield" },
+];
+
+interface AdminSidebarProps {
+  mode?: "admin" | "super";
+}
+
+function AdminLogo({ collapsed, mode }: { collapsed: boolean; mode: "admin" | "super" }) {
   const [imageError, setImageError] = useState(false);
+  const homeHref = mode === "super" ? "/super/admin/users" : "/admin/dashboard";
+  const panelLabel = mode === "super" ? "Super Admin Control" : "VC Pool Admin";
   return (
     <Link
-      href="/admin/dashboard"
+      href={homeHref}
       className="group flex items-center gap-2 sm:gap-3 text-base sm:text-lg font-semibold tracking-tight text-slate-100 transition-opacity hover:opacity-80"
       aria-label="Admin Dashboard"
     >
@@ -44,7 +55,7 @@ function AdminLogo({ collapsed }: { collapsed: boolean }) {
             QuantivaHQ
           </span>
           <span className="text-[10px] text-slate-400 group-hover:text-slate-300">
-            VC Pool Admin
+            {panelLabel}
           </span>
         </div>
       )}
@@ -75,6 +86,20 @@ function NavIcon({ name, isActive }: { name: string; isActive: boolean }) {
       </svg>
     );
   }
+  if (name === "users") {
+    return (
+      <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2a3 3 0 00-3-3H10a3 3 0 00-3 3v2m10 0H7m-5 0h5v-2a3 3 0 015.356-1.857M9 7a3 3 0 116 0 3 3 0 01-6 0zm-5 4a3 3 0 116 0 3 3 0 01-6 0zm14 0a3 3 0 116 0 3 3 0 01-6 0z" />
+      </svg>
+    );
+  }
+  if (name === "shield") {
+    return (
+      <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4zm-2 9l1.5 1.5L14 11" />
+      </svg>
+    );
+  }
   return (
     <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -83,10 +108,12 @@ function NavIcon({ name, isActive }: { name: string; isActive: boolean }) {
   );
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ mode = "admin" }: AdminSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(true);
   const { isOpen: mobileOpen, setOpen: setMobileOpen } = useMobileNav();
+
+  const adminNav = mode === "super" ? SUPER_ADMIN_NAV : BASE_ADMIN_NAV;
 
   const desktopSidebar = (
     <aside
@@ -95,7 +122,7 @@ export function AdminSidebar() {
       className={`group/admin relative hidden sm:flex h-screen flex-col border-r border-[#fc4f02]/30 bg-gradient-to-b from-[--color-surface] to-[--color-surface-alt] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
     >
       <div className="flex h-16 sm:h-24 items-center justify-center bg-[--color-surface-alt]/50 px-2 sm:px-8">
-        <AdminLogo collapsed={collapsed} />
+        <AdminLogo collapsed={collapsed} mode={mode} />
       </div>
       <nav className={`flex-1 space-y-1 overflow-y-auto py-4 ${collapsed ? "px-2" : "px-3"}`}>
         {!collapsed && (
@@ -104,12 +131,8 @@ export function AdminSidebar() {
           </p>
         )}
         <div className="space-y-1">
-          {ADMIN_NAV.map((item) => {
-            const isActive =
-              item.href === "/admin/dashboard"
-                ? pathname === item.href
-                : pathname === item.href ||
-                  (pathname?.startsWith(item.href + "/") ?? false);
+          {adminNav.map((item) => {
+            const isActive = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
             return (
               <Link
                 key={item.href}
@@ -162,12 +185,8 @@ export function AdminSidebar() {
                   MAIN
                 </p>
                 <div className="space-y-1">
-                  {ADMIN_NAV.map((item) => {
-                    const isActive =
-                      item.href === "/admin/dashboard"
-                        ? pathname === item.href
-                        : pathname === item.href ||
-                          (pathname?.startsWith(item.href + "/") ?? false);
+                  {adminNav.map((item) => {
+                    const isActive = pathname === item.href || (pathname?.startsWith(item.href + "/") ?? false);
                     return (
                       <Link
                         key={item.href}
