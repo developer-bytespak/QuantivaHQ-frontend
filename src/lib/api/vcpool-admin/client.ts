@@ -16,6 +16,16 @@ import type {
   UpdateFeesResponse,
   AdminChangePasswordRequest,
   AdminChangePasswordResponse,
+  SuperAdminUsersFilters,
+  SuperAdminUsersResponse,
+  SuperAdminUsersAnalyticsResponse,
+  SuperAdminUsersGrowthFilters,
+  SuperAdminUsersGrowthResponse,
+  VcPoolAdminsResponse,
+  CreateVcPoolAdminRequest,
+  CreateVcPoolAdminResponse,
+  DeleteVcPoolAdminRequest,
+  DeleteVcPoolAdminResponse,
   AdminPoolsListResponse,
   AdminPoolDetails,
   CreatePoolRequest,
@@ -121,7 +131,10 @@ adminAxios.interceptors.response.use(
         } catch {
           clearAdminTokens();
           if (typeof window !== "undefined") {
-            window.location.href = "/admin/login";
+            const target = window.location.pathname.startsWith("/super/admin")
+              ? "/super/admin/login"
+              : "/admin/login";
+            window.location.href = target;
           }
         }
       }
@@ -212,6 +225,92 @@ export async function adminChangePassword(
     "/admin/settings/password",
     body
   );
+  return data;
+}
+
+/** GET /admin/super-admin/users */
+export async function adminSuperListUsers(
+  params?: SuperAdminUsersFilters
+): Promise<SuperAdminUsersResponse> {
+  const search = new URLSearchParams();
+  if (params?.search) search.set("search", params.search);
+  if (params?.plan) search.set("plan", params.plan);
+  if (params?.subscription_status) {
+    search.set("subscription_status", params.subscription_status);
+  }
+  if (params?.kyc_status) search.set("kyc_status", params.kyc_status);
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+
+  const query = search.toString();
+  const { data } = await adminAxios.get<SuperAdminUsersResponse>(
+    `/admin/super-admin/users${query ? `?${query}` : ""}`
+  );
+
+  return data;
+}
+
+/** GET /admin/super-admin/users/analytics */
+export async function adminSuperUsersAnalytics(): Promise<SuperAdminUsersAnalyticsResponse> {
+  const { data } = await adminAxios.get<SuperAdminUsersAnalyticsResponse>(
+    "/admin/super-admin/users/analytics"
+  );
+
+  return data;
+}
+
+/** GET /admin/super-admin/users/growth */
+export async function adminSuperUsersGrowth(
+  params?: SuperAdminUsersGrowthFilters
+): Promise<SuperAdminUsersGrowthResponse> {
+  const search = new URLSearchParams();
+  if (params?.year) search.set("year", String(params.year));
+  if (params?.subscription_plan) {
+    search.set("subscription_plan", params.subscription_plan);
+  }
+  if (params?.active_only != null) {
+    search.set("active_only", String(params.active_only));
+  }
+
+  const query = search.toString();
+  const { data } = await adminAxios.get<SuperAdminUsersGrowthResponse>(
+    `/admin/super-admin/users/growth${query ? `?${query}` : ""}`
+  );
+
+  return data;
+}
+
+/** GET /admin/super-admin/vc-pool-admins */
+export async function adminSuperListVcPoolAdmins(): Promise<VcPoolAdminsResponse> {
+  const { data } = await adminAxios.get<VcPoolAdminsResponse>(
+    "/admin/super-admin/vc-pool-admins"
+  );
+
+  return data;
+}
+
+/** POST /admin/super-admin/vc-pool-admins */
+export async function adminSuperCreateVcPoolAdmin(
+  body: CreateVcPoolAdminRequest
+): Promise<CreateVcPoolAdminResponse> {
+  const { data } = await adminAxios.post<CreateVcPoolAdminResponse>(
+    "/admin/super-admin/vc-pool-admins",
+    body
+  );
+
+  return data;
+}
+
+/** DELETE /admin/super-admin/vc-pool-admins/:adminId */
+export async function adminSuperDeleteVcPoolAdmin(
+  adminId: string,
+  body: DeleteVcPoolAdminRequest
+): Promise<DeleteVcPoolAdminResponse> {
+  const { data } = await adminAxios.delete<DeleteVcPoolAdminResponse>(
+    `/admin/super-admin/vc-pool-admins/${adminId}`,
+    { data: body }
+  );
+
   return data;
 }
 

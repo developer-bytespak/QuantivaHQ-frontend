@@ -2,23 +2,45 @@
 
 import { useEffect, useState, ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { hasAdminToken, adminMe, clearAdminTokens } from "@/lib/api/vcpool-admin";
+import {
+  hasAdminToken,
+  adminMe,
+  clearAdminTokens,
+  type AdminProfile,
+} from "@/lib/api/vcpool-admin";
 
 const ADMIN_LOGIN = "/admin/login";
+const SUPER_ADMIN_HOME = "/super/admin/users";
+const ADMIN_HOME = "/admin/dashboard";
 
 interface AdminGuardProps {
   children: ReactNode;
-  /** If true, only allow unauthenticated (e.g. login page). Redirect to /admin if already logged in. */
+  /** If true, only allow unauthenticated pages (login). */
   publicOnly?: boolean;
+  /** Restrict route to super admins only. */
+  requireSuperAdmin?: boolean;
+  /** Restrict route to regular VC pool admins only. */
+  blockSuperAdmin?: boolean;
+  /** Login page used when user is unauthenticated. */
+  loginPath?: string;
 }
 
-export function AdminGuard({ children, publicOnly = false }: AdminGuardProps) {
+export function AdminGuard({
+  children,
+  publicOnly = false,
+  requireSuperAdmin = false,
+  blockSuperAdmin = false,
+  loginPath = ADMIN_LOGIN,
+}: AdminGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [status, setStatus] = useState<"checking" | "allowed" | "denied">("checking");
 
   useEffect(() => {
     let isMounted = true;
+
+    const resolveHomeByRole = (admin: AdminProfile) =>
+      admin.is_super_admin ? SUPER_ADMIN_HOME : ADMIN_HOME;
 
     const check = async () => {
       if (publicOnly) {
@@ -27,10 +49,10 @@ export function AdminGuard({ children, publicOnly = false }: AdminGuardProps) {
           return;
         }
         try {
-          await adminMe();
+          const admin = await adminMe();
           if (isMounted) {
             setStatus("denied");
-            router.replace("/admin/dashboard");
+            router.replace(resolveHomeByRole(admin));
           }
         } catch {
           clearAdminTokens();
@@ -42,14 +64,31 @@ export function AdminGuard({ children, publicOnly = false }: AdminGuardProps) {
       if (!hasAdminToken()) {
         if (isMounted) {
           setStatus("denied");
-          const returnTo = pathname && pathname !== "/admin" ? encodeURIComponent(pathname) : "";
-          router.replace(returnTo ? `${ADMIN_LOGIN}?returnTo=${returnTo}` : ADMIN_LOGIN);
+          const returnTo = pathname ? encodeURIComponent(pathname) : "";
+          router.replace(returnTo ? `${loginPath}?returnTo=${returnTo}` : loginPath);
         }
         return;
       }
 
       try {
-        await adminMe();
+        const admin = await adminMe();
+
+        if (requireSuperAdmin && !admin.is_super_admin) {
+          if (isMounted) {
+            setStatus("denied");
+            router.replace(ADMIN_HOME);
+          }
+          return;
+        }
+
+        if (blockSuperAdmin && admin.is_super_admin) {
+          if (isMounted) {
+            setStatus("denied");
+            router.replace(SUPER_ADMIN_HOME);
+          }
+          return;
+        }
+
         if (isMounted) setStatus("allowed");
       } catch (err: unknown) {
         const is401 =
@@ -58,7 +97,7 @@ export function AdminGuard({ children, publicOnly = false }: AdminGuardProps) {
         if (is401) clearAdminTokens();
         if (isMounted) {
           setStatus("denied");
-          router.replace(ADMIN_LOGIN);
+          router.replace(loginPath);
         }
       }
     };
@@ -67,7 +106,7 @@ export function AdminGuard({ children, publicOnly = false }: AdminGuardProps) {
     return () => {
       isMounted = false;
     };
-  }, [router, pathname, publicOnly]);
+  }, [router, pathname, publicOnly, requireSuperAdmin, blockSuperAdmin, loginPath]);
 
   if (status === "checking") {
     return (

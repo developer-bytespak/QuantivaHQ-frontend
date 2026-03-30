@@ -12,6 +12,7 @@ export interface AdminProfile {
   admin_id: string;
   email: string;
   full_name: string;
+  is_super_admin: boolean;
   binance_uid: string | null;
   wallet_address: string | null;
   payment_network: string | null;
@@ -27,11 +28,144 @@ export interface AdminLoginResponse {
     admin_id: string;
     email: string;
     full_name: string;
+    is_super_admin: boolean;
   };
   accessToken: string;
   refreshToken: string;
   sessionId: string;
   message: string;
+}
+
+export interface SuperAdminUsersFilters {
+  search?: string;
+  plan?: "FREE" | "PRO" | "ELITE";
+  subscription_status?: "active" | "cancelled" | "trial" | "expired";
+  kyc_status?: "pending" | "approved" | "rejected" | "review";
+  page?: number;
+  limit?: number;
+}
+
+export interface SuperAdminUserRow {
+  user_id: string;
+  email: string;
+  username: string;
+  full_name: string | null;
+  current_tier: "FREE" | "PRO" | "ELITE";
+  kyc_status: "pending" | "approved" | "rejected" | "review";
+  created_at: string;
+  last_active_at: string | null;
+  subscription_status: "active" | "cancelled" | "trial" | "expired" | null;
+  subscription_plan: "FREE" | "PRO" | "ELITE" | null;
+  billing_period: "MONTHLY" | "QUARTERLY" | "YEARLY" | null;
+  subscription_period_end: string | null;
+  total_invested_usdt: number;
+}
+
+export interface SuperAdminUsersResponse {
+  users: SuperAdminUserRow[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface SuperAdminUsersAnalyticsResponse {
+  summary: {
+    total_users: number;
+    active_last_30_days: number;
+    paid_users: number;
+    free_users: number;
+  };
+  plan_distribution: {
+    FREE: number;
+    PRO: number;
+    ELITE: number;
+  };
+  recent_signups: Array<{
+    user_id: string;
+    email: string;
+    full_name: string | null;
+    current_tier: "FREE" | "PRO" | "ELITE";
+    created_at: string;
+  }>;
+  exchange_connections: {
+    crypto_connections: number;
+    stock_connections: number;
+    active_connections: number;
+    pending_connections: number;
+    recent_synced_users: Array<{
+      connection_id: string;
+      status: string;
+      last_synced_at: string | null;
+      exchange_name: string;
+      exchange_type: "crypto" | "stocks";
+      user_id: string;
+      email: string;
+      full_name: string | null;
+    }>;
+  };
+}
+
+export interface SuperAdminUsersGrowthFilters {
+  year?: number;
+  subscription_plan?: "FREE" | "PRO" | "ELITE";
+  active_only?: boolean;
+}
+
+export interface SuperAdminUsersGrowthPoint {
+  month: number;
+  label: string;
+  users: number;
+  cumulative_users: number;
+}
+
+export interface SuperAdminUsersGrowthResponse {
+  year: number;
+  filters: {
+    subscription_plan: "ALL" | "FREE" | "PRO" | "ELITE";
+    active_only: boolean;
+  };
+  total_users: number;
+  monthly: SuperAdminUsersGrowthPoint[];
+  available_years: number[];
+}
+
+export interface VcPoolAdminRow {
+  admin_id: string;
+  email: string;
+  full_name: string | null;
+  is_super_admin: boolean;
+  created_at: string;
+  active_pools_count: number;
+}
+
+export interface VcPoolAdminsResponse {
+  admins: VcPoolAdminRow[];
+}
+
+export interface CreateVcPoolAdminRequest {
+  email: string;
+  password: string;
+  full_name?: string;
+  is_super_admin?: boolean;
+  currentPassword: string;
+}
+
+export interface DeleteVcPoolAdminRequest {
+  currentPassword: string;
+}
+
+export interface CreateVcPoolAdminResponse {
+  message: string;
+  admin: VcPoolAdminRow;
+}
+
+export interface DeleteVcPoolAdminResponse {
+  message: string;
+  admin_id: string;
+  email: string;
 }
 
 export interface AdminRefreshResponse {

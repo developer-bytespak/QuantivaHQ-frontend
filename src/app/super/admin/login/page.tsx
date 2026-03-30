@@ -8,7 +8,7 @@ import { adminLogin } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
 import { getSafeRedirect } from "@/lib/utils/security";
 
-export default function AdminLoginPage() {
+export default function SuperAdminLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { notification, showNotification, hideNotification } = useNotification();
@@ -26,11 +26,17 @@ export default function AdminLoginPage() {
       showNotification("Please enter email and password", "error");
       return;
     }
+
     setLoading(true);
     try {
-      await adminLogin({ email: email.trim(), password });
+      const result = await adminLogin({ email: email.trim(), password });
+      if (!result.admin.is_super_admin) {
+        showNotification("This account is not a super admin", "error");
+        return;
+      }
+
       showNotification("Login successful", "success");
-      router.replace(getSafeRedirect(returnTo, "/admin/dashboard", "/admin"));
+      router.replace(getSafeRedirect(returnTo, "/super/admin/users", "/super/admin"));
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message ?? "Login failed";
       showNotification(message, "error");
@@ -49,9 +55,7 @@ export default function AdminLoginPage() {
         />
       )}
 
-      {/* Centered card - dark surface with subtle accent */}
       <div className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] p-8 shadow-2xl shadow-black/60">
-        {/* Logo */}
         <div className="mb-6 flex justify-center">
           <div className="relative h-14 w-14">
             {logoError ? (
@@ -74,78 +78,65 @@ export default function AdminLoginPage() {
         <div className="mb-4 flex justify-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-[#fc4f02]/10 px-3 py-1 text-[11px] font-medium text-[#fc4f02]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#fc4f02] animate-pulse" />
-            VC Pool Admin Panel
+            Super Admin Panel
           </span>
         </div>
-        <h1 className="mb-1 text-center text-2xl font-bold text-white">Admin sign in</h1>
-        <p className="mb-8 text-center text-sm text-slate-400">Sign in to manage VC pools and settings.</p>
+        <h1 className="mb-1 text-center text-2xl font-bold text-white">Super admin sign in</h1>
+        <p className="mb-6 text-center text-sm text-slate-300">
+          Access users and VC pool admin controls.
+        </p>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="admin-email" className="mb-1.5 block text-sm font-medium text-slate-200">
-              Email
-            </label>
+            <label className="mb-1 block text-xs font-medium text-slate-300">Email</label>
             <input
-              id="admin-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@quantiva.io"
-              className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/60 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/30"
               autoComplete="email"
-              disabled={loading}
+              required
+              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-sm text-white outline-none transition focus:border-[#fc4f02]"
+              placeholder="admin@quantivahq.com"
             />
           </div>
           <div>
-            <label htmlFor="admin-password" className="mb-1.5 block text-sm font-medium text-slate-200">
-              Password
-            </label>
+            <label className="mb-1 block text-xs font-medium text-slate-300">Password</label>
             <div className="relative">
               <input
-                id="admin-password"
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-4 py-3 pr-12 text-sm text-white placeholder:text-slate-500 focus:border-[#fc4f02]/60 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/30"
                 autoComplete="current-password"
-                disabled={loading}
+                required
+                className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 pr-10 text-sm text-white outline-none transition focus:border-[#fc4f02]"
+                placeholder="••••••••"
               />
               <button
                 type="button"
-                onClick={() => setShowPassword((p) => !p)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-200"
-                tabIndex={-1}
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute inset-y-0 right-0 px-3 text-xs text-slate-400 hover:text-slate-200"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
-                {showPassword ? (
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878a4.5 4.5 0 106.262 6.262M4.031 11.117A9.953 9.953 0 003 12c0 4.478 2.943 8.268 7 9.543 2.244-1.22 4.235-2.743 5.858-4.243m-1.757-1.757L4.031 11.117" />
-                  </svg>
-                ) : (
-                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                )}
+                {showPassword ? "Hide" : "Show"}
               </button>
             </div>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-[#fc4f02] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 hover:bg-[#e04502] disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            className="w-full rounded-lg bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? "Signing in…" : "Sign in as admin"}
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
-      </div>
 
-      <p className="mt-8 text-center">
-        <Link href="/" className="text-sm text-slate-400 hover:text-white transition-colors">
-          ← Back to app
-        </Link>
-      </p>
+        <div className="mt-4 text-center text-xs text-slate-400">
+          VC Pool admin?{" "}
+          <Link href="/admin/login" className="text-[#fc4f02] hover:underline">
+            Go to admin login
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

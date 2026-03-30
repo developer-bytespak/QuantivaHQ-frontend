@@ -21,6 +21,10 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/settings/connect-crypto": "Connect Crypto",
   "/admin/settings/connect-stock": "Connect Stock",
   "/admin/settings/connect-api-keys": "API Keys",
+  "/admin/users": "Users",
+  "/admin/vc-pool-admins": "VC Pool Admins",
+  "/super/admin/users": "Users",
+  "/super/admin/vc-pool-admins": "VC Pool Admins",
 };
 
 function getPageTitle(pathname: string | null): string {
@@ -30,10 +34,15 @@ function getPageTitle(pathname: string | null): string {
   if (pathname.startsWith("/admin/pools/") && pathname !== "/admin/pools/create")
     return "Pool details";
   if (pathname.startsWith("/admin/settings")) return "Settings";
+  if (pathname.startsWith("/super/admin")) return "Super Admin";
   return "Dashboard";
 }
 
-export function AdminTopBar() {
+interface AdminTopBarProps {
+  mode?: "admin" | "super";
+}
+
+export function AdminTopBar({ mode = "admin" }: AdminTopBarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
@@ -62,7 +71,7 @@ export function AdminTopBar() {
     } catch {
       // ignore
     }
-    router.replace("/admin/login");
+    router.replace(mode === "super" ? "/super/admin/login" : "/admin/login");
   };
 
   const title = getPageTitle(pathname);
@@ -89,7 +98,7 @@ export function AdminTopBar() {
       </div>
       <div className="flex items-center gap-3">
         <span className="rounded-full bg-blue-500/20 px-2.5 py-0.5 text-xs font-semibold text-blue-300">
-          ADMIN
+          {admin?.is_super_admin ? "SUPER ADMIN" : "ADMIN"}
         </span>
         <div className="relative" ref={dropdownRef}>
           <button
