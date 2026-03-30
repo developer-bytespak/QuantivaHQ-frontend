@@ -5,7 +5,7 @@
 
 import axios, { AxiosInstance } from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 function getUserAccessToken(): string | null {
   if (typeof window === "undefined") return null;

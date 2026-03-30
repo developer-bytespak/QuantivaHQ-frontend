@@ -2,6 +2,7 @@
 import { useMutation, UseMutationResult, useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import React, { useContext, createContext, ReactNode, useMemo } from "react";
+import { logger } from "@/lib/utils/logger";
 
 interface UserContextType {
     updateSubscription: UseMutationResult<any, unknown, any, unknown>;
@@ -25,7 +26,7 @@ export const SubsProvider = ({ children }: { children: ReactNode }) => {
                 },
             });
 
-            console.log("updateSubscription response", response);
+            logger.info("updateSubscription response", response);
             return response.data;
         },
     })
@@ -43,20 +44,20 @@ export const SubsProvider = ({ children }: { children: ReactNode }) => {
                 }
             );
 
-            console.log("createCheckout response", response);
+            logger.info("createCheckout response", response);
             return response.data;
         },
         onError: (error: any) => {
-            console.log("createCheckout error (raw)", error);
+            logger.error("createCheckout error (raw)", error);
 
             if (error?.response) {
-                console.log("createCheckout error status:", error.response.status);
-                console.log("createCheckout error data:", error.response.data);
-                console.log("createCheckout error headers:", error.response.headers);
+                logger.error("createCheckout error status:", error.response.status);
+                logger.error("createCheckout error data:", error.response.data);
+                logger.error("createCheckout error headers:", error.response.headers);
             } else if (error?.request) {
-                console.log("createCheckout error request (no response):", error.request);
+                logger.error("createCheckout error request (no response):", error.request);
             } else {
-                console.log("createCheckout error message:", error?.message);
+                logger.error("createCheckout error message:", error?.message);
             }
         },
     })

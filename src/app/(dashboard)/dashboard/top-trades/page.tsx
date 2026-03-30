@@ -257,7 +257,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [showPositionsModal, setShowPositionsModal] = useState(false);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
   const [positionsModalPage, setPositionsModalPage] = useState(1);
-  const [positionsModalTab, setPositionsModalTab] = useState<"positions" | "all" | "pending" | "filled" | "canceled">("positions");
+  const [positionsModalTab, setPositionsModalTab] = useState<"all" | "pending" | "filled" | "canceled">("all");
   const [leaderboardTab, setLeaderboardTab] = useState<"history" | "positions">("history");
   const [historyFilter, setHistoryFilter] = useState<"all" | "profitable" | "loss" | "recent" | "p&l" | "duration">("all");
   const [leaderboardHistoryPage, setLeaderboardHistoryPage] = useState(1);
@@ -974,12 +974,11 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   );
 
   const positionsTabRows = useMemo(() => {
-    if (positionsModalTab === "positions") return modalPositions;
     if (positionsModalTab === "all") return modalOrders;
     if (positionsModalTab === "pending") return ordersPending;
     if (positionsModalTab === "filled") return ordersFilled;
     return ordersCanceled;
-  }, [modalPositions, modalOrders, ordersPending, ordersFilled, ordersCanceled, positionsModalTab]);
+  }, [modalOrders, ordersPending, ordersFilled, ordersCanceled, positionsModalTab]);
 
   const pagedPositionsTabRows = useMemo(
     () => positionsTabRows.slice((positionsModalPage - 1) * PAPER_POS_PER_PAGE, positionsModalPage * PAPER_POS_PER_PAGE),
@@ -1001,9 +1000,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     [historyRowsFiltered, leaderboardHistoryPage],
   );
 
+  const sortedLeaderboardPositions = useMemo(
+    () => [...modalPositions].sort((a, b) => b.unrealizedPnl - a.unrealizedPnl),
+    [modalPositions],
+  );
+
   const pagedLeaderboardPositions = useMemo(
-    () => modalPositions.slice((leaderboardPositionsPage - 1) * LEADERBOARD_ITEMS_PER_PAGE, leaderboardPositionsPage * LEADERBOARD_ITEMS_PER_PAGE),
-    [modalPositions, leaderboardPositionsPage],
+    () => sortedLeaderboardPositions.slice((leaderboardPositionsPage - 1) * LEADERBOARD_ITEMS_PER_PAGE, leaderboardPositionsPage * LEADERBOARD_ITEMS_PER_PAGE),
+    [sortedLeaderboardPositions, leaderboardPositionsPage],
   );
 
   const leaderboardTotalPnl = useMemo(
@@ -1125,12 +1129,12 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           <button
             onClick={() => setShowPositionsModal(true)}
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-blue-600/60 hover:bg-blue-600/80 border border-blue-500/50 hover:border-blue-400 whitespace-nowrap flex items-center gap-1.5 text-white"
-            title="View your open positions"
+            title="View your orders"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>Positions</span>
+            <span>Orders</span>
           </button>
           <button
             onClick={() => setShowLeaderboardModal(true)}
@@ -1141,25 +1145,6 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             <span>Leaderboard</span>
-          </button>
-          {(["24h", "7d", "30d", "all"] as const).map((period) => (
-            <button
-              key={period}
-              onClick={() => setTimeFilter(period)}
-              className={`rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all whitespace-nowrap ${timeFilter === period
-                ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
-                : "text-slate-400 hover:text-white"
-                }`}
-            >
-              {period === "all" ? "All" : period}
-            </button>
-          ))}
-          <button
-            onClick={() => setPaperMockEnabled(p => !p)}
-            title="Toggle paper trading mock"
-            className="ml-2 rounded-md px-2 py-1 text-xs font-medium transition-all text-slate-300 bg-[--color-surface]/30 hover:bg-[--color-surface]/50"
-          >
-            Mock: {paperMockEnabled ? 'ON' : 'OFF'}
           </button>
         </div>
       </div>
@@ -1815,17 +1800,17 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
       {/* Positions Modal */}
       {showPositionsModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-            <div className="sticky top-0 bg-[--color-surface] border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl flex items-center justify-center z-[10000] p-4">
+          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+            <div className="flex-shrink-0 bg-[--color-surface] border-b border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between">
               <div>
-                <h2 className="text-lg sm:text-2xl font-semibold text-white">Order History</h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                <h2 className="text-base sm:text-lg font-semibold text-white">Order History</h2>
+                <p className="text-xs text-slate-400">
                   {isStocksConnection ? "View all your Alpaca stock orders" : "View all your Binance testnet orders"}
                 </p>
               </div>
               <button
-                onClick={() => { setShowPositionsModal(false); setPositionsModalPage(1); setPositionsModalTab("positions"); }}
+                onClick={() => { setShowPositionsModal(false); setPositionsModalPage(1); setPositionsModalTab("all"); }}
                 className="text-slate-400 hover:text-white transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1835,21 +1820,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </div>
 
             {/* Tabs */}
-            <div className="sticky top-[76px] sm:top-[96px] z-20 border-b border-slate-700 px-4 sm:px-6 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
-              <button 
-                onClick={() => setPositionsModalTab("positions")}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all border-b-2 ${
-                  positionsModalTab === "positions"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
-                    : "text-slate-400 hover:text-white border-transparent"
-                }`}
-              >
-                <span>Positions</span>
-                <span className={`text-xs px-2 py-0.5 rounded ${positionsModalTab === "positions" ? "bg-white/20" : "bg-slate-700/50"}`}>({modalPositions.length})</span>
-              </button>
-              <button 
+            <div className="flex-shrink-0 border-b border-slate-700 px-4 sm:px-6 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
+              <button
                 onClick={() => setPositionsModalTab("all")}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "all"
                     ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
                     : "text-slate-400 hover:text-white border-transparent"
@@ -1857,9 +1831,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               >
                 All Orders ({modalOrders.length})
               </button>
-              <button 
+              <button
                 onClick={() => setPositionsModalTab("pending")}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "pending"
                     ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
                     : "text-slate-400 hover:text-white border-transparent"
@@ -1867,9 +1841,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               >
                 Pending ({ordersPending.length})
               </button>
-              <button 
+              <button
                 onClick={() => setPositionsModalTab("filled")}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "filled"
                     ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
                     : "text-slate-400 hover:text-white border-transparent"
@@ -1877,9 +1851,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               >
                 Filled ({ordersFilled.length})
               </button>
-              <button 
+              <button
                 onClick={() => setPositionsModalTab("canceled")}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
+                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "canceled"
                     ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
                     : "text-slate-400 hover:text-white border-transparent"
@@ -1889,10 +1863,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               </button>
             </div>
 
-            <div className="h-[calc(90vh-150px)] sm:h-[calc(90vh-190px)] flex flex-col">
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2">
                 {positionsModalLoading && (
-                  <div className="text-sm text-slate-300">Loading latest positions and orders...</div>
+                  <div className="text-xs text-slate-300">Loading orders...</div>
                 )}
                 {positionsModalError && (
                   <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
@@ -1905,60 +1879,35 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   <table className="w-full text-xs sm:text-sm">
                     <thead>
                       <tr className="text-slate-400 text-[10px] sm:text-xs text-left border-b border-slate-700">
-                        <th className="py-3 px-3 font-medium">Symbol</th>
-                        <th className="py-3 px-3 font-medium">Quantity</th>
-                        <th className="py-3 px-3 font-medium">Avg Entry Price</th>
-                        <th className="py-3 px-3 font-medium">Total Cost</th>
-                        <th className="py-3 px-3 font-medium">Current Price</th>
-                        <th className="py-3 px-3 font-medium">Status</th>
-                        <th className="py-3 px-3 font-medium">Actions</th>
+                        <th className="py-2 px-3 font-medium">Symbol</th>
+                        <th className="py-2 px-3 font-medium">Quantity</th>
+                        <th className="py-2 px-3 font-medium">Order Price</th>
+                        <th className="py-2 px-3 font-medium">Total Cost</th>
+                        <th className="py-2 px-3 font-medium">Status</th>
+                        <th className="py-2 px-3 font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700">
                       {pagedPositionsTabRows.map((row: any, i) => {
-                        if (positionsModalTab === "positions") {
-                          const position = row as ModalPosition;
-                          return (
-                            <tr key={`${position.symbol}-${i}`} className="hover:bg-slate-800/30 transition-colors">
-                              <td className="py-3 px-3 font-semibold text-white">{position.symbol}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatQuantity(position.quantity)}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.entryPrice)}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.totalCost)}</td>
-                              <td className="py-3 px-3 text-slate-300">{formatCurrency(position.currentPrice)}</td>
-                              <td className="py-3 px-3">
-                                <span className="px-2 py-1 rounded text-xs font-medium bg-[#fc4f02]/20 text-[#fc4f02]">
-                                  HOLDING
-                                </span>
-                              </td>
-                              <td className="py-3 px-3">
-                                <button className="px-3 py-1 rounded text-xs font-medium bg-red-900/40 text-red-400 hover:bg-red-900/60 transition-colors">
-                                  Close Position
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        }
-
                         const order = row as ModalOrder;
                         return (
                           <tr key={`${order.symbol}-${order.status}-${i}`} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-3 px-3 font-semibold text-white">{order.symbol}</td>
-                            <td className="py-3 px-3 text-slate-300">{formatQuantity(order.quantity)}</td>
-                            <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice)}</td>
-                            <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice * order.quantity)}</td>
-                            <td className="py-3 px-3 text-slate-300">{formatCurrency(order.avgPrice)}</td>
-                            <td className="py-3 px-3">
-                              <span className="px-2 py-1 rounded text-xs font-medium bg-slate-700/60 text-slate-200">
+                            <td className="py-2 px-3 font-semibold text-white text-xs">{order.symbol}</td>
+                            <td className="py-2 px-3 text-slate-300 text-xs">{formatQuantity(order.quantity)}</td>
+                            <td className="py-2 px-3 text-slate-300 text-xs">{formatCurrency(order.avgPrice)}</td>
+                            <td className="py-2 px-3 text-slate-300 text-xs">{formatCurrency(order.avgPrice * order.quantity)}</td>
+                            <td className="py-2 px-3">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-700/60 text-slate-200">
                                 {order.status}
                               </span>
                             </td>
-                            <td className="py-3 px-3 text-slate-400 text-xs">{order.side || "—"}</td>
+                            <td className="py-2 px-3 text-slate-400 text-xs">{order.side || "—"}</td>
                           </tr>
                         );
                       })}
                       {!positionsModalLoading && pagedPositionsTabRows.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="py-8 px-3 text-center text-slate-400">
+                          <td colSpan={6} className="py-8 px-3 text-center text-slate-400">
                             No records found for this tab
                           </td>
                         </tr>
@@ -1968,33 +1917,29 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 </div>
               </div>
 
-              <div className="border-t border-slate-700 bg-[--color-surface]/95 backdrop-blur p-4 sm:px-6 sm:py-4">
+              <div className="flex-shrink-0 border-t border-slate-700 bg-[--color-surface]/95 backdrop-blur px-4 sm:px-6 py-2">
                 {/* Summary Stats */}
-                <div className="grid grid-cols-5 gap-4">
+                <div className="grid grid-cols-4 gap-2 mb-2">
                   <div>
-                    <div className="text-slate-400 text-xs mb-1">Open Positions</div>
-                    <div className="text-2xl font-bold text-white">{modalPositions.length}</div>
+                    <div className="text-slate-400 text-xs">Total Orders</div>
+                    <div className="text-lg font-bold text-white">{modalOrders.length}</div>
                   </div>
                   <div>
-                    <div className="text-slate-400 text-xs mb-1">Total Orders</div>
-                    <div className="text-2xl font-bold text-white">{modalOrders.length}</div>
+                    <div className="text-slate-400 text-xs">Pending</div>
+                    <div className="text-lg font-bold text-slate-400">{ordersPending.length}</div>
                   </div>
                   <div>
-                    <div className="text-slate-400 text-xs mb-1">Pending</div>
-                    <div className="text-2xl font-bold text-slate-400">{ordersPending.length}</div>
+                    <div className="text-slate-400 text-xs">Filled</div>
+                    <div className="text-lg font-bold text-green-400">{ordersFilled.length}</div>
                   </div>
                   <div>
-                    <div className="text-slate-400 text-xs mb-1">Filled</div>
-                    <div className="text-2xl font-bold text-green-400">{ordersFilled.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-400 text-xs mb-1">Canceled</div>
-                    <div className="text-2xl font-bold text-red-400">{ordersCanceled.length}</div>
+                    <div className="text-slate-400 text-xs">Canceled</div>
+                    <div className="text-lg font-bold text-red-400">{ordersCanceled.length}</div>
                   </div>
                 </div>
 
                 {/* Pagination */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-700 mt-4">
+                <div className="flex items-center justify-between border-t border-slate-700 pt-2">
                   <div className="text-xs text-slate-400">
                     Showing {Math.min((positionsModalPage - 1) * PAPER_POS_PER_PAGE + 1, positionsTabRows.length)} - {Math.min(positionsModalPage * PAPER_POS_PER_PAGE, positionsTabRows.length)} of {positionsTabRows.length}
                   </div>
@@ -2024,18 +1969,13 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
       {/* Leaderboard Modal - Trading Performance */}
       {showLeaderboardModal && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50 p-4">
-          <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-lg sm:rounded-xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+        <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl flex items-center justify-center z-[10000] p-4">
+          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
             {/* Fixed Header */}
-            <div className="flex-shrink-0 bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700 p-4 sm:p-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] flex items-center justify-center font-bold text-white">
-                  TH
-                </div>
-                <div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-white">Trading Performance</h2>
-                  <p className="text-xs sm:text-sm text-slate-400 mt-1">View closed trades and open positions</p>
-                </div>
+            <div className="sticky top-0 flex-shrink-0 bg-[--color-surface] border-b border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-base sm:text-lg font-semibold text-white">Trading Performance</h2>
+                <p className="text-xs text-slate-400">View closed trades and open positions</p>
               </div>
               <button
                 onClick={() => { setShowLeaderboardModal(false); setLeaderboardTab("history"); setHistoryFilter("all"); setLeaderboardHistoryPage(1); setLeaderboardPositionsPage(1); }}
@@ -2048,23 +1988,23 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </div>
 
             {/* Fixed Main Tabs */}
-            <div className="flex-shrink-0 px-4 sm:px-6 py-4 flex gap-3 overflow-x-auto bg-gradient-to-br from-slate-800 to-slate-900 border-b border-slate-700">
-              <button 
+            <div className="flex-shrink-0 border-b border-slate-700 px-4 sm:px-6 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
+              <button
                 onClick={() => setLeaderboardTab("history")}
-                className={`px-6 py-3 text-sm font-medium whitespace-nowrap rounded-full transition-all flex-1 max-w-xs ${
+                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   leaderboardTab === "history"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
                 Trade History
               </button>
-              <button 
+              <button
                 onClick={() => setLeaderboardTab("positions")}
-                className={`px-6 py-3 text-sm font-medium whitespace-nowrap rounded-full transition-all flex-1 max-w-xs ${
+                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   leaderboardTab === "positions"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-                    : "text-slate-400 hover:text-white"
+                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
                 Open Positions ({modalPositions.length})
@@ -2078,34 +2018,34 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               {leaderboardTab === "history" && (
                 <>
                   {/* Fixed: Stats + Filter Tabs */}
-                  <div className="flex-shrink-0 px-4 sm:px-6 pt-4 pb-4 space-y-4 border-b border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
+                  <div className="flex-shrink-0 px-4 sm:px-6 py-2 space-y-2 border-b border-slate-700 bg-[--color-surface]/95 backdrop-blur">
                     {positionsModalLoading && (
-                      <div className="text-sm text-slate-300">Loading trade history...</div>
+                      <div className="text-xs text-slate-300">Loading trade history...</div>
                     )}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-slate-400 text-sm mb-2">Total Trades</div>
-                        <div className="text-2xl font-bold text-white">{modalTradeSummary?.totalTrades ?? historyRowsFiltered.length}</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                        <div className="text-slate-400 text-xs">Total Trades</div>
+                        <div className="text-lg font-bold text-white">{modalTradeSummary?.totalTrades ?? historyRowsFiltered.length}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-slate-400 text-sm mb-2">Total P&L</div>
-                        <div className={`text-2xl font-bold ${leaderboardTotalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                        <div className="text-slate-400 text-xs">Total P&L</div>
+                        <div className={`text-lg font-bold ${leaderboardTotalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(modalTradeSummary?.totalProfitLoss ?? leaderboardTotalPnl)}
                         </div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-slate-400 text-sm mb-2">Avg Profit</div>
-                        <div className={`text-2xl font-bold ${leaderboardAvgProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                        <div className="text-slate-400 text-xs">Avg Profit</div>
+                        <div className={`text-lg font-bold ${leaderboardAvgProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(leaderboardAvgProfit)}
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 overflow-x-auto">
+                    <div className="flex gap-1.5 overflow-x-auto pb-1">
                       {["all", "profitable", "loss", "recent", "p&l"].map((filter) => (
                         <button
                           key={filter}
                           onClick={() => setHistoryFilter(filter as any)}
-                          className={`px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap capitalize transition-all ${
+                          className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap capitalize transition-all ${
                             historyFilter === filter
                               ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
                               : "text-slate-400 hover:text-white bg-slate-700/50"
@@ -2118,21 +2058,21 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   </div>
 
                   {/* Scrollable: Trade List */}
-                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2">
                     {pagedHistoryRows.map((trade, idx) => (
-                      <div key={`${trade.symbol}-${idx}`} className={`bg-slate-800/30 rounded-lg p-4 border-l-4 ${trade.profitLoss < 0 ? 'border-red-500' : 'border-green-500'}`}>
+                      <div key={`${trade.symbol}-${idx}`} className={`bg-slate-800/30 rounded-lg px-3 py-2 border-l-4 ${trade.profitLoss < 0 ? 'border-red-500' : 'border-green-500'}`}>
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-lg font-bold text-white">{trade.symbol}</div>
-                            <div className="text-sm text-slate-400">{trade.quantity.toLocaleString()} shares • {trade.durationLabel}</div>
-                            <div className="text-sm text-slate-300 mt-1">
+                            <div className="text-sm font-bold text-white">{trade.symbol}</div>
+                            <div className="text-xs text-slate-400">{trade.quantity.toLocaleString()} shares • {trade.durationLabel}</div>
+                            <div className="text-xs text-slate-300">
                               Entry: <span className="text-white">{formatCurrency(trade.entryPrice)}</span> → Exit: <span className="text-white">{formatCurrency(trade.exitPrice)}</span>
                               <span className="text-slate-400 ml-2">{trade.closedAt ? new Date(trade.closedAt).toLocaleString() : '—'}</span>
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={`text-lg font-bold ${trade.profitLoss < 0 ? 'text-red-400' : 'text-green-400'}`}>{formatCurrency(trade.profitLoss)}</div>
-                            <div className={`text-sm ${trade.profitLoss < 0 ? 'text-red-400' : 'text-green-400'}`}>{formatPercent(trade.profitPercent)}</div>
+                            <div className={`text-sm font-bold ${trade.profitLoss < 0 ? 'text-red-400' : 'text-green-400'}`}>{formatCurrency(trade.profitLoss)}</div>
+                            <div className={`text-xs ${trade.profitLoss < 0 ? 'text-red-400' : 'text-green-400'}`}>{formatPercent(trade.profitPercent)}</div>
                           </div>
                         </div>
                       </div>
@@ -2145,15 +2085,15 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   </div>
 
                   {/* Fixed: Pagination */}
-                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-between">
-                    <div className="text-sm text-slate-400">
+                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-2 bg-[--color-surface]/95 backdrop-blur flex items-center justify-between">
+                    <div className="text-xs text-slate-400">
                       Showing {Math.min((leaderboardHistoryPage - 1) * LEADERBOARD_ITEMS_PER_PAGE + 1, historyRowsFiltered.length)} - {Math.min(leaderboardHistoryPage * LEADERBOARD_ITEMS_PER_PAGE, historyRowsFiltered.length)} of {historyRowsFiltered.length} trades
                     </div>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setLeaderboardHistoryPage(p => Math.max(1, p - 1))} 
                         disabled={leaderboardHistoryPage === 1} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Prev
                       </button>
@@ -2161,7 +2101,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardHistoryPage(p => Math.min(Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
                         disabled={leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE))} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Next
                       </button>
@@ -2174,52 +2114,41 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               {leaderboardTab === "positions" && (
                 <>
                   {/* Fixed: Stats + Section Header */}
-                  <div className="flex-shrink-0 px-4 sm:px-6 pt-4 pb-4 space-y-4 border-b border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900">
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-slate-400 text-sm mb-2">Total Positions</div>
-                        <div className="text-2xl font-bold text-white">{modalPositions.length}</div>
+                  <div className="flex-shrink-0 px-4 sm:px-6 py-2 space-y-2 border-b border-slate-700 bg-[--color-surface]/95 backdrop-blur">
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                        <div className="text-slate-400 text-xs">Total Positions</div>
+                        <div className="text-lg font-bold text-white">{modalPositions.length}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-slate-400 text-sm mb-2">Positions Up</div>
-                        <div className="text-2xl font-bold text-green-400">{leaderboardUpPositions}</div>
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                        <div className="text-slate-400 text-xs">Positions Up</div>
+                        <div className="text-lg font-bold text-green-400">{leaderboardUpPositions}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-slate-400 text-sm mb-2">Positions Down</div>
-                        <div className="text-2xl font-bold text-red-400">{leaderboardDownPositions}</div>
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                        <div className="text-slate-400 text-xs">Positions Down</div>
+                        <div className="text-lg font-bold text-red-400">{leaderboardDownPositions}</div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-lg p-4 text-center">
-                        <div className="text-slate-400 text-sm mb-2">Unrealized P&L</div>
-                        <div className={`text-2xl font-bold ${leaderboardUnrealizedTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                        <div className="text-slate-400 text-xs">Unrealized P&L</div>
+                        <div className={`text-lg font-bold ${leaderboardUnrealizedTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {formatCurrency(leaderboardUnrealizedTotal)}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 bg-gradient-to-r from-[#fc4f02] to-[#fda300] rounded flex items-center justify-center">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-bold text-white">CRYPTO POSITIONS</h3>
-                    </div>
                   </div>
 
                   {/* Scrollable: Positions List */}
-                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
+                  <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2">
                     {pagedLeaderboardPositions.map((position, idx) => (
-                      <div key={`${position.symbol}-${idx}`} className="bg-slate-800/30 rounded-lg p-4">
-                        <div className="flex items-start justify-between">
+                      <div key={`${position.symbol}-${idx}`} className="bg-slate-800/30 rounded-lg px-3 py-2">
+                        <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xl font-bold text-white">{position.symbol}</div>
-                            <div className="text-sm text-slate-400 mb-2">{position.quantity.toLocaleString()} tokens</div>
-                            <div className="text-sm text-slate-300">
-                              Entry: <span className="text-white font-semibold">{formatCurrency(position.entryPrice)}</span> • Current: <span className="text-white font-semibold">{formatCurrency(position.currentPrice)}</span>
-                            </div>
+                            <div className="text-sm font-bold text-white">{position.symbol}</div>
+                            <div className="text-xs text-slate-400">{position.quantity.toLocaleString()} tokens • Entry: <span className="text-white">{formatCurrency(position.entryPrice)}</span> • Current: <span className="text-white">{formatCurrency(position.currentPrice)}</span></div>
                           </div>
                           <div className="text-right">
-                            <div className="text-sm text-slate-400 mb-1">Value: <span className="text-white font-semibold">{formatCurrency(position.currentPrice * position.quantity)}</span></div>
-                            <div className={`px-3 py-1 rounded-lg text-sm font-medium ${position.unrealizedPnl < 0 ? 'bg-red-900/40 text-red-400' : 'bg-green-900/40 text-green-400'}`}>
+                            <div className="text-xs text-slate-400">Value: <span className="text-white font-semibold">{formatCurrency(position.currentPrice * position.quantity)}</span></div>
+                            <div className={`text-xs font-medium ${position.unrealizedPnl < 0 ? 'text-red-400' : 'text-green-400'}`}>
                               {formatCurrency(position.unrealizedPnl)} ({formatPercent(position.pnlPercent)})
                             </div>
                           </div>
@@ -2234,15 +2163,15 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                   </div>
 
                   {/* Fixed: Pagination */}
-                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-4 bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-between">
-                    <div className="text-sm text-slate-400">
+                  <div className="flex-shrink-0 border-t border-slate-700 px-4 sm:px-6 py-2 bg-[--color-surface]/95 backdrop-blur flex items-center justify-between">
+                    <div className="text-xs text-slate-400">
                       Showing {Math.min((leaderboardPositionsPage - 1) * LEADERBOARD_ITEMS_PER_PAGE + 1, modalPositions.length)} - {Math.min(leaderboardPositionsPage * LEADERBOARD_ITEMS_PER_PAGE, modalPositions.length)} of {modalPositions.length} positions
                     </div>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => setLeaderboardPositionsPage(p => Math.max(1, p - 1))} 
                         disabled={leaderboardPositionsPage === 1} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Prev
                       </button>
@@ -2250,7 +2179,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardPositionsPage(p => Math.min(Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
                         disabled={leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE))} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Next
                       </button>

@@ -9,6 +9,9 @@ interface TradingPanelProps {
   baseSymbol: string;
   currentPrice: number;
   availableBalance?: number; // Make optional
+  availableQuoteBalance?: number;
+  availableBaseBalance?: number;
+  lockedBaseBalance?: number;
   quoteCurrency: string;
 }
 
@@ -18,6 +21,9 @@ export default function TradingPanel({
   baseSymbol,
   currentPrice,
   availableBalance,
+  availableQuoteBalance,
+  availableBaseBalance,
+  lockedBaseBalance,
   quoteCurrency,
 }: TradingPanelProps) {
   const [orderType, setOrderType] = useState<"MARKET" | "LIMIT">("MARKET");
@@ -28,6 +34,20 @@ export default function TradingPanel({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [canTrade, setCanTrade] = useState<boolean | null>(null);
+  const [balances, setBalances] = useState({
+    quote: availableQuoteBalance ?? availableBalance ?? 0,
+    base: availableBaseBalance ?? 0,
+    lockedBase: lockedBaseBalance ?? 0,
+  });
+
+  const resolvedTradingSymbol = (() => {
+    const upper = (symbol || "").toUpperCase();
+    const quote = (quoteCurrency || "USDT").toUpperCase();
+    const knownQuotes = ["USDT", "USDC", "BUSD", "TUSD", "USDP", "DAI", "FDUSD", "USD"];
+    const existingQuote = knownQuotes.find((q) => upper.endsWith(q));
+    const base = existingQuote ? upper.slice(0, upper.length - existingQuote.length) : upper;
+    return `${base}${quote}`;
+  })();
 
   useEffect(() => {
     // Check trading permissions
@@ -52,6 +72,54 @@ export default function TradingPanel({
     }
   }, [currentPrice]);
 
+  useEffect(() => {
+    setBalances({
+      quote: availableQuoteBalance ?? availableBalance ?? 0,
+      base: availableBaseBalance ?? 0,
+      lockedBase: lockedBaseBalance ?? 0,
+    });
+  }, [availableBalance, availableBaseBalance, availableQuoteBalance, lockedBaseBalance]);
+
+  const refreshAvailableBalance = async () => {
+    try {
+      const balanceResponse = await exchangesService.getBalance(connectionId);
+      if (!balanceResponse.success || !balanceResponse.data) return;
+
+      const quoteAsset = balanceResponse.data.assets?.find(
+        (asset) => asset.symbol.toUpperCase() === quoteCurrency.toUpperCase()
+      );
+      const baseAsset = balanceResponse.data.assets?.find(
+        (asset) => asset.symbol.toUpperCase() === baseSymbol.toUpperCase()
+      );
+
+      const nextQuoteBalance = quoteAsset ? parseFloat(quoteAsset.free) : NaN;
+      const nextBaseBalance = baseAsset ? parseFloat(baseAsset.free) : NaN;
+      const nextLockedBase = baseAsset ? parseFloat(baseAsset.locked) : NaN;
+
+      if (
+        Number.isFinite(nextQuoteBalance) ||
+        Number.isFinite(nextBaseBalance) ||
+        Number.isFinite(nextLockedBase)
+      ) {
+        setBalances((prev) => ({
+          quote: Number.isFinite(nextQuoteBalance) ? nextQuoteBalance : prev.quote,
+          base: Number.isFinite(nextBaseBalance) ? nextBaseBalance : prev.base,
+          lockedBase: Number.isFinite(nextLockedBase) ? nextLockedBase : prev.lockedBase,
+        }));
+        return;
+      }
+
+      if (typeof balanceResponse.data.buyingPower === "number" && Number.isFinite(balanceResponse.data.buyingPower)) {
+        setBalances((prev) => ({
+          ...prev,
+          quote: balanceResponse.data.buyingPower as number,
+        }));
+      }
+    } catch (refreshError) {
+      console.error("Failed to refresh available balance after order:", refreshError);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -68,8 +136,26 @@ export default function TradingPanel({
       return;
     }
 
+    const priceNum = orderType === "LIMIT" ? parseFloat(price) : currentPrice || 0;
+    if (side === "BUY") {
+      const totalCost = quantityNum * priceNum;
+      if (priceNum > 0 && totalCost > balances.quote) {
+        setError(`Insufficient ${quoteCurrency} balance. Available: ${balances.quote.toFixed(2)} ${quoteCurrency}`);
+        return;
+      }
+    }
+
+    if (side === "SELL" && quantityNum > balances.base) {
+      setError(
+        `Insufficient ${baseSymbol} free balance. Available: ${balances.base.toFixed(8)} ${baseSymbol}` +
+          (balances.lockedBase > 0
+            ? `, Locked: ${balances.lockedBase.toFixed(8)} ${baseSymbol}`
+            : "")
+      );
+      return;
+    }
+
     if (orderType === "LIMIT") {
-      const priceNum = parseFloat(price);
       if (!priceNum || priceNum <= 0) {
         setError("Please enter a valid price for LIMIT orders");
         return;
@@ -80,7 +166,7 @@ export default function TradingPanel({
       setIsSubmitting(true);
 
       const orderData = {
-        symbol,
+        symbol: resolvedTradingSymbol,
         side,
         type: orderType,
         quantity: quantityNum,
@@ -92,10 +178,7 @@ export default function TradingPanel({
       if (response.success) {
         setSuccess(`Order placed successfully! Order ID: ${response.data.orderId}`);
         setQuantity("");
-        // Refresh balance after order
-        setTimeout(() => {
-          window.location.reload();
-        }, 2000);
+        void refreshAvailableBalance();
       } else {
         setError("Failed to place order");
       }
@@ -112,14 +195,23 @@ export default function TradingPanel({
     return (qty * prc).toFixed(2);
   };
 
+  const displayBalance = side === "BUY" ? balances.quote : balances.base;
+  const displayBalanceUnit = side === "BUY" ? quoteCurrency : baseSymbol;
+
   const setPercentage = (percent: number) => {
-    const maxAmount = availableBalance || 0;
-    const amount = (maxAmount * percent) / 100;
     const currentPriceValue = currentPrice || 0;
     const priceValue = parseFloat(price) || currentPriceValue;
-    
-    if (priceValue <= 0) return; // Avoid division by zero
-    
+
+    if (side === "SELL") {
+      const qty = (balances.base * percent) / 100;
+      setQuantity(qty.toFixed(8));
+      return;
+    }
+
+    const amount = (balances.quote * percent) / 100;
+
+    if (priceValue <= 0) return;
+
     const qty = orderType === "MARKET" ? amount / currentPriceValue : amount / priceValue;
     setQuantity(qty.toFixed(8));
   };
@@ -336,9 +428,17 @@ export default function TradingPanel({
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-400">Available Balance</span>
             <span className="text-sm font-semibold text-slate-300">
-              {(availableBalance || 0).toFixed(2)} <span className="text-slate-500">{quoteCurrency}</span>
+              {displayBalance.toFixed(side === "BUY" ? 2 : 8)} <span className="text-slate-500">{displayBalanceUnit}</span>
             </span>
           </div>
+          {side === "SELL" && balances.lockedBase > 0 && (
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs font-medium text-slate-400">Locked</span>
+              <span className="text-sm font-semibold text-slate-300">
+                {balances.lockedBase.toFixed(8)} <span className="text-slate-500">{baseSymbol}</span>
+              </span>
+            </div>
+          )}
           {orderType === "MARKET" && (
             <div className="flex items-center justify-between pt-1">
               <span className="text-xs font-medium text-slate-400">Est. Price</span>

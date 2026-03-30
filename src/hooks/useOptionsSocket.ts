@@ -36,7 +36,7 @@ interface OptionsSocketReturn extends OptionsSocketState {
 const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  "http://localhost:3000";
+  "";
 
 const RECONNECT_DELAY = 3000;
 const MAX_RECONNECT_ATTEMPTS = 5;

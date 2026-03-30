@@ -17,6 +17,7 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
   const { notification, showNotification, hideNotification } = useNotification();
   const isProcessingRef = React.useRef(false);
   const modeRef = React.useRef(mode);
+  const [gsiUnavailable, setGsiUnavailable] = React.useState(false);
   modeRef.current = mode;
 
   // Initialize GSI button on mount and whenever this component re-mounts
@@ -38,7 +39,7 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
       const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
       if (!clientId) {
         console.error("GoogleSignInButton: NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set. Please add it to your frontend .env.local and restart the dev server.");
-        container.innerHTML = '<button class="rounded-lg px-4 py-2 text-sm font-medium">Google sign-in unavailable</button>';
+        setGsiUnavailable(true);
         return;
       }
 
@@ -51,7 +52,7 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
         });
 
         // Clear container before rendering to avoid duplicate buttons
-        container.innerHTML = "";
+        while (container.firstChild) container.removeChild(container.firstChild);
 
         // @ts-ignore
         window.google.accounts.id.renderButton(container, {
@@ -162,7 +163,13 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
 
   return (
     <>
-      <div id="g_id_signin" />
+      {gsiUnavailable ? (
+        <button className="rounded-lg px-4 py-2 text-sm font-medium" disabled>
+          Google sign-in unavailable
+        </button>
+      ) : (
+        <div id="g_id_signin" />
+      )}
       {notification ? (
         <Notification
           message={notification.message}

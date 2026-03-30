@@ -433,6 +433,8 @@ export const exchangesService = {
       type: "MARKET" | "LIMIT";
       quantity: number;
       price?: number;
+      autoOco?: boolean;
+      source?: string;
     }
   ): Promise<ApiResponse<Order>> {
     return apiRequest<{
@@ -441,6 +443,8 @@ export const exchangesService = {
       type: "MARKET" | "LIMIT";
       quantity: number;
       price?: number;
+      autoOco?: boolean;
+      source?: string;
     }, ApiResponse<Order>>({
       path: `/exchanges/connections/${connectionId}/orders/place`,
       method: "POST",
@@ -638,6 +642,10 @@ export interface CoinDetailResponse {
   low24h: number;
   volume24h: number;
   availableBalance: number;
+  availableQuoteBalance?: number;
+  availableBaseBalance?: number;
+  lockedBaseBalance?: number;
+  baseCurrency?: string;
   quoteCurrency: string;
   candles: CandleData[];
   // ── New fields from backend optimization ──
@@ -671,6 +679,10 @@ export interface MarketDetailResponse {
   low24h: number;
   volume24h: number;
   availableBalance?: number;
+  availableQuoteBalance?: number;
+  availableBaseBalance?: number;
+  lockedBaseBalance?: number;
+  baseCurrency?: string;
   quoteCurrency: string;
   candlesByInterval?: CandlesByInterval;
   candles: CandleData[];

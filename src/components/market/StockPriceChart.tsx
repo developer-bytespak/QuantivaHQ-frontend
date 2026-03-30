@@ -99,7 +99,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
           return;
         }
 
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
         const response = await fetch(
           `${API_BASE_URL}/api/stocks-market/stocks/${symbol.toUpperCase()}/bars?timeframe=${alpacaTimeframe}&limit=${limit}`
         );

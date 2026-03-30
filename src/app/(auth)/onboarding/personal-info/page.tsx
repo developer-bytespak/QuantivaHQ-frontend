@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
+import { isValidPhoneNumber, parsePhoneNumber } from "react-phone-number-input";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
 import { AUTH_STEPS } from "@/config/navigation";
 import { updatePersonalInfo, getCurrentUser, hasPersonalInfo } from "@/lib/api/user";
@@ -11,6 +12,8 @@ import { updatePersonalInfo, getCurrentUser, hasPersonalInfo } from "@/lib/api/u
 interface Country {
   code: string;
   name: string;
+  dialRoot: string;
+  dialSuffix: string;
   supported: boolean;
   region: string;
 }
@@ -22,6 +25,7 @@ export default function PersonalInfoPage() {
   const [gender, setGender] = useState<"male" | "female" | "other" | "prefer-not-to-say" | "">("");
   const [nationality, setNationality] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isCheckingInfo, setIsCheckingInfo] = useState(true);
@@ -34,6 +38,110 @@ export default function PersonalInfoPage() {
   const [nationalityDropdownPosition, setNationalityDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [mounted, setMounted] = useState(false);
   const nationalityDropdownRef = useRef<HTMLDivElement>(null);
+
+  const getDialRoot = (country: Country) => {
+    const dial = typeof country.dialRoot === "string" ? country.dialRoot.trim() : "";
+    return dial.startsWith("+") ? dial : "";
+  };
+
+  const getDialSuffix = (country: Country) => {
+    const suffix = typeof country.dialSuffix === "string" ? country.dialSuffix.trim() : "";
+    return suffix.replace(/\D/g, "");
+  };
+
+  const composePhoneWithDialCode = (localPhone: string, dialRoot: string) => {
+    const normalizedLocalPhone = localPhone.replace(/\D/g, "");
+    if (!dialRoot) {
+      return normalizedLocalPhone;
+    }
+
+    return normalizedLocalPhone ? `${dialRoot}${normalizedLocalPhone}` : dialRoot;
+  };
+
+  const extractLocalPhoneNumber = (fullPhone: string, dialRoot: string) => {
+    const trimmedFullPhone = fullPhone.trim();
+    if (!trimmedFullPhone) {
+      return "";
+    }
+
+    if (dialRoot && trimmedFullPhone.startsWith(dialRoot)) {
+      return trimmedFullPhone.slice(dialRoot.length).replace(/\D/g, "");
+    }
+
+    return trimmedFullPhone.replace(/\D/g, "");
+  };
+
+  const validatePhoneForCountry = (phone: string, countryName: string): string => {
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) {
+      return "";
+    }
+
+    const selectedCountry = countries.find((c) => c.name === countryName);
+    if (!selectedCountry) {
+      return "Please select your nationality first";
+    }
+
+    const selectedDialCode = `${getDialRoot(selectedCountry)}${getDialSuffix(selectedCountry)}`;
+    const phoneDigits = trimmedPhone.replace(/\D/g, "");
+    const dialCodeDigits = selectedDialCode.replace(/\D/g, "");
+
+    // Don't show a hard error for initial in-progress input.
+    if (selectedDialCode && (trimmedPhone === selectedDialCode || phoneDigits.length <= dialCodeDigits.length + 3)) {
+      return "";
+    }
+
+    const parsed = (() => {
+      try {
+        return parsePhoneNumber(trimmedPhone);
+      } catch {
+        return undefined;
+      }
+    })();
+    if (!parsed || !parsed.isValid()) {
+      return `Enter a valid phone number for ${selectedCountry.name}`;
+    }
+
+    if (parsed.country && parsed.country !== selectedCountry.code) {
+      return `Phone number does not match selected country (${selectedCountry.name})`;
+    }
+
+    return "";
+  };
+
+  const isPhoneValidForCountry = (phone: string, countryName: string): boolean => {
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) {
+      return false;
+    }
+
+    const selectedCountry = countries.find((c) => c.name === countryName);
+    if (!selectedCountry) {
+      return false;
+    }
+
+    if (!isValidPhoneNumber(trimmedPhone)) {
+      return false;
+    }
+
+    const parsed = (() => {
+      try {
+        return parsePhoneNumber(trimmedPhone);
+      } catch {
+        return undefined;
+      }
+    })();
+
+    if (!parsed) {
+      return false;
+    }
+
+    if (parsed.country && parsed.country !== selectedCountry.code) {
+      return false;
+    }
+
+    return true;
+  };
 
   // Calculate progress based on filled fields
   const calculateProgress = () => {
@@ -66,7 +174,7 @@ export default function PersonalInfoPage() {
     const fetchCountries = async () => {
       try {
         setIsLoadingCountries(true);
-        const response = await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,region');
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,region,idd');
         
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);
@@ -84,14 +192,20 @@ export default function PersonalInfoPage() {
           .map((country: any) => {
             const name = country.name?.common || country.name?.official || '';
             const code = country.cca2 || '';
+            const iddRoot = country.idd?.root || "";
+            const iddSuffix = Array.isArray(country.idd?.suffixes) && country.idd.suffixes.length > 0
+              ? String(country.idd.suffixes[0])
+              : "";
             return {
               code,
               name,
+              dialRoot: iddRoot,
+              dialSuffix: iddSuffix,
               supported: true,
               region: country.region || 'Unknown',
             };
           })
-          .filter((country: Country) => country.code && country.name)
+          .filter((country: Country) => country.code && country.name && getDialRoot(country))
           .sort((a: Country, b: Country) => a.name.localeCompare(b.name));
         
         console.log('Transformed countries count:', transformedCountries.length);
@@ -102,26 +216,26 @@ export default function PersonalInfoPage() {
         console.error('Failed to fetch countries:', error);
         // Fallback to hardcoded list if API fails
         const fallbackCountries: Country[] = [
-          { code: "US", name: "United States", supported: true, region: "Americas" },
-          { code: "CA", name: "Canada", supported: true, region: "Americas" },
-          { code: "GB", name: "United Kingdom", supported: true, region: "Europe" },
-          { code: "DE", name: "Germany", supported: true, region: "Europe" },
-          { code: "FR", name: "France", supported: true, region: "Europe" },
-          { code: "IT", name: "Italy", supported: true, region: "Europe" },
-          { code: "ES", name: "Spain", supported: true, region: "Europe" },
-          { code: "AU", name: "Australia", supported: true, region: "Oceania" },
-          { code: "JP", name: "Japan", supported: true, region: "Asia" },
-          { code: "IN", name: "India", supported: true, region: "Asia" },
-          { code: "BR", name: "Brazil", supported: true, region: "Americas" },
-          { code: "MX", name: "Mexico", supported: true, region: "Americas" },
-          { code: "ZA", name: "South Africa", supported: true, region: "Africa" },
-          { code: "NG", name: "Nigeria", supported: true, region: "Africa" },
-          { code: "SG", name: "Singapore", supported: true, region: "Asia" },
-          { code: "NZ", name: "New Zealand", supported: true, region: "Oceania" },
-          { code: "CH", name: "Switzerland", supported: true, region: "Europe" },
-          { code: "SE", name: "Sweden", supported: true, region: "Europe" },
-          { code: "AE", name: "United Arab Emirates", supported: true, region: "Asia" },
-          { code: "HK", name: "Hong Kong", supported: true, region: "Asia" },
+          { code: "US", name: "United States", dialRoot: "+", dialSuffix: "1", supported: true, region: "Americas" },
+          { code: "CA", name: "Canada", dialRoot: "+", dialSuffix: "1", supported: true, region: "Americas" },
+          { code: "GB", name: "United Kingdom", dialRoot: "+", dialSuffix: "44", supported: true, region: "Europe" },
+          { code: "DE", name: "Germany", dialRoot: "+", dialSuffix: "49", supported: true, region: "Europe" },
+          { code: "FR", name: "France", dialRoot: "+", dialSuffix: "33", supported: true, region: "Europe" },
+          { code: "IT", name: "Italy", dialRoot: "+", dialSuffix: "39", supported: true, region: "Europe" },
+          { code: "ES", name: "Spain", dialRoot: "+", dialSuffix: "34", supported: true, region: "Europe" },
+          { code: "AU", name: "Australia", dialRoot: "+", dialSuffix: "61", supported: true, region: "Oceania" },
+          { code: "JP", name: "Japan", dialRoot: "+", dialSuffix: "81", supported: true, region: "Asia" },
+          { code: "IN", name: "India", dialRoot: "+", dialSuffix: "91", supported: true, region: "Asia" },
+          { code: "BR", name: "Brazil", dialRoot: "+", dialSuffix: "55", supported: true, region: "Americas" },
+          { code: "MX", name: "Mexico", dialRoot: "+", dialSuffix: "52", supported: true, region: "Americas" },
+          { code: "ZA", name: "South Africa", dialRoot: "+", dialSuffix: "27", supported: true, region: "Africa" },
+          { code: "NG", name: "Nigeria", dialRoot: "+", dialSuffix: "234", supported: true, region: "Africa" },
+          { code: "SG", name: "Singapore", dialRoot: "+", dialSuffix: "65", supported: true, region: "Asia" },
+          { code: "NZ", name: "New Zealand", dialRoot: "+", dialSuffix: "64", supported: true, region: "Oceania" },
+          { code: "CH", name: "Switzerland", dialRoot: "+", dialSuffix: "41", supported: true, region: "Europe" },
+          { code: "SE", name: "Sweden", dialRoot: "+", dialSuffix: "46", supported: true, region: "Europe" },
+          { code: "AE", name: "United Arab Emirates", dialRoot: "+", dialSuffix: "971", supported: true, region: "Asia" },
+          { code: "HK", name: "Hong Kong", dialRoot: "+", dialSuffix: "852", supported: true, region: "Asia" },
         ];
         setCountries(fallbackCountries);
       } finally {
@@ -233,9 +347,18 @@ export default function PersonalInfoPage() {
     // Store the country name instead of code for consistency
     if (selectedCountry) {
       setNationality(selectedCountry.name);
+      const selectedDialCode = `${getDialRoot(selectedCountry)}${getDialSuffix(selectedCountry)}`;
+      const updatedPhone = selectedDialCode || "";
+      setPhoneNumber(updatedPhone);
+      setPhoneTouched(false);
+      setErrors((prev) => ({
+        ...prev,
+        nationality: "",
+        phoneNumber: "",
+      }));
     }
     setIsNationalityDropdownOpen(false);
-    setErrors({});
+    setCountrySearchQuery("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,6 +391,24 @@ export default function PersonalInfoPage() {
       return;
     }
 
+    if (!phoneNumber.trim()) {
+      setPhoneTouched(true);
+      setErrors((prev) => ({ ...prev, phoneNumber: "Phone number is required" }));
+      setIsLoading(false);
+      return;
+    }
+
+    if (!isPhoneValidForCountry(phoneNumber, nationality)) {
+      setPhoneTouched(true);
+      const selectedCountry = countries.find((c) => c.name === nationality);
+      const errorMessage = selectedCountry
+        ? `Enter a valid phone number for ${selectedCountry.name}`
+        : "Enter a valid phone number";
+      setErrors((prev) => ({ ...prev, phoneNumber: errorMessage }));
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // Get user ID from localStorage or session
       // Note: In a real app, you'd get this from the authenticated session/token
@@ -296,6 +437,43 @@ export default function PersonalInfoPage() {
   };
 
   const nationalityData = nationality ? countries.find((c) => c.name === nationality) : null;
+  const selectedDialRoot = nationalityData ? getDialRoot(nationalityData) : "";
+  const localPhoneNumber = extractLocalPhoneNumber(phoneNumber, selectedDialRoot);
+  const phoneValidationError = validatePhoneForCountry(phoneNumber, nationality);
+  const isPhoneValidForSubmit = isPhoneValidForCountry(phoneNumber, nationality);
+  const isNextDisabled =
+    isLoading ||
+    !fullLegalName.trim() ||
+    !dateOfBirth.trim() ||
+    !nationality.trim() ||
+    !isPhoneValidForSubmit;
+
+  const nextDisabledReason = (() => {
+    if (isLoading) {
+      return "";
+    }
+
+    const missing: string[] = [];
+    if (!fullLegalName.trim()) missing.push("full legal name");
+    if (!dateOfBirth.trim()) missing.push("date of birth");
+    if (!nationality.trim()) missing.push("nationality");
+
+    if (missing.length > 0) {
+      return `Please fill: ${missing.join(", ")}`;
+    }
+
+    if (!phoneNumber.trim()) {
+      return "Please enter your phone number";
+    }
+
+    if (!isPhoneValidForSubmit) {
+      return nationality
+        ? `Enter a complete valid phone number for ${nationality}`
+        : "Enter a complete valid phone number";
+    }
+
+    return "";
+  })();
 
   const filteredCountries = useMemo(() => {
     const q = countrySearchQuery.toLowerCase().trim();
@@ -599,23 +777,44 @@ export default function PersonalInfoPage() {
                 {/* Phone Number */}
                 <div>
                   <label htmlFor="phoneNumber" className="mb-1 block text-xs font-semibold text-white">
-                    Phone Number <span className="text-slate-500 text-xs font-normal">(Optional)</span>
+                    Phone Number <span className="text-red-400">*</span>
                   </label>
-                  <input
-                    id="phoneNumber"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => {
-                      setPhoneNumber(e.target.value);
-                      setErrors({ ...errors, phoneNumber: "" });
-                    }}
-                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
-                      errors.phoneNumber
-                        ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
-                        : "border-[--color-border]"
-                    }`}
-                    placeholder="+1234567890"
-                  />
+                  <div className={`flex overflow-hidden rounded-xl border-2 bg-[--color-surface] transition-all duration-300 focus-within:border-[#fc4f02] focus-within:ring-4 focus-within:ring-[#fc4f02]/20 ${
+                    errors.phoneNumber
+                      ? "border-red-500/50 focus-within:border-red-500 focus-within:ring-red-500/20"
+                      : "border-[--color-border]"
+                  }`}>
+                    <div className="flex min-w-[72px] items-center justify-center border-r border-white/10 px-3 text-sm font-semibold text-white/90">
+                      {selectedDialRoot || "+"}
+                    </div>
+                    <input
+                      id="phoneNumber"
+                      type="tel"
+                      value={localPhoneNumber}
+                      onChange={(e) => {
+                        const nextLocalPhone = e.target.value.replace(/\D/g, "");
+                        const nextValue = composePhoneWithDialCode(nextLocalPhone, selectedDialRoot);
+                        setPhoneNumber(nextValue);
+                        if (phoneTouched) {
+                          const phoneError = validatePhoneForCountry(nextValue, nationality);
+                          setErrors((prev) => ({ ...prev, phoneNumber: phoneError }));
+                        } else {
+                          setErrors((prev) => ({ ...prev, phoneNumber: "" }));
+                        }
+                      }}
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                        setPhoneTouched(true);
+                        const nextValue = composePhoneWithDialCode(e.target.value, selectedDialRoot);
+                        setPhoneNumber(nextValue);
+                        const phoneError = validatePhoneForCountry(nextValue, nationality);
+                        setErrors((prev) => ({ ...prev, phoneNumber: phoneError }));
+                      }}
+                      autoComplete="tel-national"
+                      className="w-full bg-transparent px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none"
+                      placeholder="Enter phone number"
+                      required
+                    />
+                  </div>
                   {errors.phoneNumber && (
                     <p className="mt-1.5 text-xs text-red-400">{errors.phoneNumber}</p>
                   )}
@@ -628,7 +827,7 @@ export default function PersonalInfoPage() {
             <div className="mt-3 sm:mt-4 text-center relative z-0">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isNextDisabled}
                 className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
@@ -654,6 +853,9 @@ export default function PersonalInfoPage() {
               </button>
               {errors.submit && (
                 <p className="mt-2 text-xs text-red-400">{errors.submit}</p>
+              )}
+              {isNextDisabled && !!nextDisabledReason && (
+                <p className="mt-2 text-xs text-amber-300">{nextDisabledReason}</p>
               )}
               <p className="mt-3 text-xs text-slate-400">
                 All information is encrypted and securely stored

@@ -489,17 +489,31 @@ export default function DashboardPage() {
     );
   }, [dashboardData]);
 
-  const totalOrderPages = Math.max(1, Math.ceil((openOrders || []).length / ORDERS_PER_PAGE));
+  const otherStatusOrders = useMemo(() => {
+    if (!dashboardData || !dashboardData.orders) return [];
+    return (dashboardData.orders || [])
+      .filter((o: any) => o.status !== "FILLED" && o.status !== "CANCELED" && o.status !== "EXPIRED")
+      .slice()
+      .sort((a: any, b: any) => {
+        const at = Number(a?.time || a?.created_at || 0);
+        const bt = Number(b?.time || b?.created_at || 0);
+        return bt - at;
+      });
+  }, [dashboardData]);
+
+  const actionOrders = openOrders.length > 0 ? openOrders : otherStatusOrders;
+
+  const totalOrderPages = Math.max(1, Math.ceil((actionOrders || []).length / ORDERS_PER_PAGE));
 
   const paginatedOrders = useMemo(() => {
     const start = (ordersPage - 1) * ORDERS_PER_PAGE;
-    return (openOrders || []).slice(start, start + ORDERS_PER_PAGE);
-  }, [openOrders, ordersPage]);
+    return (actionOrders || []).slice(start, start + ORDERS_PER_PAGE);
+  }, [actionOrders, ordersPage]);
 
   useEffect(() => {
     // reset page when orders change
     setOrdersPage(1);
-  }, [openOrders.length]);
+  }, [actionOrders.length]);
 
   // Holdings modal + pagination
   const [showHoldingsModal, setShowHoldingsModal] = useState(false);
@@ -632,15 +646,19 @@ export default function DashboardPage() {
             <div className="mb-4 sm:mb-5 flex items-center justify-between">
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
-                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Open limit &amp; market orders</p>
+                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                  {openOrders.length > 0 ? "Open limit & market orders" : "All exchange orders"}
+                </p>
               </div>
               <div className="flex items-center gap-1.5 rounded-full bg-[#fc4f02]/10 border border-[#fc4f02]/20 px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#fc4f02] animate-pulse"></span>
-                <span className="text-[10px] sm:text-xs font-medium text-[#fda300]">{(openOrders || []).length} open</span>
+                <span className="text-[10px] sm:text-xs font-medium text-[#fda300]">
+                  {openOrders.length > 0 ? `${(openOrders || []).length} open` : `${(otherStatusOrders || []).length} orders`}
+                </span>
               </div>
             </div>
             <div className="space-y-2">
-              {(!dashboardData || (openOrders || []).length === 0) ? (
+              {(!dashboardData || (actionOrders || []).length === 0) ? (
                 <div className="py-10 text-center">
                   <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/5">
                     <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -692,7 +710,7 @@ export default function DashboardPage() {
 
                   <div className="flex items-center justify-between pt-3 border-t border-white/[0.06]">
                     <div className="text-[10px] sm:text-xs text-slate-500">
-                      {(ordersPage - 1) * ORDERS_PER_PAGE + 1}–{Math.min(ordersPage * ORDERS_PER_PAGE, openOrders.length)} of {openOrders.length}
+                      {(ordersPage - 1) * ORDERS_PER_PAGE + 1}–{Math.min(ordersPage * ORDERS_PER_PAGE, actionOrders.length)} of {actionOrders.length}
                     </div>
                     <div className="flex items-center gap-1">
                       <button

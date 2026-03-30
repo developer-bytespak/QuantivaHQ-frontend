@@ -29,6 +29,7 @@ export function ExchangeAutoTradeModal({
 }: ExchangeAutoTradeModalProps) {
   const vcPoolId = useTopTradeVcPoolId();
   const [balance, setBalance] = useState(0);
+  const [quoteAsset, setQuoteAsset] = useState("USDT");
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [usdtAmount, setUsdtAmount] = useState("");
   const [executing, setExecuting] = useState(false);
@@ -37,7 +38,11 @@ export function ExchangeAutoTradeModal({
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
-  const symbol = base.endsWith("USDT") ? base : base + "USDT";
+  const normalizedBase = base.toUpperCase();
+  const knownQuotes = ["USDT", "USDC", "BUSD", "TUSD", "USDP", "DAI", "FDUSD", "USD"];
+  const currentQuote = knownQuotes.find((q) => normalizedBase.endsWith(q));
+  const baseAsset = currentQuote ? normalizedBase.slice(0, normalizedBase.length - currentQuote.length) : normalizedBase;
+  const symbol = `${baseAsset}${quoteAsset}`;
   const entryPrice = Number(signal?.entryPrice ?? signal?.entry ?? 0) || 0;
 
   /** Round quantity to a step size that aligns with Binance LOT_SIZE for the asset's price range.
@@ -79,8 +84,26 @@ export function ExchangeAutoTradeModal({
     let cancelled = false;
     exchangesService.getBalance(connectionId).then((res) => {
       if (cancelled || !res?.data?.assets) return;
-      const usdt = res.data.assets.find((a: any) => a.symbol === "USDT");
-      setBalance(usdt ? parseFloat(usdt.free || "0") + parseFloat(usdt.locked || "0") : 0);
+      const assets = res.data.assets as Array<{ symbol: string; free: string; locked: string }>;
+      const findAsset = (symbol: string) => assets.find((a) => a.symbol === symbol);
+
+      const selectedAsset =
+        findAsset("USDT") ||
+        findAsset("USD") ||
+        findAsset("USDC") ||
+        findAsset("BUSD") ||
+        findAsset("TUSD") ||
+        findAsset("USDP") ||
+        findAsset("DAI") ||
+        findAsset("FDUSD");
+
+      if (selectedAsset) {
+        setQuoteAsset(selectedAsset.symbol);
+        setBalance(parseFloat(selectedAsset.free || "0") + parseFloat(selectedAsset.locked || "0"));
+      } else {
+        setQuoteAsset("USDT");
+        setBalance(0);
+      }
     }).catch(() => { if (!cancelled) setBalance(0); })
       .finally(() => { if (!cancelled) setLoadingBalance(false); });
     return () => { cancelled = true; };
@@ -90,11 +113,11 @@ export function ExchangeAutoTradeModal({
     e.preventDefault();
     setError(null);
     if (!amountNum || amountNum <= 0) {
-      setError("Enter a valid USDT amount.");
+      setError(`Enter a valid ${quoteAsset} amount.`);
       return;
     }
     if (amountNum < 5) {
-      setError("Minimum order value is $5 USDT. Please increase the amount.");
+      setError(`Minimum order value is $5 ${quoteAsset}. Please increase the amount.`);
       return;
     }
     if (!isPoolTrade && amountNum > balance) {
@@ -106,7 +129,7 @@ export function ExchangeAutoTradeModal({
       return;
     }
     if (quantity < 0.00001) {
-      setError("Amount too small — increase the USDT amount and try again.");
+      setError(`Amount too small — increase the ${quoteAsset} amount and try again.`);
       return;
     }
     try {
@@ -129,6 +152,7 @@ export function ExchangeAutoTradeModal({
           side: "BUY",
           type: "MARKET",
           quantity: roundToLotSize(quantity, entryPrice),
+          source: "top_trade",  // 👈 Signal backend to auto-place OCO
         });
         if (response?.success) {
           // Show a warning if the OCO (stop-loss / take-profit) order failed
@@ -154,7 +178,7 @@ export function ExchangeAutoTradeModal({
 
       let msg = raw;
       if (raw.includes("MIN_NOTIONAL") || raw.includes("min_notional") || raw.includes("notional") || raw.toLowerCase().includes("minimum required")) {
-        msg = "Order value is below the minimum. Increase the USDT amount and try again.";
+        msg = `Order value is below the minimum. Increase the ${quoteAsset} amount and try again.`;
       } else if (raw.includes("MARKET_LOT_SIZE") || raw.includes("LOT_SIZE") || raw.includes("filter failure")) {
         msg = "Quantity doesn't meet Binance's step size requirements. Try a slightly different amount.";
       } else if (raw.includes("PERCENT_PRICE") || raw.includes("percent_price")) {
@@ -233,7 +257,7 @@ export function ExchangeAutoTradeModal({
         {/* Amount (USDT) */}
         <div className="mb-6">
           <label className="mb-3 block text-sm font-medium text-slate-300">
-            Amount (USDT):
+            Amount ({quoteAsset}):
           </label>
           <input
             type="number"

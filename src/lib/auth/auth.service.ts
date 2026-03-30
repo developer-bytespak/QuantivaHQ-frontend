@@ -1,4 +1,5 @@
 import { apiRequest } from "../api/client";
+import { logger } from "../utils/logger";
 
 export interface RegisterData {
   email: string;
@@ -46,7 +47,7 @@ export const authService = {
       method: "POST",
       body: data,
     });
-    console.log("[Login] Response:", response);
+    logger.info("[Login] Response:", response);
     return response;
   },
 
@@ -92,7 +93,23 @@ export const authService = {
   },
 
   async logout() {
-    // Client-side cleanup FIRST: clear tokens from localStorage so they won't be sent in the logout API request
+    // Call backend logout API FIRST (with access token still in localStorage)
+    // Authorization header is automatically added by axios interceptor
+    // This allows the server to clean up sessions using the session_id from the access token
+    if (typeof window !== "undefined") {
+      try {
+        await apiRequest<never, { message: string }>({
+          path: "/auth/logout",
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (err) {
+        // Logout API errors are OK, we'll still clear client state
+        console.warn("authService.logout: server logout failed (ok, clearing client)", err);
+      }
+    }
+
+    // Client-side cleanup AFTER: clear tokens from localStorage
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem("quantivahq_access_token");
@@ -112,19 +129,6 @@ export const authService = {
       } catch (cleanupErr) {
         console.warn("authService.logout: client cleanup failed", cleanupErr);
       }
-    }
-
-    // Call backend logout API (now @Public so no JWT guard required)
-    // This allows the server to clean up sessions if it can identify the user (via cookies)
-    try {
-      await apiRequest<never, { message: string }>({
-        path: "/auth/logout",
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (err) {
-      // Logout API errors are OK since we've already cleared client state
-      console.warn("authService.logout: server logout failed (ok, client cleared)", err);
     }
 
     // Force a full page navigation to the sign-up/login page to reset state and ensure cookies are re-evaluated by the server

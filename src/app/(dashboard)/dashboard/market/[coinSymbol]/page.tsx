@@ -6,8 +6,16 @@ import { exchangesService, CoinDetailResponse, CandlesByInterval, EmbeddedMarket
 import { useExchange } from "@/context/ExchangeContext";
 import { useRealtimePrice } from "@/hooks/useRealtimePrice";
 import CoinDetailHeader from "@/components/market/CoinDetailHeader";
-import CoinPriceChart from "@/components/market/CoinPriceChart";
-import StockPriceChart from "@/components/market/StockPriceChart";
+import dynamic from "next/dynamic";
+
+const CoinPriceChart = dynamic(() => import("@/components/market/CoinPriceChart"), {
+  ssr: false,
+  loading: () => <div className="h-[400px] animate-pulse rounded-xl bg-[--color-surface-alt]/60" />,
+});
+const StockPriceChart = dynamic(() => import("@/components/market/StockPriceChart"), {
+  ssr: false,
+  loading: () => <div className="h-[400px] animate-pulse rounded-xl bg-[--color-surface-alt]/60" />,
+});
 import TradingPanel from "@/components/market/TradingPanel";
 import StockTradingPanel from "@/components/market/StockTradingPanel";
 import InfoTab from "@/components/market/InfoTab";
@@ -25,6 +33,10 @@ interface CoinDetailData {
   low24h: number;
   volume24h: number;
   availableBalance: number;
+  availableQuoteBalance?: number;
+  availableBaseBalance?: number;
+  lockedBaseBalance?: number;
+  baseCurrency?: string;
   quoteCurrency: string;
   candles: Array<{
     openTime: number;
@@ -84,7 +96,7 @@ export default function MarketDetailPage() {
   const symbol = params.coinSymbol as string;
 
   // Get connection from global context (fetched once on app start)
-  const { connectionId, connectionType } = useExchange();
+  const { connectionId, connectionType, activeConnection } = useExchange();
   
   const [coinData, setCoinData] = useState<CoinDetailData | null>(null);
   const [stockData, setStockData] = useState<StockDetailData | null>(null);
@@ -103,8 +115,16 @@ export default function MarketDetailPage() {
   const [coinGeckoDataFallback, setCoinGeckoDataFallback] = useState<Awaited<ReturnType<typeof getCoinDetails>> | null>(null);
 
   // Phase 6: Real-time price streaming via WebSocket
+  const defaultQuote = (() => {
+    const exchangeName = activeConnection?.exchange?.name?.toLowerCase() || "";
+    if (exchangeName === "binance.us" || exchangeName === "binanceus" || exchangeName === "binance-us") {
+      return "USD";
+    }
+    return "USDT";
+  })();
+
   const realtimePrice = useRealtimePrice({
-    symbol: coinData?.tradingPair || `${symbol.toUpperCase()}USDT`,
+    symbol: coinData?.tradingPair || `${symbol.toUpperCase()}${defaultQuote}`,
     connectionId: connectionId || '',
     enabled: connectionType === 'crypto' && !!connectionId && !!coinData,
     initialPrice: coinData?.currentPrice,
@@ -167,7 +187,7 @@ export default function MarketDetailPage() {
           }
         } else {
           // Crypto logic
-          const tradingPair = `${symbol.toUpperCase()}USDT`;
+          const tradingPair = `${symbol.toUpperCase()}${defaultQuote}`;
           
           // Phase 5: Try unified endpoint first, fallback to legacy
           let coinDetailData: CoinDetailData | null = null;
@@ -192,6 +212,10 @@ export default function MarketDetailPage() {
                 low24h: ud.low24h,
                 volume24h: ud.volume24h,
                 availableBalance: ud.availableBalance || 0,
+                availableQuoteBalance: ud.availableQuoteBalance,
+                availableBaseBalance: ud.availableBaseBalance,
+                lockedBaseBalance: ud.lockedBaseBalance,
+                baseCurrency: ud.baseCurrency,
                 quoteCurrency: ud.quoteCurrency,
                 candles: ud.candles || [],
                 candles_by_interval: ud.candlesByInterval,
@@ -680,6 +704,9 @@ export default function MarketDetailPage() {
           baseSymbol={symbol.toUpperCase()}
           currentPrice={livePrice}
           availableBalance={coinData.availableBalance || 0}
+          availableQuoteBalance={coinData.availableQuoteBalance}
+          availableBaseBalance={coinData.availableBaseBalance}
+          lockedBaseBalance={coinData.lockedBaseBalance}
           quoteCurrency={coinData.quoteCurrency || "USDT"}
         />
       )}

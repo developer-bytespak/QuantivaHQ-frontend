@@ -6,10 +6,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile } from "@/lib/api/user";
 import { useMobileNav } from "@/hooks/useMobileNav";
-import { SubscriptionBadge } from "@/components/common/subscription-badge";
 import { NotificationDropdown } from "@/components/common/notification-dropdown";
 import { useExchange } from "@/context/ExchangeContext";
 import { QhqBalanceChip } from "@/components/common/qhq-balance-chip";
+import { isValidImageUrl } from "@/lib/utils/security";
+import useSubscriptionStore from "@/state/subscription-store";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -95,14 +96,16 @@ function UserProfileSection() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { currentSubscription } = useSubscriptionStore();
 
   const loadProfileData = async () => {
     if (typeof window !== "undefined") {
       try {
         // Try to get profile from API first (includes profile_pic_url)
         const profile = await getUserProfile();
-        setUserName(profile.full_name || profile.username || "User");
-        setUserInitial((profile.full_name || profile.username || "User").charAt(0).toUpperCase());
+        const displayName = profile.username || profile.full_name || "User";
+        setUserName(displayName);
+        setUserInitial(displayName.charAt(0).toUpperCase());
         
         // Use profile_pic_url from API if available
         if (profile.profile_pic_url) {
@@ -239,11 +242,12 @@ function UserProfileSection() {
           className="flex items-center gap-2 sm:gap-3 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2 sm:px-3 py-1.5 sm:py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
         >
           <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
-            {profileImage ? (
+            {isValidImageUrl(profileImage) ? (
               <img
-                src={profileImage}
+                src={profileImage!}
                 alt={userName}
                 className="h-full w-full object-cover rounded-full"
+                onError={() => setProfileImage(null)}
               />
             ) : (
               userInitial
@@ -267,21 +271,48 @@ function UserProfileSection() {
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-24 sm:w-28 md:w-32 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
+          className="fixed z-[100] w-44 sm:w-48 rounded-xl bg-[#161616]/90 backdrop-blur-xl border border-white/[0.08] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
           style={{
             top: `${dropdownPosition.top}px`,
             right: `${dropdownPosition.right}px`,
           }}
         >
           <div className="space-y-0.5 sm:space-y-1">
+            {/* Subscription Tier */}
+            <button
+              onClick={() => { setIsOpen(false); router.push("/dashboard/settings/subscription"); }}
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-[#fc4f02]/10 hover:text-white"
+            >
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              <span>{currentSubscription?.tier ?? "FREE"} Plan</span>
+            </button>
+
+            {/* Settings */}
+            <button
+              onClick={() => { setIsOpen(false); router.push("/dashboard/settings"); }}
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-[#fc4f02]/10 hover:text-white"
+            >
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Settings</span>
+            </button>
+
+            {/* Divider */}
+            <div className="mx-2 border-t border-white/[0.08]" />
+
+            {/* Logout */}
             <button
               onClick={handleLogout}
-              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:bg-white/10 hover:shadow-sm"
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:opacity-90"
             >
-              <svg className="h-4 w-4 sm:h-5 sm:w-5 transition-colors text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span className="transition-colors text-white group-hover:font-semibold">Logout</span>
+              <span>Logout</span>
             </button>
           </div>
         </div>,
@@ -452,7 +483,6 @@ export function TopBar() {
       <div className="flex items-center gap-2 sm:gap-3 sm:gap-4">
         <QhqBalanceChip />
         <NotificationDropdown />
-        <SubscriptionBadge />
         <MobileMenuButton />
         <UserProfileSection />
       </div>

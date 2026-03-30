@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useMemo } from "react";
 import { exchangesService, Connection } from "@/lib/api/exchanges.service";
 import { adminExchangesService } from "@/lib/api/admin-exchanges.service";
 import { hasAdminToken } from "@/lib/api/vcpool-admin/client";
@@ -154,14 +154,14 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchConnectionInfo();
-  }, []);
+  }, [fetchConnectionInfo]);
 
   const setSelectedDashboardType = useCallback((type: "crypto" | "stocks") => {
     localStorage.setItem(DASHBOARD_TYPE_KEY, type);
     window.location.reload();
   }, []);
 
-  const value: ExchangeContextType = {
+  const value = useMemo<ExchangeContextType>(() => ({
     connectionType,
     connectionId,
     activeConnection,
@@ -171,7 +171,9 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
     selectedDashboardType,
     setSelectedDashboardType,
     hasBothConnections,
-  };
+  }), [connectionType, connectionId, activeConnection, allConnections,
+       isLoading, fetchConnectionInfo, selectedDashboardType,
+       setSelectedDashboardType, hasBothConnections]);
 
   return (
     <ExchangeContext.Provider value={value}>
