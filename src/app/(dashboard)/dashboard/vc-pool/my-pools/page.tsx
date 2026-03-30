@@ -78,7 +78,11 @@ function PoolCard({
                   : formatUsd(item.my_investment.invested_amount)}
           </p>
           {!isCompleted && !isExited && !isPoolCancelled && !isPending && !isApprovedPending && (
-            <p className="text-xs text-slate-500">Share: {item.my_investment.share_percent}%</p>
+            <p className="text-xs text-slate-500">
+              {item.membership.pool_status === "open" || item.membership.pool_status === "full"
+                ? "Share: Pending"
+                : `Share: ${item.my_investment.share_percent}%`}
+            </p>
           )}
         </div>
 
@@ -128,6 +132,11 @@ function PoolCard({
               <p className="font-semibold text-amber-400">Cancelled</p>
               <p className="text-xs text-slate-500">Full refund</p>
             </>
+          ) : item.membership.pool_status === "open" || item.membership.pool_status === "full" ? (
+            <>
+              <p className="font-semibold text-white">{formatUsd(item.my_value.current_value)}</p>
+              <p className="text-xs text-slate-500">Awaiting pool start</p>
+            </>
           ) : (
             <>
               <p className="font-semibold text-white">{formatUsd(item.my_value.current_value)}</p>
@@ -156,6 +165,11 @@ function PoolCard({
                 -{formatUsd(Number(item.my_investment.invested_amount) - Number(item.status_detail.refund_amount))}
               </p>
               <p className="text-xs text-slate-500">Est. fee deducted</p>
+            </>
+          ) : item.membership.pool_status === "open" || item.membership.pool_status === "full" ? (
+            <>
+              <p className="font-semibold text-white">{formatUsd(item.pool_performance.current_pool_value)}</p>
+              <p className="text-xs text-slate-500">Capital collected</p>
             </>
           ) : (
             <>
