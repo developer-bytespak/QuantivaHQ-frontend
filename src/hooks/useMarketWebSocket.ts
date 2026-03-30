@@ -87,6 +87,7 @@ export function useMarketWebSocket({
       socketRef.current = null;
     }
 
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('quantivahq_access_token') : null;
     const socket = io(`${WS_URL}/market`, {
       transports: ["websocket", "polling"],
       reconnection: true,
@@ -94,6 +95,7 @@ export function useMarketWebSocket({
       reconnectionAttempts: MAX_RECONNECT_ATTEMPTS,
       timeout: 10000,
       auth: {
+        token: accessToken,
         connectionId,
       },
       withCredentials: true,
