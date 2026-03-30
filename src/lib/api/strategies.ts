@@ -89,6 +89,20 @@ export interface StrategySignal {
 }
 
 /**
+ * Generic paginated response shape from the backend.
+ * Used by /signals, /portfolios, and other paginated endpoints.
+ */
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+/**
  * Create a new custom trading strategy
  */
 export async function createStrategy(data: CreateStrategyDto): Promise<Strategy> {
