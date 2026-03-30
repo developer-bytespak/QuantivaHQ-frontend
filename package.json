@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "npm rebuild @tailwindcss/oxide lightningcss || true"
+    "postinstall": "echo 'postinstall complete'"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.4",
