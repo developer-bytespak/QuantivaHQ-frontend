@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // reactCompiler: true, // Disabled - can cause deployment issues on Vercel
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'coin-images.coingecko.com' },
+      { protocol: 'https', hostname: 'assets.coingecko.com' },
+      { protocol: 'https', hostname: 'logo.clearbit.com' },
+    ],
+  },
   async headers() {
     return [
       {
