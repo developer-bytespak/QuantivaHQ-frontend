@@ -71,7 +71,7 @@ export function SpendPanel() {
         disabled={!selected || isSpending}
         className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
           selected && !isSpending
-            ? 'bg-orange-500 text-white hover:bg-orange-600'
+            ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white hover:from-[#fd6a00] hover:to-[#fdb800]'
             : 'bg-slate-700 text-slate-400 cursor-not-allowed'
         }`}
       >

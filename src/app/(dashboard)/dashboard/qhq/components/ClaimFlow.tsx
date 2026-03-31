@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseUnits } from 'viem';
 import { toast } from 'react-toastify';
 import { qhqApi } from '@/lib/api/qhq-token';
 import { QHQ_CONTRACT_ABI, QHQ_CONTRACT_ADDRESS } from '@/lib/web3/qhq-contract';
@@ -37,26 +36,28 @@ export function ClaimFlow() {
     setIsClaiming(true);
     try {
       // 1. Get Merkle proof from backend
-      const { proof, cumulativeAmount } = await qhqApi.getClaimProof();
+      const proofData = await qhqApi.getClaimProof();
+      const cumulativeAmountWei = BigInt(proofData.cumulative_amount_wei);
+      const claimAmount = proofData.cumulative_amount;
 
       // 2. Submit claim tx to Base chain
       const txHash = await writeContractAsync({
         address: QHQ_CONTRACT_ADDRESS,
         abi: QHQ_CONTRACT_ABI,
         functionName: 'claim',
-        args: [parseUnits(cumulativeAmount, 18), proof as `0x${string}`[]],
+        args: [cumulativeAmountWei, proofData.proof as `0x${string}`[]],
       });
 
       setPendingTxHash(txHash);
       toast.info('Transaction submitted! Waiting for confirmation...');
 
       // 3. Record claim in backend after tx is confirmed
-      await qhqApi.confirmClaim(txHash, cumulativeAmount);
+      await qhqApi.confirmClaim(txHash, claimAmount);
       await fetchBalance();
 
       toast.success(
         <span>
-          Claimed {parseFloat(cumulativeAmount).toFixed(2)} QHQ!{' '}
+          Claimed {parseFloat(claimAmount).toFixed(2)} QHQ!{' '}
           <a
             href={`https://basescan.org/tx/${txHash}`}
             target="_blank"
@@ -69,7 +70,16 @@ export function ClaimFlow() {
         { autoClose: 8000 },
       );
     } catch (err: any) {
-      toast.error(err?.message ?? 'Claim failed. Please try again.');
+      const msg = err?.shortMessage || err?.message || '';
+      if (msg.includes('User rejected') || msg.includes('user rejected') || msg.includes('denied')) {
+        toast.error('Transaction rejected by user.');
+      } else if (msg.includes('insufficient funds') || msg.includes('gas')) {
+        toast.error('Insufficient ETH on Base for gas fees.');
+      } else if (msg.includes('MerkleRoot') || msg.includes('proof')) {
+        toast.error('Merkle proof invalid. Wait for the next weekly root update.');
+      } else {
+        toast.error('Claim failed. Please try again.');
+      }
     } finally {
       setIsClaiming(false);
     }
@@ -94,7 +104,7 @@ export function ClaimFlow() {
         disabled={!canClaim || isConfirming}
         className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
           canClaim && !isConfirming
-            ? 'bg-[--color-primary] text-white hover:opacity-90'
+            ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white hover:from-[#fd6a00] hover:to-[#fdb800]'
             : 'bg-slate-700 text-slate-400 cursor-not-allowed'
         }`}
       >

@@ -40,8 +40,10 @@ export interface QhqWallet {
 
 export interface QhqClaimProof {
   proof: string[];
-  cumulativeAmount: string;
-  walletAddress: string;
+  cumulative_amount: string;
+  cumulative_amount_wei: string;
+  wallet_address: string;
+  merkle_root: string;
 }
 
 export interface QhqStats {
