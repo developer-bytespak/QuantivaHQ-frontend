@@ -21,6 +21,9 @@ import type {
   SuperAdminUsersAnalyticsResponse,
   SuperAdminUsersGrowthFilters,
   SuperAdminUsersGrowthResponse,
+  SuperAdminPoolsOversightResponse,
+  SuperAdminUnifiedFinanceFilters,
+  SuperAdminUnifiedFinanceResponse,
   VcPoolAdminsResponse,
   CreateVcPoolAdminRequest,
   CreateVcPoolAdminResponse,
@@ -66,6 +69,10 @@ import type {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 const ADMIN_ACCESS_KEY = "quantivahq_admin_access_token";
 const ADMIN_REFRESH_KEY = "quantivahq_admin_refresh_token";
+const ADMIN_ME_CACHE_TTL_MS = 5000;
+
+let adminMeCache: { value: AdminProfile; expiresAt: number } | null = null;
+let adminMeInFlight: Promise<AdminProfile> | null = null;
 
 function getAdminAccessToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -87,6 +94,8 @@ export function clearAdminTokens(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(ADMIN_ACCESS_KEY);
   localStorage.removeItem(ADMIN_REFRESH_KEY);
+  adminMeCache = null;
+  adminMeInFlight = null;
 }
 
 export function hasAdminToken(): boolean {
@@ -185,8 +194,29 @@ export async function adminLogout(): Promise<{ message: string }> {
 
 /** GET /admin/auth/me */
 export async function adminMe(): Promise<AdminProfile> {
-  const { data } = await adminAxios.get<AdminProfile>("/admin/auth/me");
-  return data;
+  const now = Date.now();
+  if (adminMeCache && adminMeCache.expiresAt > now) {
+    return adminMeCache.value;
+  }
+
+  if (adminMeInFlight) {
+    return adminMeInFlight;
+  }
+
+  adminMeInFlight = adminAxios
+    .get<AdminProfile>("/admin/auth/me")
+    .then(({ data }) => {
+      adminMeCache = {
+        value: data,
+        expiresAt: Date.now() + ADMIN_ME_CACHE_TTL_MS,
+      };
+      return data;
+    })
+    .finally(() => {
+      adminMeInFlight = null;
+    });
+
+  return adminMeInFlight;
 }
 
 /** GET /admin/settings (same as me) */
@@ -309,6 +339,45 @@ export async function adminSuperDeleteVcPoolAdmin(
   const { data } = await adminAxios.delete<DeleteVcPoolAdminResponse>(
     `/admin/super-admin/vc-pool-admins/${adminId}`,
     { data: body }
+  );
+
+  return data;
+}
+
+/** GET /admin/super-admin/pools-oversight */
+export async function adminSuperListPoolsOversight(params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<SuperAdminPoolsOversightResponse> {
+  const search = new URLSearchParams();
+  if (params?.status && params.status !== "all") search.set("status", params.status);
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+
+  const query = search.toString();
+  const { data } = await adminAxios.get<SuperAdminPoolsOversightResponse>(
+    `/admin/super-admin/pools-oversight${query ? `?${query}` : ""}`
+  );
+
+  return data;
+}
+
+/** GET /admin/super-admin/finance/unified */
+export async function adminSuperUnifiedFinance(
+  params?: SuperAdminUnifiedFinanceFilters
+): Promise<SuperAdminUnifiedFinanceResponse> {
+  const search = new URLSearchParams();
+  if (params?.year) search.set("year", String(params.year));
+  if (params?.plan_tier) search.set("plan_tier", params.plan_tier);
+  if (params?.billing_period) search.set("billing_period", params.billing_period);
+  if (params?.vc_collection_source) {
+    search.set("vc_collection_source", params.vc_collection_source);
+  }
+
+  const query = search.toString();
+  const { data } = await adminAxios.get<SuperAdminUnifiedFinanceResponse>(
+    `/admin/super-admin/finance/unified${query ? `?${query}` : ""}`
   );
 
   return data;
