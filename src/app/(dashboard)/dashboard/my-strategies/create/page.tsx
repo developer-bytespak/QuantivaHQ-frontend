@@ -1,4 +1,4 @@
-"use client";
+/*  */"use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -19,9 +19,7 @@ const RULE_FIELDS = [
 
 const OPERATORS = [
   { value: ">", label: "Greater than (>)" },
-  { value: "<", label: "Less than (<)" },
   { value: ">=", label: "Greater or equal (≥)" },
-  { value: "<=", label: "Less or equal (≤)" },
 ];
 
 // Popular crypto symbols for quick add
@@ -100,12 +98,9 @@ export default function CreateStrategyPage() {
     liquidity: 0.10,
   });
 
-  // Entry and exit rules based on scores (matching pre-built strategy format)
+  // Entry rules based on scores (matching pre-built strategy format)
   const [entryRules, setEntryRules] = useState<Rule[]>([
     { field: "final_score", operator: ">", value: 0.5 }
-  ]);
-  const [exitRules, setExitRules] = useState<Rule[]>([
-    { field: "final_score", operator: "<", value: -0.3 }
   ]);
 
   // Asset search
@@ -217,37 +212,27 @@ export default function CreateStrategyPage() {
     setEngineWeights(prev => ({ ...prev, [engine]: value }));
   };
 
-  const addRule = (type: "entry" | "exit") => {
+  const addRule = () => {
     const newRule: Rule = {
       field: "final_score",
-      operator: type === "entry" ? ">" : "<",
-      value: type === "entry" ? 0.3 : -0.3,
+      operator: ">",
+      value: 0.3,
     };
-    if (type === "entry") {
-      setEntryRules([...entryRules, newRule]);
-    } else {
-      setExitRules([...exitRules, newRule]);
-    }
+    setEntryRules([...entryRules, newRule]);
   };
 
-  const updateRule = (type: "entry" | "exit", index: number, updates: Partial<Rule>) => {
-    if (type === "entry") {
-      const updated = [...entryRules];
-      updated[index] = { ...updated[index], ...updates };
-      setEntryRules(updated);
-    } else {
-      const updated = [...exitRules];
-      updated[index] = { ...updated[index], ...updates };
-      setExitRules(updated);
+  const updateRule = (index: number, updates: Partial<Rule>) => {
+    // Enforce: entry values must be > 0
+    if (updates.value !== undefined && updates.value <= 0) {
+      updates.value = 0.1;
     }
+    const updated = [...entryRules];
+    updated[index] = { ...updated[index], ...updates };
+    setEntryRules(updated);
   };
 
-  const removeRule = (type: "entry" | "exit", index: number) => {
-    if (type === "entry") {
-      setEntryRules(entryRules.filter((_, i) => i !== index));
-    } else {
-      setExitRules(exitRules.filter((_, i) => i !== index));
-    }
+  const removeRule = (index: number) => {
+    setEntryRules(entryRules.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -277,11 +262,7 @@ export default function CreateStrategyPage() {
             operator: r.operator,
             value: r.value,
           })),
-          exit_rules: exitRules.map((r) => ({
-            field: r.field,
-            operator: r.operator,
-            value: r.value,
-          })),
+          exit_rules: [], // Exits handled by stop-loss / take-profit
           indicators: [], // No technical indicators for score-based strategies
         },
       });
@@ -299,7 +280,7 @@ export default function CreateStrategyPage() {
     { key: "basics", label: "Basics" },
     { key: "assets", label: isStocksConnection ? "Stocks" : "Crypto" },
     { key: "weights", label: "AI Weights" },
-    { key: "rules", label: "Rules" },
+    { key: "rules", label: "Buy Rules" },
     { key: "risk", label: "Risk" },
     { key: "review", label: "Review" },
   ];
@@ -644,22 +625,22 @@ export default function CreateStrategyPage() {
           </div>
         )}
 
-        {/* Step 4: Entry & Exit Rules */}
+        {/* Step 4: Buy Signal Rules */}
         {currentStep === "rules" && (
           <div className="space-y-8">
-            <div className="flex items-center gap-3 mb-6 relative">
+            <div className="flex items-center gap-3 mb-6 relative z-10">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
                 <span className="text-[#fda300] font-bold">4</span>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-white">Entry & Exit Rules</h3>
-                <p className="text-sm text-slate-400">Define score thresholds for BUY and SELL signals</p>
+                <h3 className="text-lg font-semibold text-white">Buy Signal Rules</h3>
+                <p className="text-sm text-slate-400">Set the minimum AI score needed to generate a BUY signal</p>
               </div>
               {/* Info Icon with Hover Tooltip */}
               <div className="relative group">
                 <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[#fda300]/50 group-hover:bg-[#fda300]/10">
                   <svg
-                    className="w-8 h-8 text-slate-400 group-hover:text-[#fda300]"
+                    className="w-4 h-4 text-slate-400 group-hover:text-[#fda300]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -667,68 +648,64 @@ export default function CreateStrategyPage() {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={2.5}
-                      d="M12 8h.01M11 12h2v6h-2"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
                 </div>
-                <div className="absolute right-0 top-full mt-2 w-[370px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="rounded-xl border border-[#fda300]/20 bg-[#0a0a12] shadow-[0_8px_32px_rgba(0,0,0,0.9)] p-4 text-xs leading-relaxed">
-                    <p className="text-[#fda300] font-semibold text-sm mb-3">📖 How Rules Work</p>
+                <div className="absolute right-0 top-full mt-2 w-[750px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
+                  <div className="relative rounded-xl border border-[#fc4f02]/15 bg-gradient-to-br from-[#12121c] via-[#0e0e18] to-[#0a0a14] shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_1px_rgba(252,79,2,0.1)] p-5 text-[13px] leading-relaxed overflow-hidden">
+                    <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-[#fc4f02]/8 to-transparent rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#fda300]/5 to-transparent rounded-full blur-2xl"></div>
+                    <div className="relative">
 
-                    {/* What each field in a rule row does */}
-                    <p className="text-slate-300 font-medium mb-1">🧩 Each Rule Has 3 Fields</p>
-                    <div className="text-slate-400 mb-3 space-y-1.5 pl-3">
-                      <div className="flex gap-2">
-                        <span className="text-[#fda300] font-semibold shrink-0">1.</span>
-                        <div><span className="text-white font-medium">Score Field</span> <span className="text-slate-500">(1st dropdown)</span> — Pick <em>which</em> AI engine score to check. e.g. &quot;Final Score&quot; is the overall combined score, &quot;Sentiment&quot; is news-based, etc.</div>
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-white font-semibold text-[15px]">When to Buy</p>
+                      <p className="text-slate-500 text-xs">A buy rule sets the minimum AI score needed to generate a BUY signal</p>
+                    </div>
+
+                    <div className="flex gap-4">
+                      {/* Column 1: Example */}
+                      <div className="flex-1">
+                        <p className="text-slate-300 font-medium text-xs mb-2">Example Rule</p>
+                        <div className="flex items-center gap-2 p-3 rounded-lg bg-white/[0.03] border border-white/5 mb-3">
+                          <span className="px-2.5 py-1 rounded bg-[#fda300]/15 text-[#fda300] text-xs font-medium">Final Score</span>
+                          <span className="px-2 py-1 rounded bg-white/10 text-slate-300 text-xs font-medium">&gt;</span>
+                          <span className="px-2 py-1 rounded bg-white/10 text-emerald-400 text-xs font-medium">0.5</span>
+                        </div>
+                        <div className="space-y-1 text-xs text-slate-400">
+                          <p><span className="text-emerald-400 font-medium">BTC scores +0.7</span> → BUY signal</p>
+                          <p><span className="text-slate-500">BTC scores +0.3</span> → No signal</p>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <span className="text-[#fda300] font-semibold shrink-0">2.</span>
-                        <div><span className="text-white font-medium">Operator</span> <span className="text-slate-500">(2nd dropdown)</span> — Choose <em>how</em> to compare. Use <span className="text-emerald-400">&gt;</span> or <span className="text-emerald-400">≥</span> for entry (BUY), and <span className="text-red-400">&lt;</span> or <span className="text-red-400">≤</span> for exit (SELL).</div>
+
+                      {/* Column 2: Score scale */}
+                      <div className="flex-1">
+                        <p className="text-slate-300 font-medium text-xs mb-2">Score Scale</p>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-red-400 text-xs font-semibold">-1</span>
+                          <div className="flex-1 h-2 rounded-full bg-gradient-to-r from-red-500 via-slate-500 to-emerald-500"></div>
+                          <span className="text-emerald-400 text-xs font-semibold">+1</span>
+                        </div>
+                        <div className="flex justify-between text-[11px] text-slate-500">
+                          <span>Bearish</span>
+                          <span>Neutral</span>
+                          <span>Bullish</span>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <span className="text-[#fda300] font-semibold shrink-0">3.</span>
-                        <div><span className="text-white font-medium">Threshold Value</span> <span className="text-slate-500">(number input)</span> — The target number between <span className="text-red-400">-1</span> and <span className="text-emerald-400">+1</span>. Higher = stricter &amp; fewer trades. Lower = looser &amp; more trades.</div>
+
+                      {/* Column 3: Key info */}
+                      <div className="flex-1">
+                        <p className="text-slate-300 font-medium text-xs mb-2">How It Works</p>
+                        <p className="text-xs text-slate-300 mb-1"><span className="text-emerald-400 font-medium">Higher value</span> = fewer, stronger signals</p>
+                        <p className="text-xs text-slate-300 mb-1"><span className="text-[#fda300] font-medium">Lower value</span> = more, weaker signals</p>
+                        <p className="text-xs text-slate-500 mb-2">Value must be above 0</p>
+                        <div className="p-2 rounded-lg bg-[#fda300]/5 border border-[#fda300]/15">
+                          <p className="text-[11px] text-slate-300"><span className="text-[#fda300] font-medium">Tip:</span> Start with 0.5. Adjust based on how many signals you want.</p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="border-t border-white/10 pt-2 mb-2"></div>
-
-                    <p className="text-slate-300 font-medium mb-1">🔢 Score Range</p>
-                    <p className="text-slate-400 mb-2">All scores range from <span className="text-red-400 font-semibold">-1</span> (very bearish) to <span className="text-emerald-400 font-semibold">+1</span> (very bullish). <span className="text-slate-300">0</span> means neutral — no clear direction.</p>
-
-                    <p className="text-slate-300 font-medium mb-1">📊 Available Score Fields</p>
-                    <ul className="text-slate-400 mb-2 space-y-0.5 pl-3">
-                      <li>• <span className="text-white">Final Score</span> — Combined weighted score from all engines</li>
-                      <li>• <span className="text-white">Sentiment</span> — News & social media analysis</li>
-                      <li>• <span className="text-white">Trend</span> — Technical trend indicators</li>
-                      <li>• <span className="text-white">Fundamental</span> — Earnings & financials</li>
-                      <li>• <span className="text-white">Event Risk</span> — Upcoming events impact</li>
-                      <li>• <span className="text-white">Liquidity</span> — Volume & market depth</li>
-                    </ul>
-
-                    <p className="text-slate-300 font-medium mb-1">⚡ Operators Explained</p>
-                    <ul className="text-slate-400 mb-2 space-y-0.5 pl-3">
-                      <li>• <span className="text-emerald-400">Greater than (&gt;)</span> — Triggers when score is above the value</li>
-                      <li>• <span className="text-red-400">Less than (&lt;)</span> — Triggers when score drops below the value</li>
-                      <li>• <span className="text-emerald-400">≥</span> — Triggers when score equals or exceeds the value</li>
-                      <li>• <span className="text-red-400">≤</span> — Triggers when score equals or is below the value</li>
-                    </ul>
-
-                    <p className="text-slate-300 font-medium mb-1">💡 Example Rules</p>
-                    <ul className="text-slate-400 space-y-0.5 pl-3">
-                      <li>• <span className="text-white">Final Score &gt; 0.5</span> → BUY only on strong bullish signals</li>
-                      <li>• <span className="text-white">Final Score &gt; 0</span> → BUY on any positive signal (more trades)</li>
-                      <li>• <span className="text-white">Final Score &lt; -0.3</span> → SELL when moderately bearish</li>
-                      <li>• <span className="text-white">Sentiment &gt; 0.7</span> → BUY only on very positive news</li>
-                    </ul>
-
-                    <div className="mt-3 pt-2 border-t border-white/10">
-                      <p className="text-slate-300 font-medium mb-1">📌 Entry vs Exit</p>
-                      <p className="text-slate-400"><span className="text-emerald-400">Entry rules</span> — ALL conditions must be true to trigger a BUY.</p>
-                      <p className="text-slate-400"><span className="text-red-400">Exit rules</span> — ANY single condition being true triggers a SELL.</p>
-                      <p className="text-slate-500 mt-1.5 text-[10px]">Higher threshold = fewer but stronger signals. Lower threshold = more frequent trades.</p>
                     </div>
                   </div>
                 </div>
@@ -736,19 +713,19 @@ export default function CreateStrategyPage() {
             </div>
 
             {/* Entry Rules */}
-            <div>
+            <div className="relative z-0">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h4 className="font-medium text-emerald-400 flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                    Entry Rules (BUY when ALL conditions are met)
+                    Buy Rules (ALL conditions must be met to generate a signal)
                   </h4>
                 </div>
                 <button
-                  onClick={() => addRule("entry")}
+                  onClick={() => addRule()}
                   className="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-sm border border-emerald-500/30"
                 >
-                  + Add
+                  + Add Rule
                 </button>
               </div>
 
@@ -757,7 +734,7 @@ export default function CreateStrategyPage() {
                   <div key={idx} className="flex items-center gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
                     <select
                       value={rule.field}
-                      onChange={(e) => updateRule("entry", idx, { field: e.target.value })}
+                      onChange={(e) => updateRule(idx, { field: e.target.value })}
                       className="flex-1 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
                     >
                       {RULE_FIELDS.map((f) => (
@@ -766,7 +743,7 @@ export default function CreateStrategyPage() {
                     </select>
                     <select
                       value={rule.operator}
-                      onChange={(e) => updateRule("entry", idx, { operator: e.target.value })}
+                      onChange={(e) => updateRule(idx, { operator: e.target.value })}
                       className="rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
                     >
                       {OPERATORS.map((op) => (
@@ -776,85 +753,22 @@ export default function CreateStrategyPage() {
                     <input
                       type="number"
                       step={0.1}
-                      min={-1}
+                      min={0.1}
                       max={1}
                       value={rule.value}
-                      onChange={(e) => updateRule("entry", idx, { value: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => updateRule(idx, { value: parseFloat(e.target.value) || 0.1 })}
                       className="w-20 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
                     />
-                    <button onClick={() => removeRule("entry", idx)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    {entryRules.length > 1 && (
+                      <button onClick={() => removeRule(idx)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Exit Rules */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h4 className="font-medium text-red-400 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                    Exit Rules (SELL when ANY condition is met)
-                  </h4>
-                </div>
-                <button
-                  onClick={() => addRule("exit")}
-                  className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 text-sm border border-red-500/30"
-                >
-                  + Add
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                {exitRules.map((rule, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-3 bg-red-500/5 border border-red-500/20 rounded-xl">
-                    <select
-                      value={rule.field}
-                      onChange={(e) => updateRule("exit", idx, { field: e.target.value })}
-                      className="flex-1 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
-                    >
-                      {RULE_FIELDS.map((f) => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={rule.operator}
-                      onChange={(e) => updateRule("exit", idx, { operator: e.target.value })}
-                      className="rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
-                    >
-                      {OPERATORS.map((op) => (
-                        <option key={op.value} value={op.value}>{op.label}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      step={0.1}
-                      min={-1}
-                      max={1}
-                      value={rule.value}
-                      onChange={(e) => updateRule("exit", idx, { value: parseFloat(e.target.value) || 0 })}
-                      className="w-20 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
-                    />
-                    <button onClick={() => removeRule("exit", idx)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Info Box */}
-            <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-              <p className="text-sm text-blue-300">
-                <strong>💡 Tip:</strong> Scores range from -1 (very bearish) to +1 (very bullish).
-                A final_score &gt; 0.5 typically indicates a strong BUY signal.
-              </p>
             </div>
           </div>
         )}
@@ -997,19 +911,11 @@ export default function CreateStrategyPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
-                <p className="text-xs text-emerald-400 mb-2">Entry Rules ({entryRules.length})</p>
-                {entryRules.map((r, i) => (
-                  <p key={i} className="text-sm text-white">{getFieldLabel(r.field)} {r.operator} {r.value}</p>
-                ))}
-              </div>
-              <div className="p-4 bg-red-500/5 rounded-xl border border-red-500/20">
-                <p className="text-xs text-red-400 mb-2">Exit Rules ({exitRules.length})</p>
-                {exitRules.map((r, i) => (
-                  <p key={i} className="text-sm text-white">{getFieldLabel(r.field)} {r.operator} {r.value}</p>
-                ))}
-              </div>
+            <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/20">
+              <p className="text-xs text-emerald-400 mb-2">Buy Signal Rules ({entryRules.length})</p>
+              {entryRules.map((r, i) => (
+                <p key={i} className="text-sm text-white">{getFieldLabel(r.field)} {r.operator} {r.value}</p>
+              ))}
             </div>
 
             {error && (
