@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 import { useExchange } from "@/context/ExchangeContext";
 import { useStocksMarket } from "@/hooks/useStocksMarket";
@@ -419,7 +420,7 @@ export default function MarketPage() {
                       </td>
                       <td className="py-2 sm:py-3 pl-0 pr-1 text-left">
                         <div className="flex items-center justify-start gap-1.5 sm:gap-2 md:gap-3">
-                          <img src={coin.image} alt={coin.name} className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 rounded-full flex-shrink-0" />
+                          <Image src={coin.image} alt={coin.name} width={32} height={32} className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 rounded-full flex-shrink-0" />
                           <div className="text-left min-w-0 flex-1">
                             <p className="text-[10px] sm:text-xs md:text-sm font-medium text-white truncate">{coin.name}</p>
                             <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-400 uppercase truncate">{coin.symbol}</p>

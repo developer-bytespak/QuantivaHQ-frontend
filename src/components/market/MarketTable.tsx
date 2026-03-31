@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Image from "next/image";
 import { MarketStock } from "@/hooks/useStocksMarket";
 import {
   formatMarketCap,

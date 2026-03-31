@@ -156,10 +156,16 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
     fetchConnectionInfo();
   }, [fetchConnectionInfo]);
 
-  const setSelectedDashboardType = useCallback((type: "crypto" | "stocks") => {
+  const setSelectedDashboardType = useCallback(async (type: "crypto" | "stocks") => {
     localStorage.setItem(DASHBOARD_TYPE_KEY, type);
-    window.location.reload();
-  }, []);
+    setSelectedDashboardTypeState(type);
+    setIsLoading(true);
+    try {
+      await fetchConnectionForType(type);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchConnectionForType]);
 
   const value = useMemo<ExchangeContextType>(() => ({
     connectionType,

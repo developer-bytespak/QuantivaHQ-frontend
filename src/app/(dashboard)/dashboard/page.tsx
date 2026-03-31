@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { exchangesService, DashboardData, Connection } from "@/lib/api/exchanges.service";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 import { useExchange } from "@/context/ExchangeContext";
@@ -237,28 +238,42 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Reset initialization when connectionId changes (e.g. switching crypto/stocks)
+  const prevConnectionId = useRef<string | null>(null);
+  useEffect(() => {
+    if (connectionId !== prevConnectionId.current) {
+      hasInitialized.current = false;
+      prevConnectionId.current = connectionId;
+      // Clear stale data from previous connection so UI shows loading
+      if (connectionId && prevConnectionId.current !== null) {
+        setDashboardData(null);
+        setIsLoading(true);
+      }
+    }
+  }, [connectionId]);
+
   // Initial load: fetch data when connectionId is available
   useEffect(() => {
     // Prevent re-initialization (especially in React Strict Mode)
     if (hasInitialized.current) return;
-    
+
     // Wait until connection check is complete
     if (isLoadingConnection) {
       return; // Still loading, don't do anything yet
     }
-    
+
     // Connection check is done - if no connectionId, user has no exchange connected
     // Dashboard will show the "Connect Exchange" component based on connectionId value
     if (!connectionId) {
       setIsLoading(false);
       return; // Let the UI show "Connect Exchange" component
     }
-    
+
     const initializeDashboard = async () => {
       hasInitialized.current = true;
       await fetchDashboardData(connectionId, true);
     };
-    
+
     initializeDashboard();
   }, [connectionId, isLoadingConnection, fetchDashboardData]);
 
@@ -358,22 +373,22 @@ export default function DashboardPage() {
     const fetchStockSignals = async () => {
       setIsLoadingStockSignals(true);
       try {
-        // First, get the stock strategies
-        const strategies = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built", method: "GET" });
-        const stockStrategies = (strategies || []).filter((s: Strategy) => s?.type === "admin" && s?.name?.includes("(Stocks)"));
-        
+        // Get stock strategies using asset_type filter (same as Top Trades page)
+        const strategies = await apiRequest<never, Strategy[]>({ path: "/strategies/pre-built?asset_type=stock", method: "GET" });
+        const stockStrategies = (strategies || []).filter((s: Strategy) => s?.type === "admin");
+
         if (stockStrategies.length === 0) {
           setStockSignals([]);
           return;
         }
 
-        // Get signals from the first stock strategy
+        // Get signals from first stock strategy (single call, same as Top Trades default tab)
         const strategyId = stockStrategies[0].strategy_id;
-        const response = await getTrendingAssetsWithInsights(strategyId, 10);
+        const response = await getTrendingAssetsWithInsights(strategyId, 500);
         const assets = response.assets || [];
 
         // Map top 2 assets to signal format
-        const mappedSignals = assets.slice(0, 2).map((asset, idx) => {
+        const mappedSignals = assets.slice(0, 1).map((asset, idx) => {
           const price = asset.price_usd || 0;
           const change = asset.price_change_24h || 0;
           const score = asset.signal?.final_score || asset.trend_score || 0;
@@ -979,7 +994,7 @@ export default function DashboardPage() {
                                   </td>
                                   <td className="py-3 pr-2 pl-0 text-left">
                                     <div className="flex items-center justify-start gap-2 sm:gap-3">
-                                      <img src={coin.image} alt={coin.name} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
+                                      <Image src={coin.image} alt={coin.name} width={32} height={32} className="h-6 w-6 sm:h-8 sm:w-8 rounded-full flex-shrink-0" />
                                       <div className="text-left min-w-0">
                                         <p className="text-xs sm:text-sm font-medium text-white truncate">{coin.name}</p>
                                         <p className="text-[10px] sm:text-xs text-slate-400 uppercase">{coin.symbol}</p>
