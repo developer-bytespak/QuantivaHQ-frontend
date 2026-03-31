@@ -1,39 +1,62 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
-import { useEffect } from 'react';
 import useQhqStore from '@/state/qhq-store';
 
 export function WalletConnectButton() {
-  const { address, isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const { wallet, linkWallet, fetchWallet } = useQhqStore();
+  const [showRefresh, setShowRefresh] = useState(false);
 
   useEffect(() => {
     fetchWallet();
   }, [fetchWallet]);
 
-  // Auto-link wallet when user connects (if not already linked)
   useEffect(() => {
-    if (isConnected && address && (!wallet || wallet.wallet_address.toLowerCase() !== address.toLowerCase())) {
-      linkWallet(address).catch(() => {
-        // Wallet may already be linked — ignore error
-      });
+    if (isConnected && address) {
+      if (!wallet || wallet.wallet_address.toLowerCase() !== address.toLowerCase()) {
+        linkWallet(address).catch(() => {});
+        fetchWallet();
+      }
+      setShowRefresh(false);
     }
-  }, [isConnected, address, wallet, linkWallet]);
+  }, [isConnected, address, wallet, linkWallet, fetchWallet]);
 
-  return (
-    <div>
+  if (isConnected) {
+    return (
       <ConnectButton
-        label="Connect Wallet to Claim"
         chainStatus="icon"
         showBalance={false}
         accountStatus="address"
       />
-      {wallet && (
-        <p className="mt-2 text-xs text-slate-400">
-          Linked: {wallet.wallet_address.slice(0, 6)}...{wallet.wallet_address.slice(-4)}
-        </p>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3">
+      <ConnectButton.Custom>
+        {({ openConnectModal }) => (
+          <button
+            onClick={() => {
+              openConnectModal();
+              setShowRefresh(true);
+            }}
+            className="py-2.5 px-6 rounded-lg text-base font-semibold transition-all whitespace-nowrap bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white hover:from-[#fd6a00] hover:to-[#fdb800]"
+          >
+            Connect Wallet
+          </button>
+        )}
+      </ConnectButton.Custom>
+
+      {showRefresh && (
+        <button
+          onClick={() => window.location.reload()}
+          className="py-2.5 px-4 rounded-lg text-sm font-medium border border-[--color-border] text-slate-300 hover:text-white hover:border-[#fc4f02]/50 transition-all"
+        >
+          ↻ Refresh
+        </button>
       )}
     </div>
   );

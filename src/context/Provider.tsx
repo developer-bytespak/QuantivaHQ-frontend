@@ -8,6 +8,7 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import { base } from "wagmi/chains";
 import { wagmiConfig } from "@/lib/web3/wagmi-config";
 import "@rainbow-me/rainbowkit/styles.css";
 
@@ -15,12 +16,11 @@ export default function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <WagmiProvider config={wagmiConfig} reconnectOnMount>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme()}>
+        <RainbowKitProvider theme={darkTheme()} initialChain={base}>
           <SubsProvider>
             <SocketProvider>
-              {/* <ThemeProvider> */}
               {children}
             </SocketProvider>
             <ToastContainer
