@@ -168,6 +168,99 @@ export interface DeleteVcPoolAdminResponse {
   email: string;
 }
 
+export interface SuperAdminPoolOversightRow {
+  pool_id: string;
+  admin_id: string;
+  owner_name: string | null;
+  owner_email: string;
+  owner_is_super_admin: boolean;
+  name: string;
+  status: PoolStatus;
+  coin_type: string;
+  contribution_amount: string;
+  max_members: number;
+  verified_members_count: number;
+  reserved_seats_count: number;
+  duration_days: number;
+  pool_fee_percent: string;
+  is_replica: boolean;
+  started_at: string | null;
+  end_date: string | null;
+  total_invested_usdt: string | null;
+  current_pool_value_usdt: string | null;
+  total_profit_usdt: string | null;
+  created_at: string;
+  counts: {
+    members: number;
+    reservations: number;
+    trades: number;
+  };
+}
+
+export interface SuperAdminPoolsOversightResponse {
+  summary: {
+    total_pools: number;
+    draft: number;
+    open: number;
+    full: number;
+    active: number;
+    completed: number;
+    cancelled: number;
+    total_invested_usdt: number;
+    current_value_usdt: number;
+    total_profit_usdt: number;
+  };
+  pools: SuperAdminPoolOversightRow[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface SuperAdminFinanceChartPoint {
+  label: string;
+  value: number;
+}
+
+export interface SuperAdminFinanceGroup {
+  key:
+    | "SUBSCRIPTION"
+    | "TRADE_FEES"
+    | "VC_POOL_COLLECTIONS"
+    | "VC_POOL_PAYOUTS_REFUNDS"
+    | "TREASURY_BINANCE";
+  title: string;
+  is_dummy: boolean;
+  summary: Record<string, number>;
+  chart: SuperAdminFinanceChartPoint[];
+  meta?: Record<string, unknown>;
+}
+
+export interface SuperAdminUnifiedFinanceResponse {
+  overview: {
+    total_inflow: number;
+    total_outflow: number;
+    net_revenue: number;
+  };
+  filters: {
+    year: number;
+    plan_tier: "ALL" | "PRO" | "ELITE";
+    billing_period: "ALL" | "MONTHLY" | "QUARTERLY" | "YEARLY";
+    vc_collection_source: "ALL" | "JOIN" | "CANCEL" | "COMPLETION";
+  };
+  available_years: number[];
+  groups: SuperAdminFinanceGroup[];
+}
+
+export interface SuperAdminUnifiedFinanceFilters {
+  year?: number;
+  plan_tier?: "PRO" | "ELITE";
+  billing_period?: "MONTHLY" | "QUARTERLY" | "YEARLY";
+  vc_collection_source?: "JOIN" | "CANCEL" | "COMPLETION";
+}
+
 export interface AdminRefreshResponse {
   message: string;
   accessToken: string;

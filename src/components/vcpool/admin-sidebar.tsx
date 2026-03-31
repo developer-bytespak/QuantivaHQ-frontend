@@ -17,6 +17,8 @@ const BASE_ADMIN_NAV = [
 const SUPER_ADMIN_NAV = [
   { label: "Users", href: "/super/admin/users", icon: "users" },
   { label: "VC Pool Admins", href: "/super/admin/vc-pool-admins", icon: "shield" },
+  { label: "Pools Oversight", href: "/super/admin/pools-oversight", icon: "pools" },
+  { label: "Finance", href: "/super/admin/finance", icon: "binance" },
 ];
 
 interface AdminSidebarProps {
