@@ -4,6 +4,8 @@ type NavItem = {
   label: string;
   href: string;
   description?: string;
+  /** Which connection types this item is visible for. Omit to show for all. */
+  connectionTypes?: ("crypto" | "stocks")[];
 };
 
 type NavSection = SidebarSection;
@@ -19,7 +21,7 @@ export const DASHBOARD_NAV: NavSection[] = [
       { label: "Top trades", href: "/dashboard/top-trades" },
       { label: "AI insights", href: "/dashboard/ai-insights" },
       // { label: "Options", href: "/dashboard/options" },
-      { label: "VC pool", href: "/dashboard/vc-pool" },
+      { label: "VC pool", href: "/dashboard/vc-pool", connectionTypes: ["crypto"] },
       { label: "Paper Trading", href: "/dashboard/paper-trading" },
       { label: "Profile", href: "/dashboard/profile" },
     ],

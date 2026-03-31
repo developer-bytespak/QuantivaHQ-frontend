@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { createPortal } from "react-dom";
 import { Logo } from "./logo";
 import { useMobileNav } from "@/hooks/useMobileNav";
+import { useExchange } from "@/context/ExchangeContext";
 
 export type SidebarSection = {
   title: string;
@@ -14,6 +15,8 @@ export type SidebarSection = {
     label: string;
     href: string;
     description?: string;
+    /** Which connection types this item is visible for. Omit to show for all. */
+    connectionTypes?: ("crypto" | "stocks")[];
     icon?: ReactNode;
   }>;
 };
@@ -107,6 +110,15 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(true);
   const { isOpen: mobileOpen, setOpen: setMobileOpen } = useMobileNav();
+  const { connectionType } = useExchange();
+
+  // Filter items by connectionTypes config (if set). No config = show for all.
+  const filteredSections = sections.map((section) => ({
+    ...section,
+    items: section.items.filter(
+      (item) => !item.connectionTypes || !connectionType || item.connectionTypes.includes(connectionType)
+    ),
+  }));
 
   // Desktop Sidebar
   const desktopSidebar = (
@@ -123,7 +135,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
 
       {/* Navigation */}
       <nav className={`flex-1 space-y-0.5 overflow-y-auto py-5 ${collapsed ? "px-2" : "px-3"}`}>
-        {sections.map((section) => (
+        {filteredSections.map((section) => (
           <div key={section.title} className="space-y-0.5">
             {!collapsed && section.title && (
               <p className="px-3 pb-2.5 pt-1 text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -199,7 +211,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
           >
             {/* Navigation */}
             <nav className="space-y-0.5 py-4 px-3">
-              {sections.map((section) => (
+              {filteredSections.map((section) => (
                 <div key={section.title} className="space-y-0.5">
                   {section.title && (
 <p className="px-3 pb-2.5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
