@@ -45,6 +45,7 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
     }, []);
 
     useEffect(() => {
+        if (!userId) return; // Only fetch notifications for authenticated users
         if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
             return; // Admin pages don't use user notifications
         }
