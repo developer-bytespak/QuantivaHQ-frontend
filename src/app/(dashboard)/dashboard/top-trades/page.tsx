@@ -134,12 +134,20 @@ type ModalPosition = {
 };
 
 type ModalOrder = {
+  orderId: string;
   symbol: string;
-  quantity: number;
-  avgPrice: number;
-  status: string;
   side: string;
-  createdAt?: string;
+  type: string;
+  status: string;
+  fillPercent: number;
+  quantity: number;
+  filledQuantity: number;
+  avgFillPrice: number;
+  orderPrice: string | number;
+  totalValue: number;
+  stopPrice: number | null;
+  time: string;
+  updateTime: string;
 };
 
 type ModalTradeHistory = {
@@ -279,6 +287,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [tradeHistoryStartDate, setTradeHistoryStartDate] = useState("");
   const [tradeHistoryEndDate, setTradeHistoryEndDate] = useState("");
   const [leaderboardPositionsPage, setLeaderboardPositionsPage] = useState(1);
+  const [ordersPeriod, setOrdersPeriod] = useState<"all" | "1d" | "1w" | "1m" | "6m" | "custom">("all");
+  const [ordersStartDate, setOrdersStartDate] = useState("");
+  const [ordersEndDate, setOrdersEndDate] = useState("");
+  const [ordersSummary, setOrdersSummary] = useState<any>(null);
   const LEADERBOARD_ITEMS_PER_PAGE = 20;
   const [positionsModalLoading, setPositionsModalLoading] = useState(false);
   const [positionsModalError, setPositionsModalError] = useState<string | null>(null);
@@ -893,9 +905,19 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           if (tradeHistoryEndDate) historyParams.set('endTime', String(new Date(tradeHistoryEndDate + 'T23:59:59').getTime()));
         }
 
+        // Build orders query params with date filters
+        const ordersParams = new URLSearchParams({ limit: '500' });
+        if (ordersPeriod !== 'all' && ordersPeriod !== 'custom') {
+          ordersParams.set('period', ordersPeriod);
+        }
+        if (ordersPeriod === 'custom') {
+          if (ordersStartDate) ordersParams.set('startTime', String(new Date(ordersStartDate).getTime()));
+          if (ordersEndDate) ordersParams.set('endTime', String(new Date(ordersEndDate + 'T23:59:59').getTime()));
+        }
+
         const [positionsResponse, ordersResponse, historyResponse] = await Promise.all([
           apiRequest<never, any>({ path: `${tradingApiBase}/positions`, method: "GET" }),
-          apiRequest<never, any>({ path: `${tradingApiBase}/orders/all?limit=200`, method: "GET" }),
+          apiRequest<never, any>({ path: `${tradingApiBase}/orders/all?${ordersParams.toString()}`, method: "GET" }),
           apiRequest<never, any>({ path: `${tradingApiBase}/trade-history?${historyParams.toString()}`, method: "GET" }),
         ]);
 
@@ -920,13 +942,22 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         }));
 
         const normalizedOrders: ModalOrder[] = rawOrders.map((o: any) => ({
-          symbol: String(o.symbol ?? o.asset ?? "—"),
-          quantity: toNumber(o.origQty ?? o.executedQty ?? o.qty ?? o.quantity, 0),
-          avgPrice: toNumber(o.avgPrice ?? o.price ?? o.avgFillPrice ?? o.avg_fill_price ?? o.filled_avg_price, 0),
+          orderId: String(o.orderId ?? '—'),
+          symbol: String(o.symbol ?? o.asset ?? '—'),
+          side: String(o.side ?? '').toUpperCase(),
+          type: String(o.type ?? '').toUpperCase(),
           status: normalizeOrderStatus(o.status),
-          side: String(o.side ?? "").toUpperCase(),
-          createdAt: toIso(o.time ?? o.updateTime ?? o.createdAt ?? o.created_at),
+          fillPercent: toNumber(o.fillPercent, 0),
+          quantity: toNumber(o.quantity ?? o.origQty, 0),
+          filledQuantity: toNumber(o.filledQuantity ?? o.executedQty, 0),
+          avgFillPrice: toNumber(o.avgFillPrice ?? o.avgPrice ?? o.price, 0),
+          orderPrice: o.orderPrice ?? o.price ?? 0,
+          totalValue: toNumber(o.totalValue ?? o.cummulativeQuoteQty, 0),
+          stopPrice: o.stopPrice ?? null,
+          time: toIso(o.time) ?? '',
+          updateTime: toIso(o.updateTime ?? o.time) ?? '',
         }));
+        setOrdersSummary(ordersResponse?.summary ?? null);
 
         const normalizedHistory: ModalTradeHistory[] = rawHistory.map((t: any) => ({
           orderId: String(t.orderId ?? '—'),
@@ -966,10 +997,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [showPositionsModal, showLeaderboardModal, isStocksConnection, tradeHistoryPeriod, tradeHistoryStartDate, tradeHistoryEndDate]);
+  }, [showPositionsModal, showLeaderboardModal, isStocksConnection, tradeHistoryPeriod, tradeHistoryStartDate, tradeHistoryEndDate, ordersPeriod, ordersStartDate, ordersEndDate]);
 
   const ordersPending = useMemo(
-    () => modalOrders.filter((o) => ["NEW", "PARTIALLY_FILLED", "PENDING"].includes(o.status)),
+    () => modalOrders.filter((o) => ["NEW", "PARTIALLY_FILLED", "PENDING", "PENDING_CANCEL"].includes(o.status)),
     [modalOrders],
   );
   const ordersFilled = useMemo(() => modalOrders.filter((o) => o.status === "FILLED"), [modalOrders]);
@@ -1816,7 +1847,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       {/* Positions Modal */}
       {showPositionsModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl flex items-center justify-center z-[10000] p-4">
-          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full h-[90vh] overflow-hidden shadow-2xl flex flex-col">
             <div className="flex-shrink-0 bg-[--color-surface] border-b border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between">
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-white">Order History</h2>
@@ -1834,124 +1865,147 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex-shrink-0 border-b border-slate-700 px-4 sm:px-6 flex gap-3 overflow-x-auto bg-[--color-surface]/95 backdrop-blur">
-              <button
-                onClick={() => setPositionsModalTab("all")}
-                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-                  positionsModalTab === "all"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
-                    : "text-slate-400 hover:text-white border-transparent"
-                }`}
-              >
-                All Orders ({modalOrders.length})
-              </button>
-              <button
-                onClick={() => setPositionsModalTab("pending")}
-                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-                  positionsModalTab === "pending"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
-                    : "text-slate-400 hover:text-white border-transparent"
-                }`}
-              >
-                Pending ({ordersPending.length})
-              </button>
-              <button
-                onClick={() => setPositionsModalTab("filled")}
-                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-                  positionsModalTab === "filled"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
-                    : "text-slate-400 hover:text-white border-transparent"
-                }`}
-              >
-                Filled ({ordersFilled.length})
-              </button>
-              <button
-                onClick={() => setPositionsModalTab("canceled")}
-                className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
-                  positionsModalTab === "canceled"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
-                    : "text-slate-400 hover:text-white border-transparent"
-                }`}
-              >
-                Canceled ({ordersCanceled.length})
-              </button>
+            {/* Tabs + Filters */}
+            <div className="flex-shrink-0 border-b border-slate-700 px-4 sm:px-6 py-2 space-y-2 bg-[--color-surface]/95 backdrop-blur">
+              {/* Summary Stats */}
+              <div className="grid grid-cols-4 gap-2">
+                <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                  <div className="text-slate-400 text-xs">Total Orders</div>
+                  <div className="text-lg font-bold text-white">{ordersSummary?.totalOrders ?? modalOrders.length}</div>
+                </div>
+                <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                  <div className="text-slate-400 text-xs">Filled</div>
+                  <div className="text-lg font-bold text-green-400">{ordersSummary?.filledOrders ?? ordersFilled.length}</div>
+                </div>
+                <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                  <div className="text-slate-400 text-xs">Canceled</div>
+                  <div className="text-lg font-bold text-red-400">{ordersSummary?.canceledOrders ?? ordersCanceled.length}</div>
+                </div>
+                <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
+                  <div className="text-slate-400 text-xs">Pending</div>
+                  <div className="text-lg font-bold text-blue-400">{ordersSummary?.pendingOrders ?? ordersPending.length}</div>
+                </div>
+              </div>
+
+              {/* Status + Period filters */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex gap-1.5 overflow-x-auto">
+                  {(["all", "filled", "pending", "canceled"] as const).map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => { setPositionsModalTab(tab); setPositionsModalPage(1); }}
+                      className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap capitalize transition-all ${
+                        positionsModalTab === tab
+                          ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                          : "text-slate-400 hover:text-white bg-slate-700/50"
+                      }`}
+                    >
+                      {tab === "all" ? `All (${modalOrders.length})` : tab === "filled" ? `Filled (${ordersFilled.length})` : tab === "pending" ? `Pending (${ordersPending.length})` : `Canceled (${ordersCanceled.length})`}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="h-4 w-px bg-slate-700" />
+
+                <div className="flex gap-1.5 overflow-x-auto">
+                  {([["all", "All Time"], ["1d", "1D"], ["1w", "1W"], ["1m", "1M"], ["6m", "6M"], ["custom", "Custom"]] as const).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => { setOrdersPeriod(key as any); setPositionsModalPage(1); }}
+                      className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap transition-all ${
+                        ordersPeriod === key
+                          ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                          : "text-slate-400 hover:text-white bg-slate-700/50"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom date range */}
+              {ordersPeriod === "custom" && (
+                <div className="flex items-center gap-2">
+                  <input type="date" value={ordersStartDate} onChange={(e) => setOrdersStartDate(e.target.value)}
+                    className="px-2 py-1 text-xs rounded-md bg-slate-700/50 border border-slate-600 text-white focus:outline-none focus:border-[#fc4f02]" />
+                  <span className="text-xs text-slate-500">to</span>
+                  <input type="date" value={ordersEndDate} onChange={(e) => setOrdersEndDate(e.target.value)}
+                    className="px-2 py-1 text-xs rounded-md bg-slate-700/50 border border-slate-600 text-white focus:outline-none focus:border-[#fc4f02]" />
+                </div>
+              )}
             </div>
 
             <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2">
+              {/* Scrollable: Orders Table */}
+              <div className="flex-1 overflow-y-auto">
                 {positionsModalLoading && (
-                  <div className="text-xs text-slate-300">Loading orders...</div>
+                  <div className="text-xs text-slate-300 px-4 py-2">Loading orders...</div>
                 )}
                 {positionsModalError && (
-                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300 mx-4 my-2">
                     {positionsModalError}
                   </div>
                 )}
 
-                {/* Table */}
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs sm:text-sm">
-                    <thead>
-                      <tr className="text-slate-400 text-[10px] sm:text-xs text-left border-b border-slate-700">
-                        <th className="py-2 px-3 font-medium">Symbol</th>
-                        <th className="py-2 px-3 font-medium">Quantity</th>
-                        <th className="py-2 px-3 font-medium">Order Price</th>
-                        <th className="py-2 px-3 font-medium">Total Cost</th>
-                        <th className="py-2 px-3 font-medium">Status</th>
-                        <th className="py-2 px-3 font-medium">Actions</th>
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0 bg-[--color-surface] z-10">
+                      <tr className="text-slate-400 text-[10px] text-left border-b border-slate-700">
+                        <th className="py-2.5 px-4 font-medium">Symbol</th>
+                        <th className="py-2.5 px-3 font-medium">Side</th>
+                        <th className="py-2.5 px-3 font-medium">Type</th>
+                        <th className="py-2.5 px-3 font-medium">Qty (Filled/Total)</th>
+                        <th className="py-2.5 px-3 font-medium">Avg Price</th>
+                        <th className="py-2.5 px-3 font-medium">Total</th>
+                        <th className="py-2.5 px-3 font-medium">Status</th>
+                        <th className="py-2.5 px-3 font-medium">Date</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-700">
-                      {pagedPositionsTabRows.map((row: any, i) => {
-                        const order = row as ModalOrder;
-                        return (
-                          <tr key={`${order.symbol}-${order.status}-${i}`} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-2 px-3 font-semibold text-white text-xs">{order.symbol}</td>
-                            <td className="py-2 px-3 text-slate-300 text-xs">{formatQuantity(order.quantity)}</td>
-                            <td className="py-2 px-3 text-slate-300 text-xs">{formatCurrency(order.avgPrice)}</td>
-                            <td className="py-2 px-3 text-slate-300 text-xs">{formatCurrency(order.avgPrice * order.quantity)}</td>
-                            <td className="py-2 px-3">
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-700/60 text-slate-200">
-                                {order.status}
-                              </span>
-                            </td>
-                            <td className="py-2 px-3 text-slate-400 text-xs">{order.side || "—"}</td>
-                          </tr>
-                        );
-                      })}
-                      {!positionsModalLoading && pagedPositionsTabRows.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="py-8 px-3 text-center text-slate-400">
-                            No records found for this tab
+                    <tbody className="divide-y divide-slate-700/50">
+                      {pagedPositionsTabRows.map((order, i) => (
+                        <tr key={`${order.orderId}-${i}`} className="hover:bg-slate-800/30 transition-colors">
+                          <td className="py-2.5 px-4 font-semibold text-white">{order.symbol}</td>
+                          <td className="py-2.5 px-3">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              order.side === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                            }`}>{order.side}</span>
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-300">
+                            {order.type === 'MARKET' ? 'Market' : order.type === 'LIMIT' ? 'Limit' : order.type === 'STOP_LOSS_LIMIT' ? 'Stop Loss' : order.type === 'TAKE_PROFIT_LIMIT' ? 'Take Profit' : order.type || '—'}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-300">
+                            {formatQuantity(order.filledQuantity)} / {formatQuantity(order.quantity)}
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-300">
+                            {order.status === 'FILLED' && order.avgFillPrice > 0 ? formatCurrency(order.avgFillPrice) : order.orderPrice === 'Market' ? 'Market' : formatCurrency(Number(order.orderPrice) || 0)}
+                          </td>
+                          <td className="py-2.5 px-3 text-white font-medium">
+                            {order.totalValue > 0 ? formatCurrency(order.totalValue) : '—'}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              order.status === 'FILLED' ? 'bg-green-500/15 text-green-400' :
+                              ['CANCELED', 'EXPIRED', 'REJECTED'].includes(order.status) ? 'bg-red-500/15 text-red-400' :
+                              'bg-blue-500/15 text-blue-400'
+                            }`}>
+                              {order.status === 'FILLED' ? `Filled ${order.fillPercent}%` : order.status}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-slate-500 text-[10px]">
+                            {order.updateTime ? new Date(order.updateTime).toLocaleString() : order.time ? new Date(order.time).toLocaleString() : '—'}
                           </td>
                         </tr>
-                      )}
+                      ))}
                     </tbody>
                   </table>
+                  {!positionsModalLoading && pagedPositionsTabRows.length === 0 && (
+                    <div className="py-8 text-center text-slate-400 text-sm">No orders found</div>
+                  )}
                 </div>
               </div>
 
               <div className="flex-shrink-0 border-t border-slate-700 bg-[--color-surface]/95 backdrop-blur px-4 sm:px-6 py-2">
-                {/* Summary Stats */}
-                <div className="grid grid-cols-4 gap-2 mb-2">
-                  <div>
-                    <div className="text-slate-400 text-xs">Total Orders</div>
-                    <div className="text-lg font-bold text-white">{modalOrders.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-400 text-xs">Pending</div>
-                    <div className="text-lg font-bold text-slate-400">{ordersPending.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-400 text-xs">Filled</div>
-                    <div className="text-lg font-bold text-green-400">{ordersFilled.length}</div>
-                  </div>
-                  <div>
-                    <div className="text-slate-400 text-xs">Canceled</div>
-                    <div className="text-lg font-bold text-red-400">{ordersCanceled.length}</div>
-                  </div>
-                </div>
 
                 {/* Pagination */}
                 <div className="flex items-center justify-between border-t border-slate-700 pt-2">
@@ -1985,7 +2039,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       {/* Leaderboard Modal - Trading Performance */}
       {showLeaderboardModal && (
         <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl flex items-center justify-center z-[10000] p-4">
-          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+          <div className="bg-[--color-surface] rounded-lg sm:rounded-xl max-w-6xl w-full h-[90vh] overflow-hidden shadow-2xl flex flex-col">
             {/* Fixed Header */}
             <div className="sticky top-0 flex-shrink-0 bg-[--color-surface] border-b border-slate-700 px-4 sm:px-6 py-3 flex items-center justify-between">
               <div>
