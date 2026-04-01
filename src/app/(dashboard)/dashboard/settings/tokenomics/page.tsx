@@ -7,7 +7,7 @@ import useQhqStore from "@/state/qhq-store";
 const RULE_LABELS: Record<string, { label: string; icon: string }> = {
   MONTHLY_PRO: { label: "PRO Monthly Reward", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   MONTHLY_ELITE: { label: "ELITE Monthly Reward", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-  TRADE_EXECUTED: { label: "Execute a Live Trade", icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" },
+  TRADE_EXECUTED: { label: "Execute a Live Trading Signal", icon: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" },
   STRATEGY_CREATED: { label: "Create a Strategy", icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" },
   REFERRAL_SIGNUP: { label: "Refer a Friend", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" },
   LOYALTY_12_MONTHS: { label: "12-Month Loyalty Bonus", icon: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" },
