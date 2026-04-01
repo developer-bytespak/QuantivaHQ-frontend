@@ -122,11 +122,15 @@ interface Trade {
 type ModalPosition = {
   symbol: string;
   quantity: number;
-  entryPrice: number;
+  avgEntryPrice: number;
   currentPrice: number;
+  marketValue: number;
   totalCost: number;
   unrealizedPnl: number;
-  pnlPercent: number;
+  unrealizedPnlPercent: number;
+  dailyChangePnl: number;
+  dailyChangePercent: number;
+  hasRealEntry: boolean;
 };
 
 type ModalOrder = {
@@ -901,34 +905,19 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         const rawOrders = toArray(ordersResponse);
         const rawHistory = toArray(historyResponse);
 
-        const normalizedPositions: ModalPosition[] = rawPositions.map((p: any) => {
-          const quantity = toNumber(p.quantity ?? p.qty ?? p.free ?? p.amount, 0);
-          const entryPrice = toNumber(p.avgEntryPrice ?? p.avg_entry_price ?? p.entryPrice ?? p.entry_price, 0);
-          const currentPrice = toNumber(p.currentPrice ?? p.current_price ?? p.markPrice ?? p.price, 0);
-          const unrealizedPnl = toNumber(
-            p.unrealizedPnl ?? p.unrealized_pl ?? p.profitLoss ?? p.unrealizedProfit,
-            (currentPrice - entryPrice) * quantity,
-          );
-
-          let pnlPercent = toNumber(
-            p.pnlPercent ?? p.unrealizedPnlPercent ?? p.unrealized_plpc ?? p.profitPercent,
-            entryPrice > 0 ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0,
-          );
-
-          if (pnlPercent > -1 && pnlPercent < 1 && Math.abs(pnlPercent) > 0) {
-            pnlPercent = pnlPercent * 100;
-          }
-
-          return {
-            symbol: String(p.symbol ?? p.asset ?? "—"),
-            quantity,
-            entryPrice,
-            currentPrice,
-            totalCost: entryPrice * quantity,
-            unrealizedPnl,
-            pnlPercent,
-          };
-        });
+        const normalizedPositions: ModalPosition[] = rawPositions.map((p: any) => ({
+          symbol: String(p.symbol ?? p.asset ?? '—'),
+          quantity: toNumber(p.quantity ?? p.qty, 0),
+          avgEntryPrice: toNumber(p.avgEntryPrice ?? p.avg_entry_price ?? p.entryPrice, 0),
+          currentPrice: toNumber(p.currentPrice ?? p.current_price, 0),
+          marketValue: toNumber(p.marketValue ?? p.market_value, 0),
+          totalCost: toNumber(p.totalCost ?? p.total_cost, 0),
+          unrealizedPnl: toNumber(p.unrealizedPnl ?? p.totalPnl ?? p.total_pnl, 0),
+          unrealizedPnlPercent: toNumber(p.unrealizedPnlPercent ?? p.totalPnlPercent ?? p.total_pnl_percent, 0),
+          dailyChangePnl: toNumber(p.dailyChangePnl ?? p.todayPnl ?? p.today_pnl, 0),
+          dailyChangePercent: toNumber(p.dailyChangePercent ?? p.todayPnlPercent ?? p.pnlPercent, 0),
+          hasRealEntry: !!p.hasRealEntry,
+        }));
 
         const normalizedOrders: ModalOrder[] = rawOrders.map((o: any) => ({
           symbol: String(o.symbol ?? o.asset ?? "—"),
@@ -1016,7 +1005,17 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   );
 
   const sortedLeaderboardPositions = useMemo(
-    () => [...modalPositions].sort((a, b) => b.unrealizedPnl - a.unrealizedPnl),
+    () => {
+      const stables = new Set(['USDT', 'USDC', 'BUSD', 'TUSD', 'USDP', 'DAI', 'FDUSD']);
+      return [...modalPositions].sort((a, b) => {
+        // Stablecoins first (USDT at very top)
+        const aStable = stables.has(a.symbol) ? (a.symbol === 'USDT' ? -2 : -1) : 0;
+        const bStable = stables.has(b.symbol) ? (b.symbol === 'USDT' ? -2 : -1) : 0;
+        if (aStable !== bStable) return aStable - bStable;
+        // Then sort by P&L descending
+        return b.unrealizedPnl - a.unrealizedPnl;
+      });
+    },
     [modalPositions],
   );
 
@@ -2223,9 +2222,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                         <div className="text-lg font-bold text-red-400">{leaderboardDownPositions}</div>
                       </div>
                       <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
-                        <div className="text-slate-400 text-xs">Unrealized P&L</div>
+                        <div className="text-slate-400 text-xs">{leaderboardUnrealizedTotal >= 0 ? 'Total Profit' : 'Total Loss'}</div>
                         <div className={`text-lg font-bold ${leaderboardUnrealizedTotal >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          {formatCurrency(leaderboardUnrealizedTotal)}
+                          {formatCurrency(Math.abs(leaderboardUnrealizedTotal))}
                         </div>
                       </div>
                     </div>
@@ -2233,22 +2232,75 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
                   {/* Scrollable: Positions List */}
                   <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2">
-                    {pagedLeaderboardPositions.map((position, idx) => (
-                      <div key={`${position.symbol}-${idx}`} className="bg-slate-800/30 rounded-lg px-3 py-2">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm font-bold text-white">{position.symbol}</div>
-                            <div className="text-xs text-slate-400">{position.quantity.toLocaleString()} tokens • Entry: <span className="text-white">{formatCurrency(position.entryPrice)}</span> • Current: <span className="text-white">{formatCurrency(position.currentPrice)}</span></div>
+                    {pagedLeaderboardPositions.map((position, idx) => {
+                      const isStable = ['USDT', 'USDC', 'BUSD', 'TUSD', 'USDP', 'DAI', 'FDUSD'].includes(position.symbol);
+
+                      if (isStable) {
+                        return (
+                          <div key={`${position.symbol}-${idx}`} className="bg-slate-800/30 rounded-lg px-4 py-3 border-l-4 border-slate-500">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-bold text-white">{position.symbol}</span>
+                              <span className="text-sm font-bold text-white">{formatCurrency(position.marketValue)}</span>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-xs text-slate-400">Value: <span className="text-white font-semibold">{formatCurrency(position.currentPrice * position.quantity)}</span></div>
-                            <div className={`text-xs font-medium ${position.unrealizedPnl < 0 ? 'text-red-400' : 'text-green-400'}`}>
-                              {formatCurrency(position.unrealizedPnl)} ({formatPercent(position.pnlPercent)})
+                        );
+                      }
+
+                      return (
+                        <div key={`${position.symbol}-${idx}`} className={`bg-slate-800/30 rounded-lg px-4 py-3 border-l-4 ${
+                          position.unrealizedPnl < 0 ? 'border-red-500' : 'border-green-500'
+                        }`}>
+                          {/* Row 1: Symbol + Qty + Today  |  P&L label */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-bold text-white">{position.symbol}</span>
+                              <span className="text-[10px] text-slate-400">{formatQuantity(position.quantity)}</span>
+                              <span className="text-[10px] text-slate-500">•</span>
+                              <span className="text-[10px] text-slate-500">Today{' '}
+                                <span className={position.dailyChangePnl >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                  {formatCurrency(Math.abs(position.dailyChangePnl))} ({Math.abs(position.dailyChangePercent).toFixed(2)}%)
+                                </span>
+                              </span>
+                            </div>
+                            <div className="flex-shrink-0 ml-4">
+                              {position.hasRealEntry ? (
+                                <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs ${
+                                  position.unrealizedPnl < 0 ? 'bg-red-500/15' : 'bg-green-500/15'
+                                }`}>
+                                  <span className={`font-medium uppercase text-[10px] ${
+                                    position.unrealizedPnl < 0 ? 'text-red-400/70' : 'text-green-400/70'
+                                  }`}>{position.unrealizedPnl < 0 ? 'Loss' : 'Profit'}</span>
+                                  <span className={`font-bold ${
+                                    position.unrealizedPnl < 0 ? 'text-red-400' : 'text-green-400'
+                                  }`}>{formatCurrency(Math.abs(position.unrealizedPnl))}</span>
+                                  <span className={`text-[10px] ${
+                                    position.unrealizedPnl < 0 ? 'text-red-400/70' : 'text-green-400/70'
+                                  }`}>({Math.abs(position.unrealizedPnlPercent).toFixed(2)}%)</span>
+                                </div>
+                              ) : (
+                                <span className="text-sm font-semibold text-white">{formatCurrency(position.marketValue)}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Row 2: Left = Avg + Current  |  Right = Cost + Value */}
+                          <div className="flex items-center justify-between text-[11px]">
+                            <div className="flex items-center gap-3">
+                              {position.hasRealEntry && (
+                                <span className="text-slate-500">Avg Entry <span className="text-slate-300">{formatCurrency(position.avgEntryPrice)}</span></span>
+                              )}
+                              <span className="text-slate-500">Current <span className="text-slate-300">{formatCurrency(position.currentPrice)}</span></span>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                              {position.hasRealEntry && (
+                                <span className="text-slate-500">Cost <span className="text-slate-300">{formatCurrency(position.totalCost)}</span></span>
+                              )}
+                              <span className="text-slate-500">Value <span className="text-white font-semibold">{formatCurrency(position.marketValue)}</span></span>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {!positionsModalLoading && pagedLeaderboardPositions.length === 0 && (
                       <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4 text-center text-slate-400">
                         No open positions found
