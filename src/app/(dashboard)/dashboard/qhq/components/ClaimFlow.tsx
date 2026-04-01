@@ -35,12 +35,10 @@ export function ClaimFlow() {
 
     setIsClaiming(true);
     try {
-      // 1. Get Merkle proof from backend
       const proofData = await qhqApi.getClaimProof();
       const cumulativeAmountWei = BigInt(proofData.cumulative_amount_wei);
       const claimAmount = proofData.cumulative_amount;
 
-      // 2. Submit claim tx to Base chain
       const txHash = await writeContractAsync({
         address: QHQ_CONTRACT_ADDRESS,
         abi: QHQ_CONTRACT_ABI,
@@ -51,7 +49,6 @@ export function ClaimFlow() {
       setPendingTxHash(txHash);
       toast.info('Transaction submitted! Waiting for confirmation...');
 
-      // 3. Record claim in backend after tx is confirmed
       await qhqApi.confirmClaim(txHash, claimAmount);
       await fetchBalance();
 
@@ -86,16 +83,23 @@ export function ClaimFlow() {
   };
 
   return (
-    <div className="bg-[--color-surface] border border-[--color-border] rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-white mb-2">Claim QHQ On-Chain</h3>
+    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] animate-fade-in">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center shrink-0">
+          <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-bold text-white">Claim QHQ On-Chain</h3>
+      </div>
       <p className="text-sm text-slate-400 mb-6">
         Transfer your earned QHQ tokens to your Base wallet. Tokens are verified via Merkle proof.
       </p>
 
-      <div className="flex items-center justify-between p-4 bg-[--color-surface-alt] rounded-lg mb-4">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-br from-white/[0.07] to-transparent rounded-xl border border-[--color-border] mb-4">
         <span className="text-sm text-slate-400">Available to claim</span>
         <span className="text-xl font-bold text-white">
-          {pendingBalance.toFixed(2)} <span className="text-[--color-primary] text-base">QHQ</span>
+          {pendingBalance.toFixed(2)} <span className="text-[#fda300] text-base">QHQ</span>
         </span>
       </div>
 
@@ -104,7 +108,7 @@ export function ClaimFlow() {
         disabled={!canClaim || isConfirming}
         className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
           canClaim && !isConfirming
-            ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white hover:from-[#fd6a00] hover:to-[#fdb800]'
+            ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white hover:from-[#fd6a00] hover:to-[#fdb800] hover:scale-[1.02] active:scale-[0.98]'
             : 'bg-slate-700 text-slate-400 cursor-not-allowed'
         }`}
       >
@@ -118,7 +122,7 @@ export function ClaimFlow() {
       </button>
 
       {pendingTxHash && isConfirmed && (
-        <p className="mt-2 text-xs text-green-400 text-center">
+        <div className="mt-3 text-xs text-green-400 text-center bg-green-400/10 border border-green-400/20 rounded-lg p-2">
           Confirmed!{' '}
           <a
             href={`https://basescan.org/tx/${pendingTxHash}`}
@@ -128,7 +132,7 @@ export function ClaimFlow() {
           >
             View on Basescan
           </a>
-        </p>
+        </div>
       )}
     </div>
   );
