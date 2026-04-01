@@ -24,6 +24,7 @@ import {
   Notification,
 } from "@/components/common/notification";
 import { getApiErrorMessage } from "@/lib/utils/errors";
+import { useSocket } from "@/hooks/useSocket";
 
 /* ──────── join-flow step type ──────── */
 type JoinFlowStep = "idle" | "enter-wallet" | "payment-details" | "submit-tx";
@@ -80,6 +81,7 @@ export default function VcPoolDetailPage() {
   const canAccessVCPool = canAccessFeature(FeatureType.VC_POOL_ACCESS);
   const { notification, showNotification, hideNotification } =
     useNotification();
+  const { socket } = useSocket();
 
   /* ── core data ── */
   const [pool, setPool] = useState<VcPoolDetails | null>(null);
@@ -125,9 +127,6 @@ export default function VcPoolDetailPage() {
 
   /* ── statusIntervalRef ── */
   const statusIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null
-  );
-  const verifyPollingRef = useRef<ReturnType<typeof setInterval> | null>(
     null
   );
   const cancellationPollingRef = useRef<ReturnType<typeof setInterval> | null>(
@@ -296,6 +295,34 @@ export default function VcPoolDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolId, canAccessVCPool]);
 
+  /* ──────── WebSocket: listen for real-time pool events ──────── */
+  useEffect(() => {
+    if (!socket || !poolId) return;
+
+    const POOL_EVENTS = [
+      'pool:payment-verified',
+      'pool:payment-rejected',
+      'pool:cancellation-updated',
+      'pool:refund-completed',
+      'pool:payout-ready',
+    ];
+
+    const handlePoolEvent = (data: { pool_id?: string; [key: string]: any }) => {
+      // Only react to events for THIS pool
+      if (data.pool_id && data.pool_id !== poolId) return;
+      // Refresh all data instantly
+      loadPool();
+      loadPaymentStatus();
+      loadMyCancellation();
+    };
+
+    POOL_EVENTS.forEach((event) => socket.on(event, handlePoolEvent));
+    return () => {
+      POOL_EVENTS.forEach((event) => socket.off(event, handlePoolEvent));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, poolId]);
+
   /* ──────── auto-detect step on data load ──────── */
   useEffect(() => {
     if (loading || !pool || !canAccessVCPool) return;
@@ -397,66 +424,61 @@ export default function VcPoolDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasReservation, paymentStatus?.reservation?.expires_at]);
 
-  /* ──────── poll payment status while reservation active ──────── */
+  /* ──────── unified payment-status poll (adaptive interval, pauses on hidden tab) ──────── */
   useEffect(() => {
-    if (!poolId || !hasReservation || isMember) return;
-    statusIntervalRef.current = setInterval(
-      () => getPaymentStatus(poolId).then(setPaymentStatus),
-      30000
-    );
-    return () => {
-      if (statusIntervalRef.current)
-        clearInterval(statusIntervalRef.current);
-    };
-  }, [poolId, hasReservation, isMember]);
+    if (!poolId) return;
 
-  /* ──────── fast polling when TX submitted and pending admin approval ──────── */
-  useEffect(() => {
-    if (
-      !poolId ||
-      !hasTxSubmitted ||
-      (paymentVerifyStatus !== "pending" &&
-        paymentVerifyStatus !== null &&
-        payment?.status !== "processing")
-    ) {
-      if (verifyPollingRef.current)
-        clearInterval(verifyPollingRef.current);
-      return;
-    }
-    verifyPollingRef.current = setInterval(() => {
+    // Determine if we need to poll and at what speed
+    const needsReservationPoll = hasReservation && !isMember;
+    const needsTxPoll =
+      hasTxSubmitted &&
+      (paymentVerifyStatus === "pending" ||
+        paymentVerifyStatus === null ||
+        payment?.status === "processing");
+
+    if (!needsReservationPoll && !needsTxPoll) return;
+
+    // WebSocket handles instant updates; polling is just a fallback
+    // Slower intervals: 30s for TX verification, 60s otherwise
+    const interval = needsTxPoll ? 30000 : 60000;
+
+    const poll = () => {
+      // Skip poll when tab is not visible
+      if (document.hidden) return;
       getPaymentStatus(poolId).then((ps) => {
         setPaymentStatus(ps);
-        const s =
-          ps.payment?.payment_status ?? ps.payment?.binance_payment_status;
-        if (
-          s &&
-          s !== "pending" &&
-          ps.payment?.status !== "processing"
-        ) {
-          if (verifyPollingRef.current)
-            clearInterval(verifyPollingRef.current);
-        }
+        const s = ps.payment?.payment_status ?? ps.payment?.binance_payment_status;
+        if (s) setPaymentVerifyStatus(s as PaymentStatus);
       });
-    }, 8000);
-    return () => {
-      if (verifyPollingRef.current)
-        clearInterval(verifyPollingRef.current);
     };
-  }, [poolId, hasTxSubmitted, paymentVerifyStatus, payment?.status]);
 
-  /* ──────── poll cancellation status every 30s while pending ──────── */
+    statusIntervalRef.current = setInterval(poll, interval);
+
+    // Pause/resume on tab visibility change
+    const onVisibility = () => {
+      if (!document.hidden) poll(); // Refresh immediately when tab becomes visible
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      if (statusIntervalRef.current) clearInterval(statusIntervalRef.current);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [poolId, hasReservation, isMember, hasTxSubmitted, paymentVerifyStatus, payment?.status]);
+
+  /* ──────── poll cancellation status every 30s while pending (pauses on hidden tab) ──────── */
   useEffect(() => {
     if (!poolId || !myCancellation?.has_cancellation) return;
     const status = myCancellation.cancellation?.status;
-    if (status === "pending") {
-      cancellationPollingRef.current = setInterval(() => {
-        loadMyCancellation();
-      }, 30000);
-      return () => {
-        if (cancellationPollingRef.current)
-          clearInterval(cancellationPollingRef.current);
-      };
-    }
+    if (status !== "pending") return;
+
+    cancellationPollingRef.current = setInterval(() => {
+      if (!document.hidden) loadMyCancellation();
+    }, 60000);
+    return () => {
+      if (cancellationPollingRef.current)
+        clearInterval(cancellationPollingRef.current);
+    };
   }, [poolId, myCancellation?.has_cancellation, myCancellation?.cancellation?.status]);
 
   /* ──────── load cancellation for members or users who have exited ──────── */
@@ -469,12 +491,12 @@ export default function VcPoolDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolId, canAccessVCPool]);
 
-  /* ──────── poll pool details while waiting for admin payout (completed state) ──────── */
+  /* ──────── poll pool details while waiting for admin payout (completed state, pauses on hidden tab) ──────── */
   useEffect(() => {
     if (!poolId || !isMember || poolStatus !== 'completed' || isPayoutSent) return;
     const interval = setInterval(() => {
-      getVcPoolById(poolId).then((p) => setPool(p)).catch(() => {});
-    }, 15000);
+      if (!document.hidden) getVcPoolById(poolId).then((p) => setPool(p)).catch(() => {});
+    }, 60000);
     return () => clearInterval(interval);
   }, [poolId, isMember, poolStatus, isPayoutSent]);
 
