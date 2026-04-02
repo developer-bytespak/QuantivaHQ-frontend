@@ -1392,7 +1392,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               onChange={(e) => setSortBy(e.target.value as "profit" | "volume" | "winrate")}
               className="rounded-lg  bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             >
-              <option value="profit">Profit</option>
+              <option value="profit">24h Change</option>
               <option value="volume">Volume</option>
             </select>
           </div>
@@ -1477,7 +1477,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
                       <div className="relative flex items-center gap-4 text-xs pt-3">
                         <div className="absolute top-0 left-0 right-0 h-[1px] bg-[var(--primary)]/30"></div>
-                        <div><span className="text-slate-400">Profit: </span><span className="font-medium text-green-400">{trade.profitValue ? formatPercent(trade.profitValue) : trade.profit ?? '—'}</span></div>
+                        <div><span className="text-slate-400">24h Change: </span><span className={`font-medium ${Number(trade.profitValue ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{trade.profitValue ? formatPercent(trade.profitValue) : trade.profit ?? '—'}</span></div>
                         <div><span className="text-slate-400">Volume: </span><span className="font-medium text-white">{formatNumberCompact(trade.volumeValue ?? trade.volume)}</span></div>
                       </div>
                       
