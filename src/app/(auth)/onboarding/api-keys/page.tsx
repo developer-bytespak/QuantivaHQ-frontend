@@ -227,7 +227,7 @@ export default function ApiKeysPage() {
   };
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden" >
+    <div className="relative flex min-h-full w-full" >
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black" >
         {/* Subtle gradient orbs for depth */}
@@ -237,7 +237,7 @@ export default function ApiKeysPage() {
       </div >
 
       {/* Content */}
-      < div className="relative z-10 flex h-full w-full items-start sm:items-center justify-center overflow-hidden pt-6 pb-3 sm:py-6" >
+      < div className="relative z-10 flex min-h-full w-full items-start sm:items-center justify-center pt-6 pb-3 sm:py-6" >
         <div className="mx-auto w-full max-w-2xl px-2 sm:px-6 lg:px-8">
           {/* Header Section */}
           <div className="mb-3 sm:mb-6 text-center">

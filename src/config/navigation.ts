@@ -12,7 +12,7 @@ const onboardingBase = "/onboarding";
 
 export const DASHBOARD_NAV: NavSection[] = [
   {
-    title: "Main",
+    title: "",
     items: [
       { label: "Dashboard", href: "/dashboard" },
       { label: "Market", href: "/dashboard/market" },

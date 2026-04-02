@@ -303,7 +303,7 @@ export default function DashboardPage() {
   // Format percentage
   const formatPercent = (value: number) => {
     const sign = value >= 0 ? "+" : "";
-    return `${sign}${value.toFixed(2)}%`;
+    return `${sign}${value.toFixed(3)}%`;
   };
 
   // Format large numbers (market cap, volume)
@@ -895,7 +895,7 @@ export default function DashboardPage() {
                                   </td>
                                   <td className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">${stock.price?.toFixed(2) || '0.00'}</td>
                                   <td className={`py-3 px-2 text-left text-xs sm:text-sm font-medium ${stock.changePercent24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                    {stock.changePercent24h?.toFixed(2) || '0.00'}%
+                                    {stock.changePercent24h?.toFixed(3) || '0.000'}%
                                   </td>
                                   <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 hidden sm:table-cell">{formatLargeNumber(stock.marketCap || 0)}</td>
                                   <td className="py-3 px-2 text-left text-xs sm:text-sm text-slate-300 hidden md:table-cell">{formatLargeNumber(stock.volume24h || 0)}</td>

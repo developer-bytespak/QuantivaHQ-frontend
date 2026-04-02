@@ -191,7 +191,7 @@ export default function Verify2FAPage() {
                   autoFocus
                 />
                 <p className="mt-2 text-xs text-slate-400">
-                  Check your email for the verification code
+                  Check your email for the verification code. The code is valid for <span className="text-white font-medium">10 minutes</span>.
                 </p>
               </div>
 
