@@ -10,9 +10,9 @@ import { exchangesService } from "@/lib/api/exchanges.service";
 import { useExchange } from "@/context/ExchangeContext";
 import { BalanceOverview } from "../paper-trading/components/balance-overview";
 import { StrategyCard } from "../paper-trading/components/strategy-card";
-import { AutoTradeModal } from "../paper-trading/components/auto-trade-modal";
+import { ExchangeAutoTradeModal } from "../top-trades/components/exchange-auto-trade-modal";
+import { StockExchangeAutoTradeModal } from "../top-trades/components/stock-exchange-auto-trade-modal";
 import { ManualTradeModal } from "../paper-trading/components/manual-trade-modal";
-import { StockAutoTradeModal } from "../paper-trading/components/stock-auto-trade-modal";
 import { StockManualTradeModal } from "../paper-trading/components/stock-manual-trade-modal";
 
 // --- Formatting helpers ---
@@ -681,23 +681,24 @@ export default function CustomStrategiesTradingPage() {
       </div>
 
       {/* Auto Trade Modal */}
-      {showAutoTradeModal && selectedSignal && (
+      {showAutoTradeModal && selectedSignal && connectionId && (
         isStocksConnection ? (
-          <StockAutoTradeModal
+          <StockExchangeAutoTradeModal
+            connectionId={connectionId}
             signal={selectedSignal}
-            balance={balance}
             onClose={() => setShowAutoTradeModal(false)}
             onSuccess={refreshBalanceAndOrders}
-            marketOpen={marketOpen}
             strategy={currentStrategy}
+            side={selectedSignal.type}
           />
         ) : (
-          <AutoTradeModal
+          <ExchangeAutoTradeModal
+            connectionId={connectionId}
             signal={selectedSignal}
-            balance={balance}
             onClose={() => setShowAutoTradeModal(false)}
             onSuccess={refreshBalanceAndOrders}
             strategy={currentStrategy}
+            side={selectedSignal.type}
           />
         )
       )}

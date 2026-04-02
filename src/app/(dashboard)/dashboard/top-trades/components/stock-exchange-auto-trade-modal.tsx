@@ -18,6 +18,7 @@ interface StockExchangeAutoTradeModalProps {
   onClose: () => void;
   onSuccess: () => void;
   strategy?: { stop_loss_value?: number; take_profit_value?: number };
+  side?: "BUY" | "SELL";
 }
 
 export function StockExchangeAutoTradeModal({
@@ -26,6 +27,7 @@ export function StockExchangeAutoTradeModal({
   onClose,
   onSuccess,
   strategy,
+  side: sideProp,
 }: StockExchangeAutoTradeModalProps) {
   const vcPoolId = useTopTradeVcPoolId();
   const isPoolTrade = !!vcPoolId;
@@ -39,6 +41,7 @@ export function StockExchangeAutoTradeModal({
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
   const symbol = base;
   const entryPrice = Number(signal?.entryPrice ?? signal?.entry ?? 0) || 0;
+  const side: "BUY" | "SELL" = sideProp ?? (signal?.type?.toUpperCase() === "SELL" ? "SELL" : "BUY");
 
   const defaultStopLoss = strategy?.stop_loss_value ?? 5;
   const defaultTakeProfit = strategy?.take_profit_value ?? 10;
@@ -47,7 +50,7 @@ export function StockExchangeAutoTradeModal({
 
   const amountNum = parseFloat(usdAmount) || 0;
   const quantity = entryPrice > 0 ? amountNum / entryPrice : 0;
-  const prices = calculatePrices(entryPrice, stopLossPercent, takeProfitPercent, "BUY");
+  const prices = calculatePrices(entryPrice, stopLossPercent, takeProfitPercent, side);
   const maxLossAmount = amountNum * (stopLossPercent / 100);
   const potentialGainAmount = amountNum * (takeProfitPercent / 100);
   const riskRewardRatio = calculateRiskRewardRatio(maxLossAmount, potentialGainAmount);
@@ -95,7 +98,7 @@ export function StockExchangeAutoTradeModal({
       if (vcPoolId) {
         await adminCreateTrade(vcPoolId, {
           asset_pair: symbol,
-          action: "BUY",
+          action: side,
           quantity: shares,
           entry_price_usdt: entryPrice,
           notes: null,
@@ -105,7 +108,7 @@ export function StockExchangeAutoTradeModal({
       } else {
         const response = await exchangesService.placeOrder(connectionId, {
           symbol,
-          side: "BUY",
+          side,
           type: "MARKET",
           quantity: shares,
           autoOco: true,
@@ -150,8 +153,8 @@ export function StockExchangeAutoTradeModal({
         <div className="mb-6 rounded-lg bg-slate-800/50 p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-lg font-semibold text-white">{pair}</span>
-            <span className="rounded-full px-3 py-1 text-sm font-semibold bg-green-500/20 text-green-400">
-              BUY
+            <span className={`rounded-full px-3 py-1 text-sm font-semibold ${side === "SELL" ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"}`}>
+              {side}
             </span>
           </div>
           <div className="space-y-1 text-sm">
