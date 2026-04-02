@@ -405,19 +405,23 @@ export default function SuperAdminFinancePage() {
           </div>
 
           <div className="mb-4 grid gap-2 grid-cols-2">
-            {Object.entries(vcCollectionsGroup.summary).map(([key, value]) => (
-              <div
-                key={key}
-                className="rounded-lg border border-[--color-border] bg-[--color-surface-alt]/70 px-3 py-2"
-              >
-                <p className="text-[11px] uppercase tracking-wide text-slate-400">{prettyKey(key)}</p>
-                <p className="mt-1 text-sm font-semibold text-white">
-                  {key.includes("amount")
-                    ? formatMoney(Number(value ?? 0))
-                    : Number(value ?? 0).toLocaleString()}
-                </p>
-              </div>
-            ))}
+            {Object.entries(vcCollectionsGroup.summary).map(([key, value]) => {
+              // Map backend key 'completion_profit_amount' to label 'Completion Fee Amount' for UI
+              const displayKey = key === "completion_fee_amount" ? "completion_profit_amount" : key;
+              return (
+                <div
+                  key={displayKey}
+                  className="rounded-lg border border-[--color-border] bg-[--color-surface-alt]/70 px-3 py-2"
+                >
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400">{prettyKey(displayKey)}</p>
+                  <p className="mt-1 text-sm font-semibold text-white">
+                    {displayKey.includes("amount")
+                      ? formatMoney(Number(value ?? 0))
+                      : Number(value ?? 0).toLocaleString()}
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
           <div className="h-52 rounded-lg border border-[--color-border] bg-[--color-surface-alt]/40 p-2">
