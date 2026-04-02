@@ -94,6 +94,7 @@ export default function SignUpPage() {
     }
   }, [searchParams]);
   const [email, setEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -102,7 +103,20 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  const USERNAME_MAX_LENGTH = 20;
   const USERNAME_BLOCKED_CHARS = /[@#$%!]/;
+
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const emailError = emailTouched && email.length > 0 && !isValidEmail(email);
+
+  const passwordChecks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
+  };
+  const allPasswordChecksPassed = Object.values(passwordChecks).every(Boolean);
   const normalizeUsername = (value: string) =>
     value.toLowerCase().replace(/\s+/g, "").replace(/[@#$%!]/g, "");
 
@@ -123,12 +137,20 @@ export default function SignUpPage() {
         setError("Username cannot contain spaces only");
         return;
       }
-      if (password !== confirmPassword) {
-        setError("Passwords do not match");
+      if (normalizedUsername.length > USERNAME_MAX_LENGTH) {
+        setError(`Username must be ${USERNAME_MAX_LENGTH} characters or less`);
         return;
       }
-      if (password.length < 8) {
-        setError("Password must be at least 8 characters");
+      if (!isValidEmail(email)) {
+        setError("Please enter a valid email address");
+        return;
+      }
+      if (!allPasswordChecksPassed) {
+        setError("Password must meet all requirements");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("Passwords do not match");
         return;
       }
 
@@ -676,12 +698,13 @@ export default function SignUpPage() {
                           id="fullName"
                           type="text"
                           value={fullName}
-                          onChange={(e) => setFullName(normalizeUsername(e.target.value))}
+                          onChange={(e) => setFullName(normalizeUsername(e.target.value).slice(0, USERNAME_MAX_LENGTH))}
                           onKeyDown={(e) => {
                             if (e.key === " " || USERNAME_BLOCKED_CHARS.test(e.key)) {
                               e.preventDefault();
                             }
                           }}
+                          maxLength={USERNAME_MAX_LENGTH}
                           className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                           placeholder="johndoe"
                           autoCapitalize="none"
@@ -699,10 +722,14 @@ export default function SignUpPage() {
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
+                          onBlur={() => setEmailTouched(true)}
+                          className={`w-full rounded-xl border-2 ${emailError ? 'border-red-500' : 'border-[--color-border]'} bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20`}
                           placeholder="you@example.com"
                           required
                         />
+                        {emailError && (
+                          <p className="mt-1 text-[10px] text-red-400">Please enter a valid email address</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -760,7 +787,7 @@ export default function SignUpPage() {
                     </div>
                   )}
 
-                    {activeTab === "signup" && (
+                    {activeTab === "signup" && (<>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                         <div>
                           <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-white">
@@ -829,7 +856,33 @@ export default function SignUpPage() {
                           </div>
                         </div>
                       </div>
-                    )}
+                      {password.length > 0 && (
+                        <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-0.5">
+                          {[
+                            { key: "length", label: "8+ characters" },
+                            { key: "uppercase", label: "Uppercase letter" },
+                            { key: "lowercase", label: "Lowercase letter" },
+                            { key: "number", label: "Number" },
+                            { key: "special", label: "Special character" },
+                          ].map(({ key, label }) => (
+                            <div key={key} className="flex items-center gap-1.5">
+                              <div className={`h-3 w-3 rounded-full flex items-center justify-center ${passwordChecks[key as keyof typeof passwordChecks] ? 'bg-green-500' : 'bg-slate-600'}`}>
+                                {passwordChecks[key as keyof typeof passwordChecks] ? (
+                                  <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : (
+                                  <svg className="h-2 w-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                )}
+                              </div>
+                              <span className={`text-[10px] ${passwordChecks[key as keyof typeof passwordChecks] ? 'text-green-400' : 'text-slate-500'}`}>{label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>)}
 
                     {activeTab === "login" && (
                       <div className="flex items-center justify-between">

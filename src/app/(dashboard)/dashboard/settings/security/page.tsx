@@ -508,33 +508,6 @@ export default function SecurityPage() {
           </div>
           )}
 
-          {/* Two-Factor Authentication */}
-          <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex-1">
-                <h2 className="text-lg sm:text-xl font-semibold text-white mb-1">Two-Factor Authentication</h2>
-                <p className="text-xs sm:text-sm text-slate-400">Add an extra layer of security to your account</p>
-              </div>
-              <button
-                onClick={toggleTwoFactor}
-                className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 focus:ring-offset-2 focus:ring-offset-[--color-surface] flex-shrink-0 ${
-                  twoFactorEnabled ? "bg-[var(--primary)]" : "bg-slate-600"
-                }`}
-              >
-                <span
-                  className={`inline-block h-3 sm:h-4 w-3 sm:w-4 transform rounded-full bg-white transition-transform ${
-                    twoFactorEnabled ? "translate-x-5 sm:translate-x-6" : "translate-x-0.5 sm:translate-x-1"
-                  }`}
-                />
-              </button>
-            </div>
-            {twoFactorEnabled && (
-              <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-                <p className="text-xs sm:text-sm text-green-300">Two-factor authentication is enabled</p>
-              </div>
-            )}
-          </div>
-
           {/* Active Sessions */}
           <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6">
             <h2 className="text-lg sm:text-xl font-semibold text-white mb-3 sm:mb-4">Active Sessions</h2>
@@ -570,7 +543,6 @@ export default function SecurityPage() {
                 <p className="text-xs sm:text-sm text-blue-300 font-medium mb-2">Security Tips</p>
                 <ul className="text-xs text-blue-400/80 space-y-1">
                   <li>• Use a strong, unique password</li>
-                  <li>• Enable two-factor authentication for better security</li>
                   <li>• Review and revoke access from unknown devices</li>
                   <li>• Never share your password with anyone</li>
                 </ul>

@@ -19,8 +19,8 @@ export default function AuthLayout({
   const publicPages = isSignUpPage || isVerify2FAPage;
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[--color-background] text-[--color-foreground]">
-      <main className="flex flex-1 flex-col overflow-hidden w-full">
+    <div className="relative flex h-screen bg-[--color-background] text-[--color-foreground]">
+      <main className="flex flex-1 flex-col overflow-y-auto w-full">
         {publicPages ? (
           // Sign-up and verify-2fa pages are public (no auth required)
           children

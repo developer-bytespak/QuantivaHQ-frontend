@@ -605,6 +605,23 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      if (!file.type.startsWith("image/")) {
+        setNotificationMessage("Please select an image file (JPG, PNG, etc.)");
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        setShowImageMenu(false);
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setNotificationMessage(`File size exceeds 5MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(1)}MB. Please choose a smaller image.`);
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        setShowImageMenu(false);
+        return;
+      }
       if (file.type.startsWith("image/")) {
         setIsLoading(true);
         try {
@@ -631,8 +648,6 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
         } finally {
           setIsLoading(false);
         }
-      } else {
-        alert("Please select an image file");
       }
     }
     // Reset input

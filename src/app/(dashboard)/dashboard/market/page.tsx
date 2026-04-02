@@ -196,7 +196,7 @@ export default function MarketPage() {
             </p>
           </div>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push("/dashboard")}
             className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
           >
             Back to Dashboard
@@ -310,7 +310,7 @@ export default function MarketPage() {
           </div>
         </div>
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/dashboard")}
           className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
         >
           Back to Dashboard
