@@ -48,6 +48,50 @@ interface AssetOption {
 
 type Step = "basics" | "assets" | "weights" | "rules" | "risk" | "review";
 
+function StepGuideTooltip({
+  title,
+  subtitle,
+  points,
+}: {
+  title: string;
+  subtitle: string;
+  points: string[];
+}) {
+  return (
+    <div className="relative group shrink-0">
+      <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[var(--primary-light)]/50 group-hover:bg-[var(--primary-light)]/10">
+        <svg
+          className="w-4 h-4 text-slate-400 group-hover:text-[var(--primary-light)]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+
+      <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200 z-[400]">
+        <div className="rounded-xl border border-[var(--primary)]/20 bg-gradient-to-br from-[#12121c] via-[#0e0e18] to-[#0a0a14] shadow-[0_12px_40px_rgba(0,0,0,0.8)] p-4">
+          <p className="text-white font-semibold text-sm">{title}</p>
+          <p className="text-slate-400 text-xs mt-1">{subtitle}</p>
+          <div className="mt-3 space-y-1.5">
+            {points.map((point) => (
+              <p key={point} className="text-xs text-slate-300">
+                • {point}
+              </p>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CreateStrategyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -154,6 +198,7 @@ export default function CreateStrategyPage() {
   const isStocksConnection = connectionType === "stocks";
   const assetTypeLabel = isStocksConnection ? "Stocks" : "Crypto Assets";
   const popularAssets = isStocksConnection ? popularStocks : popularCrypto;
+  const hasNoAssetMatch = !searchingAssets && assetSearch.trim().length > 0 && assetResults.length === 0;
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
@@ -411,10 +456,19 @@ export default function CreateStrategyPage() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
                 <span className="text-[var(--primary-light)] font-bold">1</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">Strategy Basics</h3>
                 <p className="text-sm text-slate-400">Name and describe your strategy</p>
               </div>
+              <StepGuideTooltip
+                title="Basics Guide"
+                subtitle="Define your strategy identity before adding logic."
+                points={[
+                  "Use a clear name so it is easy to find later.",
+                  "Add a short description of your trading idea.",
+                  "These details appear in the final review.",
+                ]}
+              />
             </div>
 
             <div>
@@ -448,10 +502,19 @@ export default function CreateStrategyPage() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
                 <span className="text-[var(--primary-light)] font-bold">2</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">Select {assetTypeLabel}</h3>
                 <p className="text-sm text-slate-400">Choose which {isStocksConnection ? 'stocks' : 'crypto assets'} this strategy will analyze</p>
               </div>
+              <StepGuideTooltip
+                title={`Select ${assetTypeLabel} Guide`}
+                subtitle="Choose the symbols this strategy should scan."
+                points={[
+                  `Search and add ${isStocksConnection ? "stock" : "coin"} symbols one by one.`,
+                  "Use quick-add chips to add popular symbols fast.",
+                  "At least one asset is required to continue.",
+                ]}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Search & Add {assetTypeLabel} *</label>
@@ -461,7 +524,10 @@ export default function CreateStrategyPage() {
                   value={assetSearch}
                   onChange={(e) => setAssetSearch(e.target.value)}
                   placeholder={isStocksConnection ? "Search by symbol (e.g., AAPL, MSFT)" : "Search by symbol (e.g., BTC, ETH)"}
-                  className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[var(--primary)]/50 focus:ring-1 focus:ring-[var(--primary)]/30 focus:outline-none transition-all"
+                  className={`w-full rounded-xl bg-black/30 border px-4 py-3.5 text-white placeholder:text-slate-500 focus:ring-1 focus:outline-none transition-all ${hasNoAssetMatch
+                    ? "border-red-400/60 focus:border-red-300 focus:ring-red-400/30"
+                    : "border-white/10 focus:border-[var(--primary)]/50 focus:ring-[var(--primary)]/30"
+                    }`}
                 />
                 {searchingAssets && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -491,6 +557,14 @@ export default function CreateStrategyPage() {
                       )}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {hasNoAssetMatch && (
+                <div className="mt-2 rounded-lg border border-y border-red-400/30 bg-red-500/10 px-3 py-2">
+                  <p className="text-sm text-red-300">
+                    No such {isStocksConnection ? "stock" : "coin"} exists. Try another symbol.
+                  </p>
                 </div>
               )}
             </div>
@@ -546,10 +620,19 @@ export default function CreateStrategyPage() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
                 <span className="text-[var(--primary-light)] font-bold">3</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">AI Engine Weights</h3>
                 <p className="text-sm text-slate-400">Adjust how much each AI engine influences signals (must total 100%)</p>
               </div>
+              <StepGuideTooltip
+                title="AI Weights Guide"
+                subtitle="Control how much each engine affects the final score."
+                points={[
+                  "All weights must total exactly 100%.",
+                  "Higher weight means stronger influence on signals.",
+                  "Use presets for quick starting configurations.",
+                ]}
+              />
             </div>
 
             <div className={`p-4 rounded-xl ${weightsValid ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
@@ -636,8 +719,7 @@ export default function CreateStrategyPage() {
                 <h3 className="text-lg font-semibold text-white">Buy Signal Rules</h3>
                 <p className="text-sm text-slate-400">Set the minimum AI score needed to generate a BUY signal</p>
               </div>
-              {/* Info Icon with Hover Tooltip */}
-              <div className="relative group">
+              <div className="relative group shrink-0">
                 <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[var(--primary-light)]/50 group-hover:bg-[var(--primary-light)]/10">
                   <svg
                     className="w-4 h-4 text-slate-400 group-hover:text-[var(--primary-light)]"
@@ -653,59 +735,54 @@ export default function CreateStrategyPage() {
                     />
                   </svg>
                 </div>
-                <div className="absolute right-0 top-full mt-2 w-full max-w-[750px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[400]">
+                <div className="absolute right-0 top-full mt-2 w-[750px] max-w-[calc(100vw-2rem)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[400]">
                   <div className="relative rounded-xl border border-[var(--primary)]/15 bg-gradient-to-br from-[#12121c] via-[#0e0e18] to-[#0a0a14] shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_1px_rgba(252,79,2,0.1)] p-5 text-[13px] leading-relaxed overflow-hidden">
                     <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-[var(--primary)]/8 to-transparent rounded-full blur-2xl"></div>
                     <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[var(--primary-light)]/5 to-transparent rounded-full blur-2xl"></div>
                     <div className="relative">
-
-                    <div className="flex items-center justify-between mb-4">
-                      <p className="text-white font-semibold text-[15px]">When to Buy</p>
-                      <p className="text-slate-500 text-xs">A buy rule sets the minimum AI score needed to generate a BUY signal</p>
-                    </div>
-
-                    <div className="flex gap-4">
-                      {/* Column 1: Example */}
-                      <div className="flex-1">
-                        <p className="text-slate-300 font-medium text-xs mb-2">Example Rule</p>
-                        <div className="flex items-center gap-2 p-3 rounded-lg bg-white/[0.03] border border-white/5 mb-3">
-                          <span className="px-2.5 py-1 rounded bg-[var(--primary-light)]/15 text-[var(--primary-light)] text-xs font-medium">Final Score</span>
-                          <span className="px-2 py-1 rounded bg-white/10 text-slate-300 text-xs font-medium">&gt;</span>
-                          <span className="px-2 py-1 rounded bg-white/10 text-emerald-400 text-xs font-medium">0.5</span>
-                        </div>
-                        <div className="space-y-1 text-xs text-slate-400">
-                          <p><span className="text-emerald-400 font-medium">BTC scores +0.7</span> → BUY signal</p>
-                          <p><span className="text-slate-500">BTC scores +0.3</span> → No signal</p>
-                        </div>
+                      <div className="flex items-center justify-between mb-4">
+                        <p className="text-white font-semibold text-[15px]">When to Buy</p>
+                        <p className="text-slate-500 text-xs">A buy rule sets the minimum AI score needed to generate a BUY signal</p>
                       </div>
 
-                      {/* Column 2: Score scale */}
-                      <div className="flex-1">
-                        <p className="text-slate-300 font-medium text-xs mb-2">Score Scale</p>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-red-400 text-xs font-semibold">-1</span>
-                          <div className="flex-1 h-2 rounded-full bg-gradient-to-r from-red-500 via-slate-500 to-emerald-500"></div>
-                          <span className="text-emerald-400 text-xs font-semibold">+1</span>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <p className="text-slate-300 font-medium text-xs mb-2">Example Rule</p>
+                          <div className="flex items-center gap-2 p-3 rounded-lg bg-white/[0.03] border border-white/5 mb-3">
+                            <span className="px-2.5 py-1 rounded bg-[var(--primary-light)]/15 text-[var(--primary-light)] text-xs font-medium">Final Score</span>
+                            <span className="px-2 py-1 rounded bg-white/10 text-slate-300 text-xs font-medium">&gt;</span>
+                            <span className="px-2 py-1 rounded bg-white/10 text-emerald-400 text-xs font-medium">0.5</span>
+                          </div>
+                          <div className="space-y-1 text-xs text-slate-400">
+                            <p><span className="text-emerald-400 font-medium">BTC scores +0.7</span> → BUY signal</p>
+                            <p><span className="text-slate-500">BTC scores +0.3</span> → No signal</p>
+                          </div>
                         </div>
-                        <div className="flex justify-between text-[11px] text-slate-500">
-                          <span>Bearish</span>
-                          <span>Neutral</span>
-                          <span>Bullish</span>
+
+                        <div className="flex-1">
+                          <p className="text-slate-300 font-medium text-xs mb-2">Score Scale</p>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-red-400 text-xs font-semibold">-1</span>
+                            <div className="flex-1 h-2 rounded-full bg-gradient-to-r from-red-500 via-slate-500 to-emerald-500"></div>
+                            <span className="text-emerald-400 text-xs font-semibold">+1</span>
+                          </div>
+                          <div className="flex justify-between text-[11px] text-slate-500">
+                            <span>Bearish</span>
+                            <span>Neutral</span>
+                            <span>Bullish</span>
+                          </div>
+                        </div>
+
+                        <div className="flex-1">
+                          <p className="text-slate-300 font-medium text-xs mb-2">How It Works</p>
+                          <p className="text-xs text-slate-300 mb-1"><span className="text-emerald-400 font-medium">Higher value</span> = fewer, stronger signals</p>
+                          <p className="text-xs text-slate-300 mb-1"><span className="text-[var(--primary-light)] font-medium">Lower value</span> = more, weaker signals</p>
+                          <p className="text-xs text-slate-500 mb-2">Value must be above 0</p>
+                          <div className="p-2 rounded-lg bg-[var(--primary-light)]/5 border border-[var(--primary-light)]/15">
+                            <p className="text-[11px] text-slate-300"><span className="text-[var(--primary-light)] font-medium">Tip:</span> Start with 0.5. Adjust based on how many signals you want.</p>
+                          </div>
                         </div>
                       </div>
-
-                      {/* Column 3: Key info */}
-                      <div className="flex-1">
-                        <p className="text-slate-300 font-medium text-xs mb-2">How It Works</p>
-                        <p className="text-xs text-slate-300 mb-1"><span className="text-emerald-400 font-medium">Higher value</span> = fewer, stronger signals</p>
-                        <p className="text-xs text-slate-300 mb-1"><span className="text-[var(--primary-light)] font-medium">Lower value</span> = more, weaker signals</p>
-                        <p className="text-xs text-slate-500 mb-2">Value must be above 0</p>
-                        <div className="p-2 rounded-lg bg-[var(--primary-light)]/5 border border-[var(--primary-light)]/15">
-                          <p className="text-[11px] text-slate-300"><span className="text-[var(--primary-light)] font-medium">Tip:</span> Start with 0.5. Adjust based on how many signals you want.</p>
-                        </div>
-                      </div>
-                    </div>
-
                     </div>
                   </div>
                 </div>
@@ -780,10 +857,19 @@ export default function CreateStrategyPage() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
                 <span className="text-[var(--primary-light)] font-bold">5</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">Risk Management</h3>
                 <p className="text-sm text-slate-400">Set stop-loss and take-profit levels</p>
               </div>
+              <StepGuideTooltip
+                title="Risk Guide"
+                subtitle="Protect downside and lock in profits with clear limits."
+                points={[
+                  "Stop Loss controls max downside per trade.",
+                  "Take Profit defines your target gain.",
+                  "Aim for a healthy risk/reward ratio.",
+                ]}
+              />
             </div>
 
             <div>
@@ -864,10 +950,19 @@ export default function CreateStrategyPage() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
                 <span className="text-[var(--primary-light)] font-bold">✓</span>
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">Review Your Strategy</h3>
                 <p className="text-sm text-slate-400">Confirm all settings before creating</p>
               </div>
+              <StepGuideTooltip
+                title="Review Guide"
+                subtitle="Verify everything before creating your strategy."
+                points={[
+                  "Check assets, weights, and buy rules carefully.",
+                  "Confirm risk settings match your tolerance.",
+                  "Create strategy only after final validation.",
+                ]}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

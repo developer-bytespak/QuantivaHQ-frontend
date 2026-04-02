@@ -10,7 +10,7 @@
     "postinstall": "echo 'dependencies installed'"
   },
   "dependencies": {
-    "@rainbow-me/rainbowkit": "^2.2.4",
+    "@rainbow-me/rainbowkit": "^2.2.10",
     "@sumsub/websdk-react": "^2.6.1",
     "@tanstack/react-query": "^5.90.21",
     "axios": "^1.13.5",
