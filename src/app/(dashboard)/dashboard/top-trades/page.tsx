@@ -292,8 +292,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [ordersEndDate, setOrdersEndDate] = useState("");
   const [ordersSummary, setOrdersSummary] = useState<any>(null);
   const LEADERBOARD_ITEMS_PER_PAGE = 20;
-  const [positionsModalLoading, setPositionsModalLoading] = useState(false);
-  const [positionsModalError, setPositionsModalError] = useState<string | null>(null);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersError, setOrdersError] = useState<string | null>(null);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const [modalPositions, setModalPositions] = useState<ModalPosition[]>([]);
   const [modalOrders, setModalOrders] = useState<ModalOrder[]>([]);
   const [modalTradeHistory, setModalTradeHistory] = useState<ModalTradeHistory[]>([]);
@@ -883,29 +885,17 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedTrades.length / ITEMS_PER_PAGE));
   const paginatedTrades = filteredAndSortedTrades.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+  // Orders modal — only fetches /orders/all
   useEffect(() => {
-    if (!showPositionsModal && !showLeaderboardModal) return;
-
+    if (!showPositionsModal) return;
     let cancelled = false;
 
-    const loadModalData = async () => {
+    const loadOrders = async () => {
       try {
-        setPositionsModalLoading(true);
-        setPositionsModalError(null);
-
+        setOrdersLoading(true);
+        setOrdersError(null);
         const tradingApiBase = isStocksConnection ? "/alpaca-trading" : "/binance-trading";
 
-        // Build trade-history query params with date filters
-        const historyParams = new URLSearchParams({ limit: '500' });
-        if (tradeHistoryPeriod !== 'all' && tradeHistoryPeriod !== 'custom') {
-          historyParams.set('period', tradeHistoryPeriod);
-        }
-        if (tradeHistoryPeriod === 'custom') {
-          if (tradeHistoryStartDate) historyParams.set('startTime', String(new Date(tradeHistoryStartDate).getTime()));
-          if (tradeHistoryEndDate) historyParams.set('endTime', String(new Date(tradeHistoryEndDate + 'T23:59:59').getTime()));
-        }
-
-        // Build orders query params with date filters
         const ordersParams = new URLSearchParams({ limit: '500' });
         if (ordersPeriod !== 'all' && ordersPeriod !== 'custom') {
           ordersParams.set('period', ordersPeriod);
@@ -915,33 +905,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           if (ordersEndDate) ordersParams.set('endTime', String(new Date(ordersEndDate + 'T23:59:59').getTime()));
         }
 
-        const [positionsResponse, ordersResponse, historyResponse] = await Promise.all([
-          apiRequest<never, any>({ path: `${tradingApiBase}/positions`, method: "GET" }),
-          apiRequest<never, any>({ path: `${tradingApiBase}/orders/all?${ordersParams.toString()}`, method: "GET" }),
-          apiRequest<never, any>({ path: `${tradingApiBase}/trade-history?${historyParams.toString()}`, method: "GET" }),
-        ]);
-
+        const ordersResponse = await apiRequest<never, any>({ path: `${tradingApiBase}/orders/all?${ordersParams.toString()}`, method: "GET" });
         if (cancelled) return;
 
-        const rawPositions = toArray(positionsResponse);
-        const rawOrders = toArray(ordersResponse);
-        const rawHistory = toArray(historyResponse);
-
-        const normalizedPositions: ModalPosition[] = rawPositions.map((p: any) => ({
-          symbol: String(p.symbol ?? p.asset ?? '—'),
-          quantity: toNumber(p.quantity ?? p.qty, 0),
-          avgEntryPrice: toNumber(p.avgEntryPrice ?? p.avg_entry_price ?? p.entryPrice, 0),
-          currentPrice: toNumber(p.currentPrice ?? p.current_price, 0),
-          marketValue: toNumber(p.marketValue ?? p.market_value, 0),
-          totalCost: toNumber(p.totalCost ?? p.total_cost, 0),
-          unrealizedPnl: toNumber(p.unrealizedPnl ?? p.totalPnl ?? p.total_pnl, 0),
-          unrealizedPnlPercent: toNumber(p.unrealizedPnlPercent ?? p.totalPnlPercent ?? p.total_pnl_percent, 0),
-          dailyChangePnl: toNumber(p.dailyChangePnl ?? p.todayPnl ?? p.today_pnl, 0),
-          dailyChangePercent: toNumber(p.dailyChangePercent ?? p.todayPnlPercent ?? p.pnlPercent, 0),
-          hasRealEntry: !!p.hasRealEntry,
-        }));
-
-        const normalizedOrders: ModalOrder[] = rawOrders.map((o: any) => ({
+        const normalizedOrders: ModalOrder[] = toArray(ordersResponse).map((o: any) => ({
           orderId: String(o.orderId ?? '—'),
           symbol: String(o.symbol ?? o.asset ?? '—'),
           side: String(o.side ?? '').toUpperCase(),
@@ -957,9 +924,61 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           time: toIso(o.time) ?? '',
           updateTime: toIso(o.updateTime ?? o.time) ?? '',
         }));
-        setOrdersSummary(ordersResponse?.summary ?? null);
 
-        const normalizedHistory: ModalTradeHistory[] = rawHistory.map((t: any) => ({
+        setModalOrders(normalizedOrders);
+        setOrdersSummary(ordersResponse?.summary ?? null);
+      } catch (err: any) {
+        if (!cancelled) setOrdersError(err?.message || "Failed to load orders");
+      } finally {
+        if (!cancelled) setOrdersLoading(false);
+      }
+    };
+
+    loadOrders();
+    return () => { cancelled = true; };
+  }, [showPositionsModal, isStocksConnection, ordersPeriod, ordersStartDate, ordersEndDate]);
+
+  // Leaderboard modal — only fetches /positions + /trade-history
+  useEffect(() => {
+    if (!showLeaderboardModal) return;
+    let cancelled = false;
+
+    const loadLeaderboard = async () => {
+      try {
+        setLeaderboardLoading(true);
+        setLeaderboardError(null);
+        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : "/binance-trading";
+
+        const historyParams = new URLSearchParams({ limit: '500' });
+        if (tradeHistoryPeriod !== 'all' && tradeHistoryPeriod !== 'custom') {
+          historyParams.set('period', tradeHistoryPeriod);
+        }
+        if (tradeHistoryPeriod === 'custom') {
+          if (tradeHistoryStartDate) historyParams.set('startTime', String(new Date(tradeHistoryStartDate).getTime()));
+          if (tradeHistoryEndDate) historyParams.set('endTime', String(new Date(tradeHistoryEndDate + 'T23:59:59').getTime()));
+        }
+
+        const [positionsResponse, historyResponse] = await Promise.all([
+          apiRequest<never, any>({ path: `${tradingApiBase}/positions`, method: "GET" }),
+          apiRequest<never, any>({ path: `${tradingApiBase}/trade-history?${historyParams.toString()}`, method: "GET" }),
+        ]);
+        if (cancelled) return;
+
+        const normalizedPositions: ModalPosition[] = toArray(positionsResponse).map((p: any) => ({
+          symbol: String(p.symbol ?? p.asset ?? '—'),
+          quantity: toNumber(p.quantity ?? p.qty, 0),
+          avgEntryPrice: toNumber(p.avgEntryPrice ?? p.avg_entry_price ?? p.entryPrice, 0),
+          currentPrice: toNumber(p.currentPrice ?? p.current_price, 0),
+          marketValue: toNumber(p.marketValue ?? p.market_value, 0),
+          totalCost: toNumber(p.totalCost ?? p.total_cost, 0),
+          unrealizedPnl: toNumber(p.unrealizedPnl ?? p.totalPnl ?? p.total_pnl, 0),
+          unrealizedPnlPercent: toNumber(p.unrealizedPnlPercent ?? p.totalPnlPercent ?? p.total_pnl_percent, 0),
+          dailyChangePnl: toNumber(p.dailyChangePnl ?? p.todayPnl ?? p.today_pnl, 0),
+          dailyChangePercent: toNumber(p.dailyChangePercent ?? p.todayPnlPercent ?? p.pnlPercent, 0),
+          hasRealEntry: !!p.hasRealEntry,
+        }));
+
+        const normalizedHistory: ModalTradeHistory[] = toArray(historyResponse).map((t: any) => ({
           orderId: String(t.orderId ?? '—'),
           symbol: String(t.symbol ?? t.asset ?? '—'),
           side: String(t.side ?? '').toUpperCase(),
@@ -979,25 +998,18 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         }));
 
         setModalPositions(normalizedPositions);
-        setModalOrders(normalizedOrders);
         setModalTradeHistory(normalizedHistory);
         setModalTradeSummary(historyResponse?.summary ?? null);
       } catch (err: any) {
-        if (cancelled) return;
-        setPositionsModalError(err?.message || "Failed to load position and leaderboard data");
+        if (!cancelled) setLeaderboardError(err?.message || "Failed to load leaderboard data");
       } finally {
-        if (!cancelled) {
-          setPositionsModalLoading(false);
-        }
+        if (!cancelled) setLeaderboardLoading(false);
       }
     };
 
-    loadModalData();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [showPositionsModal, showLeaderboardModal, isStocksConnection, tradeHistoryPeriod, tradeHistoryStartDate, tradeHistoryEndDate, ordersPeriod, ordersStartDate, ordersEndDate]);
+    loadLeaderboard();
+    return () => { cancelled = true; };
+  }, [showLeaderboardModal, isStocksConnection, tradeHistoryPeriod, tradeHistoryStartDate, tradeHistoryEndDate]);
 
   const ordersPending = useMemo(
     () => modalOrders.filter((o) => ["NEW", "PARTIALLY_FILLED", "PENDING", "PENDING_CANCEL"].includes(o.status)),
@@ -1939,15 +1951,6 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             <div className="flex-1 min-h-0 flex flex-col">
               {/* Scrollable: Orders Table */}
               <div className="flex-1 overflow-y-auto">
-                {positionsModalLoading && (
-                  <div className="text-xs text-slate-300 px-4 py-2">Loading orders...</div>
-                )}
-                {positionsModalError && (
-                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300 mx-4 my-2">
-                    {positionsModalError}
-                  </div>
-                )}
-
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead className="sticky top-0 bg-[--color-surface] z-10">
@@ -1963,6 +1966,23 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/50">
+                      {ordersLoading && (
+                        <tr><td colSpan={8} className="h-[60vh]">
+                          <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#fc4f02] border-r-transparent mb-3"></div>
+                              <p className="text-sm text-slate-400">Loading orders...</p>
+                            </div>
+                          </div>
+                        </td></tr>
+                      )}
+                      {ordersError && (
+                        <tr><td colSpan={8} className="h-[60vh]">
+                          <div className="flex items-center justify-center h-full">
+                            <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{ordersError}</div>
+                          </div>
+                        </td></tr>
+                      )}
                       {pagedPositionsTabRows.map((order, i) => (
                         <tr key={`${order.orderId}-${i}`} className="hover:bg-slate-800/30 transition-colors">
                           <td className="py-2.5 px-4 font-semibold text-white">{order.symbol}</td>
@@ -1999,7 +2019,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       ))}
                     </tbody>
                   </table>
-                  {!positionsModalLoading && pagedPositionsTabRows.length === 0 && (
+                  {!ordersLoading && pagedPositionsTabRows.length === 0 && (
                     <div className="py-8 text-center text-slate-400 text-sm">No orders found</div>
                   )}
                 </div>
@@ -2088,9 +2108,6 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 <>
                   {/* Fixed: Stats + Filter Tabs */}
                   <div className="flex-shrink-0 px-4 sm:px-6 py-2 space-y-2 border-b border-slate-700 bg-[--color-surface]/95 backdrop-blur">
-                    {positionsModalLoading && (
-                      <div className="text-xs text-slate-300">Loading trade history...</div>
-                    )}
                     <div className="grid grid-cols-3 gap-2">
                       <div className="rounded-lg border border-slate-700 bg-[--color-surface]/70 px-3 py-2 text-center">
                         <div className="text-slate-400 text-xs">Total Trades</div>
@@ -2169,6 +2186,19 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
                   {/* Scrollable: Trade List */}
                   <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-2 space-y-2">
+                    {leaderboardLoading && (
+                      <div className="flex items-center justify-center h-full min-h-[40vh]">
+                        <div className="text-center">
+                          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#fc4f02] border-r-transparent mb-3"></div>
+                          <p className="text-sm text-slate-400">Loading trade history...</p>
+                        </div>
+                      </div>
+                    )}
+                    {leaderboardError && (
+                      <div className="flex items-center justify-center h-full min-h-[40vh]">
+                        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">{leaderboardError}</div>
+                      </div>
+                    )}
                     {pagedHistoryRows.map((trade, idx) => (
                       <div key={`${trade.orderId}-${idx}`} className={`bg-slate-800/30 rounded-lg px-4 py-3 border-l-4 ${
                         trade.side === 'BUY' ? 'border-green-500' : trade.profitLoss >= 0 ? 'border-green-500' : 'border-red-500'
@@ -2224,7 +2254,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                         </div>
                       </div>
                     ))}
-                    {!positionsModalLoading && pagedHistoryRows.length === 0 && (
+                    {!leaderboardLoading && pagedHistoryRows.length === 0 && (
                       <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4 text-center text-slate-400">
                         No trade history found
                       </div>
@@ -2355,7 +2385,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                         </div>
                       );
                     })}
-                    {!positionsModalLoading && pagedLeaderboardPositions.length === 0 && (
+                    {!leaderboardLoading && pagedLeaderboardPositions.length === 0 && (
                       <div className="rounded-lg border border-slate-700 bg-slate-800/30 p-4 text-center text-slate-400">
                         No open positions found
                       </div>
