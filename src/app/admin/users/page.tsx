@@ -9,6 +9,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -129,6 +131,30 @@ export default function AdminUsersPage() {
     };
   }, [analytics]);
 
+  const planChartData = useMemo(
+    () => [
+      {
+        name: "FREE",
+        value: analytics?.plan_distribution.FREE ?? 0,
+        percent: planPercentages.free,
+        color: "#94a3b8",
+      },
+      {
+        name: "PRO",
+        value: analytics?.plan_distribution.PRO ?? 0,
+        percent: planPercentages.pro,
+        color: "#3b82f6",
+      },
+      {
+        name: "ELITE",
+        value: analytics?.plan_distribution.ELITE ?? 0,
+        percent: planPercentages.elite,
+        color: "#fc4f02",
+      },
+    ],
+    [analytics, planPercentages]
+  );
+
   if (loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -180,25 +206,66 @@ export default function AdminUsersPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-4 lg:col-span-2">
           <h3 className="text-base font-semibold text-white">Plan Distribution</h3>
-          <div className="mt-4 space-y-3 text-sm">
-            <ProgressRow
-              label="FREE"
-              value={analytics?.plan_distribution.FREE ?? 0}
-              percent={planPercentages.free}
-              barClassName="bg-gradient-to-r from-slate-400 to-slate-500"
-            />
-            <ProgressRow
-              label="PRO"
-              value={analytics?.plan_distribution.PRO ?? 0}
-              percent={planPercentages.pro}
-              barClassName="bg-gradient-to-r from-blue-400 to-blue-500"
-            />
-            <ProgressRow
-              label="ELITE"
-              value={analytics?.plan_distribution.ELITE ?? 0}
-              percent={planPercentages.elite}
-              barClassName="bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
-            />
+          <div className="mt-4 grid gap-5 md:grid-cols-[240px,1fr] md:items-center">
+            <div className="relative mx-auto h-[220px] w-full max-w-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={planChartData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={88}
+                    paddingAngle={3}
+                    stroke="rgba(15,23,42,0.55)"
+                    strokeWidth={2}
+                  >
+                    {planChartData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#111827",
+                      border: "1px solid rgba(148,163,184,0.24)",
+                      borderRadius: "10px",
+                      color: "#fff",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-xs uppercase tracking-wide text-slate-400">
+                  Total Users
+                </span>
+                <span className="text-2xl font-bold text-white">
+                  {analytics?.summary.total_users ?? 0}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {planChartData.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-sm font-medium text-white">{item.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-white">{item.percent}%</p>
+                    <p className="text-xs text-slate-400">{item.value} users</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -495,33 +562,6 @@ function StatCard({
     <div className={`rounded-xl border bg-gradient-to-br p-4 ${toneMap[tone]}`}>
       <p className="text-xs text-slate-300">{label}</p>
       <p className="mt-1 text-2xl font-bold text-white">{value}</p>
-    </div>
-  );
-}
-
-function ProgressRow({
-  label,
-  value,
-  percent,
-  barClassName,
-}: {
-  label: string;
-  value: number;
-  percent: number;
-  barClassName: string;
-}) {
-  return (
-    <div>
-      <div className="mb-1 flex items-center justify-between text-slate-300">
-        <span>{label}</span>
-        <span>{value}</span>
-      </div>
-      <div className="h-2 rounded-full bg-slate-700/40">
-        <div
-          className={`h-2 rounded-full ${barClassName}`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
     </div>
   );
 }
