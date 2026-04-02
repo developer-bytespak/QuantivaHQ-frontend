@@ -69,17 +69,12 @@ export function ProfilePage() {
             <div className="space-y-3 sm:space-y-4">
               <div>
                 <p className="text-xs sm:text-sm text-white/80 mb-1">Holding value</p>
-                <div className="flex items-baseline gap-2 sm:gap-3">
-                  <p className="text-3xl sm:text-4xl font-bold text-white">${formatNumber(holdingValue)}</p>
-                  <span className={`text-base sm:text-lg font-semibold ${portfolioChange >= 0 ? "text-green-300" : "text-red-300"}`}>
-                    {portfolioChange >= 0 ? "+" : ""}{portfolioChange.toFixed(2)}%
-                  </span>
-                </div>
+                <p className="text-3xl sm:text-4xl font-bold text-white">${formatNumber(holdingValue)}</p>
               </div>
               <div className="grid grid-cols-2 gap-3 sm:gap-6 mt-4 sm:mt-6">
                 <div>
                   <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value</p>
-                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedValue)}</p>
+                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(holdingValue - availableUSD)}</p>
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD</p>
