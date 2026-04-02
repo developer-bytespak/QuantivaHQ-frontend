@@ -44,10 +44,10 @@ const formatNumberCompact = (v: any) => {
 const formatPercent = (v: any) => {
   if (v === null || v === undefined || v === '—' || v === '') return '—';
   const s = String(v).trim();
-  if (s.endsWith('%')) return s;
-  const n = Number(s);
+  const normalized = s.endsWith('%') ? s.slice(0, -1).trim() : s;
+  const n = Number(normalized);
   if (isNaN(n)) return s;
-  return `${n}%`;
+  return `${n.toFixed(1)}%`;
 };
 
 const formatQuantity = (v: number) => {
@@ -365,7 +365,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         takeProfit1: item.take_profit || item.takeProfit || "—",
         target: item.target || "",
         insights: item.insights || item.reasons || [],
-        profit: priceChange ? `${Number(priceChange).toFixed(2)}%` : "0%",
+        profit: priceChange ? `${Number(priceChange).toFixed(1)}%` : "0.0%",
         profitValue: Number(priceChange ?? 0) || 0,
         volume: volume ? String(Number(volume).toLocaleString()) : "—",
         volumeValue: Number(volume ?? 0) || 0,
@@ -775,7 +775,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         takeProfitPrice: takeProfitPrice ? String(takeProfitPrice) : "—",
         target: "",
         insights: explanationText ? [explanationText] : [],
-        profit: realtimePriceChange ? `${Number(realtimePriceChange).toFixed(2)}%` : "0%",
+        profit: realtimePriceChange ? `${Number(realtimePriceChange).toFixed(1)}%` : "0.0%",
         profitValue: Number(realtimePriceChange ?? 0) || 0,
         volume: realtimeVolume ? String(Number(realtimeVolume).toLocaleString()) : "—",
         volumeValue: Number(realtimeVolume ?? 0) || 0,
