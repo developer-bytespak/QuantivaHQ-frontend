@@ -68,7 +68,7 @@ export function OptionsChainTable({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
         <span className="ml-3 text-sm text-slate-400">Loading options chain…</span>
       </div>
     );
@@ -102,7 +102,7 @@ export function OptionsChainTable({
               onClick={() => setFilterType(t)}
               className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                 filterType === t
-                  ? "bg-[#fc4f02]/15 text-[#fc4f02]"
+                  ? "bg-[var(--primary)]/15 text-[var(--primary)]"
                   : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
               }`}
             >

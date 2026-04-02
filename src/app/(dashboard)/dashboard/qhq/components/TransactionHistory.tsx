@@ -65,10 +65,10 @@ export function TransactionHistory() {
   const totalPages = Math.ceil(transactionTotal / limit);
 
   return (
-    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-rgb),0.06)]">
       <div className="flex items-center gap-3 mb-4 sm:mb-5">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center shrink-0">
+          <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
@@ -88,8 +88,8 @@ export function TransactionHistory() {
         </div>
       ) : transactions.length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#fc4f02]/10 to-[#fc4f02]/5 border border-[#fc4f02]/10 flex items-center justify-center">
-            <svg className="w-8 h-8 text-[#fc4f02]/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary)]/5 border border-[var(--primary)]/10 flex items-center justify-center">
+            <svg className="w-8 h-8 text-[var(--primary)]/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -128,7 +128,7 @@ export function TransactionHistory() {
                       href={`https://basescan.org/tx/${tx.tx_hash}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] text-[#fc4f02] bg-[#fc4f02]/10 px-2 py-0.5 rounded-full border border-[#fc4f02]/20 hover:bg-[#fc4f02]/20 transition-colors"
+                      className="text-[10px] text-[var(--primary)] bg-[var(--primary)]/10 px-2 py-0.5 rounded-full border border-[var(--primary)]/20 hover:bg-[var(--primary)]/20 transition-colors"
                     >
                       On-chain
                     </a>
@@ -143,7 +143,7 @@ export function TransactionHistory() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-1.5 text-sm bg-gradient-to-br from-white/[0.07] to-transparent text-slate-400 rounded-lg border border-[--color-border] disabled:opacity-40 hover:text-white hover:border-[#fc4f02]/50 transition-all duration-200"
+                className="px-4 py-1.5 text-sm bg-gradient-to-br from-white/[0.07] to-transparent text-slate-400 rounded-lg border border-[--color-border] disabled:opacity-50 hover:text-white hover:border-[var(--primary)]/50 transition-all duration-200"
               >
                 Prev
               </button>
@@ -153,7 +153,7 @@ export function TransactionHistory() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-4 py-1.5 text-sm bg-gradient-to-br from-white/[0.07] to-transparent text-slate-400 rounded-lg border border-[--color-border] disabled:opacity-40 hover:text-white hover:border-[#fc4f02]/50 transition-all duration-200"
+                className="px-4 py-1.5 text-sm bg-gradient-to-br from-white/[0.07] to-transparent text-slate-400 rounded-lg border border-[--color-border] disabled:opacity-50 hover:text-white hover:border-[var(--primary)]/50 transition-all duration-200"
               >
                 Next
               </button>

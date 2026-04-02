@@ -109,7 +109,7 @@ export function ExpiryTabs({ expiryDates, selectedExpiry, onSelect }: ExpiryTabs
               onClick={() => onSelect(expiry)}
               className={`group relative flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl px-3.5 py-2 transition-all duration-150 ${
                 isActive
-                  ? "bg-[#fc4f02]/10 shadow-[inset_0_0_0_1px_rgba(252,79,2,0.3)]"
+                  ? "bg-[var(--primary)]/10 shadow-[inset_0_0_0_1px_rgba(var(--primary-rgb),,0.3)]"
                   : "hover:bg-white/[0.04]"
               }`}
             >
@@ -124,7 +124,7 @@ export function ExpiryTabs({ expiryDates, selectedExpiry, onSelect }: ExpiryTabs
               {/* Date */}
               <span
                 className={`text-xs font-semibold leading-tight ${
-                  isActive ? "text-[#fc4f02]" : "text-slate-300 group-hover:text-slate-100"
+                  isActive ? "text-[var(--primary)]" : "text-slate-300 group-hover:text-slate-100"
                 }`}
               >
                 {month} {day}
@@ -133,7 +133,7 @@ export function ExpiryTabs({ expiryDates, selectedExpiry, onSelect }: ExpiryTabs
               {/* DTE badge */}
               <span
                 className={`text-[10px] font-medium leading-tight ${
-                  isActive ? "text-[#fc4f02]/70" : getDteColor(days)
+                  isActive ? "text-[var(--primary)]/70" : getDteColor(days)
                 }`}
               >
                 {getDteLabel(days)}
@@ -141,7 +141,7 @@ export function ExpiryTabs({ expiryDates, selectedExpiry, onSelect }: ExpiryTabs
 
               {/* Active indicator bar */}
               {isActive && (
-                <div className="absolute -bottom-px left-1/2 h-[2px] w-5 -translate-x-1/2 rounded-full bg-[#fc4f02]" />
+                <div className="absolute -bottom-px left-1/2 h-[2px] w-5 -translate-x-1/2 rounded-full bg-[var(--primary)]" />
               )}
             </button>
           );

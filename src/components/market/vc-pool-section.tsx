@@ -116,19 +116,19 @@ export function VCPoolSection() {
               <button
                 type="button"
                 onClick={() => router.push("/dashboard/vc-pool/my-submissions")}
-                className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 My submissions
               </button>
               <button
                 onClick={() => router.push("/dashboard/vc-pool/transaction")}
-                className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 Transactions
               </button>
               <button
                 onClick={() => router.push("/dashboard/vc-pool/my-pools")}
-                className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 My pools
               </button>
@@ -139,7 +139,7 @@ export function VCPoolSection() {
         {canAccessVCPool && (
           <>
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-[#fc4f02]/30 to-[#fda300]/20 p-4">
+              <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-[var(--primary)]/30 to-[var(--primary-light)]/20 p-4">
                 <p className="mb-1 text-xs text-slate-200/80">
                   Open pools available
                 </p>
@@ -165,7 +165,7 @@ export function VCPoolSection() {
 
             {loading && (
               <div className="flex items-center gap-3 rounded-xl border border-[--color-border] bg-[--color-surface] px-4 py-3 text-sm text-slate-300">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
                 Loading pools…
               </div>
             )}
@@ -205,7 +205,7 @@ export function VCPoolSection() {
                     <Link
                       key={pool.pool_id}
                       href={`/dashboard/vc-pool/${pool.pool_id}`}
-                      className="group block w-full rounded-2xl border border-[--color-border] bg-gradient-to-b from-[--color-surface] to-black/60 p-5 text-left shadow-sm hover:border-[#fc4f02]/70 hover:shadow-[0_0_40px_rgba(252,79,2,0.25)] transition-all"
+                      className="group block w-full rounded-2xl border border-[--color-border] bg-gradient-to-b from-[--color-surface] to-black/60 p-5 text-left shadow-sm hover:border-[var(--primary)]/70 hover:shadow-[0_0_40px_rgba(var(--primary-rgb),0.25)] transition-all"
                     >
                       {/* Header: name + min investment + fee */}
                       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -249,7 +249,7 @@ export function VCPoolSection() {
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                            className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -300,7 +300,7 @@ export function VCPoolSection() {
                             </button>
                           )}
                         </div>
-                        <span className="mt-2 flex h-9 w-full items-center justify-center rounded-full bg-[#fc4f02] text-center text-xs font-semibold text-white group-hover:brightness-110 transition-colors">
+                        <span className="mt-2 flex h-9 w-full items-center justify-center rounded-full bg-[var(--primary)] text-center text-xs font-semibold text-white group-hover:brightness-110 transition-colors">
                           View details &amp; join
                         </span>
                       </div>

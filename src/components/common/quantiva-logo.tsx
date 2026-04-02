@@ -15,7 +15,7 @@ export function QuantivaLogo({
   // If image fails to load, show a placeholder
   if (imageError) {
     return (
-      <div className={`${className || ""} flex items-center justify-center bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 rounded-lg ${disableFadeIn ? "" : "animate-fade-in"}`}>
+      <div className={`${className || ""} flex items-center justify-center bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 rounded-lg ${disableFadeIn ? "" : "animate-fade-in"}`}>
         <span className="text-white font-bold text-xs">Q</span>
       </div>
     );

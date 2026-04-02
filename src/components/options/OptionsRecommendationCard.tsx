@@ -111,7 +111,7 @@ export function OptionsRecommendationCard({
 
       {/* Action hint */}
       <div className="mt-3 flex items-center justify-end">
-        <span className="text-[10px] font-medium text-[#fc4f02] opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="text-[10px] font-medium text-[var(--primary)] opacity-0 transition-opacity group-hover:opacity-100">
           Click to pre-fill order →
         </span>
       </div>
@@ -135,7 +135,7 @@ export function OptionsRecommendationList({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
         <span className="ml-3 text-sm text-slate-400">Generating AI recommendations…</span>
       </div>
     );

@@ -35,7 +35,7 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}>
         {title}
-        <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
+        <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent"> {titleHighlight}</span>
       </h2>
       <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 px-4">
         {description}
@@ -84,7 +84,7 @@ function PricingCard({ tier, delay, index, isCurrentPlan }: { tier: PricingTier;
       {/* Popular Badge */}
       {tier.popular && (
         <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10">
-          <span className="inline-block bg-[#fc4f02] text-white text-[10px] font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">
+          <span className="inline-block bg-[var(--primary)] text-white text-[10px] font-semibold px-2.5 py-0.5 rounded uppercase tracking-wide">
             Popular
           </span>
         </div>
@@ -102,11 +102,11 @@ function PricingCard({ tier, delay, index, isCurrentPlan }: { tier: PricingTier;
       <div
         className={`relative rounded-lg border-2 bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 backdrop-blur-xl p-5 h-full flex flex-col transition-all duration-200 ${
           tier.popular || isCurrentPlan
-            ? "border-[#fc4f02]/60"
+            ? "border-[var(--primary)]/60"
             : "border-[--color-border]"
         } ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        } hover:border-[#fc4f02]/60`}
+        } hover:border-[var(--primary)]/60`}
         style={{
           transitionDelay: isVisible ? `${index * 100}ms` : "0ms",
         }}
@@ -163,10 +163,10 @@ function PricingCard({ tier, delay, index, isCurrentPlan }: { tier: PricingTier;
             disabled={isCheckingAuth || isCurrentPlan}
             className={`w-full rounded-md px-4 py-2.5 text-xs font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
               tier.popular && !isCurrentPlan
-                ? "bg-[#fc4f02] text-white hover:bg-[#e04502]"
+                ? "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
                 : isCurrentPlan
                 ? "bg-green-500 text-white cursor-not-allowed"
-                : "border border-[--color-border] bg-[--color-surface] text-white hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt]"
+                : "border border-[--color-border] bg-[--color-surface] text-white hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt]"
             }`}
           >
             {isCheckingAuth 
@@ -236,7 +236,7 @@ export function PricingSection() {
       description: "Perfect for individual traders",
       popular: true,
       features: getTierFeatures(PlanTier.PRO),
-      gradient: "from-[#fc4f02] to-[#fda300]",
+      gradient: "from-[var(--primary)] to-[var(--primary-light)]",
     },
     {
       name: "ELITE",
@@ -279,7 +279,7 @@ export function PricingSection() {
                 onClick={() => setBillingPeriod(option.value)}
                 className={`px-4 py-2 text-sm font-medium transition-all rounded-md ${
                   billingPeriod === option.value
-                    ? "bg-[#fc4f02] text-white"
+                    ? "bg-[var(--primary)] text-white"
                     : "text-slate-400 hover:text-slate-200"
                 }`}
               >
@@ -316,7 +316,7 @@ export function PricingSection() {
               const element = document.getElementById("contact");
               if (element) element.scrollIntoView({ behavior: "smooth" });
             }}
-            className="text-[#fc4f02] hover:text-[#e04502] font-semibold transition-colors cursor-pointer text-xs sm:text-sm"
+            className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-semibold transition-colors cursor-pointer text-xs sm:text-sm"
           >
             Contact Sales →
           </button>

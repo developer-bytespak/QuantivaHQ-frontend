@@ -27,8 +27,8 @@ function EliteGate() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <div className="max-w-md rounded-2xl border border-white/[0.06] bg-[#12121a] p-8 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fc4f02]/10">
-          <svg className="h-8 w-8 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--primary)]/10">
+          <svg className="h-8 w-8 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
@@ -38,7 +38,7 @@ function EliteGate() {
         </p>
         <button
           onClick={() => setShowUpgradeModal(true)}
-          className="rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-105"
+          className="rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
         >
           Upgrade to ELITE
         </button>
@@ -355,13 +355,13 @@ export default function OptionsPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`relative px-4 py-2.5 text-sm font-medium transition-colors ${
                 activeTab === tab.key
-                  ? "text-[#fc4f02]"
+                  ? "text-[var(--primary)]"
                   : "text-slate-400 hover:text-slate-200"
               }`}
             >
               {tab.label}
               {activeTab === tab.key && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[#fc4f02]" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-[var(--primary)]" />
               )}
             </button>
           ))}
@@ -524,7 +524,7 @@ function CoinSelector({
                 }}
                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-colors ${
                   selected === u.symbol
-                    ? "bg-[#fc4f02]/10 text-[#fc4f02]"
+                    ? "bg-[var(--primary)]/10 text-[var(--primary)]"
                     : "text-slate-300 hover:bg-white/[0.04]"
                 }`}
               >
@@ -533,7 +533,7 @@ function CoinSelector({
                   <span className="text-[10px] text-slate-500">{u.contractCount} contracts</span>
                 </div>
                 {selected === u.symbol && (
-                  <svg className="h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <svg className="h-4 w-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}

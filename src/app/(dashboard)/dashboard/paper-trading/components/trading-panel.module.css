@@ -54,7 +54,7 @@
 .section input:focus,
 .section select:focus {
   outline: none;
-  border-color: #fc4f02;
+  border-color: var(--primary);
   background-color: rgba(0, 0, 0, 0.5);
 }
 

@@ -432,7 +432,7 @@ export default function SignUpPage() {
 
       {/* Forgot password popup */}
       {showForgotPopup && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-xl bg-[--color-surface] border border-[--color-border] shadow-xl p-5 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-white">
@@ -461,13 +461,13 @@ export default function SignUpPage() {
                   onChange={(e) => setForgotEmail(e.target.value)}
                   placeholder="Enter your email"
                   disabled={forgotLoading}
-                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-4"
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] disabled:opacity-50 mb-4"
                 />
                 <button
                   type="button"
                   onClick={handleForgotSendOtp}
                   disabled={forgotLoading || !forgotEmail.trim()}
-                  className="w-full rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {forgotLoading ? "Checking..." : "Send OTP"}
                 </button>
@@ -484,13 +484,13 @@ export default function SignUpPage() {
                   placeholder="Enter 6-digit OTP"
                   maxLength={6}
                   disabled={forgotLoading}
-                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-4 text-center tracking-widest"
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] disabled:opacity-50 mb-4 text-center tracking-widest"
                 />
                 <button
                   type="button"
                   onClick={handleForgotVerifyOtp}
                   disabled={forgotLoading || forgotOtp.trim().length !== 6}
-                  className="w-full rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {forgotLoading ? "Verifying..." : "Verify OTP"}
                 </button>
@@ -506,7 +506,7 @@ export default function SignUpPage() {
                   onChange={(e) => setForgotNewPassword(e.target.value)}
                   placeholder="Min 8 characters"
                   disabled={forgotLoading}
-                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-3"
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] disabled:opacity-50 mb-3"
                 />
                 <label className="block text-xs font-medium text-slate-300 mb-2">Confirm password</label>
                 <input
@@ -515,13 +515,13 @@ export default function SignUpPage() {
                   onChange={(e) => setForgotConfirmPassword(e.target.value)}
                   placeholder="Confirm new password"
                   disabled={forgotLoading}
-                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50 mb-4"
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)] disabled:opacity-50 mb-4"
                 />
                 <button
                   type="button"
                   onClick={handleForgotChangePassword}
                   disabled={forgotLoading}
-                  className="w-full rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium py-2.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {forgotLoading ? "Updating..." : "Change password"}
                 </button>
@@ -538,9 +538,9 @@ export default function SignUpPage() {
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -584,8 +584,8 @@ export default function SignUpPage() {
           <div className="flex flex-col-reverse lg:flex-row lg:items-center lg:gap-8 animate-text-enter" style={{ animationDelay: "0.6s" }}>
             {/* Left Side: Tabs and OAuth (shows second on mobile, first on desktop) */}
             <div className="flex-1 flex items-center justify-center">
-              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[var(--primary)]/30 hover:shadow-[rgba(var(--primary-rgb),0.1)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/5 via-transparent to-[var(--primary-light)]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10">
                   {/* Tabs */}
@@ -600,7 +600,7 @@ export default function SignUpPage() {
                       }}
                       className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                         activeTab === "signup"
-                          ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                          ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                           : "text-slate-400 hover:text-white"
                       }`}
                     >
@@ -616,7 +616,7 @@ export default function SignUpPage() {
                       }}
                       className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                         activeTab === "login"
-                          ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                          ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                           : "text-slate-400 hover:text-white"
                       }`}
                     >
@@ -660,8 +660,8 @@ export default function SignUpPage() {
 
             {/* Right Side: Email Form (shows first on mobile, second on desktop) */}
             <div className="flex-1 flex items-center justify-center">
-              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[var(--primary)]/30 hover:shadow-[rgba(var(--primary-rgb),0.1)]">
+                <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/5 via-transparent to-[var(--primary-light)]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 
                 <div className="relative z-10">
                   {/* Email Form */}
@@ -682,7 +682,7 @@ export default function SignUpPage() {
                               e.preventDefault();
                             }
                           }}
-                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                           placeholder="johndoe"
                           autoCapitalize="none"
                           autoCorrect="off"
@@ -699,7 +699,7 @@ export default function SignUpPage() {
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                           placeholder="you@example.com"
                           required
                         />
@@ -717,7 +717,7 @@ export default function SignUpPage() {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                        className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                         placeholder="you@example.com"
                         required
                       />
@@ -735,7 +735,7 @@ export default function SignUpPage() {
                           type={showPassword ? "text" : "password"}
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                          className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                           placeholder="••••••••"
                           required
                         />
@@ -747,7 +747,7 @@ export default function SignUpPage() {
                             onMouseLeave={() => setShowPassword(false)}
                             onTouchStart={() => setShowPassword(true)}
                             onTouchEnd={() => setShowPassword(false)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[#fc4f02] transition-colors cursor-pointer"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[var(--primary)] transition-colors cursor-pointer"
                             aria-label="Hold to show password"
                           >
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -772,7 +772,7 @@ export default function SignUpPage() {
                               type={showPassword ? "text" : "password"}
                               value={password}
                               onChange={(e) => setPassword(e.target.value)}
-                              className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                              className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                               placeholder="••••••••"
                               required
                             />
@@ -784,7 +784,7 @@ export default function SignUpPage() {
                                 onMouseLeave={() => setShowPassword(false)}
                                 onTouchStart={() => setShowPassword(true)}
                                 onTouchEnd={() => setShowPassword(false)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[#fc4f02] transition-colors cursor-pointer"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[var(--primary)] transition-colors cursor-pointer"
                                 aria-label="Hold to show password"
                               >
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -805,7 +805,7 @@ export default function SignUpPage() {
                               type={showConfirmPassword ? "text" : "password"}
                               value={confirmPassword}
                               onChange={(e) => setConfirmPassword(e.target.value)}
-                              className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                              className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 pr-10 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                               placeholder="••••••••"
                               required={activeTab === "signup"}
                             />
@@ -817,7 +817,7 @@ export default function SignUpPage() {
                                 onMouseLeave={() => setShowConfirmPassword(false)}
                                 onTouchStart={() => setShowConfirmPassword(true)}
                                 onTouchEnd={() => setShowConfirmPassword(false)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[#fc4f02] transition-colors cursor-pointer"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white active:text-[var(--primary)] transition-colors cursor-pointer"
                                 aria-label="Hold to show password"
                               >
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -834,14 +834,14 @@ export default function SignUpPage() {
                     {activeTab === "login" && (
                       <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2 text-xs text-slate-400">
-                          <input type="checkbox" className="rounded border-[--color-border] bg-[--color-surface] text-[#fc4f02] focus:ring-[#fc4f02]" />
+                          <input type="checkbox" className="rounded border-[--color-border] bg-[--color-surface] text-[var(--primary)] focus:ring-[var(--primary)]" />
                           <span>Remember me</span>
                         </label>
                         {showForgotPasswordLink && (
                           <button
                             type="button"
                             onClick={openForgotPopup}
-                            className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors"
+                            className="text-xs text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors"
                           >
                             Forgot password?
                           </button>
@@ -863,7 +863,7 @@ export default function SignUpPage() {
                       <button
                         type="submit"
                         disabled={isLoading}
-                        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
                     <span className="relative z-10 flex items-center justify-center gap-2">
                       {isLoading ? (
@@ -892,11 +892,11 @@ export default function SignUpPage() {
                   {activeTab === "signup" && (
                     <p className="mt-4 text-center text-[10px] text-slate-400">
                       By signing up, you agree to our{" "}
-                      <a href="#" className="text-[#fc4f02] hover:text-[#fda300] transition-colors">
+                      <a href="#" className="text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors">
                         Terms of Service
                       </a>{" "}
                       and{" "}
-                      <a href="#" className="text-[#fc4f02] hover:text-[#fda300] transition-colors">
+                      <a href="#" className="text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors">
                         Privacy Policy
                       </a>
                     </p>

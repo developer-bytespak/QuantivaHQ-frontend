@@ -69,7 +69,7 @@ export function LockedFeatureOverlay({ featureName, requiredTier, message }: Loc
         {currentSubscription.tier !== PlanTier.ELITE && (
           <Link
             href="/dashboard/settings/subscription?tab=change"
-            className="inline-block px-6 py-2.5 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-semibold"
+            className="inline-block px-6 py-2.5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold"
           >
             Upgrade Now
           </Link>

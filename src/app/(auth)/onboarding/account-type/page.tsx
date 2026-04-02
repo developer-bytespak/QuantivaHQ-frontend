@@ -24,8 +24,8 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={`group relative overflow-hidden rounded-lg sm:rounded-xl border-2 transition-all duration-300 p-4 sm:p-5 md:p-6 lg:p-7 backdrop-blur text-left min-h-max ${isSelected
-          ? "border-[#fc4f02] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 shadow-2xl shadow-[#fc4f02]/30"
-          : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
+          ? "border-[var(--primary)] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 shadow-2xl shadow-[rgba(var(--primary-rgb),0.3)]"
+          : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[var(--primary)]/50 hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.2)]"
         }`}
       style={{ animationDelay: delay }}
     >
@@ -37,7 +37,7 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Selected indicator */}
       {isSelected && (
-        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 flex h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] shadow-lg shadow-[#fc4f02]/50">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 flex h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]">
           <svg className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-4 md:w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
@@ -46,7 +46,7 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
       {/* Content */}
       <div className="relative z-10">
-        <div className={`mb-3 sm:mb-4 md:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-110"
+        <div className={`mb-3 sm:mb-4 md:mb-4 flex h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 transition-transform duration-300 ${isSelected ? "scale-110" : "group-hover:scale-110"
           }`}>
           {icon}
         </div>
@@ -99,7 +99,7 @@ export default function AccountTypePage() {
       value: "crypto" as const,
       title: "Crypto",
       description: "Trade cryptocurrencies with AI-powered insights. Access real-time market data, sentiment analysis, and automated trading strategies for Bitcoin, Ethereum, and altcoins.",
-      gradient: "from-[#fc4f02] to-[#fda300]",
+      gradient: "from-[var(--primary)] to-[var(--primary-light)]",
       icon: (
         <div className="relative h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 flex items-center justify-center">
           {/* Circular golden background */}
@@ -152,9 +152,9 @@ export default function AccountTypePage() {
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}

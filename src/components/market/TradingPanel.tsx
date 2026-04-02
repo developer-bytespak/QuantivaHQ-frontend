@@ -218,9 +218,9 @@ export default function TradingPanel({
 
   if (canTrade === null) {
     return (
-      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <div className="flex items-center justify-center">
-          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
         </div>
       </div>
     );
@@ -228,7 +228,7 @@ export default function TradingPanel({
 
   if (canTrade === false) {
     return (
-      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <div className="rounded-lg border-l-4 border-yellow-500/50 bg-yellow-500/10 p-4">
           <p className="text-sm text-yellow-200">
             Trading is not enabled for your account. Please enable trading in your exchange connection settings.
@@ -334,12 +334,12 @@ export default function TradingPanel({
               onClick={() => setOrderType("MARKET")}
               className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 relative overflow-hidden group ${
                 orderType === "MARKET"
-                  ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-md shadow-[#fc4f02]/40 scale-105"
+                  ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-md shadow-[rgba(var(--primary-rgb),0.4)] scale-105"
                   : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
               {orderType === "MARKET" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-[#fc4f02] to-[#fda300] opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] opacity-0 group-hover:opacity-20 transition-opacity"></div>
               )}
               <span className="relative">Market</span>
             </button>
@@ -348,12 +348,12 @@ export default function TradingPanel({
               onClick={() => setOrderType("LIMIT")}
               className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-300 relative overflow-hidden group ${
                 orderType === "LIMIT"
-                  ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-md shadow-[#fc4f02]/40 scale-105"
+                  ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-md shadow-[rgba(var(--primary-rgb),0.4)] scale-105"
                   : "text-slate-400 hover:text-white hover:bg-white/5"
               }`}
             >
               {orderType === "LIMIT" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-[#fc4f02] to-[#fda300] opacity-0 group-hover:opacity-20 transition-opacity"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] opacity-0 group-hover:opacity-20 transition-opacity"></div>
               )}
               <span className="relative">Limit</span>
             </button>
@@ -375,13 +375,13 @@ export default function TradingPanel({
                 step="0.01"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="w-full rounded-lg bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 transition-all"
+                className="w-full rounded-lg bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all"
                 placeholder="0.00"
               />
               <button
                 type="button"
                 onClick={() => setPrice(currentPrice.toFixed(2))}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#fc4f02] hover:text-[#fda300] font-medium"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--primary)] hover:text-[var(--primary-light)] font-medium"
               >
                 Market
               </button>
@@ -402,7 +402,7 @@ export default function TradingPanel({
             step="0.00000001"
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="w-full rounded-lg bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 transition-all"
+            className="w-full rounded-lg bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all"
             placeholder="0.00"
             required
           />

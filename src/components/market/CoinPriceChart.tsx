@@ -337,7 +337,7 @@ export default function CoinPriceChart({
       />
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-[--color-surface]/60 rounded-xl">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
         </div>
       )}
     </div>

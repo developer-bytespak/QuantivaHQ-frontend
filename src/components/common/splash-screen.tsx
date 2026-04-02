@@ -48,9 +48,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -82,9 +82,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         {/* Loading animation */}
         <div className="animate-text-enter mt-8" style={{ animationDelay: "0.9s" }}>
           <div className="flex space-x-2">
-            <div className="h-2 w-2 rounded-full bg-[#fc4f02] animate-bounce" style={{ animationDelay: "0s" }} />
-            <div className="h-2 w-2 rounded-full bg-[#fc4f02] animate-bounce" style={{ animationDelay: "0.2s" }} />
-            <div className="h-2 w-2 rounded-full bg-[#fc4f02] animate-bounce" style={{ animationDelay: "0.4s" }} />
+            <div className="h-2 w-2 rounded-full bg-[var(--primary)] animate-bounce" style={{ animationDelay: "0s" }} />
+            <div className="h-2 w-2 rounded-full bg-[var(--primary)] animate-bounce" style={{ animationDelay: "0.2s" }} />
+            <div className="h-2 w-2 rounded-full bg-[var(--primary)] animate-bounce" style={{ animationDelay: "0.4s" }} />
           </div>
         </div>
       </div>

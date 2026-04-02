@@ -173,7 +173,7 @@ export function StockOrdersPanel({ onClose, refreshTrigger }: StockOrdersPanelPr
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
       <div className="w-full max-w-6xl max-h-[90vh] rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/50 shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-700/50 px-6 py-4">

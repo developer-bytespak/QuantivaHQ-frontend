@@ -115,12 +115,12 @@ export default function MySubmissionsPage() {
 
         <Link
           href="/dashboard/vc-pool"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"
         >
-          <svg className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-[var(--primary)] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span className="text-white/90 group-hover:text-[#fda300]">Back to VC pools</span>
+          <span className="text-white/90 group-hover:text-[var(--primary-light)]">Back to VC pools</span>
         </Link>
 
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -141,7 +141,7 @@ export default function MySubmissionsPage() {
           <button
             type="button"
             onClick={() => router.push("/dashboard/vc-pool/transactions")}
-            className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            className="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
           >
             Transaction history
           </button>
@@ -149,7 +149,7 @@ export default function MySubmissionsPage() {
 
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           </div>
         )}
 
@@ -172,7 +172,7 @@ export default function MySubmissionsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <p>No payment submissions yet.</p>
-            <Link href="/dashboard/vc-pool" className="mt-4 inline-block text-[#fc4f02] hover:underline font-medium">
+            <Link href="/dashboard/vc-pool" className="mt-4 inline-block text-[var(--primary)] hover:underline font-medium">
               Browse available pools
             </Link>
           </div>
@@ -183,7 +183,7 @@ export default function MySubmissionsPage() {
             {submissions.map((sub) => (
               <div
                 key={sub.submission_id}
-                className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 hover:border-[#fc4f02]/40 transition-colors"
+                className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 hover:border-[var(--primary)]/40 transition-colors"
               >
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
@@ -200,7 +200,7 @@ export default function MySubmissionsPage() {
                     <button
                       type="button"
                       onClick={() => router.push(`/dashboard/vc-pool/${sub.pool_id}`)}
-                      className="rounded-lg bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                      className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
                     >
                       View pool
                     </button>

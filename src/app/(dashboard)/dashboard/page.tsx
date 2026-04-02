@@ -530,22 +530,8 @@ export default function DashboardPage() {
     setOrdersPage(1);
   }, [actionOrders.length]);
 
-  // Holdings modal + pagination
+  // Holdings modal
   const [showHoldingsModal, setShowHoldingsModal] = useState(false);
-  const [holdingsPage, setHoldingsPage] = useState(1);
-  const HOLDINGS_PER_PAGE = 5;
-
-  const totalHoldingsPages = Math.max(1, Math.ceil((dashboardData?.positions?.length || 0) / HOLDINGS_PER_PAGE));
-
-  const paginatedHoldings = useMemo(() => {
-    if (!dashboardData || !dashboardData.positions) return [];
-    const start = (holdingsPage - 1) * HOLDINGS_PER_PAGE;
-    return dashboardData.positions.slice(start, start + HOLDINGS_PER_PAGE);
-  }, [dashboardData, holdingsPage]);
-
-  useEffect(() => {
-    setHoldingsPage(1);
-  }, [dashboardData?.positions?.length]);
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
@@ -565,7 +551,7 @@ export default function DashboardPage() {
               </p>
               <button
                 onClick={() => router.push("/onboarding/account-type")}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#fc4f02] hover:bg-[#ff5f12] text-white font-medium text-sm transition-colors duration-200"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium text-sm transition-colors duration-200"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -613,7 +599,7 @@ export default function DashboardPage() {
 
             {isLoading && !dashboardData ? (
               <div className="flex items-center justify-center py-6 sm:py-8">
-                <div className="h-6 sm:h-8 w-6 sm:w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                <div className="h-6 sm:h-8 w-6 sm:w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
               </div>
             ) : dashboardData ? (
               <div className="grid grid-cols-1 gap-2 sm:gap-4 sm:grid-cols-2">
@@ -665,9 +651,9 @@ export default function DashboardPage() {
                   {openOrders.length > 0 ? "Open limit & market orders" : "All exchange orders"}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 rounded-full bg-[#fc4f02]/10 border border-[#fc4f02]/20 px-3 py-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#fc4f02] animate-pulse"></span>
-                <span className="text-[10px] sm:text-xs font-medium text-[#fda300]">
+              <div className="flex items-center gap-1.5 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 px-3 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] animate-pulse"></span>
+                <span className="text-[10px] sm:text-xs font-medium text-[var(--primary-light)]">
                   {openOrders.length > 0 ? `${(openOrders || []).length} open` : `${(otherStatusOrders || []).length} orders`}
                 </span>
               </div>
@@ -692,7 +678,7 @@ export default function DashboardPage() {
                           <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                             order.side?.toLowerCase() === 'buy'
                               ? 'bg-green-500/15 text-green-400'
-                              : 'bg-[#fc4f02]/15 text-[#fda300]'
+                              : 'bg-[var(--primary)]/15 text-[var(--primary-light)]'
                           }`}>
                             {order.side?.toLowerCase() === 'buy' ? 'B' : 'S'}
                           </div>
@@ -702,7 +688,7 @@ export default function DashboardPage() {
                               <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                                 order.side?.toLowerCase() === 'buy'
                                   ? 'bg-green-500/15 text-green-400'
-                                  : 'bg-[#fc4f02]/15 text-[#fda300]'
+                                  : 'bg-[var(--primary)]/15 text-[var(--primary-light)]'
                               }`}>{order.side?.toUpperCase()}</span>
                               <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-400 font-medium hidden sm:inline">{order.type || 'LIMIT'}</span>
                             </div>
@@ -759,14 +745,14 @@ export default function DashboardPage() {
           {/* Holdings & Market */}
           <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur">
             <div className="relative p-4 sm:p-6 pb-3 sm:pb-4">
-              <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[var(--primary)]/30"></div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                 <h2 className="text-base sm:text-lg font-semibold text-white">Holdings & Market</h2>
                 <div className="flex gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
                   <button
                     onClick={() => setActiveTab("holdings")}
                     className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all ${activeTab === "holdings"
-                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                       : "text-slate-400 hover:text-white"
                       }`}
                   >
@@ -775,7 +761,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => setActiveTab("market")}
                     className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all ${activeTab === "market"
-                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                       : "text-slate-400 hover:text-white"
                       }`}
                   >
@@ -784,10 +770,10 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="overflow-x-auto p-3 sm:p-6">
+            <div className="overflow-hidden p-3 sm:p-6">
               {activeTab === "holdings" ? (
-              <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-              <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
+              <div className="overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm min-w-[500px] sm:min-w-0">
                 <thead>
                   <tr className="border-b border-white/[0.06]">
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-left uppercase tracking-wider">Asset</th>
@@ -803,7 +789,7 @@ export default function DashboardPage() {
                     <tr>
                       <td colSpan={6} className="py-6 sm:py-8 text-center">
                         <div className="flex items-center justify-center">
-                          <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                          <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
                         </div>
                       </td>
                     </tr>
@@ -847,7 +833,7 @@ export default function DashboardPage() {
                   <div className="mt-3 pt-2 sm:pt-4 text-center">
                     <button
                       onClick={() => setShowHoldingsModal(true)}
-                      className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105"
+                      className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02]"
                     >
                       View More
                     </button>
@@ -862,7 +848,7 @@ export default function DashboardPage() {
                     stocksMarketLoading ? (
                       <div className="py-8 text-center">
                         <div className="flex items-center justify-center">
-                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
                         </div>
                       </div>
                     ) : stocksMarketError ? (
@@ -871,7 +857,7 @@ export default function DashboardPage() {
                           <p className="text-sm text-red-300 mb-2">{stocksMarketError}</p>
                           <button
                             onClick={() => window.location.reload()}
-                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm font-medium hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)] transition-all"
                           >
                             Retry
                           </button>
@@ -879,8 +865,8 @@ export default function DashboardPage() {
                       </div>
                     ) : stocksMarketData && stocksMarketData.length > 0 ? (
                       <>
-                        <div className="sm:w-full sm:-ml-6 overflow-x-auto sm:overflow-x-visible -mx-4 sm:mx-0 px-4 sm:px-0">
-                          <table className="w-full table-auto min-w-[600px] sm:min-w-0">
+                        <div className="w-full overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                          <table className="w-full table-auto min-w-[500px] sm:min-w-0">
                             <colgroup>
                               <col style={{ width: '8%' }} />
                               <col style={{ width: '22%' }} />
@@ -929,7 +915,7 @@ export default function DashboardPage() {
                         <div className="pt-2 sm:pt-4 text-center">
                           <button
                             onClick={() => router.push("/dashboard/market")}
-                            className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105"
+                            className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02]"
                           >
                             View More
                           </button>
@@ -945,7 +931,7 @@ export default function DashboardPage() {
                     isLoadingMarket ? (
                       <div className="py-8 text-center">
                         <div className="flex items-center justify-center">
-                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                          <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
                         </div>
                       </div>
                     ) : marketError ? (
@@ -954,7 +940,7 @@ export default function DashboardPage() {
                           <p className="text-sm text-red-300 mb-2">{marketError}</p>
                           <button
                             onClick={() => fetchMarketData()}
-                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                            className="px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm font-medium hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)] transition-all"
                           >
                             Retry
                           </button>
@@ -962,8 +948,8 @@ export default function DashboardPage() {
                       </div>
                     ) : marketData.length > 0 ? (
                       <>
-                        <div className="sm:w-full sm:-ml-6 overflow-x-auto sm:overflow-x-visible -mx-4 sm:mx-0 px-4 sm:px-0">
-                          <table className="w-full table-auto min-w-[600px] sm:min-w-0">
+                        <div className="w-full overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                          <table className="w-full table-auto min-w-[500px] sm:min-w-0">
                             <colgroup>
                               <col style={{ width: '8%' }} />
                               <col style={{ width: '22%' }} />
@@ -973,7 +959,7 @@ export default function DashboardPage() {
                               <col style={{ width: '17%' }} />
                             </colgroup>
                             <thead className="divide-y divide-[--color-border]">
-                              <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                              <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
                                 <th className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-white">Rank</th>
                                 <th className="py-3 pr-2 pl-0 text-left text-xs sm:text-sm font-medium text-white">Assets</th>
                                 <th className="py-3 px-2 text-left text-xs sm:text-sm font-medium text-white">price</th>
@@ -987,7 +973,7 @@ export default function DashboardPage() {
                                 <tr
                                   key={coin.id}
                                   onClick={() => router.push(`/dashboard/market/${coin.symbol.toUpperCase()}`)}
-                                  className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                                  className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                                 >
                                   <td className="py-3 pl-0 text-left text-xs sm:text-sm font-medium text-slate-300 whitespace-nowrap">
                                     {index + 1}
@@ -1015,7 +1001,7 @@ export default function DashboardPage() {
                         <div className="pt-2 sm:pt-4 text-center">
                           <button
                             onClick={() => router.push("/dashboard/market")}
-                            className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                            className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
                           >
                             View More
                           </button>
@@ -1029,7 +1015,7 @@ export default function DashboardPage() {
                         {marketError && (
                           <button
                             onClick={() => fetchMarketData()}
-                            className="px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-xs sm:text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                            className="px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-xs sm:text-sm font-medium hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)] transition-all"
                           >
                             Retry
                           </button>
@@ -1053,7 +1039,7 @@ export default function DashboardPage() {
               {(connectionType === "crypto" || connectionType === "stocks") && (
                 <button
                   onClick={() => router.push("/dashboard/top-trades")}
-                  className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
+                  className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-[1.02] shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] w-fit"
                 >
                   View All Trades
                 </button>
@@ -1065,7 +1051,7 @@ export default function DashboardPage() {
               isLoadingStockSignals ? (
                 <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 border-2 border-[#fc4f02] border-t-transparent rounded-full animate-spin"></div>
+                    <div className="h-8 w-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-sm text-slate-400">Loading stock signals...</p>
                   </div>
                 </div>
@@ -1076,7 +1062,7 @@ export default function DashboardPage() {
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
-                            ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                            ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                             : "bg-gradient-to-r from-red-500 to-red-600"
                             }`}>
                             {trade.type}
@@ -1128,7 +1114,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-slate-400 max-w-md">Visit Top Trades to generate stock signals and view trading opportunities.</p>
                     <button
                       onClick={() => router.push("/dashboard/top-trades")}
-                      className="mt-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:scale-105"
+                      className="mt-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:scale-[1.02]"
                     >
                       Go to Top Trades
                     </button>
@@ -1139,7 +1125,7 @@ export default function DashboardPage() {
               isLoadingCryptoSignals ? (
                 <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="h-8 w-8 border-2 border-[#fc4f02] border-t-transparent rounded-full animate-spin"></div>
+                    <div className="h-8 w-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-sm text-slate-400">Loading crypto signal...</p>
                   </div>
                 </div>
@@ -1150,7 +1136,7 @@ export default function DashboardPage() {
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
-                            ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                            ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                             : "bg-gradient-to-r from-red-500 to-red-600"
                             }`}>
                             {trade.type}
@@ -1213,7 +1199,7 @@ export default function DashboardPage() {
                     <p className="text-sm text-slate-400 max-w-md">Visit Top Trades to generate crypto signals and view trading opportunities.</p>
                     <button
                       onClick={() => router.push("/dashboard/top-trades")}
-                      className="mt-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:scale-105"
+                      className="mt-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2 text-sm font-medium text-white transition-all duration-300 hover:scale-[1.02]"
                     >
                       Go to Top Trades
                     </button>
@@ -1231,7 +1217,7 @@ export default function DashboardPage() {
               {connectionType === "crypto" && (
                 <button
                   onClick={() => router.push("/dashboard/ai-insights")}
-                  className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-105 shadow-lg shadow-[#fc4f02]/30 w-fit"
+                  className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-[1.02] shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] w-fit"
                 >
                   View All AI Insights
                 </button>
@@ -1242,7 +1228,7 @@ export default function DashboardPage() {
             <div className="space-y-2 sm:space-y-3">
               {isLoadingNews ? (
                 <div className="flex items-center justify-center py-6 sm:py-8">
-                  <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                  <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
                 </div>
               ) : newsError ? (
                 <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 sm:p-4 text-center">
@@ -1260,7 +1246,7 @@ export default function DashboardPage() {
                   >
                     <div className="mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
                       <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                        <span className="rounded-md bg-[#fc4f02]/10 px-2 py-1 text-[10px] sm:text-xs font-semibold text-[#fc4f02]">
+                        <span className="rounded-md bg-[var(--primary)]/10 px-2 py-1 text-[10px] sm:text-xs font-semibold text-[var(--primary)]">
                           {news.symbol}
                         </span>
                         <span className="text-[10px] sm:text-xs text-slate-500">•</span>
@@ -1311,7 +1297,7 @@ export default function DashboardPage() {
       {/* Holdings Modal */}
       {showHoldingsModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={() => setShowHoldingsModal(false)}
         >
           <div
@@ -1329,9 +1315,9 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs sm:text-sm min-w-[600px] sm:min-w-0">
-                <thead className="divide-y divide-[--color-border]">
+            <div className="max-h-[60vh] overflow-y-auto overflow-x-auto">
+              <table className="w-full text-xs sm:text-sm min-w-[500px] sm:min-w-0">
+                <thead className="divide-y divide-[--color-border] sticky top-0 bg-[#1a1a2e]">
                   <tr>
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Asset</th>
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Holdings</th>
@@ -1342,12 +1328,12 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
-                  {paginatedHoldings.length === 0 ? (
+                  {(!dashboardData || dashboardData.positions.length === 0) ? (
                     <tr>
                       <td colSpan={6} className="py-6 text-center text-slate-400">No positions found</td>
                     </tr>
                   ) : (
-                    paginatedHoldings.map((position: any, idx: number) => {
+                    dashboardData.positions.map((position: any, idx: number) => {
                       const stripped = position.symbol.replace(/(USDT|BUSD)$/, '');
                       const symbol = stripped || position.symbol;
                       return (
@@ -1366,23 +1352,8 @@ export default function DashboardPage() {
               </table>
             </div>
 
-            <div className="flex items-center justify-between pt-4">
-              <div className="text-xs text-slate-400">Showing {(holdingsPage - 1) * HOLDINGS_PER_PAGE + 1} - {Math.min(holdingsPage * HOLDINGS_PER_PAGE, (dashboardData?.positions?.length || 0))} of {dashboardData?.positions?.length || 0}</div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setHoldingsPage(p => Math.max(1, p - 1))}
-                  disabled={holdingsPage === 1}
-                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
-                  Prev
-                </button>
-                <div className="text-xs text-slate-400">Page {holdingsPage} / {totalHoldingsPages}</div>
-                <button
-                  onClick={() => setHoldingsPage(p => Math.min(totalHoldingsPages, p + 1))}
-                  disabled={holdingsPage === totalHoldingsPages}
-                  className={`px-3 py-1 rounded-md text-xs transition ${holdingsPage === totalHoldingsPages ? 'opacity-40 cursor-not-allowed' : 'bg-[--color-surface]/60 hover:bg-[--color-surface]/80'}`}>
-                  Next
-                </button>
-              </div>
+            <div className="pt-4 text-xs text-slate-400 text-center">
+              {dashboardData?.positions?.length || 0} holdings total
             </div>
           </div>
         </div>
@@ -1398,7 +1369,7 @@ export default function DashboardPage() {
         if (!overlayTrade) return null;
         return (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
             onClick={() => setShowTradeOverlay(false)}
           >
             <div
@@ -1421,7 +1392,7 @@ export default function DashboardPage() {
               <div className="space-y-4 sm:space-y-6">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base font-semibold text-white ${overlayTrade.type === "BUY"
-                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                     : "bg-gradient-to-r from-red-500 to-red-600"
                   }`}>
                     {overlayTrade.type}
@@ -1473,7 +1444,7 @@ export default function DashboardPage() {
       {/* News Overlay */}
       {showNewsOverlay && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={() => setShowNewsOverlay(false)}
         >
           <div
@@ -1529,7 +1500,7 @@ export default function DashboardPage() {
                       href={newsData.news_items[selectedNews].url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[10px] sm:text-xs text-[#fc4f02] hover:underline"
+                      className="text-[10px] sm:text-xs text-[var(--primary)] hover:underline"
                     >
                       Read full article
                     </a>

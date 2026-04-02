@@ -155,7 +155,7 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
@@ -221,7 +221,7 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
                 key={level}
                 className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all ${
                   riskLevel === level
-                    ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                    ? "border-[var(--primary)] bg-[var(--primary)]/10"
                     : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                 }`}
               >
@@ -231,7 +231,7 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
                   value={level}
                   checked={riskLevel === level}
                   onChange={(e) => setRiskLevel(e.target.value as RiskLevel)}
-                  className="h-4 w-4 text-[#fc4f02]"
+                  className="h-4 w-4 text-[var(--primary)]"
                 />
                 <span className="text-sm text-slate-200">{RISK_LEVELS[level].label}</span>
               </label>
@@ -291,7 +291,7 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
           <button
             onClick={handleExecute}
             disabled={executing || loadingPrice}
-            className="flex-1 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+            className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
           >
             {executing ? "Executing..." : loadingPrice ? "Loading..." : "Confirm & Execute"}
           </button>

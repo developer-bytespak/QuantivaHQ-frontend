@@ -240,9 +240,9 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <div className="flex items-center justify-center h-96">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
         </div>
       </div>
     );
@@ -250,7 +250,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
 
   if (error) {
     return (
-      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-white mb-1">{symbol} Price Chart</h3>
           <p className="text-sm text-slate-400">Historical price data</p>
@@ -267,7 +267,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
   }
 
   return (
-    <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+    <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-white mb-1">{symbol} Price Chart</h3>
         <p className="text-sm text-slate-400">Historical price data • {timeframe}</p>

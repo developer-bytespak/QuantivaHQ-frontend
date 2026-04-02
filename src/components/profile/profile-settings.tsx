@@ -508,7 +508,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       onClick: () => {
         router.push("/dashboard/settings/subscription");
       },
-      color: "text-[#fc4f02]",
+      color: "text-[var(--primary)]",
     },
     {
       id: "tokenomics",
@@ -975,7 +975,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       </button>
 
       {/* Profile Header Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#fc4f02] via-[#fd6a00] to-[#fd8a00] p-4 sm:p-8 shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--primary)] via-[var(--primary-hover)] to-[var(--primary-light)] p-4 sm:p-8 shadow-xl">
         <div className="relative z-10 flex flex-col items-center text-center">
           <div className="mb-4 relative flex items-center justify-center">
             {/* Avatar */}
@@ -997,7 +997,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
               <button
                 ref={cameraButtonRef}
                 onClick={() => setShowImageMenu(!showImageMenu)}
-                className="absolute bottom-0 right-0 w-7 sm:w-8 h-7 sm:h-8 rounded-full bg-[#fc4f02] border-2 border-white flex items-center justify-center shadow-lg hover:bg-[#fd6a00] transition-all duration-200 z-10"
+                className="absolute bottom-0 right-0 w-7 sm:w-8 h-7 sm:h-8 rounded-full bg-[var(--primary)] border-2 border-white flex items-center justify-center shadow-lg hover:bg-[var(--primary-hover)] transition-all duration-200 z-10"
                 aria-label="Change profile picture"
               >
                 <svg
@@ -1033,7 +1033,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-slate-700 transition-colors text-white"
                 >
                   <svg
-                    className="w-4 sm:w-5 h-4 sm:h-5 text-[#fc4f02]"
+                    className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--primary)]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -1052,7 +1052,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   className="w-full flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 hover:bg-slate-700 transition-colors text-white border-t border-slate-700"
                 >
                   <svg
-                    className="w-4 sm:w-5 h-4 sm:h-5 text-[#fc4f02]"
+                    className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--primary)]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -1292,7 +1292,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                               value={countrySearchQuery}
                               onChange={(e) => setCountrySearchQuery(e.target.value)}
                               placeholder="Search countries..."
-                              className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-transparent text-sm"
+                              className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent text-sm"
                               autoFocus
                             />
                           </div>
@@ -1372,7 +1372,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
       {/* Image Overlay */}
       {showImageOverlay && profileImage && mounted && typeof window !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/90 backdrop-blur-sm">
           <div
             ref={overlayRef}
             className="relative max-w-xl w-full mx-4 flex items-center justify-center"
@@ -1412,7 +1412,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
       {/* Success/Error Notification */}
       {showNotification && mounted && typeof window !== "undefined" && createPortal(
-        <div className="fixed top-4 right-4 z-[99999] animate-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-[400] animate-in slide-in-from-top-2">
           <div className={`flex items-center gap-3 px-4 py-3 rounded-lg backdrop-blur-sm border shadow-lg ${
             notificationMessage.includes("successfully") || !notificationMessage.includes("Failed")
               ? "bg-gradient-to-r from-green-500/90 to-green-600/90 border-green-400/30 shadow-green-500/20"
@@ -1455,7 +1455,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
       {/* Camera Modal */}
       {showCameraModal && mounted && typeof window !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/90 backdrop-blur-sm">
           <div className="relative w-full max-w-2xl mx-4 bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
@@ -1508,7 +1508,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       setShowCameraModal(false);
                       stopCamera();
                     }}
-                    className="px-4 py-2 rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium transition-colors"
+                    className="px-4 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium transition-colors"
                   >
                     Close
                   </button>
@@ -1517,7 +1517,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
               {cameraPermission === "prompt" && (
                 <div className="text-center py-8">
-                  <div className="animate-spin w-12 h-12 border-4 border-[#fc4f02] border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <div className="animate-spin w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full mx-auto mb-4"></div>
                   <p className="text-white text-lg">Requesting camera permission...</p>
                 </div>
               )}
@@ -1537,7 +1537,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   <div className="flex justify-center gap-4">
                     <button
                       onClick={capturePhoto}
-                      className="w-16 h-16 rounded-full bg-white border-4 border-slate-300 flex items-center justify-center hover:scale-105 transition-transform"
+                      className="w-16 h-16 rounded-full bg-white border-4 border-slate-300 flex items-center justify-center hover:scale-[1.02] transition-transform"
                       aria-label="Capture photo"
                     >
                       <div className="w-12 h-12 rounded-full bg-white border-2 border-slate-400"></div>
@@ -1565,7 +1565,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                     </button>
                     <button
                       onClick={usePhoto}
-                      className="px-6 py-2 rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium transition-colors"
+                      className="px-6 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium transition-colors"
                     >
                       Use Photo
                     </button>
@@ -1580,7 +1580,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
       {/* Coming Soon Modal */}
       {showComingSoonModal && mounted && typeof window !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/90 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/90 backdrop-blur-sm">
           <div className="relative w-full max-w-md mx-4 bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
@@ -1608,9 +1608,9 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
             {/* Content */}
             <div className="p-6 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center">
                 <svg
-                  className="w-8 h-8 text-[#fc4f02]"
+                  className="w-8 h-8 text-[var(--primary)]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -1629,7 +1629,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
               </p>
               <button
                 onClick={() => setShowComingSoonModal(false)}
-                className="px-6 py-2 rounded-lg bg-[#fc4f02] hover:bg-[#fd6a00] text-white font-medium transition-colors"
+                className="px-6 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium transition-colors"
               >
                 Got it
               </button>
@@ -1640,7 +1640,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Settings Menu */}
-      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
         <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Settings</h3>
         <div className="space-y-2">
           {menuItems.map((item) => (
@@ -1649,14 +1649,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
               onClick={item.onClick}
               className="w-full flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
             >
-              <div className={`flex-shrink-0 text-sm sm:text-base ${item.color || "text-[#fc4f02]"}`}>
+              <div className={`flex-shrink-0 text-sm sm:text-base ${item.color || "text-[var(--primary)]"}`}>
                 {item.icon}
               </div>
-              <span className={`flex-1 text-left text-xs sm:text-sm font-medium ${item.color || "text-white"} group-hover:text-[#fc4f02] transition-colors`}>
+              <span className={`flex-1 text-left text-xs sm:text-sm font-medium ${item.color || "text-white"} group-hover:text-[var(--primary)] transition-colors`}>
                 {item.label}
               </span>
               <svg
-                className={`w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0 ${item.color || "text-slate-400"} group-hover:text-[#fc4f02] transition-colors`}
+                className={`w-4 sm:w-5 h-4 sm:h-5 flex-shrink-0 ${item.color || "text-slate-400"} group-hover:text-[var(--primary)] transition-colors`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -1670,14 +1670,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
       {/* Delete Account Confirmation Dialog */}
       {showDeleteConfirmation && mounted && typeof window !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg mx-2 sm:mx-4 bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-lg sm:rounded-2xl border border-[#fc4f02]/20 shadow-[0_0_50px_rgba(252,79,2,0.15)] overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg mx-2 sm:mx-4 bg-gradient-to-br from-slate-900/95 via-slate-800/95 to-slate-900/95 rounded-lg sm:rounded-2xl border border-[var(--primary)]/20 shadow-[0_0_50px_rgba(var(--primary-rgb),0.15)] overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             <div className="p-3 sm:p-4">
               {/* Warning Icon */}
               <div className="flex items-center justify-center mb-3 sm:mb-4">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-[#fc4f02]/20 blur rounded-full"></div>
-                  <svg className="w-8 sm:w-10 h-8 sm:h-10 text-[#fc4f02] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="absolute inset-0 bg-[var(--primary)]/20 blur rounded-full"></div>
+                  <svg className="w-8 sm:w-10 h-8 sm:h-10 text-[var(--primary)] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                 </div>
@@ -1690,15 +1690,15 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
               {/* Step Indicator */}
               <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6">
-                <div className={`h-1.5 sm:h-2 w-6 sm:w-8 rounded-full transition-all ${deleteStep === 1 ? "bg-gradient-to-r from-[#fc4f02] to-[#FDA300] shadow-[0_0_10px_rgba(252,79,2,0.5)]" : "bg-slate-700"}`}></div>
-                <div className={`h-1.5 sm:h-2 w-6 sm:w-8 rounded-full transition-all ${deleteStep === 2 ? "bg-gradient-to-r from-[#fc4f02] to-[#FDA300] shadow-[0_0_10px_rgba(252,79,2,0.5)]" : "bg-slate-700"}`}></div>
+                <div className={`h-1.5 sm:h-2 w-6 sm:w-8 rounded-full transition-all ${deleteStep === 1 ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" : "bg-slate-700"}`}></div>
+                <div className={`h-1.5 sm:h-2 w-6 sm:w-8 rounded-full transition-all ${deleteStep === 2 ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] shadow-[0_0_10px_rgba(var(--primary-rgb),0.5)]" : "bg-slate-700"}`}></div>
               </div>
               
               {/* Warning Message - Show on Step 1 */}
               {deleteStep === 1 && (
                 <>
-                  <div className="bg-[#fc4f02]/10 border border-[#fc4f02]/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-[0_0_20px_rgba(252,79,2,0.1)]">
-                    <p className="text-[#fc4f02] text-xs sm:text-sm font-semibold mb-1">⚠️ This action cannot be undone!</p>
+                  <div className="bg-[var(--primary)]/10 border border-[var(--primary)]/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]">
+                    <p className="text-[var(--primary)] text-xs sm:text-sm font-semibold mb-1">⚠️ This action cannot be undone!</p>
                     <p className="text-slate-300 text-xs sm:text-sm">All your data, trading history, and connections will be permanently deleted.</p>
                   </div>
 
@@ -1717,7 +1717,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                           {/* Password Input - only for non-Google users */}
                           <div className="mb-3 sm:mb-4">
                             <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
-                              Password <span className="text-[#fc4f02]">*</span>
+                              Password <span className="text-[var(--primary)]">*</span>
                             </label>
                             <div className="relative">
                               <input
@@ -1726,13 +1726,13 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                                 onChange={(e) => setDeletePassword(e.target.value)}
                                 placeholder="Enter password"
                                 disabled={isLoading}
-                                className="w-full px-3 py-2 pr-10 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full px-3 py-2 pr-10 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]/50 text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                               />
                               <button
                                 type="button"
                                 onClick={() => setShowDeletePassword(!showDeletePassword)}
                                 disabled={isLoading}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#fc4f02] transition-colors disabled:opacity-50"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[var(--primary)] transition-colors disabled:opacity-50"
                                 tabIndex={-1}
                               >
                                 {showDeletePassword ? (
@@ -1763,7 +1763,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       maxLength={500}
                       rows={2}
                       disabled={isLoading}
-                      className="w-full px-3 py-2 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 text-xs sm:text-sm transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]/50 text-xs sm:text-sm transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5 text-right">
                       {deleteReason.length}/500
@@ -1777,13 +1777,13 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
               {/* Step 2 - Verification Code */}
               {deleteStep === 2 && (
                 <>
-                  <div className="bg-gradient-to-br from-[#FDA300]/10 to-[#fc4f02]/10 border border-[#FDA300]/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-[0_0_20px_rgba(253,163,0,0.1)]">
+                  <div className="bg-gradient-to-br from-[var(--primary-light)]/10 to-[var(--primary)]/10 border border-[var(--primary-light)]/30 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 shadow-[0_0_20px_rgba(var(--primary-light-rgb),0.1)]">
                     <div className="flex items-start gap-2 sm:gap-3">
-                      <svg className="w-4 sm:w-5 h-4 sm:h-5 text-[#FDA300] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--primary-light)] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       <div>
-                        <p className="text-[#FDA300] text-xs sm:text-sm font-medium">Verification code sent!</p>
+                        <p className="text-[var(--primary-light)] text-xs sm:text-sm font-medium">Verification code sent!</p>
                         <p className="text-slate-300 text-xs sm:text-sm mt-1">
                           Check your email ({userEmail}) for the 6-digit code.
                         </p>
@@ -1794,7 +1794,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   {/* 2FA Code Input */}
                   <div className="mb-4 sm:mb-6">
                     <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
-                      Enter 6-digit verification code <span className="text-[#fc4f02]">*</span>
+                      Enter 6-digit verification code <span className="text-[var(--primary)]">*</span>
                     </label>
                     <input
                       type="text"
@@ -1809,12 +1809,12 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       maxLength={6}
                       disabled={isLoading}
                       autoFocus
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-slate-800/70 border border-slate-600 text-white text-center text-xl sm:text-2xl tracking-widest placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02] focus:border-[#fc4f02]/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-slate-800/70 border border-slate-600 text-white text-center text-xl sm:text-2xl tracking-widest placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <button
                       onClick={handleSendVerificationCode}
                       disabled={isLoading}
-                      className="text-[#fc4f02] hover:text-[#fd6a00] text-xs sm:text-sm mt-2 transition-colors disabled:opacity-50"
+                      className="text-[var(--primary)] hover:text-[var(--primary-hover)] text-xs sm:text-sm mt-2 transition-colors disabled:opacity-50"
                     >
                       Didn't receive code? Resend
                     </button>
@@ -1824,12 +1824,12 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
               {/* Error Message */}
               {deleteError && (
-                <div className="mb-3 sm:mb-4 p-2 sm:p-3 rounded-lg bg-[#fc4f02]/10 border border-[#fc4f02]/30">
+                <div className="mb-3 sm:mb-4 p-2 sm:p-3 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/30">
                   <div className="flex items-start gap-2 sm:gap-3">
-                    <svg className="w-4 sm:w-5 h-4 sm:h-5 text-[#fc4f02] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 sm:w-5 h-4 sm:h-5 text-[var(--primary)] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-[#fc4f02]/90 text-xs sm:text-sm">{deleteError}</p>
+                    <p className="text-[var(--primary)]/90 text-xs sm:text-sm">{deleteError}</p>
                   </div>
                 </div>
               )}
@@ -1873,7 +1873,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       ? deleteIsGoogleUser === null || (!deleteIsGoogleUser && !deletePassword)
                       : !deleteTwoFactorCode)
                   }
-                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] hover:from-[#fd6a00] hover:to-[#fe8410] text-white font-bold text-sm sm:text-base transition-all duration-200 shadow-[0_0_20px_rgba(252,79,2,0.3)] hover:shadow-[0_0_30px_rgba(252,79,2,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[#fc4f02] disabled:hover:to-[#fd6a00] disabled:shadow-none"
+                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] hover:from-[var(--primary-hover)] hover:to-[var(--primary-light)] text-white font-bold text-sm sm:text-base transition-all duration-200 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[var(--primary)] disabled:hover:to-[var(--primary-hover)] disabled:shadow-none"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center gap-2">

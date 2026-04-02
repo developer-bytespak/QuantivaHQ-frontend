@@ -399,7 +399,7 @@ export default function CustomStrategiesTradingPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[#fc4f02]/30 border-t-[#fc4f02] mb-4"></div>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-[var(--primary)]/30 border-t-[var(--primary)] mb-4"></div>
           <p className="text-slate-300 font-medium">Loading custom strategies...</p>
         </div>
       </div>
@@ -410,8 +410,8 @@ export default function CustomStrategiesTradingPage() {
   if (!connectionType) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10 flex items-center justify-center">
-          <svg className="w-10 h-10 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/10 flex items-center justify-center">
+          <svg className="w-10 h-10 text-[var(--primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
@@ -421,7 +421,7 @@ export default function CustomStrategiesTradingPage() {
         </p>
         <Link
           href="/dashboard/settings/exchanges"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-semibold hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all"
         >
           Connect Exchange
         </Link>
@@ -433,8 +433,8 @@ export default function CustomStrategiesTradingPage() {
   if (strategies.length === 0) {
     return (
       <div className="max-w-2xl mx-auto text-center py-16">
-        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10 flex items-center justify-center">
-          <svg className="w-10 h-10 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/10 flex items-center justify-center">
+          <svg className="w-10 h-10 text-[var(--primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
         </div>
@@ -444,7 +444,7 @@ export default function CustomStrategiesTradingPage() {
         </p>
         <Link
           href={`/dashboard/my-strategies/create?from=${referrer}&via=custom-strategies-trading`}
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 transition-all"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-semibold hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -458,9 +458,9 @@ export default function CustomStrategiesTradingPage() {
   return (
     <div className="space-y-6 pb-8">
       {/* Hero Header */}
-      <div className="relative rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 via-[#fda300]/10 to-transparent p-6 border border-[#fc4f02]/20 overflow-hidden">
+      <div className="relative rounded-2xl bg-gradient-to-br from-[var(--primary)]/20 via-[var(--primary-light)]/10 to-transparent p-6 border border-[var(--primary)]/20 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[var(--primary)]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative">
           {/* Back Button - Goes to My Strategies, Top Trades, or Paper Trading */}
           <Link
@@ -469,7 +469,7 @@ export default function CustomStrategiesTradingPage() {
               : referrer === "top-trades" ? "/dashboard/top-trades"
               : "/dashboard/paper-trading"
             }
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors mb-3 group"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors mb-3 group"
           >
             <svg
               className="w-4 h-4 text-white group-hover:-translate-x-1 transition-transform"
@@ -479,13 +479,13 @@ export default function CustomStrategiesTradingPage() {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-white/90 group-hover:text-[#fda300]">Back to {previousPageName}</span>
+            <span className="text-white/90 group-hover:text-[var(--primary-light)]">Back to {previousPageName}</span>
           </Link>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#fc4f02] to-[#fda300] flex items-center justify-center shadow-lg shadow-[#fc4f02]/30">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -520,10 +520,10 @@ export default function CustomStrategiesTradingPage() {
               {/* My Strategies Button */}
               <Link
                 href={`/dashboard/my-strategies?from=${referrer}`}
-                className="inline-flex items-center gap-2 rounded-xl bg-white/15 border border-white/25 hover:bg-white/20 hover:border-white/40 px-4 py-2.5 text-sm font-semibold text-[#fda300] transition-all duration-200 group"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/15 border border-white/25 hover:bg-white/20 hover:border-white/40 px-4 py-2.5 text-sm font-semibold text-[var(--primary-light)] transition-all duration-200 group"
                 title="View and manage your strategies"
               >
-                <svg className="w-4 h-4 text-[#fc4f02]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-[var(--primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
                 <span>My Strategies</span>
@@ -531,7 +531,7 @@ export default function CustomStrategiesTradingPage() {
               {/* Create Strategy Button */}
               <Link
                 href={`/dashboard/my-strategies/create?from=${referrer}&via=custom-strategies-trading`}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-[#fc4f02]/30 hover:scale-[1.02] transition-all duration-200 group"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2.5 text-sm font-semibold text-white hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 hover:scale-[1.02] transition-all duration-200 group"
                 title="Create a new custom strategy"
               >
                 <svg className="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -552,7 +552,7 @@ export default function CustomStrategiesTradingPage() {
             onClick={() => setActiveTab(idx)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${
               activeTab === idx
-                ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30"
                 : "bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10 hover:text-white"
             }`}
           >
@@ -784,7 +784,7 @@ export default function CustomStrategiesTradingPage() {
                   setShowDetailsModal(false);
                   handleAutoTrade(selectedSignal);
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30"
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-semibold hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/30"
               >
                 Auto Trade
               </button>

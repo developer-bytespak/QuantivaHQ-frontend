@@ -92,7 +92,7 @@ export function ProfilePage() {
         <button
           type="button"
           onClick={() => router.push("/dashboard/settings")}
-          className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 p-2 sm:p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-105 min-w-[2.5rem] min-h-[2.5rem] sm:min-w-[3rem] sm:min-h-[3rem] flex items-center justify-center touch-manipulation"
+          className="absolute top-3 sm:top-4 right-3 sm:right-4 z-20 p-2 sm:p-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-all duration-200 hover:scale-[1.02] min-w-[2.5rem] min-h-[2.5rem] sm:min-w-[3rem] sm:min-h-[3rem] flex items-center justify-center touch-manipulation"
           aria-label="Settings"
         >
           <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white pointer-events-none shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,7 +105,7 @@ export function ProfilePage() {
       {/* Portfolio loading / error / no connection */}
       {isLoadingConnection || (connectionId && isLoading) ? (
         <div className="rounded-lg sm:rounded-2xl bg-white/[0.07] backdrop-blur-xl p-6 sm:p-8 flex items-center justify-center min-h-[120px]">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]" />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-200">
@@ -117,7 +117,7 @@ export function ProfilePage() {
         </div>
       ) : (
         /* Single section: Crypto or Stocks based on connection type */
-        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-lg sm:rounded-2xl p-4 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-lg sm:rounded-2xl p-4 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
           <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">{sectionTitle}</h2>
           <div className="space-y-3 sm:space-y-4">
             {positions.length === 0 ? (
@@ -128,7 +128,7 @@ export function ProfilePage() {
                 const value = pos.currentPrice * pos.quantity;
                 const trend = pos.pnlPercent >= 0 ? "up" : "down";
                 const iconBg = isCrypto
-                  ? "from-[#fc4f02]/20 to-[#fc4f02]/10 border-[#fc4f02]/20"
+                  ? "from-[var(--primary)]/20 to-[var(--primary)]/10 border-[var(--primary)]/20"
                   : "from-[#1d4ed8]/20 to-[#3b82f6]/10 border-[#1d4ed8]/20";
                 return (
                   <div

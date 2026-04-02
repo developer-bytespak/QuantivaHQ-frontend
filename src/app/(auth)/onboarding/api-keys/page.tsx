@@ -231,9 +231,9 @@ export default function ApiKeysPage() {
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black" >
         {/* Subtle gradient orbs for depth */}
-        < div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        < div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div >
 
       {/* Content */}
@@ -326,7 +326,7 @@ export default function ApiKeysPage() {
                         setErrors({ ...errors, apiKey: "" });
                       }
                     }}
-                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.apiKey
+                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 ${errors.apiKey
                       ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                       : "border-slate-700/50"
                       }`}
@@ -370,7 +370,7 @@ export default function ApiKeysPage() {
                         setErrors({ ...errors, secretKey: "" });
                       }
                     }}
-                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20 ${errors.secretKey
+                    className={`w-full rounded-lg border-2 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 ${errors.secretKey
                       ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                       : "border-slate-700/50"
                       }`}
@@ -410,7 +410,7 @@ export default function ApiKeysPage() {
                       type={showPassphrase ? "text" : "password"}
                       value={passphrase}
                       onChange={(e) => setPassphrase(e.target.value)}
-                      className="w-full rounded-lg border-2 border-slate-700/50 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
+                      className="w-full rounded-lg border-2 border-slate-700/50 bg-slate-800/60 px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 text-xs sm:text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                       placeholder="Enter passphrase (if required)"
                     />
                     <button
@@ -449,7 +449,7 @@ export default function ApiKeysPage() {
                     <button
                       type="button"
                       onClick={() => setEnableTrading(!enableTrading)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${enableTrading ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-slate-700"
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 focus:ring-offset-2 focus:ring-offset-slate-900 ${enableTrading ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]" : "bg-slate-700"
                         }`}
                     >
                       <span
@@ -503,7 +503,7 @@ export default function ApiKeysPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-semibold text-white shadow-xl shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
               >
                 {isLoading ? (
                   <span className="relative z-10 flex items-center justify-center gap-2">

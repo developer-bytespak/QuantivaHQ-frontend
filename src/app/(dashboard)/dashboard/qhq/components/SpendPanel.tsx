@@ -34,10 +34,10 @@ export function SpendPanel() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-rgb),0.06)]">
       <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center shrink-0">
+          <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
           </svg>
         </div>
@@ -59,14 +59,14 @@ export function SpendPanel() {
               disabled={!affordable}
               className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 ${
                 isSelected
-                  ? 'border-2 border-[#fc4f02] bg-gradient-to-br from-[#fc4f02]/15 to-[#fc4f02]/5 hover:scale-[1.01] active:scale-[0.99]'
+                  ? 'border-2 border-[var(--primary)] bg-gradient-to-br from-[var(--primary)]/15 to-[var(--primary)]/5 hover:scale-[1.01] active:scale-[0.99]'
                   : affordable
-                  ? 'border border-[--color-border] bg-gradient-to-br from-white/[0.07] to-transparent hover:border-[#fc4f02]/50 hover:shadow-[0_0_20px_rgba(252,79,2,0.15)] group'
+                  ? 'border border-[--color-border] bg-gradient-to-br from-white/[0.07] to-transparent hover:border-[var(--primary)]/50 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)] group'
                   : 'border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent opacity-40 cursor-not-allowed'
               }`}
             >
               <span className="text-sm text-white">
-                Spend <span className="font-semibold text-[#fc4f02]">{option.qhq} QHQ</span>
+                Spend <span className="font-semibold text-[var(--primary)]">{option.qhq} QHQ</span>
               </span>
               <span className="text-sm font-bold text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">
                 {option.discount}% off
@@ -84,7 +84,7 @@ export function SpendPanel() {
           </div>
           <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] rounded-full transition-all duration-300"
+              className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-full transition-all duration-300"
               style={{ width: `${Math.min((selected / pendingBalance) * 100, 100)}%` }}
             />
           </div>
@@ -96,7 +96,7 @@ export function SpendPanel() {
         disabled={!selected || isSpending}
         className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
           selected && !isSpending
-            ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white hover:from-[#fd6a00] hover:to-[#fdb800] hover:scale-[1.02] active:scale-[0.98]'
+            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white hover:from-[#fd6a00] hover:to-[#fdb800] hover:scale-[1.02] active:scale-[0.98]'
             : 'bg-slate-700 text-slate-400 cursor-not-allowed'
         }`}
       >

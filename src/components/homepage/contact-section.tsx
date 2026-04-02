@@ -132,7 +132,7 @@ export function ContactSection() {
             }`}
           >
             Get in{" "}
-            <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
               Touch
             </span>
           </h2>
@@ -195,7 +195,7 @@ export function ContactSection() {
                 {/* Name Field */}
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-white mb-2.5">
-                    Full Name <span className="text-[#fc4f02] ml-1">*</span>
+                    Full Name <span className="text-[var(--primary)] ml-1">*</span>
                   </label>
                   <input
                     type="text"
@@ -207,7 +207,7 @@ export function ContactSection() {
                     className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
                       errors.name
                         ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
                     }`}
                     placeholder="Enter your full name"
                   />
@@ -217,7 +217,7 @@ export function ContactSection() {
                 {/* Email Field */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-white mb-2.5">
-                    Email Address <span className="text-[#fc4f02] ml-1">*</span>
+                    Email Address <span className="text-[var(--primary)] ml-1">*</span>
                   </label>
                   <input
                     type="email"
@@ -229,7 +229,7 @@ export function ContactSection() {
                     className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
                       errors.email
                         ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
                     }`}
                     placeholder="your.email@company.com"
                   />
@@ -250,7 +250,7 @@ export function ContactSection() {
                     className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
                       errors.company
                         ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
                     }`}
                     placeholder="Your company name"
                   />
@@ -271,7 +271,7 @@ export function ContactSection() {
                     className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
                       errors.phone
                         ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
                     }`}
                     placeholder="+1 (555) 123-4567"
                   />
@@ -287,7 +287,7 @@ export function ContactSection() {
               {/* Subject Field */}
               <div className="mb-5">
                 <label htmlFor="subject" className="block text-sm font-medium text-white mb-2.5">
-                  Subject <span className="text-[#fc4f02] ml-1">*</span>
+                  Subject <span className="text-[var(--primary)] ml-1">*</span>
                 </label>
                 <select
                   id="subject"
@@ -298,10 +298,10 @@ export function ContactSection() {
                   className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] appearance-none cursor-pointer ${
                     errors.subject
                       ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                      : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                      : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
                   }`}
                   style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23fc4f02'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
                     backgroundPosition: 'right 1rem center',
                     backgroundSize: '1.5em 1.5em',
@@ -321,7 +321,7 @@ export function ContactSection() {
               {/* Message Field */}
               <div>
                 <label htmlFor="message" className="block text-sm font-medium text-white mb-2.5">
-                  Message <span className="text-[#fc4f02] ml-1">*</span>
+                  Message <span className="text-[var(--primary)] ml-1">*</span>
                 </label>
                 <textarea
                   id="message"
@@ -333,7 +333,7 @@ export function ContactSection() {
                   className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 resize-none hover:border-[--color-border] ${
                     errors.message
                       ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                      : "border-[--color-border]/60 focus:ring-[#fc4f02]/40 focus:border-[#fc4f02]/60"
+                      : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
                   }`}
                   placeholder="Please provide a detailed description of your inquiry. Include any relevant information that will help us assist you better."
                 />
@@ -350,13 +350,13 @@ export function ContactSection() {
             {/* Submit Section */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="text-xs text-slate-400">
-                <span className="text-[#fc4f02] mr-1">*</span>
+                <span className="text-[var(--primary)] mr-1">*</span>
                 <span>Required fields. Your information will be kept confidential.</span>
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-10 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/20 transition-all duration-300 hover:shadow-xl hover:shadow-[#fc4f02]/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg min-w-[160px]"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-10 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/20 transition-all duration-300 hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg min-w-[160px]"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2.5">
                   {isSubmitting ? (
@@ -397,9 +397,9 @@ export function ContactSection() {
             }`}
             style={{ transitionDelay: "300ms" }}
           >
-            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[#fc4f02]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[#fc4f02]/10">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
-                <svg className="h-7 w-7 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[var(--primary)]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/10">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
+                <svg className="h-7 w-7 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -412,9 +412,9 @@ export function ContactSection() {
               <p className="text-xs text-slate-500 mt-1">We respond within 24 hours</p>
             </div>
 
-            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[#fc4f02]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[#fc4f02]/10">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
-                <svg className="h-7 w-7 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[var(--primary)]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/10">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
+                <svg className="h-7 w-7 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -427,9 +427,9 @@ export function ContactSection() {
               <p className="text-xs text-slate-500 mt-1">Available during business hours</p>
             </div>
 
-            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[#fc4f02]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[#fc4f02]/10">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
-                <svg className="h-7 w-7 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[var(--primary)]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/10">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
+                <svg className="h-7 w-7 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

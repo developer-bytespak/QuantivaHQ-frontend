@@ -65,9 +65,9 @@ export default function TransactionDetailPage() {
       <div className="max-w-3xl mx-auto">
         <Link
           href="/dashboard/vc-pool/transactions"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"
         >
-          <svg className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-[var(--primary)] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           <span>Back to transactions</span>
@@ -75,7 +75,7 @@ export default function TransactionDetailPage() {
 
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           </div>
         )}
 
@@ -97,7 +97,7 @@ export default function TransactionDetailPage() {
             </div>
 
             {/* Amount Card */}
-            <div className="rounded-xl border border-[--color-border] bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 p-6 mb-6">
+            <div className="rounded-xl border border-[--color-border] bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-light)]/10 p-6 mb-6">
               <p className="text-sm text-slate-400 mb-1">Amount</p>
               <p className="text-3xl font-bold text-white font-mono">{tx.amount_usdt} USDT</p>
               {tx.expected_amount && (

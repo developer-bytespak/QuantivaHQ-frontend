@@ -141,21 +141,21 @@ export function NotificationDropdown() {
 
   return (
     <>
-      <div className="relative z-[100]">
+      <div className="relative z-[200]">
         <button
           ref={buttonRef}
           onClick={() => {
             setIsOpen(!isOpen);
             handleGetAllNotifications();
           }}
-          className="relative flex items-center justify-center h-10 w-10 min-w-[2.5rem] min-h-[2.5rem] sm:h-10 sm:w-10 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent hover:border-[#fc4f02]/50 hover:from-white/[0.1] active:bg-[#fc4f02]/10 transition-all duration-200 touch-manipulation"
+          className="relative flex items-center justify-center h-10 w-10 min-w-[2.5rem] min-h-[2.5rem] sm:h-10 sm:w-10 rounded-lg border border-[var(--primary)]/30 bg-gradient-to-br from-white/[0.07] to-transparent hover:border-[var(--primary)]/50 hover:from-white/[0.1] active:bg-[var(--primary)]/10 transition-all duration-200 touch-manipulation"
           aria-label="Notifications"
         >
           <svg className="h-5 w-5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
           </svg>
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#fc4f02] px-1 text-[10px] font-bold text-white">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--primary)] px-1 text-[10px] font-bold text-white">
               {unreadCount > 9 ? "9+" : unreadCount}
             </span>
           )}
@@ -165,7 +165,7 @@ export function NotificationDropdown() {
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[9999] max-h-[18rem] sm:max-h-[20rem] rounded-xl overflow-visible flex flex-col bg-[#161616]/75 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/50"
+          className="fixed z-[200] max-h-[18rem] sm:max-h-[20rem] rounded-xl overflow-visible flex flex-col bg-[#161616]/75 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/50"
           style={
             isMobile
               ? { top: `${dropdownPosition.top}px`, left: 12, right: 12 }
@@ -184,9 +184,9 @@ export function NotificationDropdown() {
             aria-hidden
           />
           {/* Header – glass with soft orange fade */}
-          <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-white/[0.06] bg-[#161616]/50 bg-gradient-to-r from-[#fc4f02]/12 via-[#fc4f02]/05 to-transparent shrink-0 rounded-t-xl overflow-hidden backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-white/[0.06] bg-[#161616]/50 bg-gradient-to-r from-[var(--primary)]/12 via-[var(--primary)]/05 to-transparent shrink-0 rounded-t-xl overflow-hidden backdrop-blur-sm">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-1.5 rounded-full bg-[#fc4f02] shadow-sm shadow-[#fc4f02]/40" aria-hidden />
+              <span className="flex h-7 w-1.5 rounded-full bg-[var(--primary)] shadow-sm shadow-[var(--primary)]/40" aria-hidden />
               <h3 className="text-sm font-semibold uppercase tracking-wider text-white">Notifications</h3>
             </div>
             <div className="flex items-center gap-1.5">
@@ -194,14 +194,14 @@ export function NotificationDropdown() {
                 <button
                   type="button"
                   onClick={() => setSortOrder("desc")}
-                  className={`px-2 py-1 text-[10px] font-medium transition-colors ${sortOrder === "desc" ? "bg-[#fc4f02] text-white" : "text-slate-400 hover:text-white hover:bg-white/10"}`}
+                  className={`px-2 py-1 text-[10px] font-medium transition-colors ${sortOrder === "desc" ? "bg-[var(--primary)] text-white" : "text-slate-400 hover:text-white hover:bg-white/10"}`}
                 >
                   DSC
                 </button>
                 <button
                   type="button"
                   onClick={() => setSortOrder("asc")}
-                  className={`px-2 py-1 text-[10px] font-medium transition-colors ${sortOrder === "asc" ? "bg-[#fc4f02] text-white" : "text-slate-400 hover:text-white hover:bg-white/10"}`}
+                  className={`px-2 py-1 text-[10px] font-medium transition-colors ${sortOrder === "asc" ? "bg-[var(--primary)] text-white" : "text-slate-400 hover:text-white hover:bg-white/10"}`}
                 >
                   ASC
                 </button>
@@ -210,13 +210,13 @@ export function NotificationDropdown() {
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="text-[10px] font-medium text-slate-400 hover:text-[#fc4f02] transition-colors px-2 py-1 rounded hover:bg-white/5"
+                  className="text-[10px] font-medium text-slate-400 hover:text-[var(--primary)] transition-colors px-2 py-1 rounded hover:bg-white/5"
                 >
                   Clear All
                 </button>
               )}
               {unreadCount > 0 && (
-                <span className="text-[10px] font-bold text-white bg-[#fc4f02] px-2 py-1 rounded-md min-w-[1.5rem] text-center shadow-md shadow-[#fc4f02]/40">
+                <span className="text-[10px] font-bold text-white bg-[var(--primary)] px-2 py-1 rounded-md min-w-[1.5rem] text-center shadow-md shadow-[var(--primary)]/40">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -227,11 +227,11 @@ export function NotificationDropdown() {
             {sortedNotifications.length === 0 ? (
               <p className="px-4 py-8 text-sm text-slate-400 text-center">No notifications yet.</p>
             ) : (
-              <ul className="divide-y divide-[#fc4f02]/15">
+              <ul className="divide-y divide-[var(--primary)]/15">
                 {sortedNotifications.map((n: any) => (
                   <li
                     key={n._id ?? n.id}
-                    className={`group relative px-4 py-2.5 pr-10 transition-colors cursor-default touch-manipulation hover:bg-[#fc4f02]/10 active:bg-[#fc4f02]/15 ${!n.read ? "bg-[#fc4f02]/15 border-l-2 border-l-[#fc4f02] pl-3" : ""}`}
+                    className={`group relative px-4 py-2.5 pr-10 transition-colors cursor-default touch-manipulation hover:bg-[var(--primary)]/10 active:bg-[var(--primary)]/15 ${!n.read ? "bg-[var(--primary)]/15 border-l-2 border-l-[var(--primary)] pl-3" : ""}`}
                   >
                     <button
                       type="button"
@@ -239,14 +239,14 @@ export function NotificationDropdown() {
                         e.stopPropagation();
                         handleDeleteNotification(n._id ?? n.id);
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-[#fc4f02]/20 hover:text-[#fc4f02] transition-all focus:opacity-100 focus:outline-none"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-[var(--primary)]/20 hover:text-[var(--primary)] transition-all focus:opacity-100 focus:outline-none"
                       aria-label="Delete notification"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                     <p className="text-sm font-semibold text-white truncate pr-6">{n.title || n.notification_type}</p>
                     <p className="text-xs text-slate-300 mt-0.5 truncate">{n.message}</p>
-                    <p className="text-xs font-medium text-[#fc4f02] mt-1">
+                    <p className="text-xs font-medium text-[var(--primary)] mt-1">
                       {n.created_at
                         ? new Date(n.created_at).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: true })
                         : ""}

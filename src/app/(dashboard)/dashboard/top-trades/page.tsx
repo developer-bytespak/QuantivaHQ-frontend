@@ -1068,7 +1068,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   if (!vcPoolId && isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
     );
   }
@@ -1077,7 +1077,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   if (!vcPoolId && !currentSubscription) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
     );
   }
@@ -1091,7 +1091,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           </p>
           <Link
             href="/dashboard/settings/subscription"
-            className="inline-block px-6 py-2.5 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-semibold"
+            className="inline-block px-6 py-2.5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold"
           >
             Upgrade Now
           </Link>
@@ -1118,7 +1118,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 items-center">
           <Link
             href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
-            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:opacity-90 shadow-lg shadow-[#fc4f02]/30 whitespace-nowrap flex items-center gap-1.5 text-white"
+            className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] hover:opacity-90 shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 whitespace-nowrap flex items-center gap-1.5 text-white"
             title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1184,9 +1184,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             <div className="flex items-center justify-between pt-3">
               <div className="text-xs text-slate-400">Showing {(paperPositionsPage - 1) * PAPER_POS_PER_PAGE + 1} - {Math.min(paperPositionsPage * PAPER_POS_PER_PAGE, paperPositions.length)} of {paperPositions.length}</div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setPaperPositionsPage(p => Math.max(1, p - 1))} disabled={paperPositionsPage === 1} className={`px-3 py-1 rounded-md text-xs ${paperPositionsPage === 1 ? 'opacity-40' : 'bg-[--color-surface]/60'}`}>Prev</button>
+                <button onClick={() => setPaperPositionsPage(p => Math.max(1, p - 1))} disabled={paperPositionsPage === 1} className={`px-3 py-1 rounded-md text-xs ${paperPositionsPage === 1 ? 'opacity-50' : 'bg-[--color-surface]/60'}`}>Prev</button>
                 <div className="text-xs text-slate-400">Page {paperPositionsPage} / {paperPositionsTotalPages}</div>
-                <button onClick={() => setPaperPositionsPage(p => Math.min(paperPositionsTotalPages, p + 1))} disabled={paperPositionsPage === paperPositionsTotalPages} className={`px-3 py-1 rounded-md text-xs ${paperPositionsPage === paperPositionsTotalPages ? 'opacity-40' : 'bg-[--color-surface]/60'}`}>Next</button>
+                <button onClick={() => setPaperPositionsPage(p => Math.min(paperPositionsTotalPages, p + 1))} disabled={paperPositionsPage === paperPositionsTotalPages} className={`px-3 py-1 rounded-md text-xs ${paperPositionsPage === paperPositionsTotalPages ? 'opacity-50' : 'bg-[--color-surface]/60'}`}>Next</button>
               </div>
             </div>
           </div>
@@ -1256,7 +1256,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                     onClick={() => setActiveTab(idx)}
                     className={`px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all rounded-lg whitespace-nowrap ${
                       activeTab === idx
-                        ? 'bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30'
+                        ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30'
                         : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10'
                     }`}
                   >
@@ -1276,7 +1276,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           
           {/* Strategy Description Card */}
           {currentStrategy && (
-            <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur border border-[#fc4f02]/20 p-4 sm:p-5">
+            <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur border border-[var(--primary)]/20 p-4 sm:p-5">
               <h3 className="text-base sm:text-lg font-semibold text-white mb-2">{currentStrategy.name}</h3>
               <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">{currentStrategy.description || "No description available"}</p>
               <div className="grid grid-cols-3 gap-3">
@@ -1310,7 +1310,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </div>
             <Link 
               href="/dashboard/settings/exchange-configuration" 
-              className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+              className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
             >
               Configure Exchange
             </Link>
@@ -1329,7 +1329,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as "profit" | "volume" | "winrate")}
-              className="rounded-lg  bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
+              className="rounded-lg  bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             >
               <option value="profit">Profit</option>
               <option value="volume">Volume</option>
@@ -1346,7 +1346,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             <p className="text-sm text-red-300">Failed to load signals: {signalsError[currentStrategy.strategy_id]}</p>
             <button
               onClick={() => fetchStrategySignals(currentStrategy.strategy_id)}
-              className="mt-4 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-medium text-white"
+              className="mt-4 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2 text-sm font-medium text-white"
             >
               Retry
             </button>
@@ -1358,7 +1358,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 <div key={trade.id} className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                      <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
+                      <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY" ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
                         {trade.type}
                       </span>
                       <span className="text-sm font-medium text-white">{trade.pair}</span>
@@ -1415,7 +1415,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                     </div>
 
                       <div className="relative flex items-center gap-4 text-xs pt-3">
-                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-[var(--primary)]/30"></div>
                         <div><span className="text-slate-400">Profit: </span><span className="font-medium text-green-400">{trade.profitValue ? formatPercent(trade.profitValue) : trade.profit ?? '—'}</span></div>
                         <div><span className="text-slate-400">Volume: </span><span className="font-medium text-white">{formatNumberCompact(trade.volumeValue ?? trade.volume)}</span></div>
                       </div>
@@ -1462,14 +1462,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
                       return (
                         <div className="relative pt-3 space-y-2">
-                          <div className="absolute top-0 left-0 right-0 h-[1px] bg-[#fc4f02]/30"></div>
+                          <div className="absolute top-0 left-0 right-0 h-[1px] bg-[var(--primary)]/30"></div>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-[#fc4f02]" fill="currentColor" viewBox="0 0 20 20">
+                              <svg className="w-4 h-4 text-[var(--primary)]" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M13 7H7v6h6V7z" />
                                 <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
                               </svg>
-                              <span className="text-xs font-semibold text-[#fc4f02]">AI Insight</span>
+                              <span className="text-xs font-semibold text-[var(--primary)]">AI Insight</span>
                             </div>
                             {hasInsight && insightData && (
                               <div className="flex items-center gap-2">
@@ -1477,7 +1477,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                                 <button
                                   onClick={() => handleGenerateInsight(currentStrategy.strategy_id, assetId)}
                                   disabled={loading}
-                                  className="text-slate-400 hover:text-[#fc4f02] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="text-slate-400 hover:text-[var(--primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Refresh insight"
                                 >
                                   <svg className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1489,14 +1489,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                           </div>
                           
                           {hasInsight && insightData ? (
-                            <div className="rounded-lg bg-gradient-to-br from-[#fc4f02]/10 to-[#fda300]/5 p-3 text-xs text-slate-300 leading-relaxed border border-[#fc4f02]/20">
+                            <div className="rounded-lg bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary-light)]/5 p-3 text-xs text-slate-300 leading-relaxed border border-[var(--primary)]/20">
                               {insightData.text}
                             </div>
                           ) : assetId ? (
                             <button
                               onClick={() => handleGenerateInsight(currentStrategy.strategy_id, assetId)}
                               disabled={loading}
-                              className="w-full rounded-lg bg-gradient-to-r from-slate-700/50 to-slate-600/50 px-3 py-2 text-xs font-medium text-slate-300 transition-all hover:from-[#fc4f02]/20 hover:to-[#fda300]/20 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600/30 hover:border-[#fc4f02]/50"
+                              className="w-full rounded-lg bg-gradient-to-r from-slate-700/50 to-slate-600/50 px-3 py-2 text-xs font-medium text-slate-300 transition-all hover:from-[var(--primary)]/20 hover:to-[var(--primary-light)]/20 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed border border-slate-600/30 hover:border-[var(--primary)]/50"
                             >
                               {loading ? (
                                 <span className="flex items-center justify-center gap-2">
@@ -1519,7 +1519,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       {connectionId && (
                         <button
                           onClick={() => handleAutoTrade(trade)}
-                          className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                          className="flex-1 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40"
                         >
                           Auto Trade
                         </button>
@@ -1538,14 +1538,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
             {totalPages > 1 && (
               <div className="mt-4 flex items-center justify-center gap-3">
-                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-40">Prev</button>
+                <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-50">Prev</button>
                 <div className="text-xs text-slate-400">Page {currentPage} of {totalPages}</div>
-                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-40">Next</button>
+                <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="rounded-md bg-[--color-surface] px-3 py-1 text-xs text-slate-300 disabled:opacity-50">Next</button>
               </div>
             )}
           </div>
         ) : (
-          <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+          <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
             <p className="text-sm text-slate-400">
               {currentStrategy 
                 ? `No signals available for ${currentStrategy.name}. ${isStocksConnection ? 'Stock signals are generated every 10 minutes during market hours.' : 'Signals are generated every 10 minutes.'}`
@@ -1557,7 +1557,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
       {/* Trade Details Overlay */}
       {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
-        <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowTradeOverlay(false)}>
+        <div className="fixed inset-0 z-[400] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowTradeOverlay(false)}>
           <div className="relative mx-4 w-full max-w-4xl max-h-[700px] rounded-2xl  bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 shadow-2xl shadow-black/50 backdrop-blur" onClick={(e) => e.stopPropagation()}>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Trade Details</h2>
@@ -1568,7 +1568,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
+                <span className={`rounded-lg px-4 py-2 text-base font-semibold text-white ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
                   {filteredAndSortedTrades[selectedTradeIndex].type}
                 </span>
                 <span className="text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].pair}</span>
@@ -1642,13 +1642,13 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                     <h3 className="text-sm font-semibold text-white">AI Insight</h3>
                     
                     {hasAiInsight ? (
-                      <div className="rounded-lg bg-gradient-to-br from-[#fc4f02]/10 to-[#fda300]/5 p-4 border border-[#fc4f02]/20">
+                      <div className="rounded-lg bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary-light)]/5 p-4 border border-[var(--primary)]/20">
                         <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-4 h-4 text-[#fc4f02]" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-4 h-4 text-[var(--primary)]" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M13 7H7v6h6V7z" />
                             <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
                           </svg>
-                          <span className="text-xs font-semibold text-[#fc4f02]">AI Analysis</span>
+                          <span className="text-xs font-semibold text-[var(--primary)]">AI Analysis</span>
                         </div>
                         <p className="text-sm text-slate-200 leading-relaxed">{aiInsightData.text}</p>
                       </div>
@@ -1825,7 +1825,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 onClick={() => setPositionsModalTab("all")}
                 className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "all"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    ? "text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] border-[var(--primary)]"
                     : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
@@ -1835,7 +1835,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 onClick={() => setPositionsModalTab("pending")}
                 className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "pending"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    ? "text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] border-[var(--primary)]"
                     : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
@@ -1845,7 +1845,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 onClick={() => setPositionsModalTab("filled")}
                 className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "filled"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    ? "text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] border-[var(--primary)]"
                     : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
@@ -1855,7 +1855,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 onClick={() => setPositionsModalTab("canceled")}
                 className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   positionsModalTab === "canceled"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    ? "text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] border-[var(--primary)]"
                     : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
@@ -1947,7 +1947,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                     <button 
                       onClick={() => setPositionsModalPage(p => Math.max(1, p - 1))} 
                       disabled={positionsModalPage === 1} 
-                      className={`px-3 py-1 rounded-md text-xs transition-colors ${positionsModalPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70'}`}
+                      className={`px-3 py-1 rounded-md text-xs transition-colors ${positionsModalPage === 1 ? 'opacity-50 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70'}`}
                     >
                       Prev
                     </button>
@@ -1955,7 +1955,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                     <button 
                       onClick={() => setPositionsModalPage(p => Math.min(Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE)), p + 1))} 
                       disabled={positionsModalPage >= Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE))} 
-                      className={`px-3 py-1 rounded-md text-xs transition-colors ${positionsModalPage >= Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70'}`}
+                      className={`px-3 py-1 rounded-md text-xs transition-colors ${positionsModalPage >= Math.max(1, Math.ceil(positionsTabRows.length / PAPER_POS_PER_PAGE)) ? 'opacity-50 cursor-not-allowed' : 'bg-blue-600/50 hover:bg-blue-600/70'}`}
                     >
                       Next
                     </button>
@@ -1993,7 +1993,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 onClick={() => setLeaderboardTab("history")}
                 className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   leaderboardTab === "history"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    ? "text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] border-[var(--primary)]"
                     : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
@@ -2003,7 +2003,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 onClick={() => setLeaderboardTab("positions")}
                 className={`px-4 h-10 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${
                   leaderboardTab === "positions"
-                    ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300] border-[#fc4f02]"
+                    ? "text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] border-[var(--primary)]"
                     : "text-slate-400 hover:text-white border-transparent"
                 }`}
               >
@@ -2047,7 +2047,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                           onClick={() => setHistoryFilter(filter as any)}
                           className={`px-3 py-1 text-xs font-medium rounded-md whitespace-nowrap capitalize transition-all ${
                             historyFilter === filter
-                              ? "text-white bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                              ? "text-white bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                               : "text-slate-400 hover:text-white bg-slate-700/50"
                           }`}
                         >
@@ -2093,7 +2093,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardHistoryPage(p => Math.max(1, p - 1))} 
                         disabled={leaderboardHistoryPage === 1} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage === 1 ? 'opacity-50 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Prev
                       </button>
@@ -2101,7 +2101,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardHistoryPage(p => Math.min(Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
                         disabled={leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE))} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardHistoryPage >= Math.max(1, Math.ceil(historyRowsFiltered.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-50 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Next
                       </button>
@@ -2171,7 +2171,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardPositionsPage(p => Math.max(1, p - 1))} 
                         disabled={leaderboardPositionsPage === 1} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage === 1 ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage === 1 ? 'opacity-50 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Prev
                       </button>
@@ -2179,7 +2179,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       <button 
                         onClick={() => setLeaderboardPositionsPage(p => Math.min(Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)), p + 1))} 
                         disabled={leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE))} 
-                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-40 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
+                        className={`px-3 py-1 rounded-md text-xs transition-colors ${leaderboardPositionsPage >= Math.max(1, Math.ceil(modalPositions.length / LEADERBOARD_ITEMS_PER_PAGE)) ? 'opacity-50 cursor-not-allowed' : 'bg-slate-700/70 hover:bg-slate-700 text-white'}`}
                       >
                         Next
                       </button>

@@ -170,18 +170,18 @@ export function SubscriptionSettings() {
         ? "border-emerald-400 bg-emerald-500/10"
         : isElite
           ? "border-blue-400 bg-blue-500/10"
-          : "border-[#fc4f02] bg-[#fc4f02]/10"
+          : "border-[var(--primary)] bg-[var(--primary)]/10"
       : isElitePlus
         ? "border-[--color-border] hover:border-emerald-400/50 bg-emerald-500/5"
         : isElite
           ? "border-[--color-border] hover:border-blue-400/50 bg-blue-500/5"
-          : "border-[--color-border] hover:border-[#fc4f02]/50";
+          : "border-[--color-border] hover:border-[var(--primary)]/50";
 
     const buttonColor = isElitePlus
       ? "bg-emerald-500 text-white hover:bg-emerald-600"
       : isElite
         ? "bg-blue-500 text-white hover:bg-blue-600"
-        : "bg-[#fc4f02] text-white hover:bg-[#e04502]";
+        : "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]";
 
     const benefits =
       plan.tier === PlanTier.PRO
@@ -266,7 +266,7 @@ export function SubscriptionSettings() {
       case PlanTier.FREE:
         return "text-slate-400";
       case PlanTier.PRO:
-        return "text-[#fc4f02]";
+        return "text-[var(--primary)]";
       case PlanTier.ELITE:
         return "text-blue-500";
       case PlanTier.ELITE_PLUS:
@@ -281,7 +281,7 @@ export function SubscriptionSettings() {
       case PlanTier.FREE:
         return "bg-slate-600/10";
       case PlanTier.PRO:
-        return "bg-[#fc4f02]/10";
+        return "bg-[var(--primary)]/10";
       case PlanTier.ELITE:
         return "bg-blue-500/10";
       case PlanTier.ELITE_PLUS:
@@ -365,7 +365,7 @@ export function SubscriptionSettings() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm sm:text-base font-medium transition-all border-b-2 whitespace-nowrap ${activeTab === tab.id
-                    ? "text-[#fc4f02] border-[#fc4f02]"
+                    ? "text-[var(--primary)] border-[var(--primary)]"
                     : "text-slate-400 border-transparent hover:text-slate-300"
                   }`}
               >
@@ -380,7 +380,7 @@ export function SubscriptionSettings() {
             {activeTab === "current" && (
               <div className="space-y-6">
                 {/* Current Plan Card */}
-                <div className={`rounded-lg border border-[#fc4f02]/30 ${getTierBgColor(currentSubscription.tier)} p-6`}>
+                <div className={`rounded-lg border border-[var(--primary)]/30 ${getTierBgColor(currentSubscription.tier)} p-6`}>
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-2xl font-bold text-white mb-1">
@@ -436,7 +436,7 @@ export function SubscriptionSettings() {
 
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-3">
-                    {/* <button className="px-4 py-2 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors text-sm font-medium">
+                    {/* <button className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-medium">
                   Upgrade Plan
                 </button>
                 <button className="px-4 py-2 border border-[--color-border] text-white rounded-lg hover:bg-[--color-surface] transition-colors text-sm font-medium">
@@ -497,7 +497,7 @@ export function SubscriptionSettings() {
                           {payment.invoice_url && (
                             <a
                               href={payment.invoice_url}
-                              className="text-[#fc4f02] hover:text-[#e04502] transition-colors"
+                              className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
                             >
                               Invoice
                             </a>
@@ -507,7 +507,7 @@ export function SubscriptionSettings() {
                               {payment.invoice_url && <span className="text-slate-500"> • </span>}
                               <a
                                 href={payment.receipt_url}
-                                className="text-[#fc4f02] hover:text-[#e04502] transition-colors"
+                                className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
                               >
                                 Receipt
                               </a>
@@ -549,7 +549,7 @@ export function SubscriptionSettings() {
                         <>
                           <div className="w-full bg-slate-700/50 rounded-full h-2 mb-2">
                             <div
-                              className={`h-2 rounded-full transition-all ${percentage >= 80 ? "bg-red-500" : "bg-[#fc4f02]"
+                              className={`h-2 rounded-full transition-all ${percentage >= 80 ? "bg-red-500" : "bg-[var(--primary)]"
                                 }`}
                               style={{ width: `${Math.min(percentage, 100)}%` }}
                             />
@@ -648,7 +648,7 @@ export function SubscriptionSettings() {
               <div className="space-y-6">
                 {feeLoading ? (
                   <div className="text-center py-8">
-                    <div className="inline-block w-6 h-6 border-2 border-slate-600 border-t-[#fc4f02] rounded-full animate-spin" />
+                    <div className="inline-block w-6 h-6 border-2 border-slate-600 border-t-[var(--primary)] rounded-full animate-spin" />
                     <p className="text-slate-400 mt-2 text-sm">Loading fee data...</p>
                   </div>
                 ) : (

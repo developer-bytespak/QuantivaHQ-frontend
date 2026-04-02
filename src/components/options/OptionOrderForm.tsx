@@ -116,7 +116,7 @@ export function OptionOrderForm({
           step={1}
           value={orderForm.quantity}
           onChange={(e) => onFormChange({ quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-          className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[#fc4f02]/30 focus:ring-1"
+          className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[var(--primary)]/30 focus:ring-1"
         />
       </div>
 
@@ -132,7 +132,7 @@ export function OptionOrderForm({
           step={0.01}
           value={orderForm.price}
           onChange={(e) => onFormChange({ price: Math.max(0, parseFloat(e.target.value) || 0) })}
-          className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[#fc4f02]/30 focus:ring-1"
+          className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[var(--primary)]/30 focus:ring-1"
         />
         {selectedContract && (
           <div className="mt-1 flex gap-2">

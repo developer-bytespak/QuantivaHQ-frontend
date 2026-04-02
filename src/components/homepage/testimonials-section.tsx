@@ -22,8 +22,8 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
       style={{ transitionDelay: isVisible ? `${index * 100}ms` : "0ms" }}
     >
       {/* Quote Icon */}
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
-        <svg className="h-6 w-6 text-[#fc4f02]" fill="currentColor" viewBox="0 0 24 24">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20">
+        <svg className="h-6 w-6 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
           <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.984zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
         </svg>
       </div>
@@ -38,7 +38,7 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
         {[...Array(5)].map((_, i) => (
           <svg
             key={i}
-            className={`h-5 w-5 ${i < testimonial.rating ? "text-[#fda300]" : "text-slate-600"}`}
+            className={`h-5 w-5 ${i < testimonial.rating ? "text-[var(--primary-light)]" : "text-slate-600"}`}
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -54,7 +54,7 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
           <div className="text-sm text-slate-400">{testimonial.role}</div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-bold text-[#fc4f02]">{testimonial.metric}</div>
+          <div className="text-lg font-bold text-[var(--primary)]">{testimonial.metric}</div>
           <div className="text-xs text-slate-500">Performance</div>
         </div>
       </div>
@@ -74,7 +74,7 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
       }`}>
         {title}
-        <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent"> {titleHighlight}</span>
+        <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent"> {titleHighlight}</span>
       </h2>
       <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 px-4">
         {description}

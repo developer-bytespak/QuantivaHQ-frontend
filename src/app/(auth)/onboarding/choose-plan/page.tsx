@@ -173,8 +173,8 @@ export default function ChoosePlanPage() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-black">
-      <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl" />
+      <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl" />
+      <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl" />
 
       <BackButton />
 
@@ -197,7 +197,7 @@ export default function ChoosePlanPage() {
               onClick={() => setBillingPeriod(opt.value)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                 billingPeriod === opt.value
-                  ? "bg-[#fc4f02] text-white"
+                  ? "bg-[var(--primary)] text-white"
                   : "text-slate-400 hover:text-white"
               }`}
             >
@@ -236,8 +236,8 @@ export default function ChoosePlanPage() {
           </div>
 
           {/* PRO */}
-          <div className="relative flex flex-col rounded-xl border-2 border-[#fc4f02]/50 bg-[#fc4f02]/5 p-5 backdrop-blur">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#fc4f02] px-3 py-0.5 text-xs font-semibold text-white">
+          <div className="relative flex flex-col rounded-xl border-2 border-[var(--primary)]/50 bg-[var(--primary)]/5 p-5 backdrop-blur">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-xs font-semibold text-white">
               POPULAR
             </div>
             <h3 className="text-lg font-semibold text-white">PRO</h3>
@@ -261,7 +261,7 @@ export default function ChoosePlanPage() {
             <button
               onClick={() => handleSelectPaid(PlanTier.PRO)}
               disabled={createCheckout.isPending || !!loadingPlanId}
-              className="w-full rounded-lg bg-[#fc4f02] py-2.5 text-sm font-semibold text-white transition hover:bg-[#e04502] disabled:opacity-50"
+              className="w-full rounded-lg bg-[var(--primary)] py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:opacity-50"
             >
               {loadingPlanId && getPlansByTier(PlanTier.PRO).some((p) => p.plan_id === loadingPlanId)
                 ? "Loading..."

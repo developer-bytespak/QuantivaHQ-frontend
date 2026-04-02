@@ -63,7 +63,7 @@ export function CustomStrategiesSection() {
             <p className="text-slate-400">Create and manage your own trading strategies</p>
           </div>
           {canCreateStrategies && !limitReached && (
-            <button className="px-4 py-2 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors font-semibold">
+            <button className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors font-semibold">
               + New Strategy
             </button>
           )}
@@ -81,7 +81,7 @@ export function CustomStrategiesSection() {
             <div className="w-full bg-slate-700/50 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all ${
-                  percentage >= 80 ? "bg-red-500" : "bg-[#fc4f02]"
+                  percentage >= 80 ? "bg-red-500" : "bg-[var(--primary)]"
                 }`}
                 style={{ width: `${Math.min(percentage, 100)}%` }}
               />
@@ -105,7 +105,7 @@ export function CustomStrategiesSection() {
             {displayedStrategies.map((strategy) => (
               <div
                 key={strategy.id}
-                className="border border-[--color-border] rounded-lg p-4 hover:border-[#fc4f02]/50 transition-all"
+                className="border border-[--color-border] rounded-lg p-4 hover:border-[var(--primary)]/50 transition-all"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -129,7 +129,7 @@ export function CustomStrategiesSection() {
                     <p className="text-white font-semibold">{strategy.totalTrades}</p>
                   </div>
                   <div className="text-right">
-                    <button className="text-xs text-[#fc4f02] hover:text-[#e04502] font-semibold">
+                    <button className="text-xs text-[var(--primary)] hover:text-[var(--primary-hover)] font-semibold">
                       View Details →
                     </button>
                   </div>
@@ -141,7 +141,7 @@ export function CustomStrategiesSection() {
           <div className="text-center py-8">
             <p className="text-slate-400 mb-3">No strategies created yet</p>
             {canCreateStrategies && (
-              <button className="px-4 py-2 bg-[#fc4f02] text-white rounded-lg hover:bg-[#e04502] transition-colors font-semibold text-sm">
+              <button className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors font-semibold text-sm">
                 Create Your First Strategy
               </button>
             )}

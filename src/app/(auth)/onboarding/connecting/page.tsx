@@ -221,9 +221,9 @@ export default function ConnectingPage() {
       {/* Background matching Figma design */}
       < div className="absolute inset-0 bg-black" >
         {/* Subtle gradient orbs for depth */}
-        < div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        < div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div >
 
       {/* Content */}
@@ -241,10 +241,10 @@ export default function ConnectingPage() {
               <div className="mb-6 flex justify-center">
                 <div className="relative">
                   {/* Outer rotating ring */}
-                  <div className="h-16 w-16 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02] border-r-[#fda300]"></div>
+                  <div className="h-16 w-16 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)] border-r-[var(--primary-light)]"></div>
                   {/* Inner pulsing circle */}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 animate-pulse"></div>
+                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 animate-pulse"></div>
                   </div>
                 </div>
               </div>
@@ -252,7 +252,7 @@ export default function ConnectingPage() {
               {/* Status Text */}
               <div className="space-y-2 mb-6">
                 <h2 className="text-xl font-bold text-white sm:text-2xl lg:text-3xl">
-                  Connecting to <span className="text-[#fc4f02]">{exchangeName}</span>...
+                  Connecting to <span className="text-[var(--primary)]">{exchangeName}</span>...
                 </h2>
                 <p className="mx-auto max-w-md text-sm text-slate-400 sm:text-base">
                   Please wait while we verify your API permissions.
@@ -261,9 +261,9 @@ export default function ConnectingPage() {
 
               {/* Progress Dots */}
               <div className="flex justify-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#fc4f02] animate-pulse" style={{ animationDelay: "0s" }}></div>
-                <div className="h-2 w-2 rounded-full bg-[#fc4f02] animate-pulse" style={{ animationDelay: "0.2s" }}></div>
-                <div className="h-2 w-2 rounded-full bg-[#fc4f02] animate-pulse" style={{ animationDelay: "0.4s" }}></div>
+                <div className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" style={{ animationDelay: "0s" }}></div>
+                <div className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" style={{ animationDelay: "0.2s" }}></div>
+                <div className="h-2 w-2 rounded-full bg-[var(--primary)] animate-pulse" style={{ animationDelay: "0.4s" }}></div>
               </div>
             </>
           )}
@@ -295,7 +295,7 @@ export default function ConnectingPage() {
                 {shouldShowConnectStocks ? (
                   <button
                     onClick={handleConnectStocksAccount}
-                    className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
+                    className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">
                       Connect Stocks Account
@@ -308,7 +308,7 @@ export default function ConnectingPage() {
                 ) : (
                   <button
                     onClick={handleGoToDashboard}
-                    className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
+                    className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">
                       Go to Dashboard
@@ -368,7 +368,7 @@ export default function ConnectingPage() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <button
                   onClick={handleTryAgain}
-                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[#fc4f02]/40"
+                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-3.5 text-base font-semibold text-white shadow-xl shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     Try Again
@@ -381,7 +381,7 @@ export default function ConnectingPage() {
 
                 <button
                   onClick={handleBackToInstructions}
-                  className="rounded-xl border-2 border-slate-700/50 bg-slate-800/40 px-8 py-3.5 text-base font-semibold text-white backdrop-blur transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-slate-700/60"
+                  className="rounded-xl border-2 border-slate-700/50 bg-slate-800/40 px-8 py-3.5 text-base font-semibold text-white backdrop-blur transition-all duration-300 hover:border-[var(--primary)]/50 hover:bg-slate-700/60"
                 >
                   Back to Instructions
                 </button>

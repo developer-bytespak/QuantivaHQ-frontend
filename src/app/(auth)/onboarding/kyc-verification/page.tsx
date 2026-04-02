@@ -123,9 +123,9 @@ export default function KycVerificationPage() {
     <div className="relative flex h-full w-full overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-black">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
         <div
-          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse"
+          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
       </div>
@@ -158,14 +158,14 @@ export default function KycVerificationPage() {
             className="flex-1 min-h-0 animate-text-enter"
             style={{ animationDelay: "0.6s" }}
           >
-            <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 md:p-6 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-xl sm:rounded-2xl" />
+            <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 md:p-6 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[var(--primary)]/30 hover:shadow-[rgba(var(--primary-rgb),0.1)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/5 via-transparent to-[var(--primary-light)]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 rounded-xl sm:rounded-2xl" />
 
               <div className="relative z-10">
                 {isLoading && (
                   <div className="flex flex-col items-center justify-center py-16">
                     <svg
-                      className="h-10 w-10 text-[#fc4f02] animate-spin mb-4"
+                      className="h-10 w-10 text-[var(--primary)] animate-spin mb-4"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -211,7 +211,7 @@ export default function KycVerificationPage() {
                     </p>
                     <button
                       onClick={() => window.location.reload()}
-                      className="rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-105"
+                      className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:scale-[1.02]"
                     >
                       Try Again
                     </button>

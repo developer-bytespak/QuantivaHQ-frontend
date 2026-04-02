@@ -234,7 +234,7 @@ export function PoolTradesFlow({
           </div>
           <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] transition-all"
               style={{ width: `${Math.min(100, poolCapital.utilization_pct)}%` }}
             />
           </div>
@@ -253,7 +253,7 @@ export function PoolTradesFlow({
             onClick={() => onFilterChange(f)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-all capitalize ${
               tradeStatusFilter === f
-                ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/20"
+                ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/20"
                 : "text-slate-400 hover:text-white"
             }`}
           >
@@ -265,7 +265,7 @@ export function PoolTradesFlow({
       {/* Trades table (desktop) / cards (mobile) */}
       {tradesLoading ? (
         <div className="flex items-center justify-center gap-2 rounded-xl border border-[--color-border] bg-[--color-surface]/50 py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           <span className="text-sm text-slate-400">Loading trades…</span>
         </div>
       ) : trades.length === 0 ? (

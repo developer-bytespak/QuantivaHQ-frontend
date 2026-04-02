@@ -72,10 +72,10 @@ export function BackButton() {
   return (
     <button
       onClick={handleBack}
-      className="absolute top-6 left-6 z-20 flex items-center gap-2 rounded-xl border-2 border-[#fc4f02] bg-black px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition-all duration-300 hover:border-[#fda300] hover:bg-[#1a1a1a] hover:shadow-lg hover:shadow-[#fc4f02]/30"
+      className="absolute top-6 left-6 z-20 flex items-center gap-2 rounded-xl border-2 border-[var(--primary)] bg-black px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition-all duration-300 hover:border-[var(--primary-light)] hover:bg-[#1a1a1a] hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]"
       aria-label="Go back"
     >
-      <svg className="h-5 w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="h-5 w-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
       </svg>
       <span>Back</span>

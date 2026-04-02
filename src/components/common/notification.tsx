@@ -59,7 +59,7 @@ export function Notification({ message, type = "info", duration = 3000, onClose 
 
   return createPortal(
     <div
-      className={`fixed top-4 right-4 z-[99999] transition-all duration-300 ${
+      className={`fixed top-4 right-4 z-[500] transition-all duration-300 ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
       }`}
     >

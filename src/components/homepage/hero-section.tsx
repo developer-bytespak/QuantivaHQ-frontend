@@ -94,11 +94,11 @@ export function HeroSection() {
             transition: "transform 0.1s ease-out",
           }}
         >
-          <svg viewBox="0 0 400 200" className="w-full h-full text-[#fc4f02]">
+          <svg viewBox="0 0 400 200" className="w-full h-full text-[var(--primary)]">
             <defs>
               <linearGradient id="bgChart1" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#fc4f02" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="#fc4f02" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
               </linearGradient>
             </defs>
             {/* Grid */}
@@ -137,7 +137,7 @@ export function HeroSection() {
             transition: "transform 0.1s ease-out",
           }}
         >
-          <svg viewBox="0 0 300 150" className="w-full h-full text-[#fda300]">
+          <svg viewBox="0 0 300 150" className="w-full h-full text-[var(--primary-light)]">
             <polyline
               points="20,130 50,100 80,110 110,90 140,85 170,75 200,65 230,55 260,50 280,45"
               fill="none"
@@ -225,13 +225,13 @@ export function HeroSection() {
           <h1 
             className="text-2xl leading-snug sm:text-3xl sm:leading-tight md:text-4xl md:leading-tight lg:text-6xl lg:leading-tight font-bold tracking-tight text-white animate-fade-in"
             style={{
-              textShadow: "0 10px 40px rgba(252, 79, 2, 0.3), 0 5px 20px rgba(252, 79, 2, 0.2)",
+              textShadow: "0 10px 40px rgba(var(--primary-rgb),, 0.3), 0 5px 20px rgba(var(--primary-rgb),, 0.2)",
               transform: "translateZ(50px)",
             }}
           >
             Unlock Your Trading Potential
             <br />
-            <span className="bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
               with AI-Powered Insights
             </span>
           </h1>
@@ -247,7 +247,7 @@ export function HeroSection() {
             <button
               onClick={handleGetStarted}
               disabled={isCheckingAuth}
-              className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold text-white shadow-xl shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-[#fc4f02]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
+              className="group relative overflow-hidden rounded-lg sm:rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold text-white shadow-xl shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 w-full sm:w-auto"
             >
               <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-2">
                 {isCheckingAuth ? "Checking..." : "Get Started"}
@@ -262,7 +262,7 @@ export function HeroSection() {
 
             <button
               onClick={scrollToFeatures}
-              className="group rounded-lg sm:rounded-xl border-2 border-slate-600 bg-slate-900/40 backdrop-blur px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold text-white transition-all duration-300 hover:border-[#fc4f02]/50 hover:bg-slate-800/60 cursor-pointer w-full sm:w-auto"
+              className="group rounded-lg sm:rounded-xl border-2 border-slate-600 bg-slate-900/40 backdrop-blur px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 text-xs sm:text-sm md:text-base font-semibold text-white transition-all duration-300 hover:border-[var(--primary)]/50 hover:bg-slate-800/60 cursor-pointer w-full sm:w-auto"
             >
               <span className="flex items-center justify-center gap-1 sm:gap-2">
                 Learn More
@@ -284,9 +284,9 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--primary)] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
-                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    textShadow: "0 5px 20px rgba(var(--primary-rgb),, 0.4), 0 2px 10px rgba(var(--primary-rgb),, 0.3)",
                     transform: "translateZ(20px)",
                   }}
                 >
@@ -301,9 +301,9 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--primary)] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
-                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    textShadow: "0 5px 20px rgba(var(--primary-rgb),, 0.4), 0 2px 10px rgba(var(--primary-rgb),, 0.3)",
                     transform: "translateZ(20px)",
                   }}
                 >
@@ -318,9 +318,9 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--primary)] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
-                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    textShadow: "0 5px 20px rgba(var(--primary-rgb),, 0.4), 0 2px 10px rgba(var(--primary-rgb),, 0.3)",
                     transform: "translateZ(20px)",
                   }}
                 >
@@ -339,9 +339,9 @@ export function HeroSection() {
             >
               <div className="relative inline-flex items-center justify-center">
                 <div 
-                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#fc4f02] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
+                  className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--primary)] mb-0.5 sm:mb-1 md:mb-2 transition-all duration-300 group-hover:scale-110"
                   style={{
-                    textShadow: "0 5px 20px rgba(252, 79, 2, 0.4), 0 2px 10px rgba(252, 79, 2, 0.3)",
+                    textShadow: "0 5px 20px rgba(var(--primary-rgb),, 0.4), 0 2px 10px rgba(var(--primary-rgb),, 0.3)",
                     transform: "translateZ(20px)",
                   }}
                 >

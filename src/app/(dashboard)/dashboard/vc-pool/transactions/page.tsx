@@ -158,12 +158,12 @@ export default function TransactionsPage() {
 
         <Link
           href="/dashboard/vc-pool"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"
         >
-          <svg className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-[var(--primary)] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span className="text-white/90 group-hover:text-[#fda300]">Back to VC pools</span>
+          <span className="text-white/90 group-hover:text-[var(--primary-light)]">Back to VC pools</span>
         </Link>
 
         {/* Header */}
@@ -186,7 +186,7 @@ export default function TransactionsPage() {
             <button
               type="button"
               onClick={() => router.push("/dashboard/vc-pool/my-submissions")}
-              className="rounded-xl bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+              className="rounded-xl bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
             >
               My submissions
             </button>
@@ -210,7 +210,7 @@ export default function TransactionsPage() {
           <select
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-200 focus:border-[#fc4f02] focus:outline-none"
+            className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-200 focus:border-[var(--primary)] focus:outline-none"
           >
             <option value="">All Statuses</option>
             <option value="pending">Pending</option>
@@ -220,7 +220,7 @@ export default function TransactionsPage() {
           <select
             value={typeFilter}
             onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-            className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-200 focus:border-[#fc4f02] focus:outline-none"
+            className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-sm text-slate-200 focus:border-[var(--primary)] focus:outline-none"
           >
             <option value="">All Types</option>
             <option value="payment_submitted">Payment Submitted</option>
@@ -231,7 +231,7 @@ export default function TransactionsPage() {
             <button
               type="button"
               onClick={() => { setStatusFilter(""); setTypeFilter(""); setPage(1); }}
-              className="text-xs text-[#fc4f02] hover:text-[#fda300] transition-colors"
+              className="text-xs text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors"
             >
               Clear filters
             </button>
@@ -241,7 +241,7 @@ export default function TransactionsPage() {
         {/* Loading */}
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           </div>
         )}
 
@@ -266,7 +266,7 @@ export default function TransactionsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
             <p>No transactions found.</p>
-            <Link href="/dashboard/vc-pool" className="mt-4 inline-block text-[#fc4f02] hover:underline font-medium">
+            <Link href="/dashboard/vc-pool" className="mt-4 inline-block text-[var(--primary)] hover:underline font-medium">
               Browse available pools
             </Link>
           </div>
@@ -280,7 +280,7 @@ export default function TransactionsPage() {
                 <Link
                   key={tx.transaction_id}
                   href={`/dashboard/vc-pool/transactions/${tx.transaction_id}`}
-                  className="block rounded-xl border border-[--color-border] bg-[--color-surface] p-4 hover:border-[#fc4f02]/40 transition-colors"
+                  className="block rounded-xl border border-[--color-border] bg-[--color-surface] p-4 hover:border-[var(--primary)]/40 transition-colors"
                 >
                   <div className="flex items-start gap-4">
                     <TransactionTypeIcon type={tx.transaction_type} />
@@ -333,7 +333,7 @@ export default function TransactionsPage() {
                   type="button"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-lg border border-[--color-border] px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40 transition-colors"
+                  className="rounded-lg border border-[--color-border] px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50 transition-colors"
                 >
                   Previous
                 </button>
@@ -344,7 +344,7 @@ export default function TransactionsPage() {
                   type="button"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="rounded-lg border border-[--color-border] px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-40 transition-colors"
+                  className="rounded-lg border border-[--color-border] px-3 py-1.5 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-50 transition-colors"
                 >
                   Next
                 </button>

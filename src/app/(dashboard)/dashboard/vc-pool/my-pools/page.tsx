@@ -32,7 +32,7 @@ function PoolCard({
   const isPoolCancelled = item.membership_status === "pool_cancelled_refund";
 
   return (
-    <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 hover:border-[#fc4f02]/40 transition-colors">
+    <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-5 hover:border-[var(--primary)]/40 transition-colors">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -54,7 +54,7 @@ function PoolCard({
         <button
           type="button"
           onClick={onViewDetail}
-          className="rounded-lg bg-[#fc4f02] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+          className="rounded-lg bg-[var(--primary)] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
         >
           View Detail
         </button>
@@ -291,12 +291,12 @@ export default function MyPoolsPage() {
 
         <Link
           href="/dashboard/vc-pool"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"
         >
-          <svg className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 text-[var(--primary)] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          <span className="text-white/90 group-hover:text-[#fda300]">Back to VC pools</span>
+          <span className="text-white/90 group-hover:text-[var(--primary-light)]">Back to VC pools</span>
         </Link>
 
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
@@ -316,7 +316,7 @@ export default function MyPoolsPage() {
 
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           </div>
         )}
 
@@ -336,7 +336,7 @@ export default function MyPoolsPage() {
         {!loading && !error && pools.length === 0 && (
           <div className="rounded-xl border border-[--color-border] bg-[--color-surface-alt] p-8 text-center text-slate-400">
             <p>You are not a member of any pool yet.</p>
-            <Link href="/dashboard/vc-pool" className="mt-4 inline-block text-[#fc4f02] hover:underline font-medium">
+            <Link href="/dashboard/vc-pool" className="mt-4 inline-block text-[var(--primary)] hover:underline font-medium">
               Browse available pools
             </Link>
           </div>
@@ -351,7 +351,7 @@ export default function MyPoolsPage() {
                 onClick={() => setActiveTab("active")}
                 className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
                   activeTab === "active"
-                    ? "bg-[#fc4f02] text-white"
+                    ? "bg-[var(--primary)] text-white"
                     : "bg-[--color-surface-alt] text-slate-300 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -365,7 +365,7 @@ export default function MyPoolsPage() {
                 onClick={() => setActiveTab("pending")}
                 className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
                   activeTab === "pending"
-                    ? "bg-[#fc4f02] text-white"
+                    ? "bg-[var(--primary)] text-white"
                     : "bg-[--color-surface-alt] text-slate-300 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -379,7 +379,7 @@ export default function MyPoolsPage() {
                 onClick={() => setActiveTab("closed")}
                 className={`rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
                   activeTab === "closed"
-                    ? "bg-[#fc4f02] text-white"
+                    ? "bg-[var(--primary)] text-white"
                     : "bg-[--color-surface-alt] text-slate-300 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -395,7 +395,7 @@ export default function MyPoolsPage() {
               <section className="space-y-4">
                 {activePools.length === 0 ? (
                   <div className="rounded-xl border border-[--color-border] bg-[--color-surface-alt] p-8 text-center text-slate-400">
-                    <p>No active investments. Browse <Link href="/dashboard/vc-pool" className="text-[#fc4f02] hover:underline font-medium">available pools</Link> to join one.</p>
+                    <p>No active investments. Browse <Link href="/dashboard/vc-pool" className="text-[var(--primary)] hover:underline font-medium">available pools</Link> to join one.</p>
                   </div>
                 ) : (
                   activePools.map((item) => (
