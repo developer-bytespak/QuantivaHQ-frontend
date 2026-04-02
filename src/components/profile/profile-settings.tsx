@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
-import { getUserProfile, updateUserProfile, uploadProfilePicture } from "@/lib/api/user";
+import { getUserProfile, updateUserProfile, uploadProfilePicture, deleteProfilePicture } from "@/lib/api/user";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
 import countries from "i18n-iso-countries";
 
@@ -855,11 +855,15 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
   // Handle remove image
   const handleRemoveImage = async () => {
-    // Note: To fully remove, we'd need a DELETE endpoint
-    // For now, just clear from UI - the URL will remain in DB
-    setProfileImage(null);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("profileImageUpdated"));
+    try {
+      await deleteProfilePicture();
+      setProfileImage(null);
+      localStorage.removeItem("quantivahq_profile_image");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("profileImageUpdated"));
+      }
+    } catch (err) {
+      console.error("Failed to remove profile picture:", err);
     }
     setShowImageMenu(false);
   };

@@ -223,6 +223,13 @@ export async function uploadProfilePicture(
   }
 }
 
+/**
+ * Remove profile picture
+ */
+export async function deleteProfilePicture(): Promise<void> {
+  await apiRequest({ method: "DELETE", path: "/users/me/profile-picture" });
+}
+
 export interface DeleteAccountRequest {
   password: string;
   twoFactorCode: string;
