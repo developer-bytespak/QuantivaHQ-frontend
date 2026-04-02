@@ -252,6 +252,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [selectedTradeIndex, setSelectedTradeIndex] = useState<number>(0);
   const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<any>(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Paper trading mock usage detection and pagination
   const searchParams = useSearchParams();
@@ -1119,6 +1120,8 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const handleAutoTradeSuccess = () => {
     setShowAutoTradeModal(false);
     setSelectedSignal(null);
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
     if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
   };
 
@@ -1854,6 +1857,13 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           onSuccess={handleAutoTradeSuccess}
           strategy={currentStrategy ?? undefined}
         />
+      )}
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <div className="fixed top-8 right-8 z-[10000] animate-fade-in rounded-lg bg-green-600 px-6 py-3 text-white shadow-lg">
+          Trade executed successfully!
+        </div>
       )}
 
       {/* Positions Modal */}

@@ -609,14 +609,6 @@ export default function DashboardPage() {
                   <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
                     {formatCurrency(dashboardData.portfolio.totalValue)}
                   </p>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs sm:text-sm font-medium ${dashboardData.portfolio.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatCurrency(dashboardData.portfolio.totalPnl)}
-                    </span>
-                    <span className={`text-xs sm:text-sm ${dashboardData.portfolio.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      ({formatPercent(dashboardData.portfolio.pnlPercent)})
-                    </span>
-                  </div>
                 </div>
 
                 {/* Active Strategies Inner Box */}
