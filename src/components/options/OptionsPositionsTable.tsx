@@ -31,7 +31,7 @@ export function OptionsPositionsTable({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
         <span className="ml-3 text-sm text-slate-400">Loading positions…</span>
       </div>
     );

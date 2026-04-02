@@ -227,7 +227,7 @@ export function ManualTradeModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -254,7 +254,7 @@ export function ManualTradeModal({
             <div
               key={s}
               className={`h-1 flex-1 rounded-full transition-all ${
-                s <= step ? "bg-[#fc4f02]" : "bg-slate-700"
+                s <= step ? "bg-[var(--primary)]" : "bg-slate-700"
               }`}
             />
           ))}
@@ -272,7 +272,7 @@ export function ManualTradeModal({
                 <label
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all ${
                     positionMode === "usd"
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                      ? "border-[var(--primary)] bg-[var(--primary)]/10"
                       : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                   }`}
                 >
@@ -281,7 +281,7 @@ export function ManualTradeModal({
                     name="positionMode"
                     checked={positionMode === "usd"}
                     onChange={() => setPositionMode("usd")}
-                    className="mt-1 h-4 w-4 text-[#fc4f02]"
+                    className="mt-1 h-4 w-4 text-[var(--primary)]"
                   />
                   <div className="flex-1">
                     <div className="mb-2 text-sm text-slate-200">Amount in USD</div>
@@ -302,7 +302,7 @@ export function ManualTradeModal({
                 <label
                   className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-all ${
                     positionMode === "percent"
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                      ? "border-[var(--primary)] bg-[var(--primary)]/10"
                       : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                   }`}
                 >
@@ -311,7 +311,7 @@ export function ManualTradeModal({
                     name="positionMode"
                     checked={positionMode === "percent"}
                     onChange={() => setPositionMode("percent")}
-                    className="mt-1 h-4 w-4 text-[#fc4f02]"
+                    className="mt-1 h-4 w-4 text-[var(--primary)]"
                   />
                   <div className="flex-1">
                     <div className="mb-2 text-sm text-slate-200">Percentage of balance</div>
@@ -359,7 +359,7 @@ export function ManualTradeModal({
                 <label
                   className={`flex cursor-pointer flex-col gap-2 rounded-lg border p-4 transition-all ${
                     orderType === "MARKET"
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                      ? "border-[var(--primary)] bg-[var(--primary)]/10"
                       : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                   }`}
                 >
@@ -369,7 +369,7 @@ export function ManualTradeModal({
                       name="orderType"
                       checked={orderType === "MARKET"}
                       onChange={() => setOrderType("MARKET")}
-                      className="h-4 w-4 text-[#fc4f02]"
+                      className="h-4 w-4 text-[var(--primary)]"
                     />
                     <div className="text-sm font-medium text-slate-200">MARKET ORDER</div>
                   </div>
@@ -381,7 +381,7 @@ export function ManualTradeModal({
                 <label
                   className={`flex cursor-pointer flex-col gap-2 rounded-lg border p-4 transition-all ${
                     orderType === "LIMIT"
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                      ? "border-[var(--primary)] bg-[var(--primary)]/10"
                       : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                   }`}
                 >
@@ -391,7 +391,7 @@ export function ManualTradeModal({
                       name="orderType"
                       checked={orderType === "LIMIT"}
                       onChange={() => setOrderType("LIMIT")}
-                      className="h-4 w-4 text-[#fc4f02]"
+                      className="h-4 w-4 text-[var(--primary)]"
                     />
                     <div className="text-sm font-medium text-slate-200">LIMIT ORDER</div>
                   </div>
@@ -430,7 +430,7 @@ export function ManualTradeModal({
                   <label
                     className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all ${
                       useSignalSL
-                        ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
                         : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                     }`}
                   >
@@ -438,7 +438,7 @@ export function ManualTradeModal({
                       type="radio"
                       checked={useSignalSL}
                       onChange={() => setUseSignalSL(true)}
-                      className="h-4 w-4 text-[#fc4f02]"
+                      className="h-4 w-4 text-[var(--primary)]"
                     />
                     <span className="text-sm text-slate-200">
                       Use Signal's SL ({formatPercent(parsePercent(signal.stopLoss) || 5)})
@@ -448,7 +448,7 @@ export function ManualTradeModal({
                   <label
                     className={`flex cursor-pointer flex-col gap-2 rounded-lg border p-3 transition-all ${
                       !useSignalSL
-                        ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
                         : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                     }`}
                   >
@@ -457,7 +457,7 @@ export function ManualTradeModal({
                         type="radio"
                         checked={!useSignalSL}
                         onChange={() => setUseSignalSL(false)}
-                        className="h-4 w-4 text-[#fc4f02]"
+                        className="h-4 w-4 text-[var(--primary)]"
                       />
                       <span className="text-sm text-slate-200">Custom</span>
                     </div>
@@ -489,7 +489,7 @@ export function ManualTradeModal({
                   <label
                     className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-all ${
                       useSignalTP
-                        ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
                         : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                     }`}
                   >
@@ -497,7 +497,7 @@ export function ManualTradeModal({
                       type="radio"
                       checked={useSignalTP}
                       onChange={() => setUseSignalTP(true)}
-                      className="h-4 w-4 text-[#fc4f02]"
+                      className="h-4 w-4 text-[var(--primary)]"
                     />
                     <span className="text-sm text-slate-200">
                       Use Signal's TP (
@@ -508,7 +508,7 @@ export function ManualTradeModal({
                   <label
                     className={`flex cursor-pointer flex-col gap-2 rounded-lg border p-3 transition-all ${
                       !useSignalTP
-                        ? "border-[#fc4f02] bg-[#fc4f02]/10"
+                        ? "border-[var(--primary)] bg-[var(--primary)]/10"
                         : "border-slate-700 bg-slate-800/30 hover:border-slate-600"
                     }`}
                   >
@@ -517,7 +517,7 @@ export function ManualTradeModal({
                         type="radio"
                         checked={!useSignalTP}
                         onChange={() => setUseSignalTP(false)}
-                        className="h-4 w-4 text-[#fc4f02]"
+                        className="h-4 w-4 text-[var(--primary)]"
                       />
                       <span className="text-sm text-slate-200">Custom</span>
                     </div>
@@ -631,7 +631,7 @@ export function ManualTradeModal({
             <button
               onClick={handleNext}
               disabled={loadingPrice}
-              className="flex-1 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
             >
               Next →
             </button>
@@ -639,7 +639,7 @@ export function ManualTradeModal({
             <button
               onClick={handleExecute}
               disabled={executing}
-              className="flex-1 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+              className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
             >
               {executing ? "Executing..." : "Execute Trade"}
             </button>

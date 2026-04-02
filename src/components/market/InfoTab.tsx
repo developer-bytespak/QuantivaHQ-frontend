@@ -108,7 +108,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
     );
   }
@@ -154,10 +154,10 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
     return (
       <div className="space-y-6">
         {/* Description */}
-        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">About {stockData.name}</h3>
-            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 text-[#fda300] border border-[#fc4f02]/30">
+            <span className="px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-[var(--primary)]/20 to-[var(--primary-light)]/20 text-[var(--primary-light)] border border-[var(--primary)]/30">
               {stockData.sector}
             </span>
           </div>
@@ -168,7 +168,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
         </div>
 
         {/* Market Statistics */}
-        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
           <h3 className="text-lg font-semibold text-white mb-6">Market Statistics</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="space-y-1">
@@ -231,12 +231,12 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
         </div>
 
         {/* Price Performance */}
-        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
           <h3 className="text-lg font-semibold text-white mb-6">Price Performance</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {changeFromOpen !== null && (
               <div 
-                className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-105 hover:shadow-lg ${
+                className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-[1.02] hover:shadow-lg ${
                   changeFromOpen >= 0 ? "hover:shadow-green-500/20" : "hover:shadow-red-500/20"
                 }`}
               >
@@ -269,7 +269,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
             )}
             
             <div 
-              className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-105 hover:shadow-lg ${
+              className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-[1.02] hover:shadow-lg ${
                 stockData.changePercent24h >= 0 ? "hover:shadow-green-500/20" : "hover:shadow-red-500/20"
               }`}
             >
@@ -301,7 +301,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
             </div>
 
             <div 
-              className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-105 hover:shadow-lg ${
+              className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-[1.02] hover:shadow-lg ${
                 (stockData.change24h || 0) >= 0 ? "hover:shadow-green-500/20" : "hover:shadow-red-500/20"
               }`}
             >
@@ -336,7 +336,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
 
         {/* Quick Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-1.5 rounded-lg bg-green-500/20">
                 <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -350,7 +350,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
             </p>
           </div>
 
-          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+          <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="p-1.5 rounded-lg bg-red-500/20">
                 <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -365,7 +365,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
           </div>
 
           {stockData.peRatio && (
-            <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+            <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="p-1.5 rounded-lg bg-blue-500/20">
                   <svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -379,7 +379,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
           )}
 
           {stockData.dividendYield && (
-            <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
+            <div className="rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="p-1.5 rounded-lg bg-purple-500/20">
                   <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -436,13 +436,13 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
     <div className="space-y-6">
       {/* Description */}
       {description && (
-        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-white">About {coinData.name}</h3>
             {isLongDescription && (
               <button
                 onClick={() => setIsDescriptionOverlayOpen(true)}
-                className="text-xs font-medium text-[#fc4f02] hover:text-[#fda300] transition-colors"
+                className="text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors"
               >
                 Read More
               </button>
@@ -475,7 +475,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
           onClick={() => setIsDescriptionOverlayOpen(false)}
         >
           <div 
-            className="relative w-[90vw] h-[85vh] max-w-[800px] max-h-[800px] overflow-hidden rounded-lg shadow-[0_20px_25px_-5px_rgba(0,0,0,0.3),0_0_20px_rgba(252,79,2,0.2),0_0_30px_rgba(253,163,0,0.15)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur"
+            className="relative w-[90vw] h-[85vh] max-w-[800px] max-h-[800px] overflow-hidden rounded-lg shadow-[0_20px_25px_-5px_rgba(0,0,0,0.3),0_0_20px_rgba(var(--primary-rgb),,0.2),0_0_30px_rgba(var(--primary-light-rgb),,0.15)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur"
             style={{
               animation: 'slideUp 0.3s ease-out'
             }}
@@ -484,8 +484,8 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
-                  <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20">
+                  <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -518,7 +518,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
       )}
 
       {/* Market Stats - Trading App Style */}
-      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <h3 className="text-lg font-semibold text-white mb-6">Market Statistics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="space-y-1">
@@ -589,7 +589,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
       </div>
 
       {/* Price Changes */}
-      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+      <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <h3 className="text-lg font-semibold text-white mb-6">Price Performance</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
@@ -607,7 +607,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
             return (
               <div 
                 key={label} 
-                className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-105 hover:shadow-lg ${
+                className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-[1.02] hover:shadow-lg ${
                   isPositive 
                     ? "hover:shadow-green-500/20" 
                     : "hover:shadow-red-500/20"
@@ -660,7 +660,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
         links.twitter_screen_name ||
         links.subreddit_url ||
         links.repos_url?.github?.[0]) && (
-        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
           <h3 className="text-lg font-semibold text-white mb-6">Official Links</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {links.homepage?.[0] && (
@@ -668,7 +668,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
                 href={links.homepage[0]}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[#fc4f02]/20"
+                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.2)]"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 group-hover:from-blue-500/30 group-hover:to-blue-600/20 transition-all duration-300">
@@ -693,7 +693,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
                 href={`https://twitter.com/${links.twitter_screen_name}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-sky-500/20"
+                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-sky-500/20"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-gradient-to-br from-sky-500/20 to-sky-600/10 group-hover:from-sky-500/30 group-hover:to-sky-600/20 transition-all duration-300">
@@ -718,7 +718,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
                 href={links.subreddit_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-orange-500/20"
+                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-orange-500/20"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500/20 to-orange-600/10 group-hover:from-orange-500/30 group-hover:to-orange-600/20 transition-all duration-300">
@@ -743,7 +743,7 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
                 href={links.repos_url.github[0]}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
+                className="group relative rounded-xl p-4 bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur hover:from-white/[0.12] hover:to-transparent transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-purple-500/20"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/10 group-hover:from-purple-500/30 group-hover:to-purple-600/20 transition-all duration-300">

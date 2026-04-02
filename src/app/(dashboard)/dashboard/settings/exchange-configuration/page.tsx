@@ -217,7 +217,7 @@ export default function ExchangeConfigurationPage() {
       return (
         <div className="text-center py-8 sm:py-10 bg-[--color-surface]/30 border border-[--color-border]/50 rounded-lg sm:rounded-xl mt-4">
           <div className="animate-spin w-7 h-7 mx-auto mb-3">
-            <svg className="w-full h-full text-[#fc4f02]" fill="none" viewBox="0 0 24 24">
+            <svg className="w-full h-full text-[var(--primary)]" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
@@ -244,14 +244,14 @@ export default function ExchangeConfigurationPage() {
           <div
             key={connection.connection_id}
             onClick={() => { setSelectedConnection(connection); setShowUpdateForm(false); }}
-            className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5 hover:border-[#fc4f02]/30 transition-all duration-200 cursor-pointer"
+            className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5 hover:border-[var(--primary)]/30 transition-all duration-200 cursor-pointer"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   <h3 className="text-base sm:text-lg font-semibold text-white truncate">{connection.exchange_name}</h3>
                   {connection.verified && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30 flex-shrink-0">
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30 flex-shrink-0">
                       Verified
                     </span>
                   )}
@@ -281,9 +281,9 @@ export default function ExchangeConfigurationPage() {
   const cryptoIsBinance = activeCryptoName?.includes("binance") ?? true;
 
   const renderCryptoSection = () => (
-    <div className="bg-gradient-to-br from-[#fc4f02]/10 to-[#fc4f02]/5 border border-[#fc4f02]/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
+    <div className="bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary)]/5 border border-[var(--primary)]/20 rounded-xl sm:rounded-2xl p-4 sm:p-6">
       <h2 className="text-lg sm:text-xl font-semibold text-white mb-1 flex items-center gap-2">
-        <svg className="w-5 h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         Crypto Exchange
@@ -314,13 +314,13 @@ export default function ExchangeConfigurationPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               onClick={() => handleSelectConnection(activeCrypto)}
-              className="px-4 py-2 rounded-lg border border-[#fc4f02]/40 text-[#fc4f02] text-sm font-semibold hover:bg-[#fc4f02]/10 transition-all duration-200"
+              className="px-4 py-2 rounded-lg border border-[var(--primary)]/40 text-[var(--primary)] text-sm font-semibold hover:bg-[var(--primary)]/10 transition-all duration-200"
             >
               Switch Credentials
             </button>
             <button
               onClick={handleCryptoSwitchExchange}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300"
             >
               Switch Exchange
             </button>
@@ -331,7 +331,7 @@ export default function ExchangeConfigurationPage() {
           <p className="text-sm text-slate-400">No crypto exchange connected yet</p>
           <button
             onClick={handleCryptoConnect}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300"
           >
             Connect
           </button>
@@ -430,21 +430,21 @@ export default function ExchangeConfigurationPage() {
   );
 
   const renderAddCryptoCTA = () => (
-    <div className="relative overflow-hidden bg-gradient-to-br from-[#fc4f02]/10 to-transparent border border-dashed border-[#fc4f02]/30 rounded-xl sm:rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#fc4f02]/15 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <div className="relative overflow-hidden bg-gradient-to-br from-[var(--primary)]/10 to-transparent border border-dashed border-[var(--primary)]/30 rounded-xl sm:rounded-2xl p-5 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[var(--primary)]/15 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-base sm:text-lg font-semibold text-white mb-1">Add Crypto Exchange</h3>
         <p className="text-sm text-slate-400">
-          Trade both crypto and stocks in one platform. Add a crypto exchange to upgrade to <span className="text-[#fc4f02] font-medium">Both</span> account type.
+          Trade both crypto and stocks in one platform. Add a crypto exchange to upgrade to <span className="text-[var(--primary)] font-medium">Both</span> account type.
         </p>
       </div>
       <button
         onClick={handleAddCryptoExchange}
-        className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 flex-shrink-0"
+        className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm font-semibold hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 flex-shrink-0"
       >
         Add Crypto Exchange
       </button>
@@ -458,7 +458,7 @@ export default function ExchangeConfigurationPage() {
       {/* Connection Details Overlay */}
       {selectedConnection && !showUpdateForm && mounted && typeof window !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedConnection(null)}
         >
           <div
@@ -468,15 +468,15 @@ export default function ExchangeConfigurationPage() {
             {/* Header */}
             <div className="border-b border-[--color-border]/30 bg-gradient-to-br from-[--color-surface-alt] to-[--color-surface-alt]/90 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 flex-shrink-0">
               <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-lg sm:text-2xl font-bold text-white truncate">{selectedConnection.exchange_name}</h2>
                   {selectedConnection.verified && (
-                    <span className="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30">
+                    <span className="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30">
                       Verified
                     </span>
                   )}
@@ -517,7 +517,7 @@ export default function ExchangeConfigurationPage() {
               <div className="pt-4 sm:pt-6 border-t border-[--color-border]/50 flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => handleSelectConnection(selectedConnection)}
-                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
                 >
                   Update Credentials
                 </button>
@@ -541,8 +541,8 @@ export default function ExchangeConfigurationPage() {
       <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
@@ -570,7 +570,7 @@ export default function ExchangeConfigurationPage() {
       {/* Update Form Modal */}
       {showUpdateForm && selectedConnection && mounted && typeof window !== "undefined" &&
         createPortal(
-          <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="w-full max-w-md rounded-lg sm:rounded-2xl border border-[--color-border] bg-[--color-surface] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
               {/* Modal Header */}
               <div className="border-b border-[--color-border] bg-[--color-surface]/80 backdrop-blur-sm p-4 sm:p-6 flex items-start justify-between flex-shrink-0">
@@ -591,8 +591,8 @@ export default function ExchangeConfigurationPage() {
 
               {/* Modal Body */}
               <div className="overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1">
-                <div className="bg-[#fc4f02]/10 border border-[#fc4f02]/30 rounded-lg p-3 sm:p-4">
-                  <p className="text-[#fc4f02] text-xs sm:text-sm font-semibold flex items-center gap-2">
+                <div className="bg-[var(--primary)]/10 border border-[var(--primary)]/30 rounded-lg p-3 sm:p-4">
+                  <p className="text-[var(--primary)] text-xs sm:text-sm font-semibold flex items-center gap-2">
                     <span>&#9888;&#65039;</span> Security Notice
                   </p>
                   <p className="text-slate-300 text-xs sm:text-sm mt-2">
@@ -608,7 +608,7 @@ export default function ExchangeConfigurationPage() {
                     value={formData.api_key}
                     onChange={(e) => { setFormData({ ...formData, api_key: e.target.value }); if (formErrors.api_key) setFormErrors({ ...formErrors, api_key: "" }); }}
                     placeholder="Enter new API key"
-                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${formErrors.api_key ? "border-red-500/50" : "border-[--color-border]"} focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${formErrors.api_key ? "border-red-500/50" : "border-[--color-border]"} focus:border-[var(--primary)] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
                   />
                   {formErrors.api_key && <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_key}</p>}
                 </div>
@@ -621,7 +621,7 @@ export default function ExchangeConfigurationPage() {
                     value={formData.api_secret}
                     onChange={(e) => { setFormData({ ...formData, api_secret: e.target.value }); if (formErrors.api_secret) setFormErrors({ ...formErrors, api_secret: "" }); }}
                     placeholder="Enter new API secret"
-                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${formErrors.api_secret ? "border-red-500/50" : "border-[--color-border]"} focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border ${formErrors.api_secret ? "border-red-500/50" : "border-[--color-border]"} focus:border-[var(--primary)] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0`}
                   />
                   {formErrors.api_secret && <p className="text-red-400 text-xs mt-1.5 font-medium">{formErrors.api_secret}</p>}
                 </div>
@@ -635,7 +635,7 @@ export default function ExchangeConfigurationPage() {
                       value={formData.passphrase}
                       onChange={(e) => setFormData({ ...formData, passphrase: e.target.value })}
                       placeholder="Bybit passphrase if required"
-                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border border-[--color-border] focus:border-[#fc4f02] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-[--color-surface-alt] border border-[--color-border] focus:border-[var(--primary)] text-white placeholder:text-slate-500 text-sm transition-colors focus:outline-none focus:ring-0"
                     />
                   </div>
                 )}
@@ -654,7 +654,7 @@ export default function ExchangeConfigurationPage() {
                 <button
                   onClick={handleUpdateConnection}
                   disabled={isSubmitting}
-                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#FDA300] hover:shadow-lg hover:shadow-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all duration-200"
+                  className="flex-1 px-4 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-all duration-200"
                 >
                   {isSubmitting ? "Updating..." : "Update"}
                 </button>

@@ -35,7 +35,7 @@ export function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
         : [];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[400] p-4">
       <div className="bg-[--color-surface] border border-[--color-border] rounded-lg max-w-md w-full p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-2xl font-bold text-white">Upgrade Plan</h2>
@@ -60,7 +60,7 @@ export function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
                 onClick={() => setBillingPeriod(option.value)}
                 className={`flex-1 py-2 px-3 rounded text-xs font-semibold transition-all ${
                   billingPeriod === option.value
-                    ? "bg-[#fc4f02] text-white"
+                    ? "bg-[var(--primary)] text-white"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
@@ -79,13 +79,13 @@ export function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
                   onClick={() => setSelectedPlan(plan.tier)}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     selectedPlan === plan.tier
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10"
-                      : "border-[--color-border] hover:border-[#fc4f02]/50"
+                      ? "border-[var(--primary)] bg-[var(--primary)]/10"
+                      : "border-[--color-border] hover:border-[var(--primary)]/50"
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-lg font-semibold text-white">{plan.name}</h3>
-                    <span className="text-xl font-bold text-[#fc4f02]">
+                    <span className="text-xl font-bold text-[var(--primary)]">
                       ${pricing.price.toFixed(2)}
                     </span>
                   </div>
@@ -122,7 +122,7 @@ export function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
               disabled={!selectedPlan}
               className={`flex-1 px-4 py-2 rounded-lg transition-colors text-sm font-semibold ${
                 selectedPlan
-                  ? "bg-[#fc4f02] text-white hover:bg-[#e04502]"
+                  ? "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
                   : "bg-slate-600 text-slate-400 cursor-not-allowed"
               }`}
             >
@@ -155,7 +155,7 @@ export function CancelSubscriptionModal({ isOpen, onClose }: CancelModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[400] p-4">
       <div className="bg-[--color-surface] border border-red-500/30 rounded-lg max-w-md w-full p-6">
         <h2 className="text-2xl font-bold text-red-400 mb-4">⚠️ Cancel Subscription</h2>
 
@@ -177,7 +177,7 @@ export function CancelSubscriptionModal({ isOpen, onClose }: CancelModalProps) {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Your feedback helps us improve..."
-              className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[#fc4f02] focus:outline-none"
+              className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[var(--primary)] focus:outline-none"
               rows={3}
             />
           </div>
@@ -225,7 +225,7 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[400] p-4">
       <div className="bg-[--color-surface] border border-[--color-border] rounded-lg max-w-md w-full p-6">
         <h2 className="text-2xl font-bold text-white mb-4">Payment Details</h2>
 
@@ -238,7 +238,7 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               value={cardNumber}
               onChange={(e) => setCardNumber(e.target.value.replace(/\s/g, "").slice(0, 16))}
               placeholder="1234 5678 9012 3456"
-              className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[#fc4f02] focus:outline-none"
+              className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[var(--primary)] focus:outline-none"
             />
           </div>
 
@@ -251,7 +251,7 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 value={expiryDate}
                 onChange={(e) => setExpiryDate(e.target.value.slice(0, 5))}
                 placeholder="12/25"
-                className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[#fc4f02] focus:outline-none"
+                className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[var(--primary)] focus:outline-none"
               />
             </div>
             <div>
@@ -261,7 +261,7 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
                 value={cvc}
                 onChange={(e) => setCvc(e.target.value.slice(0, 4))}
                 placeholder="123"
-                className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[#fc4f02] focus:outline-none"
+                className="w-full px-3 py-2 bg-[--color-surface-alt] border border-[--color-border] rounded-lg text-white placeholder:text-slate-500 text-sm focus:border-[var(--primary)] focus:outline-none"
               />
             </div>
           </div>
@@ -287,7 +287,7 @@ export function PaymentModal({ isOpen, onClose }: PaymentModalProps) {
               className={`flex-1 px-4 py-2 rounded-lg transition-colors text-sm font-semibold ${
                 isProcessing || !cardNumber || !expiryDate || !cvc
                   ? "bg-slate-600 text-slate-400 cursor-not-allowed"
-                  : "bg-[#fc4f02] text-white hover:bg-[#e04502]"
+                  : "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
               }`}
             >
               {isProcessing ? "Processing..." : "Pay Now"}

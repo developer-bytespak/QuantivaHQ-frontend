@@ -105,7 +105,7 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
   if (isLoading && !orderBook && trades.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
     );
   }
@@ -131,7 +131,7 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
           onClick={() => setActiveView("orderbook")}
           className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
             activeView === "orderbook"
-              ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+              ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
               : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
@@ -141,7 +141,7 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
           onClick={() => setActiveView("trades")}
           className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
             activeView === "trades"
-              ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+              ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
               : "text-slate-400 hover:text-white hover:bg-white/5"
           }`}
         >
@@ -155,7 +155,7 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
           {orderBook ? (
             <>
               {/* Spread Info */}
-              <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+              <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Spread</p>
@@ -175,7 +175,7 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
               {/* Order Book Table */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Asks (Sell Orders) */}
-                <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+                <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10">
                       <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -214,7 +214,7 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
                 </div>
 
                 {/* Bids (Buy Orders) */}
-                <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+                <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
                       <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -254,7 +254,7 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
               </div>
             </>
           ) : (
-            <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+            <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
               <p className="text-sm text-slate-400 text-center">No order book data available</p>
             </div>
           )}
@@ -263,10 +263,10 @@ export default function TradingDataTab({ connectionId, symbol, initialOrderBook,
 
       {/* Recent Trades View */}
       {activeView === "trades" && (
-        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className="p-1.5 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/10">
-              <svg className="w-4 h-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/10">
+              <svg className="w-4 h-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>

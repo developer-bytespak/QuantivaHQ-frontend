@@ -192,7 +192,7 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-6xl max-h-[90vh] rounded-2xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/[0.12] backdrop-blur-xl shadow-2xl flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.08] p-6">
@@ -228,7 +228,7 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
                 onClick={() => setFilterStatus(key)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   filterStatus === key
-                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                     : "bg-white/5 text-slate-400 hover:text-white hover:bg-white/10"
                 }`}
               >
@@ -260,7 +260,7 @@ export function OrdersPanel({ onClose, refreshTrigger }: OrdersPanelProps) {
                 <p className="text-red-400 mb-2">⚠️ {error}</p>
                 <button
                   onClick={fetchOrders}
-                  className="mt-4 px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white text-sm font-medium hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all"
+                  className="mt-4 px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm font-medium hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)] transition-all"
                 >
                   Retry
                 </button>

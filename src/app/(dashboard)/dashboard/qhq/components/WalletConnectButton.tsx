@@ -43,7 +43,7 @@ export function WalletConnectButton() {
               openConnectModal();
               setShowRefresh(true);
             }}
-            className="py-2.5 px-6 rounded-lg text-base font-semibold transition-all whitespace-nowrap bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white hover:from-[#fd6a00] hover:to-[#fdb800]"
+            className="py-2.5 px-6 rounded-lg text-base font-semibold transition-all whitespace-nowrap bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white hover:from-[#fd6a00] hover:to-[#fdb800]"
           >
             Connect Wallet
           </button>
@@ -53,7 +53,7 @@ export function WalletConnectButton() {
       {showRefresh && (
         <button
           onClick={() => window.location.reload()}
-          className="py-2.5 px-4 rounded-lg text-sm font-medium border border-[--color-border] text-slate-300 hover:text-white hover:border-[#fc4f02]/50 transition-all"
+          className="py-2.5 px-4 rounded-lg text-sm font-medium border border-[--color-border] text-slate-300 hover:text-white hover:border-[var(--primary)]/50 transition-all"
         >
           ↻ Refresh
         </button>

@@ -75,20 +75,20 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] flex items-center justify-center bg-black transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[500] flex items-center justify-center bg-black transition-opacity duration-500 ${
         isExiting ? "opacity-0" : "opacity-100"
       }`}
     >
       {/* Background Effects */}
       <div className="absolute inset-0">
         {/* Animated gradient orbs */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/10 blur-3xl animate-pulse" />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/10 blur-3xl animate-pulse" />
         <div
-          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fda300]/10 blur-3xl animate-pulse"
+          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary-light)]/10 blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
         <div
-          className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/8 blur-3xl animate-pulse"
+          className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/8 blur-3xl animate-pulse"
           style={{ animationDelay: "0.5s" }}
         />
         
@@ -96,8 +96,8 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
         <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
-            backgroundImage: `linear-gradient(rgba(252, 79, 2, 0.3) 1px, transparent 1px), 
-                              linear-gradient(90deg, rgba(252, 79, 2, 0.3) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(rgba(var(--primary-rgb), 0.3) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(var(--primary-rgb), 0.3) 1px, transparent 1px)`,
             backgroundSize: "50px 50px",
           }}
         />
@@ -109,14 +109,14 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
         <div className="relative mb-8">
           {/* Outer pulse rings */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-32 w-32 rounded-full border border-[#fc4f02]/20 animate-ping" style={{ animationDuration: "2s" }} />
+            <div className="h-32 w-32 rounded-full border border-[var(--primary)]/20 animate-ping" style={{ animationDuration: "2s" }} />
           </div>
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-24 w-24 rounded-full border border-[#fc4f02]/30 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.5s" }} />
+            <div className="h-24 w-24 rounded-full border border-[var(--primary)]/30 animate-ping" style={{ animationDuration: "2s", animationDelay: "0.5s" }} />
           </div>
           
           {/* Logo container */}
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 backdrop-blur-sm border border-[#fc4f02]/30">
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 backdrop-blur-sm border border-[var(--primary)]/30">
             <QuantivaLogo className="h-12 w-12 animate-pulse" />
           </div>
         </div>
@@ -125,7 +125,7 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
         <div className="relative w-64 h-64 mb-8">
           {/* Face outline with captured image */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-44 h-56 rounded-[40%] border-2 border-[#fc4f02]/60 relative overflow-hidden shadow-lg shadow-[#fc4f02]/20">
+            <div className="w-44 h-56 rounded-[40%] border-2 border-[var(--primary)]/60 relative overflow-hidden shadow-lg shadow-[rgba(var(--primary-rgb),0.5)]/20">
               {/* Captured selfie image */}
               {capturedImage && (
                 <img
@@ -140,9 +140,9 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
               
               {/* Scanning line */}
               <div
-                className="absolute left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#fc4f02] to-transparent animate-scan"
+                className="absolute left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent animate-scan"
                 style={{
-                  boxShadow: "0 0 30px 8px rgba(252, 79, 2, 0.6)",
+                  boxShadow: "0 0 30px 8px rgba(var(--primary-rgb), 0.6)",
                 }}
               />
               
@@ -150,22 +150,22 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
               <div
                 className="absolute inset-0 opacity-20"
                 style={{
-                  backgroundImage: `linear-gradient(rgba(252, 79, 2, 0.5) 1px, transparent 1px), 
-                                    linear-gradient(90deg, rgba(252, 79, 2, 0.5) 1px, transparent 1px)`,
+                  backgroundImage: `linear-gradient(rgba(var(--primary-rgb), 0.5) 1px, transparent 1px), 
+                                    linear-gradient(90deg, rgba(var(--primary-rgb), 0.5) 1px, transparent 1px)`,
                   backgroundSize: "20px 20px",
                 }}
               />
               
               {/* Pulsing glow effect */}
-              <div className="absolute inset-0 border-2 border-[#fc4f02]/40 rounded-[40%] animate-pulse" />
+              <div className="absolute inset-0 border-2 border-[var(--primary)]/40 rounded-[40%] animate-pulse" />
             </div>
           </div>
           
           {/* Corner brackets - animated */}
-          <div className="absolute top-4 left-4 w-10 h-10 border-t-3 border-l-3 border-[#fc4f02] rounded-tl-lg animate-pulse" style={{ borderWidth: "3px" }} />
-          <div className="absolute top-4 right-4 w-10 h-10 border-t-3 border-r-3 border-[#fc4f02] rounded-tr-lg animate-pulse" style={{ borderWidth: "3px", animationDelay: "0.2s" }} />
-          <div className="absolute bottom-4 left-4 w-10 h-10 border-b-3 border-l-3 border-[#fc4f02] rounded-bl-lg animate-pulse" style={{ borderWidth: "3px", animationDelay: "0.4s" }} />
-          <div className="absolute bottom-4 right-4 w-10 h-10 border-b-3 border-r-3 border-[#fc4f02] rounded-br-lg animate-pulse" style={{ borderWidth: "3px", animationDelay: "0.6s" }} />
+          <div className="absolute top-4 left-4 w-10 h-10 border-t-3 border-l-3 border-[var(--primary)] rounded-tl-lg animate-pulse" style={{ borderWidth: "3px" }} />
+          <div className="absolute top-4 right-4 w-10 h-10 border-t-3 border-r-3 border-[var(--primary)] rounded-tr-lg animate-pulse" style={{ borderWidth: "3px", animationDelay: "0.2s" }} />
+          <div className="absolute bottom-4 left-4 w-10 h-10 border-b-3 border-l-3 border-[var(--primary)] rounded-bl-lg animate-pulse" style={{ borderWidth: "3px", animationDelay: "0.4s" }} />
+          <div className="absolute bottom-4 right-4 w-10 h-10 border-b-3 border-r-3 border-[var(--primary)] rounded-br-lg animate-pulse" style={{ borderWidth: "3px", animationDelay: "0.6s" }} />
           
           {/* Data points animation */}
           <div className="absolute top-6 left-16 flex items-center gap-1 animate-fade-in-out" style={{ animationDelay: "0.5s" }}>
@@ -173,8 +173,8 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
             <span className="text-[10px] text-[#10b981] font-mono">FACE DETECTED</span>
           </div>
           <div className="absolute bottom-6 right-12 flex items-center gap-1 animate-fade-in-out" style={{ animationDelay: "1.5s" }}>
-            <div className="w-2 h-2 rounded-full bg-[#fda300] animate-ping" />
-            <span className="text-[10px] text-[#fda300] font-mono">ANALYZING</span>
+            <div className="w-2 h-2 rounded-full bg-[var(--primary-light)] animate-ping" />
+            <span className="text-[10px] text-[var(--primary-light)] font-mono">ANALYZING</span>
           </div>
           
           {/* Rotating ring */}
@@ -182,8 +182,8 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
             <div
               className="w-60 h-60 rounded-full border-2 border-transparent animate-spin"
               style={{
-                borderTopColor: "#fc4f02",
-                borderRightColor: "#fda300",
+                borderTopColor: "var(--primary)",
+                borderRightColor: "var(--primary-light)",
                 animationDuration: "3s",
               }}
             />
@@ -194,8 +194,8 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
             <div
               className="w-52 h-52 rounded-full border border-transparent animate-spin"
               style={{
-                borderBottomColor: "#fc4f02",
-                borderLeftColor: "rgba(252, 79, 2, 0.3)",
+                borderBottomColor: "var(--primary)",
+                borderLeftColor: "rgba(var(--primary-rgb), 0.3)",
                 animationDuration: "4s",
                 animationDirection: "reverse",
               }}
@@ -224,11 +224,11 @@ export function VerificationLoading({ capturedImage, isComplete, onComplete }: V
         <div className="w-full max-w-xs">
           <div className="flex items-center justify-between text-xs mb-2">
             <span className="text-slate-400">Verification Progress</span>
-            <span className="text-[#fc4f02] font-semibold">{Math.round(progress)}%</span>
+            <span className="text-[var(--primary)] font-semibold">{Math.round(progress)}%</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-300 ease-out shadow-lg shadow-[#fc4f02]/50 rounded-full relative"
+              className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] transition-all duration-300 ease-out shadow-lg shadow-[rgba(var(--primary-rgb),0.5)]/50 rounded-full relative"
               style={{ width: `${progress}%` }}
             >
               {/* Shimmer effect */}

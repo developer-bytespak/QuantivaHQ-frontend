@@ -1227,7 +1227,7 @@ export default function PaperTradingPage() {
   if (isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
     );
   }
@@ -1361,7 +1361,7 @@ export default function PaperTradingPage() {
           {/* Custom Strategy Button - Links to custom strategies trading */}
           <Link
             href="/dashboard/custom-strategies-trading?mode=paper&from=paper-trading"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#fc4f02]/20 to-[#fda300]/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-[#fc4f02]/30 hover:to-[#fda300]/30 transition-all border border-[#fc4f02]/40 hover:border-[#fc4f02]/60 shadow-lg shadow-[#fc4f02]/10 w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[var(--primary)]/20 to-[var(--primary-light)]/20 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-white hover:from-[var(--primary)]/30 hover:to-[var(--primary-light)]/30 transition-all border border-[var(--primary)]/40 hover:border-[var(--primary)]/60 shadow-lg shadow-[rgba(var(--primary-rgb),0.1)] w-full sm:w-auto"
             title="Trade with your custom strategies"
           >
             <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1393,7 +1393,7 @@ export default function PaperTradingPage() {
             title="Open session leaderboard"
           >
             <span>Leaderboard</span>
-            <span className="text-xs bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white px-2 py-0.5 rounded-full font-bold">
+            <span className="text-xs bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white px-2 py-0.5 rounded-full font-bold">
               {isStocksConnection ? stockTradeRecords.length : tradeRecords.length}
             </span>
           </button>
@@ -1467,7 +1467,7 @@ export default function PaperTradingPage() {
                   onClick={() => setActiveTab(idx)}
                   className={`px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all rounded-t-lg whitespace-nowrap ${
                     activeTab === idx
-                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                       : "text-slate-400 hover:text-white hover:bg-white/5"
                   }`}
                 >
@@ -1489,7 +1489,7 @@ export default function PaperTradingPage() {
                   onClick={() => setTimeFilter(period)}
                   className={`rounded-md px-2 sm:px-4 py-1 sm:py-2 text-xs font-medium transition-all flex-1 sm:flex-none ${
                     timeFilter === period
-                      ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                      ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                       : "text-slate-400 hover:text-white"
                   }`}
                 >
@@ -1552,7 +1552,7 @@ export default function PaperTradingPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-50"
                 >
                   Prev
                 </button>
@@ -1562,7 +1562,7 @@ export default function PaperTradingPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-40"
+                  className="rounded-md bg-[--color-surface] px-2 sm:px-3 py-1 text-xs text-slate-300 disabled:opacity-50"
                 >
                   Next
                 </button>
@@ -1582,7 +1582,7 @@ export default function PaperTradingPage() {
 
       {/* Trade Details Overlay */}
       {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
-        <div className="fixed inset-0 z-[9999] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowTradeOverlay(false)}>
+        <div className="fixed inset-0 z-[400] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowTradeOverlay(false)}>
           <div className="relative w-full max-w-4xl max-h-[90vh] rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 sm:mb-6 flex items-center justify-between sticky top-0 bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-3 sm:p-4 -m-4 sm:-m-6 mb-2 sm:mb-4">
               <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
@@ -1593,7 +1593,7 @@ export default function PaperTradingPage() {
 
             <div className="space-y-3 sm:space-y-4 p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-base font-semibold text-white whitespace-nowrap ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
+                <span className={`rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 text-base font-semibold text-white whitespace-nowrap ${filteredAndSortedTrades[selectedTradeIndex].type === "BUY" ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
                   {filteredAndSortedTrades[selectedTradeIndex].type}
                 </span>
                 <span className="text-base sm:text-lg font-medium text-white">{filteredAndSortedTrades[selectedTradeIndex].pair}</span>

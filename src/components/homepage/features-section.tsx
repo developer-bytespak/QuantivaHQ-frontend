@@ -46,7 +46,7 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
     >
       <div
         className={`relative overflow-hidden rounded-3xl border-2 border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 p-8 sm:p-10 backdrop-blur-xl transition-all duration-300 ${
-          isHovered ? "border-[#fc4f02]/60 shadow-2xl shadow-[#fc4f02]/30" : "shadow-xl shadow-black/20"
+          isHovered ? "border-[var(--primary)]/60 shadow-2xl shadow-[rgba(var(--primary-rgb),0.3)]/30" : "shadow-xl shadow-black/20"
         } ${
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
         }`}
@@ -77,30 +77,30 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
         />
 
         {/* Animated corner accents */}
-        <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-[#fc4f02]/20 to-transparent rounded-br-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-        <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-[#fda300]/20 to-transparent rounded-tl-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute top-0 left-0 w-20 h-20 bg-gradient-to-br from-[var(--primary)]/20 to-transparent rounded-br-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-tl from-[var(--primary-light)]/20 to-transparent rounded-tl-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         {/* Content with 3D depth */}
         <div className="relative z-10" style={{ transform: "translateZ(30px)" }}>
           {/* Icon container with enhanced 3D effect */}
           <div
-            className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[#fc4f02]/30 via-[#fda300]/20 to-[#fc4f02]/30 backdrop-blur-sm border border-[#fc4f02]/20 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl group-hover:shadow-[#fc4f02]/40"
+            className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--primary)]/30 via-[var(--primary-light)]/20 to-[var(--primary)]/30 backdrop-blur-sm border border-[var(--primary)]/20 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl group-hover:shadow-[rgba(var(--primary-rgb),0.3)]/40"
             style={{ transform: "translateZ(40px)" }}
           >
             <div className="relative" style={{ transform: "translateZ(10px)" }}>
               {icon}
             </div>
             {/* Icon glow effect */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#fc4f02]/40 to-[#fda300]/40 blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[var(--primary)]/40 to-[var(--primary-light)]/40 blur-xl opacity-0 group-hover:opacity-60 transition-opacity duration-500" />
           </div>
 
           {/* Title with 3D text effect */}
           <h3
-            className={`mb-4 text-2xl font-bold text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#fc4f02] group-hover:to-[#fda300] ${
+            className={`mb-4 text-2xl font-bold text-white transition-all duration-300 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[var(--primary)] group-hover:to-[var(--primary-light)] ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
             style={{
-              textShadow: isHovered ? "0 5px 20px rgba(252, 79, 2, 0.4)" : "none",
+              textShadow: isHovered ? "0 5px 20px rgba(var(--primary-rgb),, 0.4)" : "none",
               transform: "translateZ(25px)",
               transitionDelay: isVisible ? `${delay * 0.1}s` : "0s",
             }}
@@ -131,7 +131,7 @@ function FeatureCard({ icon, title, description, gradient, delay, index }: Featu
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="absolute w-2 h-2 rounded-full bg-[#fc4f02] opacity-60 animate-pulse"
+                className="absolute w-2 h-2 rounded-full bg-[var(--primary)] opacity-60 animate-pulse"
                 style={{
                   left: `${20 + i * 15}%`,
                   top: `${10 + (i % 3) * 30}%`,
@@ -166,7 +166,7 @@ function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: s
       >
         {title}
         <br />
-        <span className="bg-gradient-to-r from-[#fc4f02] via-[#fda300] to-[#fc4f02] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
+        <span className="bg-gradient-to-r from-[var(--primary)] via-[var(--primary-light)] to-[var(--primary)] bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
           {titleHighlight}
         </span>
       </h2>
@@ -184,13 +184,13 @@ export function FeaturesSection() {
   const features = [
     {
       icon: (
-        <svg className="h-10 w-10 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-10 w-10 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>
       ),
       title: "AI-Driven Trading Strategies",
       description: "Leverage advanced machine learning algorithms to optimize portfolios across crypto and stocks. Our AI continuously learns from market patterns to deliver superior trading strategies.",
-      gradient: "from-[#fc4f02] to-[#fda300]",
+      gradient: "from-[var(--primary)] to-[var(--primary-light)]",
     },
     {
       icon: (
@@ -242,7 +242,7 @@ export function FeaturesSection() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ transformStyle: "preserve-3d" }}>
         {/* Subtle gradient orbs for depth */}
         <div
-          className="absolute top-1/4 right-1/4 h-96 w-96 rounded-full bg-gradient-to-br from-[#fc4f02]/8 to-[#fda300]/4 blur-3xl"
+          className="absolute top-1/4 right-1/4 h-96 w-96 rounded-full bg-gradient-to-br from-[var(--primary)]/8 to-[var(--primary-light)]/4 blur-3xl"
           style={{ transform: "translateZ(-200px)" }}
         />
         <div
@@ -255,12 +255,12 @@ export function FeaturesSection() {
           className="absolute top-0 right-0 w-2/5 h-full opacity-[0.12]"
           style={{ transform: "translateZ(-100px)" }}
         >
-          <svg viewBox="0 0 500 800" className="w-full h-full text-[#fc4f02]">
+          <svg viewBox="0 0 500 800" className="w-full h-full text-[var(--primary)]">
             <defs>
               <linearGradient id="realChartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#fc4f02" stopOpacity="0.25" />
-                <stop offset="50%" stopColor="#fc4f02" stopOpacity="0.15" />
-                <stop offset="100%" stopColor="#fc4f02" stopOpacity="0" />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
+                <stop offset="50%" stopColor="var(--primary)" stopOpacity="0.15" />
+                <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
               </linearGradient>
               <pattern id="gridPattern" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
                 <line x1="0" y1="0" x2="0" y2="50" stroke="currentColor" strokeWidth="0.5" opacity="0.08" />
@@ -310,8 +310,8 @@ export function FeaturesSection() {
           <svg viewBox="0 0 600 300" className="w-full h-full">
             <defs>
               <pattern id="candleGrid" x="0" y="0" width="40" height="30" patternUnits="userSpaceOnUse">
-                <line x1="0" y1="0" x2="0" y2="30" stroke="#fc4f02" strokeWidth="0.3" opacity="0.1" />
-                <line x1="0" y1="0" x2="40" y2="0" stroke="#fc4f02" strokeWidth="0.3" opacity="0.1" />
+                <line x1="0" y1="0" x2="0" y2="30" stroke="var(--primary)" strokeWidth="0.3" opacity="0.1" />
+                <line x1="0" y1="0" x2="40" y2="0" stroke="var(--primary)" strokeWidth="0.3" opacity="0.1" />
               </pattern>
             </defs>
             <rect width="600" height="300" fill="url(#candleGrid)" />
@@ -370,8 +370,8 @@ export function FeaturesSection() {
                 <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.3" />
               </linearGradient>
               <linearGradient id="pieGradient3" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#fc4f02" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#fda300" stopOpacity="0.3" />
+                <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="var(--primary-light)" stopOpacity="0.3" />
               </linearGradient>
             </defs>
             {/* Realistic pie chart segments */}

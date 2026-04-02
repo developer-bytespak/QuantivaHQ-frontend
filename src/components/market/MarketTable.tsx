@@ -108,7 +108,7 @@ export function MarketTable({ stocks, loading, error }: MarketTableProps) {
           placeholder="Search by symbol, name, or sector..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-lg bg-[--color-surface]/60 px-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+          className="w-full rounded-lg bg-[--color-surface]/60 px-4 py-2 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
         />
       </div>
 
@@ -188,7 +188,7 @@ export function MarketTable({ stocks, loading, error }: MarketTableProps) {
                 filteredAndSortedStocks.map((stock) => (
                   <tr
                     key={stock.symbol}
-                    className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                    className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                   >
                     <td className="py-2 pl-2">
                       <div className="flex items-center gap-2">

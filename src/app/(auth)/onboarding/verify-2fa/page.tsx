@@ -153,8 +153,8 @@ export default function Verify2FAPage() {
     <div className="relative flex h-full w-full overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-black">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
       {/* Content */}
@@ -184,7 +184,7 @@ export default function Verify2FAPage() {
                     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
                     setCode(value);
                   }}
-                  className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 py-3 text-center text-2xl font-bold tracking-widest text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                  className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-4 py-3 text-center text-2xl font-bold tracking-widest text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                   placeholder="000000"
                   maxLength={6}
                   required
@@ -209,7 +209,7 @@ export default function Verify2FAPage() {
               <button
                 type="submit"
                 disabled={isLoading || code.length !== 6}
-                className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (

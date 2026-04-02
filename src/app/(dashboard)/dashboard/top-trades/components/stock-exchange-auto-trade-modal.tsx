@@ -129,7 +129,7 @@ export function StockExchangeAutoTradeModal({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
@@ -185,7 +185,7 @@ export function StockExchangeAutoTradeModal({
             placeholder="0.00"
             value={usdAmount}
             onChange={(e) => setUsdAmount(e.target.value)}
-            className="w-full rounded-lg bg-slate-800 border border-slate-600 px-4 py-3 text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/20"
+            className="w-full rounded-lg bg-slate-800 border border-slate-600 px-4 py-3 text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
           />
           {!loadingBalance && (
             <p className="mt-2 text-xs text-slate-500">Available: {formatCurrency(balance)} USD</p>
@@ -249,7 +249,7 @@ export function StockExchangeAutoTradeModal({
             type="button"
             onClick={handleExecute}
             disabled={executing || loadingBalance || !amountNum}
-            className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+            className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
           >
             {executing ? "Executing..." : "Confirm & Execute"}
           </button>

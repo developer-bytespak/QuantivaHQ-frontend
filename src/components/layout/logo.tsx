@@ -24,7 +24,7 @@ export function Logo({ collapsed = false }: LogoProps) {
       className="group flex items-center gap-2 sm:gap-3 text-base sm:text-lg font-semibold tracking-tight text-slate-100 transition-opacity hover:opacity-80 cursor-pointer"
       aria-label="Go to dashboard"
     >
-      <div className="relative flex h-10 sm:h-14 w-10 sm:w-14 items-center justify-center transition-transform duration-300 group-hover:scale-105">
+      <div className="relative flex h-10 sm:h-14 w-10 sm:w-14 items-center justify-center transition-transform duration-300 group-hover:scale-[1.02]">
         {imageError ? (
           <span className="text-lg sm:text-2xl font-bold text-white">Q</span>
         ) : (

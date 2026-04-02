@@ -24,55 +24,55 @@ interface DashboardSidebarProps {
 
 // Icon components for menu items
 const DashboardIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
   </svg>
 );
 
 const TradesIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
   </svg>
 );
 
 const AIInsightsIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
   </svg>
 );
 
 const VCPoolIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
   </svg>
 );
 
 const ProfileIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   </svg>
 );
 
 const HoldingsIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
   </svg>
 );
 
 const MarketIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
   </svg>
 );
 
 const PaperTradingIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
   </svg>
 );
 
 const OptionsIcon = ({ isActive }: { isActive: boolean }) => (
-  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[#fc4f02]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+  <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${isActive ? "text-[var(--primary)]" : "text-slate-400"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
   </svg>
 );
@@ -144,25 +144,25 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                     key={item.href}
                     href={item.href}
                     className={`group relative flex items-center ${collapsed ? "justify-center" : "gap-3"} rounded-xl ${collapsed ? "px-2" : "px-3"} py-2.5 sm:py-3 text-sm sm:text-base font-medium tracking-tight transition-all duration-200 ease-out ${isActive
-                        ? "bg-[#fc4f02]/12 text-[#fc4f02] shadow-[inset_0_0_0_1px_rgba(252,79,2,0.2)]"
+                        ? "bg-[var(--primary)]/12 text-[var(--primary)] shadow-[inset_0_0_0_1px_rgba(var(--primary-rgb),0.2)]"
                         : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                       }`}
                   >
                     {isActive && (
                       <div
-                        className="absolute left-0 top-1/2 h-7 w-0.5 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]"
+                        className="absolute left-0 top-1/2 h-7 w-0.5 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[var(--primary)] to-[var(--primary-light)]"
                       />
                     )}
                     <div className="flex-shrink-0 flex items-center justify-center">
                       {getIcon(item.label, isActive) || (
-                        <div className={`h-5 w-5 rounded ${isActive ? "bg-[#fc4f02]" : "bg-slate-400"}`}></div>
+                        <div className={`h-5 w-5 rounded ${isActive ? "bg-[var(--primary)]" : "bg-slate-400"}`}></div>
                       )}
                     </div>
                     {!collapsed && (
                       <span className="truncate font-medium">{item.label}</span>
                     )}
                     {isActive && !collapsed && (
-                      <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[#fc4f02]" />
+                      <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]" />
                     )}
                   </Link>
                 );
@@ -183,14 +183,14 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
           {/* Backdrop */}
           {mobileOpen && (
             <div
-              className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm sm:hidden transition-opacity duration-300"
+              className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm sm:hidden transition-opacity duration-300"
               onClick={() => setMobileOpen(false)}
             />
           )}
           
           {/* Menu Bar - slides down from top */}
           <div
-            className={`fixed left-0 top-16 z-40 w-full border-b border-white/[0.08] bg-[--color-surface] text-slate-100 sm:hidden overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ease-out transform ${
+            className={`fixed left-0 top-16 z-[301] w-full border-b border-white/[0.08] bg-[--color-surface] text-slate-100 sm:hidden overflow-y-auto max-h-[calc(100vh-64px)] transition-all duration-300 ease-out transform ${
               mobileOpen
                 ? "translate-y-0 opacity-100 visible"
                 : "-translate-y-full opacity-0 invisible"
@@ -221,23 +221,23 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
                           href={item.href}
                           onClick={() => setMobileOpen(false)}
                           className={`group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium tracking-tight transition-all duration-200 ease-out ${isActive
-                              ? "bg-[#fc4f02]/12 text-[#fc4f02] shadow-[inset_0_0_0_1px_rgba(252,79,2,0.2)]"
+                              ? "bg-[var(--primary)]/12 text-[var(--primary)] shadow-[inset_0_0_0_1px_rgba(var(--primary-rgb),0.2)]"
                               : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                             }`}
                         >
                           {isActive && (
                             <div
-                              className="absolute left-0 top-1/2 h-7 w-0.5 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#fc4f02] to-[#fda300]"
+                              className="absolute left-0 top-1/2 h-7 w-0.5 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[var(--primary)] to-[var(--primary-light)]"
                             />
                           )}
                           <div className="flex-shrink-0 flex items-center justify-center">
                             {getIcon(item.label, isActive) || (
-                              <div className={`h-5 w-5 rounded ${isActive ? "bg-[#fc4f02]" : "bg-slate-400"}`}></div>
+                              <div className={`h-5 w-5 rounded ${isActive ? "bg-[var(--primary)]" : "bg-slate-400"}`}></div>
                             )}
                           </div>
                           <span className="truncate font-medium">{item.label}</span>
                           {isActive && (
-                            <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[#fc4f02]" />
+                            <div className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]" />
                           )}
                         </Link>
                       );

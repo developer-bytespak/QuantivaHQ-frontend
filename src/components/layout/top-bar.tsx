@@ -67,7 +67,7 @@ function MobileMenuButton() {
   return (
     <button
       onClick={toggle}
-      className="sm:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-white/[0.07] to-transparent border border-[#fc4f02]/30 hover:border-[#fc4f02]/50 transition-all"
+      className="sm:hidden flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-white/[0.07] to-transparent border border-[var(--primary)]/30 hover:border-[var(--primary)]/50 transition-all"
       aria-label="Toggle menu"
     >
       <svg
@@ -239,9 +239,9 @@ function UserProfileSection() {
         <button
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 sm:gap-3 rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2 sm:px-3 py-1.5 sm:py-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
+          className="flex items-center gap-2 sm:gap-3 rounded-lg border border-[var(--primary)]/30 bg-gradient-to-br from-white/[0.07] to-transparent px-2 sm:px-3 py-1.5 sm:py-2 transition-all duration-200 hover:border-[var(--primary)]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
         >
-          <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#fc4f02] to-[#fda300] text-xs sm:text-sm font-bold text-white shadow-lg shadow-[#fc4f02]/30">
+          <div className="flex h-8 sm:h-10 w-8 sm:w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] text-xs sm:text-sm font-bold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]">
             {isValidImageUrl(profileImage) ? (
               <img
                 src={profileImage!}
@@ -271,7 +271,7 @@ function UserProfileSection() {
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-44 sm:w-48 rounded-xl bg-[#161616]/90 backdrop-blur-xl border border-white/[0.08] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
+          className="fixed z-[200] w-44 sm:w-48 rounded-xl bg-[#161616]/90 backdrop-blur-xl border border-white/[0.08] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
           style={{
             top: `${dropdownPosition.top}px`,
             right: `${dropdownPosition.right}px`,
@@ -281,9 +281,9 @@ function UserProfileSection() {
             {/* Subscription Tier */}
             <button
               onClick={() => { setIsOpen(false); router.push("/dashboard/settings/subscription"); }}
-              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-[#fc4f02]/10 hover:text-white"
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-[var(--primary)]/10 hover:text-white"
             >
-              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--primary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
               <span>{currentSubscription?.tier ?? "FREE"} Plan</span>
@@ -292,9 +292,9 @@ function UserProfileSection() {
             {/* Settings */}
             <button
               onClick={() => { setIsOpen(false); router.push("/dashboard/settings"); }}
-              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-[#fc4f02]/10 hover:text-white"
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-[var(--primary)]/10 hover:text-white"
             >
-              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[#fc4f02] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--primary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
@@ -307,7 +307,7 @@ function UserProfileSection() {
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:opacity-90"
+              className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-white transition-all duration-200 hover:opacity-90"
             >
               <svg className="h-4 w-4 sm:h-5 sm:w-5 text-white flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -406,7 +406,7 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center rounded-lg border border-[#fc4f02]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-1.5 sm:p-2 transition-all duration-200 hover:border-[#fc4f02]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
+        className="flex items-center justify-center rounded-lg border border-[var(--primary)]/30 bg-gradient-to-br from-white/[0.07] to-transparent p-1.5 sm:p-2 transition-all duration-200 hover:border-[var(--primary)]/50 hover:from-white/[0.1] hover:to-transparent cursor-pointer"
         aria-label="Switch dashboard type"
       >
         <svg
@@ -422,7 +422,7 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[100] w-44 sm:w-48 rounded-xl border border-[#fc4f02]/20 bg-[--color-surface-alt] p-1 shadow-2xl shadow-black/50 backdrop-blur-xl"
+          className="fixed z-[200] w-44 sm:w-48 rounded-xl border border-[var(--primary)]/20 bg-[--color-surface-alt] p-1 shadow-2xl shadow-black/50 backdrop-blur-xl"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -439,14 +439,14 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
                 }}
                 className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
                   isActive
-                    ? "bg-[#fc4f02]/15 text-[#fc4f02]"
+                    ? "bg-[var(--primary)]/15 text-[var(--primary)]"
                     : "text-slate-300 hover:bg-white/[0.06] hover:text-white"
                 }`}
               >
-                <span className={isActive ? "text-[#fc4f02]" : "text-slate-400"}>{option.icon}</span>
+                <span className={isActive ? "text-[var(--primary)]" : "text-slate-400"}>{option.icon}</span>
                 <span>{option.label}</span>
                 {isActive && (
-                  <svg className="ml-auto h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="ml-auto h-4 w-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -475,7 +475,7 @@ export function TopBar() {
       : getPageTitle(pathname);
 
   return (
-    <header className="sticky top-0 z-50 flex h-16 sm:h-20 lg:h-24 items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-b border-[#fc4f02]/30 bg-[--color-surface-alt] px-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-[100] flex h-16 sm:h-20 lg:h-24 items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-b border-[var(--primary)]/30 bg-[--color-surface-alt] px-3 sm:px-6 lg:px-8">
       <div className="flex items-center gap-2 sm:gap-3 relative min-w-0">
         <h1 ref={headingRef} className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">{pageTitle}</h1>
         <DashboardSwitcher headingRef={headingRef} />

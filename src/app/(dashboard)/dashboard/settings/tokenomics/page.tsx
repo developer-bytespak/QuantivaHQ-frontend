@@ -51,8 +51,8 @@ export default function TokenomicsPage() {
       {/* Header */}
       <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -81,7 +81,7 @@ export default function TokenomicsPage() {
             </div>
             <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
               <p className="text-xs text-slate-400 mb-1">Circulating</p>
-              <p className="text-lg sm:text-xl font-bold text-[#fc4f02]">{formatNumber(stats?.circulating_supply)}</p>
+              <p className="text-lg sm:text-xl font-bold text-[var(--primary)]">{formatNumber(stats?.circulating_supply)}</p>
               <p className="text-xs text-slate-500">QHQ</p>
             </div>
             <div className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-3 sm:p-4">
@@ -152,7 +152,7 @@ export default function TokenomicsPage() {
                   href={`https://basescan.org/address/${wallet.wallet_address}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-2 py-1 text-xs rounded-lg bg-[--color-surface] border border-[--color-border] text-slate-300 hover:border-[#fc4f02]/50 transition-all duration-200"
+                  className="px-2 py-1 text-xs rounded-lg bg-[--color-surface] border border-[--color-border] text-slate-300 hover:border-[var(--primary)]/50 transition-all duration-200"
                 >
                   Basescan
                 </a>
@@ -164,7 +164,7 @@ export default function TokenomicsPage() {
             <p className="text-sm text-slate-400 mb-2">No wallet linked yet</p>
             <p className="text-xs text-slate-500">
               Connect your wallet from the{" "}
-              <a href="/dashboard/qhq" className="text-[#fc4f02] hover:underline">
+              <a href="/dashboard/qhq" className="text-[var(--primary)] hover:underline">
                 QHQ Dashboard
               </a>{" "}
               to claim tokens on-chain
@@ -187,7 +187,7 @@ export default function TokenomicsPage() {
                 href={`https://basescan.org/address/${stats.contract_address}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 px-3 py-1.5 text-xs rounded-lg bg-[--color-surface] border border-[--color-border] text-slate-300 hover:border-[#fc4f02]/50 transition-all duration-200 w-fit"
+                className="flex-shrink-0 px-3 py-1.5 text-xs rounded-lg bg-[--color-surface] border border-[--color-border] text-slate-300 hover:border-[var(--primary)]/50 transition-all duration-200 w-fit"
               >
                 View on Basescan
               </a>
@@ -216,12 +216,12 @@ export default function TokenomicsPage() {
               return (
                 <div
                   key={rule.id}
-                  className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5 hover:border-[#fc4f02]/30 transition-all duration-200"
+                  className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5 hover:border-[var(--primary)]/30 transition-all duration-200"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={meta.icon} />
                         </svg>
                       </div>
@@ -230,7 +230,7 @@ export default function TokenomicsPage() {
                         <p className="text-xs text-slate-400 truncate">{rule.description}</p>
                       </div>
                     </div>
-                    <span className="text-sm sm:text-base font-semibold text-[#fc4f02] whitespace-nowrap">
+                    <span className="text-sm sm:text-base font-semibold text-[var(--primary)] whitespace-nowrap">
                       +{parseFloat(rule.amount)} QHQ
                     </span>
                   </div>
@@ -251,9 +251,9 @@ export default function TokenomicsPage() {
           {DISCOUNT_TIERS.map((tier) => (
             <div
               key={tier.qhq}
-              className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5 text-center hover:border-[#fc4f02]/30 transition-all duration-200"
+              className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-5 text-center hover:border-[var(--primary)]/30 transition-all duration-200"
             >
-              <p className="text-2xl sm:text-3xl font-bold text-[#fc4f02] mb-1">{tier.discount}%</p>
+              <p className="text-2xl sm:text-3xl font-bold text-[var(--primary)] mb-1">{tier.discount}%</p>
               <p className="text-xs text-slate-400 mb-2">discount</p>
               <div className="inline-block px-3 py-1 rounded-full bg-[--color-surface] border border-[--color-border] text-xs text-slate-300">
                 {tier.qhq} QHQ

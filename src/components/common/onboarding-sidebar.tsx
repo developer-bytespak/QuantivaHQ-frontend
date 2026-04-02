@@ -15,7 +15,7 @@ function StepIcon({ stepNumber, status }: StepIconProps) {
   if (status === "completed") {
     return (
       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-lg shadow-white/30">
-        <svg className="h-5 w-5 text-[#FF6B35]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-5 w-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
         </svg>
       </div>
@@ -66,7 +66,7 @@ export function OnboardingSidebar() {
   };
 
   return (
-    <aside className={`hidden h-screen flex-col justify-between border-r border-[#FF6B35]/30 bg-[#FF6B35] transition-all duration-300 ease-in-out overflow-y-auto xl:flex ${
+    <aside className={`hidden h-screen flex-col justify-between border-r border-[var(--primary)]/30 bg-[var(--primary)] transition-all duration-300 ease-in-out overflow-y-auto xl:flex ${
       isExpanded ? "w-[320px] px-6 py-6" : "w-[80px] px-3 py-6"
     }`}>
       <div className="space-y-4">
@@ -77,7 +77,7 @@ export function OnboardingSidebar() {
           }`}>
             <button
               onClick={toggleSidebar}
-              className="relative cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95"
+              className="relative cursor-pointer transition-transform duration-300 hover:scale-[1.02] active:scale-95"
             >
               <div className="absolute inset-0 bg-[#0b0f19] rounded-lg blur-sm opacity-60" />
               <div className="relative bg-[#0b0f19]/80 rounded-lg p-2 shadow-lg">

@@ -78,8 +78,8 @@ export function TradingChartBackground({ className = "", opacity = 0.15 }: Tradi
       >
         <defs>
           <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#fc4f02" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#fc4f02" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
         
@@ -107,7 +107,7 @@ export function TradingChartBackground({ className = "", opacity = 0.15 }: Tradi
         <polyline
           points={points}
           fill="none"
-          stroke="#fc4f02"
+          stroke="var(--primary)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"

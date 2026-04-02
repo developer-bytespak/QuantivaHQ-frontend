@@ -102,7 +102,7 @@ function DetailRow({ label, value, mono = false }: { label: string; value?: stri
       <div className="flex items-start justify-between gap-3 mt-0.5">
         <span className={`text-sm text-white break-all leading-relaxed ${mono ? "font-mono text-xs" : ""}`}>{text}</span>
         {canCopy && (
-          <button onClick={copy} className="shrink-0 text-xs px-2 py-0.5 rounded border border-[--color-border] text-slate-400 hover:text-[#fc4f02] hover:border-[#fc4f02]/40 transition-colors">
+          <button onClick={copy} className="shrink-0 text-xs px-2 py-0.5 rounded border border-[--color-border] text-slate-400 hover:text-[var(--primary)] hover:border-[var(--primary)]/40 transition-colors">
             {copied ? "✓" : "Copy"}
           </button>
         )}
@@ -218,8 +218,8 @@ function AllTransactionsTab({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCard label="Total Txns" value={transactions.length} color="text-white" />
         <SummaryCard label="Deposits" value={deps.length} color="text-green-400" />
-        <SummaryCard label="Withdrawals" value={wits.length} color="text-[#fc4f02]" />
-        <SummaryCard label="Net Flow" value={`$${(depAmt - witAmt).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} color="text-[#fda300]" />
+        <SummaryCard label="Withdrawals" value={wits.length} color="text-[var(--primary)]" />
+        <SummaryCard label="Net Flow" value={`$${(depAmt - witAmt).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} color="text-[var(--primary-light)]" />
       </div>
 
       {error && !loading && <ErrorBox message={error} onRetry={onRetry} />}
@@ -229,7 +229,7 @@ function AllTransactionsTab({
         <div className="flex items-center gap-2 flex-wrap">
           {(["all", "deposit", "withdrawal"] as const).map((f) => (
             <button key={f} type="button" onClick={() => setFilter(f)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors border ${filter === f ? "bg-[#fc4f02]/20 border-[#fc4f02]/50 text-[#fc4f02]" : "border-[--color-border] text-slate-400 hover:text-white hover:bg-white/5"}`}>
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-colors border ${filter === f ? "bg-[var(--primary)]/20 border-[var(--primary)]/50 text-[var(--primary)]" : "border-[--color-border] text-slate-400 hover:text-white hover:bg-white/5"}`}>
               {f === "all" ? `All (${transactions.length})` : f === "deposit" ? `Deposits (${deps.length})` : `Withdrawals (${wits.length})`}
             </button>
           ))}
@@ -250,7 +250,7 @@ function AllTransactionsTab({
             </thead>
             <tbody>
               {visible.map((t) => (
-                <tr key={t.id} onClick={() => onSelect(t)} className="border-b border-[--color-border] hover:bg-[#fc4f02]/[0.06] cursor-pointer transition-colors">
+                <tr key={t.id} onClick={() => onSelect(t)} className="border-b border-[--color-border] hover:bg-[var(--primary)]/[0.06] cursor-pointer transition-colors">
                   <td className="px-4 py-3"><TypeBadge type={t.type} /></td>
                   <td className="px-4 py-3 font-semibold text-white">{t.coin}</td>
                   <td className="px-4 py-3 font-mono text-white">{parseFloat(t.amount).toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
@@ -285,7 +285,7 @@ function DepositsTab({
         <SummaryCard label="Total Deposits" value={deposits.length} color="text-white" />
         <SummaryCard label="Total Amount" value={`$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} color="text-green-400" />
         <SummaryCard label="Pending" value={pending} color="text-yellow-400" />
-        <SummaryCard label="Successful" value={success} color="text-[#fc4f02]" />
+        <SummaryCard label="Successful" value={success} color="text-[var(--primary)]" />
       </div>
 
       {error && !loading && <ErrorBox message={error} onRetry={onRetry} />}
@@ -304,7 +304,7 @@ function DepositsTab({
             </thead>
             <tbody>
               {deposits.map((d) => (
-                <tr key={d.id} onClick={() => onSelect(d)} className="border-b border-[--color-border] hover:bg-[#fc4f02]/[0.06] cursor-pointer transition-colors">
+                <tr key={d.id} onClick={() => onSelect(d)} className="border-b border-[--color-border] hover:bg-[var(--primary)]/[0.06] cursor-pointer transition-colors">
                   <td className="px-4 py-3 font-semibold text-white">{d.coin}</td>
                   <td className="px-4 py-3 font-mono text-white">{parseFloat(d.amount).toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
                   <td className="px-4 py-3 text-slate-300">{d.network}</td>
@@ -337,7 +337,7 @@ function WithdrawalsTab({
     <div className="space-y-5">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <SummaryCard label="Total Withdrawals" value={withdrawals.length} color="text-white" />
-        <SummaryCard label="Total Amount" value={`$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} color="text-[#fc4f02]" />
+        <SummaryCard label="Total Amount" value={`$${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} color="text-[var(--primary)]" />
         <SummaryCard label="Processing" value={processing} color="text-blue-400" />
         <SummaryCard label="Completed" value={completed} color="text-green-400" />
       </div>
@@ -358,7 +358,7 @@ function WithdrawalsTab({
             </thead>
             <tbody>
               {withdrawals.map((w) => (
-                <tr key={w.id} onClick={() => onSelect(w)} className="border-b border-[--color-border] hover:bg-[#fc4f02]/[0.06] cursor-pointer transition-colors">
+                <tr key={w.id} onClick={() => onSelect(w)} className="border-b border-[--color-border] hover:bg-[var(--primary)]/[0.06] cursor-pointer transition-colors">
                   <td className="px-4 py-3 font-semibold text-white">{w.coin}</td>
                   <td className="px-4 py-3 font-mono text-white">{parseFloat(w.amount).toLocaleString(undefined, { maximumFractionDigits: 8 })}</td>
                   <td className="px-4 py-3 font-mono text-slate-400 text-xs">{w.transactionFee}</td>
@@ -382,7 +382,7 @@ function WithdrawalsTab({
 function Spinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
     </div>
   );
 }
@@ -473,7 +473,7 @@ export default function VCPoolTransactionPage() {
             </svg>
           </button>
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[#fc4f02] to-[#fda300] bg-clip-text text-transparent">
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
               My Transactions
             </h1>
             <p className="text-sm text-slate-400 mt-1">Your Binance deposits and withdrawals</p>
@@ -494,7 +494,7 @@ export default function VCPoolTransactionPage() {
             onClick={() => setActiveTab(tab.id)}
             className={`px-4 py-3 text-sm font-medium transition-colors ${
               activeTab === tab.id
-                ? "text-[#fc4f02] bg-[#fc4f02]/20 border-b-2 border-[#fc4f02]"
+                ? "text-[var(--primary)] bg-[var(--primary)]/20 border-b-2 border-[var(--primary)]"
                 : "text-white/80 hover:text-white"
             }`}
           >

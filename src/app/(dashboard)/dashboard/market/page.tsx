@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
@@ -10,7 +10,8 @@ import { formatPrice, formatPercent, formatVolume, formatMarketCap } from "@/lib
 
 export default function MarketPage() {
   const router = useRouter();
-  
+  const tableRef = useRef<HTMLDivElement>(null);
+
   // Get connection type from global context (fetched once on app start)
   const { connectionType, isLoading: isCheckingConnection } = useExchange();
   
@@ -159,14 +160,14 @@ export default function MarketPage() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     // Scroll to top of table
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // Show loading while checking connection
   if (isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
     );
   }
@@ -196,7 +197,7 @@ export default function MarketPage() {
           </div>
           <button
             onClick={() => router.back()}
-            className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
+            className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
           >
             Back to Dashboard
           </button>
@@ -213,7 +214,7 @@ export default function MarketPage() {
               placeholder="Search by symbol, name, or sector..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
             />
           </div>
         </div>
@@ -221,7 +222,7 @@ export default function MarketPage() {
         {/* Loading/Error */}
         {stocksLoading && (
           <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
           </div>
         )}
         {stocksError && (
@@ -274,13 +275,13 @@ export default function MarketPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-4">
-                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#fc4f02]/50">
+                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50">
                   Previous
                 </button>
                 <span className="text-sm text-slate-400">
                   Page {currentPage} of {totalPages}
                 </span>
-                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[#fc4f02]/50">
+                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50">
                   Next
                 </button>
               </div>
@@ -310,7 +311,7 @@ export default function MarketPage() {
         </div>
         <button
           onClick={() => router.back()}
-          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
+          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
         >
           Back to Dashboard
         </button>
@@ -337,7 +338,7 @@ export default function MarketPage() {
             placeholder="Search by name or symbol..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+            className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
           />
         </div>
       </div>
@@ -378,9 +379,9 @@ export default function MarketPage() {
       )}
 
       {/* Market Table */}
-      <div className="rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10 overflow-hidden">
+      <div ref={tableRef} className="rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10 overflow-hidden">
         <div className="smooth-scroll-horizontal">
-          <table className="w-full min-w-[600px]">
+          <table className="w-full min-w-[500px]">
               <colgroup>
                 <col className="w-[50px] sm:w-[60px]" />
                 <col className="w-[140px] sm:w-[160px]" />
@@ -390,7 +391,7 @@ export default function MarketPage() {
                 <col className="w-[120px] sm:w-[140px]" />
               </colgroup>
               <thead className="divide-y divide-[--color-border]">
-                <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
+                <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
                   <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">Rank</th>
                   <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">Assets</th>
                   <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">price</th>
@@ -404,7 +405,7 @@ export default function MarketPage() {
                   <tr>
                     <td colSpan={6} className="py-12 text-center">
                       <div className="flex items-center justify-center">
-                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
                       </div>
                     </td>
                   </tr>
@@ -413,7 +414,7 @@ export default function MarketPage() {
                     <tr
                       key={coin.id}
                       onClick={() => router.push(`/dashboard/market/${coin.symbol.toUpperCase()}`)}
-                      className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[#fc4f02] before:to-[#fda300] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                      className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                     >
                       <td className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-slate-300 whitespace-nowrap">
                         {startIndex + index + 1}
@@ -459,7 +460,7 @@ export default function MarketPage() {
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -484,8 +485,8 @@ export default function MarketPage() {
                     onClick={() => handlePageChange(pageNum)}
                     className={`rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
                       currentPage === pageNum
-                        ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
-                        : "border border-[--color-border] bg-[--color-surface] text-slate-300 hover:border-[#fc4f02]/50 hover:text-white"
+                        ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
+                        : "border border-[--color-border] bg-[--color-surface] text-slate-300 hover:border-[var(--primary)]/50 hover:text-white"
                     }`}
                   >
                     {pageNum}
@@ -498,7 +499,7 @@ export default function MarketPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>

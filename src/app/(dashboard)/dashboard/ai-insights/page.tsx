@@ -397,7 +397,7 @@ function FilterButtons({
           onClick={() => onFilterChange(filter.id)}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
             activeFilter === filter.id
-              ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+              ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30"
               : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
           }`}
         >
@@ -499,7 +499,7 @@ function PaginationControls({
                 onClick={() => onPageChange(page)}
                 className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
                   currentPage === page
-                    ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30"
                     : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
                 }`}
               >
@@ -591,7 +591,7 @@ function AnimatedConnectionLines() {
           y1={`${line.y1}%`}
           x2={`${line.x2}%`}
           y2={`${line.y2}%`}
-          stroke="#fc4f02"
+          stroke="var(--primary)"
           strokeWidth="1"
           className="animate-pulse"
           style={{ animationDelay: `${line.delay}s` }}
@@ -628,7 +628,7 @@ function DataStreamParticles() {
         return (
           <div
             key={particle.id}
-            className="absolute w-1 h-1 rounded-full bg-[#fc4f02]/20"
+            className="absolute w-1 h-1 rounded-full bg-[var(--primary)]/20"
             style={{
               left: `${particle.x}%`,
               top: `${particle.y}%`,
@@ -948,7 +948,7 @@ export default function AIInsightsPage() {
   if (isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
     );
   }
@@ -958,9 +958,9 @@ export default function AIInsightsPage() {
     <div className="relative space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0 overflow-x-hidden w-full">
       {/* Interactive Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0 max-w-full">
-        <div className="absolute top-1/4 left-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[#fda300]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 right-1/3 h-48 sm:h-64 w-48 sm:w-64 rounded-full bg-[#fc4f02]/3 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute top-1/4 left-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-64 sm:h-96 w-64 sm:w-96 rounded-full bg-[var(--primary-light)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 right-1/3 h-48 sm:h-64 w-48 sm:w-64 rounded-full bg-[var(--primary)]/3 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
         {connectionType === "stocks" ? (
           <FloatingStockSymbols stocks={POPULAR_STOCKS} />
         ) : (
@@ -990,7 +990,7 @@ export default function AIInsightsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 w-full sm:w-auto"
+              className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 w-full sm:w-auto"
             >
               <option value="most-recent">Most recent</option>
               <option value={connectionType === "stocks" ? "stock-based" : "coin-based"}>
@@ -1005,7 +1005,7 @@ export default function AIInsightsPage() {
       <div className="space-y-3 sm:space-y-4">
         {isLoadingNews ? (
           <div className="flex flex-col items-center justify-center py-8 sm:py-12 space-y-3 sm:space-y-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
             {isInitializingML && (
               <div className="text-center max-w-xs sm:max-w-md px-4">
                 <p className="text-xs sm:text-sm text-slate-300 mb-2">
@@ -1035,11 +1035,11 @@ export default function AIInsightsPage() {
             <div
                   key={`${news.symbol}-${(currentPage - 1) * itemsPerPage + index}`}
               onClick={() => handleNewsClick(news)}
-                className="group cursor-pointer rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_25px_30px_-5px_rgba(0,0,0,0.15),0_0_25px_rgba(252,79,2,0.12),0_0_35px_rgba(253,163,0,0.1)]"
+                className="group cursor-pointer rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_25px_30px_-5px_rgba(0,0,0,0.15),0_0_25px_rgba(var(--primary-rgb),0.12),0_0_35px_rgba(var(--primary-light-rgb),0.1)]"
               >
                 {/* Title Row with Coin Logo and Sparkline on Right */}
                 <div className="flex items-start justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
-                  <h2 className="text-base sm:text-xl font-bold text-white group-hover:text-[#fc4f02] transition-colors text-left flex-1 leading-tight">
+                  <h2 className="text-base sm:text-xl font-bold text-white group-hover:text-[var(--primary)] transition-colors text-left flex-1 leading-tight">
                     {news.title}
                   </h2>
                   <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -1129,7 +1129,7 @@ export default function AIInsightsPage() {
         <>
           {/* Backdrop with animation - Mobile only */}
           <div
-            className="fixed inset-0 bg-black/90 z-[100] sm:hidden"
+            className="fixed inset-0 bg-black/90 z-[400] sm:hidden"
             onClick={handleCloseSidebar}
             style={{ 
               animationName: 'fade-in',
@@ -1148,14 +1148,14 @@ export default function AIInsightsPage() {
           
           {/* Sidebar with fade-in animation - Mobile Centered Modal / Desktop Centered */}
           <div 
-            className="fixed left-4 right-4 top-1/2 -translate-y-1/2 max-h-[70vh] sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:top-1/2 sm:w-full sm:max-w-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-lg sm:rounded-lg border border-slate-700/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] z-[110] overflow-y-auto overflow-x-hidden"
+            className="fixed left-4 right-4 top-1/2 -translate-y-1/2 max-h-[70vh] sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:top-1/2 sm:w-full sm:max-w-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-lg sm:rounded-lg border border-slate-700/50 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)] z-[110] overflow-y-auto overflow-x-hidden"
             style={{ animation: "fade-in-center 0.2s ease-out" }}
           >
             <div className="p-3 sm:p-6 space-y-3 sm:space-y-6 pb-8 sm:pb-0">
               {/* Header with gradient accent */}
               <div className="flex items-center justify-between pb-2 sm:pb-4 border-b border-slate-700/50">
                 <div className="flex items-center gap-2">
-                  <div className="w-1 h-4 sm:h-6 bg-gradient-to-b from-[#fc4f02] to-[#fda300] rounded-full"></div>
+                  <div className="w-1 h-4 sm:h-6 bg-gradient-to-b from-[var(--primary)] to-[var(--primary-light)] rounded-full"></div>
                   <h2 className="text-base sm:text-2xl font-bold text-white truncate">AI Deep Insight</h2>
                 </div>
                 <button
@@ -1170,7 +1170,7 @@ export default function AIInsightsPage() {
               </div>
 
               {/* Asset Info Card */}
-              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
                 <div className="flex items-center gap-2 sm:gap-4">
                   {connectionType === "stocks" ? (
                     <StockLogo symbol={selectedNews.symbol} size="lg" />
@@ -1197,10 +1197,10 @@ export default function AIInsightsPage() {
 
               {/* AI Summary Card */}
               {selectedNews.aiSummary && (
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)]">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                    <div className="w-2 h-2 rounded-full bg-[#fc4f02] animate-pulse"></div>
-                    <p className="text-xs font-semibold text-[#fc4f02] uppercase tracking-wide">AI Summary</p>
+                    <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse"></div>
+                    <p className="text-xs font-semibold text-[var(--primary)] uppercase tracking-wide">AI Summary</p>
                   </div>
                   <p className="text-xs sm:text-base text-slate-200 leading-relaxed">{selectedNews.aiSummary}</p>
                 </div>
@@ -1331,7 +1331,7 @@ export default function AIInsightsPage() {
                     href={selectedNews.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold text-sm sm:text-base hover:shadow-lg hover:shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-[1.02]"
+                    className="flex items-center justify-center gap-2 w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-semibold text-sm sm:text-base hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:scale-[1.02]"
                   >
                     <span>Read Full Article</span>
                     <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

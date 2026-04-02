@@ -30,7 +30,7 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect, disa
         className={`group relative overflow-hidden rounded-lg sm:rounded-xl border-2 ${
           disabled
             ? "border-[--color-border]/50 bg-[--color-surface-alt]/30 cursor-not-allowed opacity-50"
-            : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[#fc4f02]/50 hover:shadow-2xl hover:shadow-[#fc4f02]/20"
+            : "border-[--color-border] bg-[--color-surface-alt]/60 hover:border-[var(--primary)]/50 hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.2)]"
         } backdrop-blur transition-all duration-300 p-4 sm:p-6 md:p-7 min-h-max w-full`}
         style={{ animationDelay: delay }}
       >
@@ -164,9 +164,9 @@ export default function CryptoExchangePage() {
       {/* Background matching design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -183,7 +183,7 @@ export default function CryptoExchangePage() {
             <p className="mx-auto max-w-xl text-xs sm:text-sm md:text-base text-slate-400 animate-text-enter px-3 sm:px-2 leading-tight" style={{ animationDelay: "0.4s" }}>
               Select the platform you want to connect to your trading account.
               {isUS && (
-                <span className="block mt-2 text-[#fc4f02] font-medium">
+                <span className="block mt-2 text-[var(--primary)] font-medium">
                   🇺🇸 US Residents: Only Binance.US is available for regulatory compliance
                 </span>
               )}
@@ -193,7 +193,7 @@ export default function CryptoExchangePage() {
           {/* Loading State */}
           {loading && (
             <div className="flex justify-center items-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fc4f02]" />
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary)]" />
             </div>
           )}
 
@@ -220,7 +220,7 @@ export default function CryptoExchangePage() {
           <div className="w-full flex-shrink-0 text-center animate-text-enter px-3" style={{ animationDelay: "0.8s" }}>
             <button
               onClick={() => setShowFAQModal(true)}
-              className="text-xs sm:text-sm text-slate-400 hover:text-[#fc4f02] transition-colors duration-200 underline underline-offset-2"
+              className="text-xs sm:text-sm text-slate-400 hover:text-[var(--primary)] transition-colors duration-200 underline underline-offset-2"
             >
               Why do I need API Keys?
             </button>
@@ -230,7 +230,7 @@ export default function CryptoExchangePage() {
 
       {/* FAQ Modal */}
       {showFAQModal && (
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -240,10 +240,10 @@ export default function CryptoExchangePage() {
           {/* Modal Content */}
           <div className="relative z-10 w-full mx-3 sm:mx-0 max-w-2xl max-h-[90vh] rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt] to-[--color-surface] shadow-2xl shadow-black/50 overflow-hidden flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-[--color-border] bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 px-4 sm:px-6 py-3 sm:py-4 gap-2 sm:gap-3">
+            <div className="flex items-center justify-between border-b border-[--color-border] bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-light)]/10 px-4 sm:px-6 py-3 sm:py-4 gap-2 sm:gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20">
-                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20">
+                  <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -308,10 +308,10 @@ export default function CryptoExchangePage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="border-t border-[--color-border] bg-gradient-to-r from-[#fc4f02]/5 to-[#fda300]/5 px-4 sm:px-6 py-3 sm:py-4">
+            <div className="border-t border-[--color-border] bg-gradient-to-r from-[var(--primary)]/5 to-[var(--primary-light)]/5 px-4 sm:px-6 py-3 sm:py-4">
               <button
                 onClick={() => setShowFAQModal(false)}
-                className="w-full rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                className="w-full rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
               >
                 Got it, thanks!
               </button>

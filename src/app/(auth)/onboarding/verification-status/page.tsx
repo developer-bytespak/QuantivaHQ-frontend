@@ -270,13 +270,13 @@ export default function VerificationStatusPage() {
     <div className="relative flex h-full w-full overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-black">
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
         <div
-          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse"
+          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
         />
         <div
-          className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse"
+          className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse"
           style={{ animationDelay: "0.5s" }}
         />
       </div>
@@ -308,8 +308,8 @@ export default function VerificationStatusPage() {
             className="animate-text-enter"
             style={{ animationDelay: "0.6s" }}
           >
-            <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 sm:p-5 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="group relative rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 sm:p-5 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[var(--primary)]/30 hover:shadow-[var(--primary)]/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/5 via-transparent to-[var(--primary-light)]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
               <div className="relative z-10">
                 {/* Status Badge */}
@@ -353,7 +353,7 @@ export default function VerificationStatusPage() {
                   </div>
                   <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
                     <div
-                      className="h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-500 ease-out shadow-lg shadow-[#fc4f02]/50 rounded-full"
+                      className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] transition-all duration-500 ease-out shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] rounded-full"
                       style={{ width: `${statusConfig.progress}%` }}
                     />
                   </div>
@@ -365,7 +365,7 @@ export default function VerificationStatusPage() {
                     {/* Progress line */}
                     <div className="absolute top-3.5 sm:top-4 left-0 right-0 h-0.5 bg-[--color-border] -z-10">
                       <div
-                        className={`h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-500 ${
+                        className={`h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] transition-all duration-500 ${
                           status === "approved"
                             ? "w-full"
                             : status === "pending"
@@ -395,13 +395,13 @@ export default function VerificationStatusPage() {
                           <div
                             className={`flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full border-2 transition-all duration-300 ${
                               isActive || isCompleted
-                                ? "border-[#fc4f02] bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20"
+                                ? "border-[var(--primary)] bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20"
                                 : "border-[--color-border] bg-[--color-surface]"
                             }`}
                           >
                             {isCompleted ? (
                               <svg
-                                className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#fc4f02]"
+                                className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[var(--primary)]"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -415,7 +415,7 @@ export default function VerificationStatusPage() {
                               </svg>
                             ) : (
                               <div
-                                className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[#fc4f02]" : "bg-slate-500"}`}
+                                className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-[var(--primary)]" : "bg-slate-500"}`}
                               />
                             )}
                           </div>
@@ -437,7 +437,7 @@ export default function VerificationStatusPage() {
                       <button
                         onClick={handleRetry}
                         disabled={retryLoading}
-                        className="group relative overflow-hidden flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+                        className="group relative overflow-hidden flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
                       >
                         <span className="relative z-10 flex items-center justify-center gap-2">
                           {retryLoading ? (
@@ -506,7 +506,7 @@ export default function VerificationStatusPage() {
                         );
                         await navigateToNextRoute(router);
                       }}
-                      className="group relative overflow-hidden flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40"
+                      className="group relative overflow-hidden flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
                     >
                       <span className="relative z-10 flex items-center justify-center gap-2">
                         Continue

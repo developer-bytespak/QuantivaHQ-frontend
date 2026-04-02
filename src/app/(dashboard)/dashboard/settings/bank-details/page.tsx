@@ -150,7 +150,7 @@ export default function BankDetailsPage() {
       {/* Bank Account Details Overlay */}
       {selectedAccount && mounted && typeof window !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[400] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setSelectedAccount(null)}
         >
           <div
@@ -160,15 +160,15 @@ export default function BankDetailsPage() {
             {/* Header */}
             <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-2xl font-bold text-white">{selectedAccount.bankName}</h2>
                   {selectedAccount.isPrimary && (
-                    <span className="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30">
+                    <span className="inline-block mt-1 px-2 py-1 text-xs font-medium rounded-full bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30">
                       Primary Account
                     </span>
                   )}
@@ -215,7 +215,7 @@ export default function BankDetailsPage() {
                       handleSetPrimary(selectedAccount.id);
                       setSelectedAccount(null);
                     }}
-                    className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
+                    className="flex-1 px-4 py-2 sm:py-2.5 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] transition-all duration-200 font-medium"
                   >
                     Set as Primary
                   </button>
@@ -239,8 +239,8 @@ export default function BankDetailsPage() {
       <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
               </svg>
             </div>
@@ -248,7 +248,7 @@ export default function BankDetailsPage() {
           </div>
           <button
             onClick={() => setShowAddForm(!showAddForm)}
-            className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200"
+            className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm sm:text-base font-medium hover:from-[var(--primary-light)] hover:to-[var(--primary-light)] transition-all duration-200"
           >
             {showAddForm ? "Cancel" : "+ Add Account"}
           </button>
@@ -266,7 +266,7 @@ export default function BankDetailsPage() {
                   value={formData.bankName}
                   onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "account-holder-input")}
-                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
                   placeholder="Enter bank name"
                 />
               </div>
@@ -278,7 +278,7 @@ export default function BankDetailsPage() {
                   value={formData.accountHolderName}
                   onChange={(e) => setFormData({ ...formData, accountHolderName: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "account-number-input")}
-                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
                   placeholder="Enter account holder name"
                 />
               </div>
@@ -290,7 +290,7 @@ export default function BankDetailsPage() {
                   value={formData.accountNumber}
                   onChange={(e) => setFormData({ ...formData, accountNumber: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "routing-number-input")}
-                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
                   placeholder="Enter account number"
                 />
               </div>
@@ -302,7 +302,7 @@ export default function BankDetailsPage() {
                   value={formData.routingNumber}
                   onChange={(e) => setFormData({ ...formData, routingNumber: e.target.value })}
                   onKeyDown={(e) => handleKeyDown(e, "account-type-select")}
-                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
                   placeholder="Enter routing number"
                 />
               </div>
@@ -313,7 +313,7 @@ export default function BankDetailsPage() {
                   value={formData.accountType}
                   onChange={(e) => setFormData({ ...formData, accountType: e.target.value as "checking" | "savings" })}
                   onKeyDown={(e) => handleKeyDown(e)}
-                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
                 >
                   <option value="checking">Checking</option>
                   <option value="savings">Savings</option>
@@ -322,7 +322,7 @@ export default function BankDetailsPage() {
             </div>
             <button
               onClick={handleAddAccount}
-              className="mt-3 sm:mt-4 w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200"
+              className="mt-3 sm:mt-4 w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm sm:text-base font-medium hover:from-[var(--primary-light)] hover:to-[var(--primary-light)] transition-all duration-200"
             >
               Add Account
             </button>
@@ -343,14 +343,14 @@ export default function BankDetailsPage() {
               <div
                 key={account.id}
                 onClick={() => setSelectedAccount(account)}
-                className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6 hover:border-[#fc4f02]/30 transition-all duration-200 cursor-pointer"
+                className="bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg sm:rounded-xl p-4 sm:p-6 hover:border-[var(--primary)]/30 transition-all duration-200 cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <h3 className="text-lg sm:text-xl font-semibold text-white truncate">{account.bankName}</h3>
                       {account.isPrimary && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-[#fc4f02]/20 text-[#fc4f02] border border-[#fc4f02]/30 flex-shrink-0">
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-[var(--primary)]/20 text-[var(--primary)] border border-[var(--primary)]/30 flex-shrink-0">
                           Primary
                         </span>
                       )}

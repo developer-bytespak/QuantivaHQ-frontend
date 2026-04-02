@@ -200,8 +200,8 @@ export default function SecurityPage() {
       
       <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
         <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#fc4f02]/20 to-[#fc4f02]/10 border border-[#fc4f02]/20 flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 sm:w-6 h-5 sm:h-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
             </svg>
           </div>
@@ -241,7 +241,7 @@ export default function SecurityPage() {
                     setShowChangePassword(true);
                   }
                 }}
-                className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[#fc4f02]/50 transition-all duration-200"
+                className="w-full sm:w-auto px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-sm sm:text-base hover:border-[var(--primary)]/50 transition-all duration-200"
               >
                 {showChangePassword ? "Cancel" : "Change Password"}
               </button>
@@ -265,7 +265,7 @@ export default function SecurityPage() {
                     disabled={isRequestingCode || isChangingPassword}
                     className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
                       formErrors.currentPassword ? "border-red-500" : "border-[--color-border]"
-                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Enter current password"
                   />
                   {formErrors.currentPassword && (
@@ -288,7 +288,7 @@ export default function SecurityPage() {
                     disabled={isRequestingCode || isChangingPassword}
                     className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
                       formErrors.newPassword ? "border-red-500" : "border-[--color-border]"
-                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Enter new password (min 8 characters)"
                   />
                   {formErrors.newPassword && (
@@ -323,7 +323,7 @@ export default function SecurityPage() {
                     disabled={isRequestingCode || isChangingPassword}
                     className={`w-full px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border ${
                       formErrors.confirmPassword ? "border-red-500" : "border-[--color-border]"
-                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
+                    } text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 disabled:opacity-50 disabled:cursor-not-allowed`}
                     placeholder="Confirm new password"
                   />
                   {formErrors.confirmPassword && (
@@ -335,7 +335,7 @@ export default function SecurityPage() {
                   <button
                     onClick={handleRequest2FACode}
                     disabled={isRequestingCode || isChangingPassword}
-                    className="w-full px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-sm sm:text-base font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-sm sm:text-base font-medium hover:from-[var(--primary-light)] hover:to-[var(--primary-light)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isRequestingCode ? (
                       <>
@@ -479,14 +479,14 @@ export default function SecurityPage() {
                       <button
                         onClick={handleRequest2FACode}
                         disabled={isRequestingCode || isChangingPassword}
-                        className="flex-1 px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-xs sm:text-sm hover:border-[#fc4f02]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 px-3 sm:px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white text-xs sm:text-sm hover:border-[var(--primary)]/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Resend Code
                       </button>
                       <button
                         onClick={handleChangePassword}
                         disabled={isChangingPassword || isRequestingCode}
-                        className="flex-1 px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white text-xs sm:text-sm font-medium hover:from-[#fd6a00] hover:to-[#fd8a00] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="flex-1 px-4 sm:px-6 py-2 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white text-xs sm:text-sm font-medium hover:from-[var(--primary-light)] hover:to-[var(--primary-light)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {isChangingPassword ? (
                           <>
@@ -517,8 +517,8 @@ export default function SecurityPage() {
               </div>
               <button
                 onClick={toggleTwoFactor}
-                className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 focus:ring-offset-2 focus:ring-offset-[--color-surface] flex-shrink-0 ${
-                  twoFactorEnabled ? "bg-[#fc4f02]" : "bg-slate-600"
+                className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 focus:ring-offset-2 focus:ring-offset-[--color-surface] flex-shrink-0 ${
+                  twoFactorEnabled ? "bg-[var(--primary)]" : "bg-slate-600"
                 }`}
               >
                 <span

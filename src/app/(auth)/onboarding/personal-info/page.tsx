@@ -493,7 +493,7 @@ export default function PersonalInfoPage() {
     return (
       <div className="relative flex h-full w-full overflow-hidden items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[#fc4f02]"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
           <p className="text-sm text-slate-400">Checking your information...</p>
         </div>
       </div>
@@ -505,9 +505,9 @@ export default function PersonalInfoPage() {
       {/* Background matching Figma design */}
       <div className="absolute inset-0 bg-black">
         {/* Subtle gradient orbs for depth */}
-        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" style={{ animationDelay: "0.5s" }} />
       </div>
 
       {/* Content */}
@@ -534,7 +534,7 @@ export default function PersonalInfoPage() {
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-white/10 shadow-inner">
               <div
-                className="h-full bg-gradient-to-r from-[#fc4f02] to-[#fda300] transition-all duration-500 ease-out shadow-lg shadow-[#fc4f02]/50 rounded-full"
+                className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] transition-all duration-500 ease-out shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] rounded-full"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -542,8 +542,8 @@ export default function PersonalInfoPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="animate-text-enter relative z-0" style={{ animationDelay: "0.6s" }}>
-            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[#fc4f02]/30 hover:shadow-[#fc4f02]/10 overflow-visible">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#fc4f02]/5 via-transparent to-[#fda300]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="group relative rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-3 sm:p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[var(--primary)]/30 hover:shadow-[rgba(var(--primary-rgb),0.1)] overflow-visible">
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/5 via-transparent to-[var(--primary-light)]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               
               <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 z-0">
                 {/* Left Column - 3 Fields */}
@@ -562,7 +562,7 @@ export default function PersonalInfoPage() {
                       setFullLegalName(e.target.value);
                       setErrors({ ...errors, fullLegalName: "" });
                     }}
-                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 ${
+                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 ${
                       errors.fullLegalName
                         ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                         : "border-[--color-border]"
@@ -626,7 +626,7 @@ export default function PersonalInfoPage() {
                       }
                     }}
                     max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-400 transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 cursor-pointer ${
+                    className={`w-full rounded-xl border-2 bg-[--color-surface] px-3 py-2 text-sm text-white placeholder-slate-400 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 cursor-pointer ${
                       errors.dateOfBirth
                         ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                         : "border-[--color-border]"
@@ -648,7 +648,7 @@ export default function PersonalInfoPage() {
                     id="gender"
                     value={gender}
                     onChange={(e) => setGender(e.target.value as typeof gender)}
-                    className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2 text-sm text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20"
+                    className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2 text-sm text-white transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
                   >
                     <option value="">Select gender (optional)</option>
                     <option value="male">Male</option>
@@ -673,13 +673,13 @@ export default function PersonalInfoPage() {
                       onClick={() => {
                         setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
                       }}
-                      className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-2.5 pr-12 text-white transition-all duration-300 focus:border-[#fc4f02] focus:outline-none focus:ring-4 focus:ring-[#fc4f02]/20 hover:border-[#fc4f02]/50 cursor-pointer ${
+                      className={`w-full text-left rounded-xl border-2 bg-[--color-surface] py-2.5 pr-12 text-white transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 hover:border-[var(--primary)]/50 cursor-pointer ${
                         nationality ? "pl-12" : "pl-4"
                       } ${
                         errors.nationality
                           ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20"
                           : nationality
-                          ? "border-[#fc4f02] shadow-lg shadow-[#fc4f02]/20"
+                          ? "border-[var(--primary)] shadow-lg shadow-[rgba(var(--primary-rgb),0.2)]"
                           : "border-[--color-border]"
                       }`}
                     >
@@ -696,7 +696,7 @@ export default function PersonalInfoPage() {
                     )}
                     <div className={`absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200 ${
                       isNationalityDropdownOpen ? "rotate-180" : ""
-                    } ${nationality ? "text-[#fc4f02]" : "text-slate-400"}`}>
+                    } ${nationality ? "text-[var(--primary)]" : "text-slate-400"}`}>
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                       </svg>
@@ -704,7 +704,7 @@ export default function PersonalInfoPage() {
                     {isNationalityDropdownOpen && mounted && createPortal(
                       <div 
                         data-portal="nationality"
-                        className="fixed rounded-xl border-2 border-[--color-border] bg-[#0f172a] shadow-2xl shadow-black/50 overflow-hidden z-[99999]"
+                        className="fixed rounded-xl border-2 border-[--color-border] bg-[#0f172a] shadow-2xl shadow-black/50 overflow-hidden z-[400]"
                         style={{ 
                           top: `${nationalityDropdownPosition.top}px`,
                           left: `${nationalityDropdownPosition.left}px`,
@@ -720,7 +720,7 @@ export default function PersonalInfoPage() {
                         >
                           {isLoadingCountries ? (
                             <div className="flex items-center justify-center py-8">
-                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-[#fc4f02]"></div>
+                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-700 border-t-[var(--primary)]"></div>
                             </div>
                           ) : (
                             <>
@@ -779,7 +779,7 @@ export default function PersonalInfoPage() {
                   <label htmlFor="phoneNumber" className="mb-1 block text-xs font-semibold text-white">
                     Phone Number <span className="text-red-400">*</span>
                   </label>
-                  <div className={`flex overflow-hidden rounded-xl border-2 bg-[--color-surface] transition-all duration-300 focus-within:border-[#fc4f02] focus-within:ring-4 focus-within:ring-[#fc4f02]/20 ${
+                  <div className={`flex overflow-hidden rounded-xl border-2 bg-[--color-surface] transition-all duration-300 focus-within:border-[var(--primary)] focus-within:ring-4 focus-within:ring-[var(--primary)]/20 ${
                     errors.phoneNumber
                       ? "border-red-500/50 focus-within:border-red-500 focus-within:ring-red-500/20"
                       : "border-[--color-border]"
@@ -828,7 +828,7 @@ export default function PersonalInfoPage() {
               <button
                 type="submit"
                 disabled={isNextDisabled}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2">
                   {isLoading ? (

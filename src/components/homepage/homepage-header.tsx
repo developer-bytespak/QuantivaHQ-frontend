@@ -111,7 +111,7 @@ export function HomepageHeader() {
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-105" />
+            <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-[1.02]" />
             <div className="flex flex-col leading-tight">
               <span className="text-base sm:text-lg font-bold uppercase tracking-[0.15em] text-white">
                 QuantivaHQ
@@ -155,7 +155,7 @@ export function HomepageHeader() {
             {isAuthenticated ? (
               <button
                 onClick={handleGoToDashboard}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 cursor-pointer"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40 cursor-pointer"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Go to Dashboard
@@ -169,13 +169,13 @@ export function HomepageHeader() {
               <>
                 <Link
                   href="/onboarding/sign-up?tab=login"
-                  className="group rounded-xl border-2 border-white bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-gradient-to-r from-[#fc4f02] to-[#fda300] hover:border-none hover:scale-105 cursor-pointer"
+                  className="group rounded-xl border-2 border-white bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] hover:border-none hover:scale-[1.02] cursor-pointer"
                 >
                   <span className="text-white group-hover:text-black">Login</span>
                 </Link>
                 <Link
                   href="/onboarding/sign-up?tab=signup"
-                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/30 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-[#fc4f02]/40 cursor-pointer"
+                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40 cursor-pointer"
                 >
                   <span className="relative z-10">Sign Up</span>
                   <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
@@ -202,7 +202,7 @@ export function HomepageHeader() {
       </div>
 
       {/* Yellowish-orange horizontal line at the bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-[#fc4f02] via-[#fda300] to-[#fc4f02]"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-[var(--primary)] via-[var(--primary-light)] to-[var(--primary)]"></div>
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
@@ -239,7 +239,7 @@ export function HomepageHeader() {
                     handleGoToDashboard();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="w-full rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
+                  className="w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
                 >
                   Go to Dashboard
                 </button>
@@ -248,14 +248,14 @@ export function HomepageHeader() {
                   <Link
                     href="/onboarding/sign-up?tab=login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
+                    className="block w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
                   >
                     Login
                   </Link>
                   <Link
                     href="/onboarding/sign-up?tab=signup"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
+                    className="block w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
                   >
                     Sign Up
                   </Link>

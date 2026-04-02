@@ -711,10 +711,10 @@ export default function VcPoolDetailPage() {
 
       <button
         onClick={() => router.push("/dashboard/vc-pool")}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"
       >
         <svg
-          className="w-4 h-4 text-[#fc4f02] group-hover:-translate-x-1 transition-transform"
+          className="w-4 h-4 text-[var(--primary)] group-hover:-translate-x-1 transition-transform"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -726,7 +726,7 @@ export default function VcPoolDetailPage() {
             d="M15 19l-7-7 7-7"
           />
         </svg>
-        <span className="text-white/90 group-hover:text-[#fda300]">
+        <span className="text-white/90 group-hover:text-[var(--primary-light)]">
           Back to VC pools
         </span>
       </button>
@@ -734,10 +734,10 @@ export default function VcPoolDetailPage() {
       <button
         onClick={handleRefresh}
         disabled={refreshing || loading}
-        className="mb-4 ml-3 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mb-4 ml-3 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg
-          className={`w-4 h-4 text-[#fc4f02] transition-transform ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'}`}
+          className={`w-4 h-4 text-[var(--primary)] transition-transform ${refreshing ? 'animate-spin' : 'group-hover:rotate-180'}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -749,7 +749,7 @@ export default function VcPoolDetailPage() {
             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
-        <span className="text-white/90 group-hover:text-[#fda300]">
+        <span className="text-white/90 group-hover:text-[var(--primary-light)]">
           {refreshing ? 'Refreshing...' : 'Refresh'}
         </span>
       </button>
@@ -757,7 +757,7 @@ export default function VcPoolDetailPage() {
       {/* ── Loading ── */}
       {loading && (
         <div className="flex min-h-[40vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#fc4f02] border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--primary)] border-t-transparent" />
         </div>
       )}
 
@@ -772,7 +772,7 @@ export default function VcPoolDetailPage() {
       {!loading && !error && pool && canAccessVCPool && (
         <div className="space-y-6">
           {/* ── Pool header ── */}
-          <div className="rounded-2xl bg-gradient-to-b from-[#fc4f02]/90 via-[#fc4f02]/70 to-[#fda300]/50 p-6 sm:p-8 border border-[#fc4f02]/30">
+          <div className="rounded-2xl bg-gradient-to-b from-[var(--primary)]/90 via-[var(--primary)]/70 to-[var(--primary-light)]/50 p-6 sm:p-8 border border-[var(--primary)]/30">
             <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
               {poolName}
             </h1>
@@ -1664,7 +1664,7 @@ export default function VcPoolDetailPage() {
                         <div
                           className={`h-0.5 w-8 sm:w-16 transition-colors ${
                             done || active
-                              ? "bg-[#fc4f02]"
+                              ? "bg-[var(--primary)]"
                               : "bg-white/10"
                           }`}
                         />
@@ -1673,9 +1673,9 @@ export default function VcPoolDetailPage() {
                         <div
                           className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-colors ${
                             done
-                              ? "bg-[#fc4f02] text-white"
+                              ? "bg-[var(--primary)] text-white"
                               : active
-                              ? "bg-[#fc4f02] text-white ring-2 ring-[#fc4f02]/40 ring-offset-2 ring-offset-[--color-background]"
+                              ? "bg-[var(--primary)] text-white ring-2 ring-[var(--primary)]/40 ring-offset-2 ring-offset-[--color-background]"
                               : "bg-white/10 text-white/40"
                           }`}
                         >
@@ -1700,7 +1700,7 @@ export default function VcPoolDetailPage() {
                         <span
                           className={`text-[10px] sm:text-xs whitespace-nowrap ${
                             active
-                              ? "text-[#fc4f02] font-semibold"
+                              ? "text-[var(--primary)] font-semibold"
                               : done
                               ? "text-white/70"
                               : "text-white/30"
@@ -1743,7 +1743,7 @@ export default function VcPoolDetailPage() {
                           setUserWalletAddress(e.target.value)
                         }
                         placeholder="0x..."
-                        className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white font-mono placeholder:text-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
+                        className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white font-mono placeholder:text-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                       />
                       <p className="mt-1 text-xs text-slate-500">
                         This is your BSC wallet that will RECEIVE refunds or
@@ -1790,7 +1790,7 @@ export default function VcPoolDetailPage() {
                       type="button"
                       onClick={handleConfirmWallet}
                       disabled={joining || !userWalletAddress.trim() || !isValidBscAddress(userWalletAddress.trim())}
-                      className="flex-1 rounded-lg bg-[#fc4f02] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+                      className="flex-1 rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
                     >
                       {joining ? (
                         <span className="inline-flex items-center gap-2">
@@ -1872,7 +1872,7 @@ export default function VcPoolDetailPage() {
                       <p className="text-xs uppercase tracking-wider text-slate-400 mb-1">
                         Send exactly
                       </p>
-                      <p className="text-3xl font-bold font-mono text-[#fc4f02]">
+                      <p className="text-3xl font-bold font-mono text-[var(--primary)]">
                         {totalAmount} {depositCoin}
                       </p>
                       <p className="text-xs text-slate-400 mt-1">
@@ -1996,14 +1996,14 @@ export default function VcPoolDetailPage() {
                         </li>
                         <li>
                           Select{" "}
-                          <span className="font-semibold text-[#fc4f02]">
+                          <span className="font-semibold text-[var(--primary)]">
                             USDT
                           </span>{" "}
                           as the coin
                         </li>
                         <li>
                           Paste the admin deposit address:{" "}
-                          <span className="font-mono text-[#fc4f02]">
+                          <span className="font-mono text-[var(--primary)]">
                             {adminWalletAddr
                               ? truncAddr(adminWalletAddr)
                               : "—"}
@@ -2017,7 +2017,7 @@ export default function VcPoolDetailPage() {
                         </li>
                         <li>
                           Enter the exact amount:{" "}
-                          <span className="font-mono font-bold text-[#fc4f02]">
+                          <span className="font-mono font-bold text-[var(--primary)]">
                             {totalAmount} {depositCoin}
                           </span>
                         </li>
@@ -2082,7 +2082,7 @@ export default function VcPoolDetailPage() {
                     type="button"
                     onClick={handleProceedToTx}
                     disabled={timeRemaining <= 0}
-                    className="w-full rounded-lg bg-[#fc4f02] px-5 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+                    className="w-full rounded-lg bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
                   >
                     {timeRemaining <= 0
                       ? "Reservation expired"
@@ -2116,7 +2116,7 @@ export default function VcPoolDetailPage() {
                           <p className="text-xs text-slate-400">
                             Amount you should have sent
                           </p>
-                          <p className="text-lg font-mono font-bold text-[#fc4f02]">
+                          <p className="text-lg font-mono font-bold text-[var(--primary)]">
                             {totalAmount} {depositCoin}
                           </p>
                         </div>
@@ -2143,7 +2143,7 @@ export default function VcPoolDetailPage() {
                           value={txHash}
                           onChange={(e) => setTxHash(e.target.value)}
                           placeholder="0x... or Binance TX ID"
-                          className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white font-mono placeholder:text-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02]"
+                          className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white font-mono placeholder:text-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                         />
                         <p className="mt-1 text-xs text-slate-500">
                           For Binance P2P: Find the order ID in Binance → P2P → Orders.
@@ -2166,7 +2166,7 @@ export default function VcPoolDetailPage() {
                           type="button"
                           onClick={handleSubmitTxHash}
                           disabled={submittingTx || !txHash.trim() || !isValidTxHash(txHash.trim())}
-                          className="flex-1 rounded-lg bg-[#fc4f02] px-5 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
+                          className="flex-1 rounded-lg bg-[var(--primary)] px-5 py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60 transition-opacity"
                         >
                           {submittingTx ? (
                             <span className="inline-flex items-center justify-center gap-2">
@@ -2371,7 +2371,7 @@ export default function VcPoolDetailPage() {
                 <button
                   type="button"
                   onClick={handleStartJoin}
-                  className="rounded-lg bg-[#fc4f02] px-8 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                  className="rounded-lg bg-[var(--primary)] px-8 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
                 >
                   Join Pool
                 </button>

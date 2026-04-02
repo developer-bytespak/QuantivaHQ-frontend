@@ -138,7 +138,7 @@ function VCPoolAutoTradeModal({
             <button
               type="submit"
               disabled={saving || !(amount > 0)}
-              className="flex-1 rounded-xl bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+              className="flex-1 rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
             >
               {saving ? "Placing…" : "Place trade"}
             </button>
@@ -285,7 +285,7 @@ function VCPoolManualTradeModal({
             <button
               type="submit"
               disabled={saving || !assetPair.trim() || !(entry > 0) || !(amount > 0)}
-              className="flex-1 rounded-xl bg-[#fc4f02] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
+              className="flex-1 rounded-xl bg-[var(--primary)] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-60"
             >
               {saving ? "Placing…" : "Place trade"}
             </button>
@@ -454,7 +454,7 @@ export function PoolSignalsTab({ poolId, pool, onTradePlaced }: PoolSignalsTabPr
 
       {assetsLoading ? (
         <div className="flex items-center justify-center gap-2 rounded-xl border border-[--color-border] bg-[--color-surface]/50 py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#fc4f02] border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           <span className="text-sm text-slate-400">Loading signals…</span>
         </div>
       ) : signalRows.length === 0 ? (
@@ -474,7 +474,7 @@ export function PoolSignalsTab({ poolId, pool, onTradePlaced }: PoolSignalsTabPr
                     <span
                       className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${
                         row.action === "BUY"
-                          ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300]"
+                          ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                           : row.action === "SELL"
                           ? "bg-gradient-to-r from-red-500 to-red-600"
                           : "bg-slate-600/80"
@@ -539,7 +539,7 @@ export function PoolSignalsTab({ poolId, pool, onTradePlaced }: PoolSignalsTabPr
                           ? "Auto trade only for BUY/SELL signals"
                           : undefined
                       }
-                      className="flex-1 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#fc4f02]/20 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/20 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Auto trade
                     </button>
@@ -571,7 +571,7 @@ export function PoolSignalsTab({ poolId, pool, onTradePlaced }: PoolSignalsTabPr
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage <= 1}
-                className="rounded-lg bg-[--color-surface] px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-lg bg-[--color-surface] px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Prev
               </button>
@@ -582,7 +582,7 @@ export function PoolSignalsTab({ poolId, pool, onTradePlaced }: PoolSignalsTabPr
                 type="button"
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage >= totalPages}
-                className="rounded-lg bg-[--color-surface] px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-lg bg-[--color-surface] px-3 py-2 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
               </button>

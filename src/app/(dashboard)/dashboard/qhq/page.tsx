@@ -25,7 +25,7 @@ export default function QhqPage() {
         <WalletConnectButton />
       </div>
 
-      <div className="h-px bg-gradient-to-r from-[#fc4f02]/40 via-[#fda300]/20 to-transparent" />
+      <div className="h-px bg-gradient-to-r from-[var(--primary)]/40 via-[var(--primary-light)]/20 to-transparent" />
 
       {/* Balance + Claim */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>

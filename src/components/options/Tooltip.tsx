@@ -81,7 +81,7 @@ export function Tooltip({ content, children, position = "top", maxWidth = 260 }:
         coords &&
         createPortal(
           <span
-            className="pointer-events-none fixed z-[9999]"
+            className="pointer-events-none fixed z-[200]"
             style={{
               top: coords.top,
               left: coords.left,

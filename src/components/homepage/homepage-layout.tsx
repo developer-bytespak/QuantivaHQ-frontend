@@ -13,15 +13,15 @@ export function HomepageLayout({ children }: HomepageLayoutProps) {
       {/* Background gradient orbs with 3D depth */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none" style={{ transformStyle: "preserve-3d" }}>
         <div 
-          className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" 
+          className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" 
           style={{ transform: "translateZ(-100px)" }}
         />
         <div 
-          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" 
+          className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" 
           style={{ animationDelay: "1s", transform: "translateZ(-150px)" }}
         />
         <div 
-          className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fc4f02]/5 blur-3xl animate-pulse" 
+          className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--primary)]/5 blur-3xl animate-pulse" 
           style={{ animationDelay: "0.5s", transform: "translateZ(-50px)" }}
         />
       </div>

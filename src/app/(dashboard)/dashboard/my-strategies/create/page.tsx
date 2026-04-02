@@ -328,7 +328,7 @@ export default function CreateStrategyPage() {
     return (
       <div className="max-w-4xl mx-auto pb-8 flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="w-10 h-10 border-3 border-[#fc4f02]/30 border-t-[#fc4f02] rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-10 h-10 border-3 border-[var(--primary)]/30 border-t-[var(--primary)] rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading...</p>
         </div>
       </div>
@@ -338,21 +338,21 @@ export default function CreateStrategyPage() {
   return (
     <div className="max-w-4xl mx-auto pb-8">
       {/* Hero Header */}
-      <div className="relative rounded-2xl bg-gradient-to-br from-[#fc4f02]/20 via-[#fda300]/10 to-transparent p-6 mb-8 border border-[#fc4f02]/20 overflow-hidden">
+      <div className="relative rounded-2xl bg-gradient-to-br from-[var(--primary)]/20 via-[var(--primary-light)]/10 to-transparent p-6 mb-8 border border-[var(--primary)]/20 overflow-hidden">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[#fc4f02]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+        <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-br from-[var(--primary)]/30 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="relative">
           <Link
             href={backUrl}
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[#fda300] transition-colors mb-3 group"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors mb-3 group"
           >
             <svg className="w-4 h-4 text-white group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="text-white/90 group-hover:text-[#fda300]">Back to {backPageName}</span>
+            <span className="text-white/90 group-hover:text-[var(--primary-light)]">Back to {backPageName}</span>
           </Link>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#fc4f02] to-[#fda300] flex items-center justify-center shadow-lg shadow-[#fc4f02]/30">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] flex items-center justify-center shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
@@ -385,7 +385,7 @@ export default function CreateStrategyPage() {
               key={step.key}
               onClick={() => isPast && setCurrentStep(step.key)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm whitespace-nowrap transition-all duration-200 ${isCurrent
-                  ? "bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white shadow-lg shadow-[#fc4f02]/30"
+                  ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30"
                   : isPast
                     ? "bg-emerald-500/20 text-emerald-400 cursor-pointer hover:bg-emerald-500/30 border border-emerald-500/30"
                     : "bg-white/5 text-slate-400 border border-white/10"
@@ -408,8 +408,8 @@ export default function CreateStrategyPage() {
         {currentStep === "basics" && (
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
-                <span className="text-[#fda300] font-bold">1</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
+                <span className="text-[var(--primary-light)] font-bold">1</span>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">Strategy Basics</h3>
@@ -424,7 +424,7 @@ export default function CreateStrategyPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., My Growth Strategy"
-                className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:ring-1 focus:ring-[#fc4f02]/30 focus:outline-none transition-all"
+                className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[var(--primary)]/50 focus:ring-1 focus:ring-[var(--primary)]/30 focus:outline-none transition-all"
               />
             </div>
 
@@ -435,7 +435,7 @@ export default function CreateStrategyPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe your strategy's approach..."
                 rows={3}
-                className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:ring-1 focus:ring-[#fc4f02]/30 focus:outline-none transition-all resize-none"
+                className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[var(--primary)]/50 focus:ring-1 focus:ring-[var(--primary)]/30 focus:outline-none transition-all resize-none"
               />
             </div>
           </div>
@@ -445,8 +445,8 @@ export default function CreateStrategyPage() {
         {currentStep === "assets" && (
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
-                <span className="text-[#fda300] font-bold">2</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
+                <span className="text-[var(--primary-light)] font-bold">2</span>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">Select {assetTypeLabel}</h3>
@@ -461,11 +461,11 @@ export default function CreateStrategyPage() {
                   value={assetSearch}
                   onChange={(e) => setAssetSearch(e.target.value)}
                   placeholder={isStocksConnection ? "Search by symbol (e.g., AAPL, MSFT)" : "Search by symbol (e.g., BTC, ETH)"}
-                  className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[#fc4f02]/50 focus:ring-1 focus:ring-[#fc4f02]/30 focus:outline-none transition-all"
+                  className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white placeholder:text-slate-500 focus:border-[var(--primary)]/50 focus:ring-1 focus:ring-[var(--primary)]/30 focus:outline-none transition-all"
                 />
                 {searchingAssets && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-5 h-5 border-2 border-[#fc4f02]/30 border-t-[#fc4f02] rounded-full animate-spin"></div>
+                    <div className="w-5 h-5 border-2 border-[var(--primary)]/30 border-t-[var(--primary)] rounded-full animate-spin"></div>
                   </div>
                 )}
               </div>
@@ -487,7 +487,7 @@ export default function CreateStrategyPage() {
                       {targetAssets.includes(asset.symbol) ? (
                         <span className="text-xs text-emerald-400">Added</span>
                       ) : (
-                        <span className="text-xs text-[#fda300]">+ Add</span>
+                        <span className="text-xs text-[var(--primary-light)]">+ Add</span>
                       )}
                     </button>
                   ))}
@@ -507,7 +507,7 @@ export default function CreateStrategyPage() {
                   {targetAssets.map((symbol) => (
                     <span
                       key={symbol}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 border border-[#fc4f02]/30 rounded-lg text-white font-medium"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-light)]/10 border border-[var(--primary)]/30 rounded-lg text-white font-medium"
                     >
                       {symbol}
                       <button onClick={() => removeAsset(symbol)} className="text-slate-400 hover:text-red-400">×</button>
@@ -528,7 +528,7 @@ export default function CreateStrategyPage() {
                     disabled={targetAssets.includes(symbol)}
                     className={`px-3 py-1.5 rounded-lg text-sm transition-all ${targetAssets.includes(symbol)
                         ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                        : "bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10 hover:border-[#fc4f02]/30"
+                        : "bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10 hover:border-[var(--primary)]/30"
                       }`}
                   >
                     {symbol}
@@ -543,8 +543,8 @@ export default function CreateStrategyPage() {
         {currentStep === "weights" && (
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
-                <span className="text-[#fda300] font-bold">3</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
+                <span className="text-[var(--primary-light)] font-bold">3</span>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">AI Engine Weights</h3>
@@ -581,7 +581,7 @@ export default function CreateStrategyPage() {
                         <p className="text-xs text-slate-400">{desc}</p>
                       </div>
                     </div>
-                    <span className="text-lg font-bold text-[#fda300]">
+                    <span className="text-lg font-bold text-[var(--primary-light)]">
                       {(engineWeights[key as keyof EngineWeights] * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -592,7 +592,7 @@ export default function CreateStrategyPage() {
                     step={5}
                     value={engineWeights[key as keyof EngineWeights] * 100}
                     onChange={(e) => updateEngineWeight(key as keyof EngineWeights, parseInt(e.target.value) / 100)}
-                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[#fc4f02]"
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--primary)]"
                   />
                 </div>
               ))}
@@ -629,8 +629,8 @@ export default function CreateStrategyPage() {
         {currentStep === "rules" && (
           <div className="space-y-8">
             <div className="flex items-center gap-3 mb-6 relative z-10">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
-                <span className="text-[#fda300] font-bold">4</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
+                <span className="text-[var(--primary-light)] font-bold">4</span>
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-white">Buy Signal Rules</h3>
@@ -638,9 +638,9 @@ export default function CreateStrategyPage() {
               </div>
               {/* Info Icon with Hover Tooltip */}
               <div className="relative group">
-                <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[#fda300]/50 group-hover:bg-[#fda300]/10">
+                <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[var(--primary-light)]/50 group-hover:bg-[var(--primary-light)]/10">
                   <svg
-                    className="w-4 h-4 text-slate-400 group-hover:text-[#fda300]"
+                    className="w-4 h-4 text-slate-400 group-hover:text-[var(--primary-light)]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -653,10 +653,10 @@ export default function CreateStrategyPage() {
                     />
                   </svg>
                 </div>
-                <div className="absolute right-0 top-full mt-2 w-[750px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999]">
-                  <div className="relative rounded-xl border border-[#fc4f02]/15 bg-gradient-to-br from-[#12121c] via-[#0e0e18] to-[#0a0a14] shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_1px_rgba(252,79,2,0.1)] p-5 text-[13px] leading-relaxed overflow-hidden">
-                    <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-[#fc4f02]/8 to-transparent rounded-full blur-2xl"></div>
-                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#fda300]/5 to-transparent rounded-full blur-2xl"></div>
+                <div className="absolute right-0 top-full mt-2 w-full max-w-[750px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[400]">
+                  <div className="relative rounded-xl border border-[var(--primary)]/15 bg-gradient-to-br from-[#12121c] via-[#0e0e18] to-[#0a0a14] shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_1px_rgba(252,79,2,0.1)] p-5 text-[13px] leading-relaxed overflow-hidden">
+                    <div className="absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl from-[var(--primary)]/8 to-transparent rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[var(--primary-light)]/5 to-transparent rounded-full blur-2xl"></div>
                     <div className="relative">
 
                     <div className="flex items-center justify-between mb-4">
@@ -669,7 +669,7 @@ export default function CreateStrategyPage() {
                       <div className="flex-1">
                         <p className="text-slate-300 font-medium text-xs mb-2">Example Rule</p>
                         <div className="flex items-center gap-2 p-3 rounded-lg bg-white/[0.03] border border-white/5 mb-3">
-                          <span className="px-2.5 py-1 rounded bg-[#fda300]/15 text-[#fda300] text-xs font-medium">Final Score</span>
+                          <span className="px-2.5 py-1 rounded bg-[var(--primary-light)]/15 text-[var(--primary-light)] text-xs font-medium">Final Score</span>
                           <span className="px-2 py-1 rounded bg-white/10 text-slate-300 text-xs font-medium">&gt;</span>
                           <span className="px-2 py-1 rounded bg-white/10 text-emerald-400 text-xs font-medium">0.5</span>
                         </div>
@@ -698,10 +698,10 @@ export default function CreateStrategyPage() {
                       <div className="flex-1">
                         <p className="text-slate-300 font-medium text-xs mb-2">How It Works</p>
                         <p className="text-xs text-slate-300 mb-1"><span className="text-emerald-400 font-medium">Higher value</span> = fewer, stronger signals</p>
-                        <p className="text-xs text-slate-300 mb-1"><span className="text-[#fda300] font-medium">Lower value</span> = more, weaker signals</p>
+                        <p className="text-xs text-slate-300 mb-1"><span className="text-[var(--primary-light)] font-medium">Lower value</span> = more, weaker signals</p>
                         <p className="text-xs text-slate-500 mb-2">Value must be above 0</p>
-                        <div className="p-2 rounded-lg bg-[#fda300]/5 border border-[#fda300]/15">
-                          <p className="text-[11px] text-slate-300"><span className="text-[#fda300] font-medium">Tip:</span> Start with 0.5. Adjust based on how many signals you want.</p>
+                        <div className="p-2 rounded-lg bg-[var(--primary-light)]/5 border border-[var(--primary-light)]/15">
+                          <p className="text-[11px] text-slate-300"><span className="text-[var(--primary-light)] font-medium">Tip:</span> Start with 0.5. Adjust based on how many signals you want.</p>
                         </div>
                       </div>
                     </div>
@@ -777,8 +777,8 @@ export default function CreateStrategyPage() {
         {currentStep === "risk" && (
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
-                <span className="text-[#fda300] font-bold">5</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
+                <span className="text-[var(--primary-light)] font-bold">5</span>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">Risk Management</h3>
@@ -827,7 +827,7 @@ export default function CreateStrategyPage() {
                   min={1}
                   max={20}
                   step={0.5}
-                  className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white focus:border-[#fc4f02]/50 focus:outline-none"
+                  className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white focus:border-[var(--primary)]/50 focus:outline-none"
                 />
                 <p className="text-xs text-slate-500 mt-1">Sell if price drops by this %</p>
               </div>
@@ -840,13 +840,13 @@ export default function CreateStrategyPage() {
                   min={1}
                   max={50}
                   step={0.5}
-                  className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white focus:border-[#fc4f02]/50 focus:outline-none"
+                  className="w-full rounded-xl bg-black/30 border border-white/10 px-4 py-3.5 text-white focus:border-[var(--primary)]/50 focus:outline-none"
                 />
                 <p className="text-xs text-slate-500 mt-1">Sell when price gains this %</p>
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 border border-[#fc4f02]/20">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-light)]/10 border border-[var(--primary)]/20">
               <p className="text-sm text-white">
                 <strong>Risk/Reward Ratio:</strong> 1:{(takeProfit / stopLoss).toFixed(1)}
               </p>
@@ -861,8 +861,8 @@ export default function CreateStrategyPage() {
         {currentStep === "review" && (
           <div className="space-y-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fc4f02]/20 to-[#fda300]/20 flex items-center justify-center border border-[#fc4f02]/30">
-                <span className="text-[#fda300] font-bold">✓</span>
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20 flex items-center justify-center border border-[var(--primary)]/30">
+                <span className="text-[var(--primary-light)] font-bold">✓</span>
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">Review Your Strategy</h3>
@@ -894,7 +894,7 @@ export default function CreateStrategyPage() {
               <p className="text-xs text-slate-400 mb-2">Target {assetTypeLabel} ({targetAssets.length})</p>
               <div className="flex flex-wrap gap-2">
                 {targetAssets.map((s) => (
-                  <span key={s} className="px-2.5 py-1 bg-gradient-to-r from-[#fc4f02]/10 to-[#fda300]/10 border border-[#fc4f02]/20 rounded-lg text-sm text-white">{s}</span>
+                  <span key={s} className="px-2.5 py-1 bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-light)]/10 border border-[var(--primary)]/20 rounded-lg text-sm text-white">{s}</span>
                 ))}
               </div>
             </div>
@@ -904,7 +904,7 @@ export default function CreateStrategyPage() {
               <div className="grid grid-cols-5 gap-2 text-center">
                 {Object.entries(engineWeights).map(([key, val]) => (
                   <div key={key}>
-                    <p className="text-lg font-bold text-[#fda300]">{(val * 100).toFixed(0)}%</p>
+                    <p className="text-lg font-bold text-[var(--primary-light)]">{(val * 100).toFixed(0)}%</p>
                     <p className="text-[10px] text-slate-400 capitalize">{key.replace('_', ' ')}</p>
                   </div>
                 ))}
@@ -941,7 +941,7 @@ export default function CreateStrategyPage() {
             <button
               onClick={handleSubmit}
               disabled={submitting || !canProceed()}
-              className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200 flex items-center gap-2"
+              className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-semibold hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200 flex items-center gap-2"
             >
               {submitting ? (
                 <>
@@ -959,7 +959,7 @@ export default function CreateStrategyPage() {
             <button
               onClick={goNext}
               disabled={!canProceed()}
-              className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-[#fc4f02] to-[#fda300] text-white font-semibold hover:shadow-xl hover:shadow-[#fc4f02]/30 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200 flex items-center gap-2"
+              className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-semibold hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 transition-all duration-200 flex items-center gap-2"
             >
               Next
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
