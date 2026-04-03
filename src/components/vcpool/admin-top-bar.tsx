@@ -40,6 +40,14 @@ function getPageTitle(pathname: string | null): string {
   return "Dashboard";
 }
 
+function normalizeAdminPath(pathname: string | null): string | null {
+  if (!pathname) return pathname;
+  if (pathname.startsWith("/vc-pool/admin")) {
+    return pathname.replace("/vc-pool/admin", "/admin");
+  }
+  return pathname;
+}
+
 interface AdminTopBarProps {
   mode?: "admin" | "super";
 }
@@ -73,10 +81,10 @@ export function AdminTopBar({ mode = "admin" }: AdminTopBarProps) {
     } catch {
       // ignore
     }
-    router.replace(mode === "super" ? "/super/admin/login" : "/admin/login");
+    router.replace(mode === "super" ? "/super/admin/login" : "/vc-pool/admin/login");
   };
 
-  const title = getPageTitle(pathname);
+  const title = getPageTitle(normalizeAdminPath(pathname));
   const initial = admin?.full_name?.charAt(0)?.toUpperCase() || admin?.email?.charAt(0)?.toUpperCase() || "A";
 
   return (

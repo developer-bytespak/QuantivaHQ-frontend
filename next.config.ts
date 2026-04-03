@@ -9,6 +9,23 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'logo.clearbit.com' },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/admin/:path*",
+        destination: "/vc-pool/admin/:path*",
+        permanent: false,
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/vc-pool/admin/:path*",
+        destination: "/admin/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {

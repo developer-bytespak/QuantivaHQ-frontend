@@ -6,12 +6,11 @@ import {
   hasAdminToken,
   adminMe,
   clearAdminTokens,
-  type AdminProfile,
 } from "@/lib/api/vcpool-admin";
 
-const ADMIN_LOGIN = "/admin/login";
+const ADMIN_LOGIN = "/vc-pool/admin/login";
 const SUPER_ADMIN_HOME = "/super/admin/users";
-const ADMIN_HOME = "/admin/dashboard";
+const ADMIN_HOME = "/vc-pool/admin/dashboard";
 
 interface AdminGuardProps {
   children: ReactNode;
@@ -39,8 +38,7 @@ export function AdminGuard({
   useEffect(() => {
     let isMounted = true;
 
-    const resolveHomeByRole = (admin: AdminProfile) =>
-      admin.is_super_admin ? SUPER_ADMIN_HOME : ADMIN_HOME;
+    const areaHome = loginPath.startsWith("/super/admin") ? SUPER_ADMIN_HOME : ADMIN_HOME;
 
     const check = async () => {
       if (publicOnly) {
@@ -49,10 +47,10 @@ export function AdminGuard({
           return;
         }
         try {
-          const admin = await adminMe();
+          await adminMe();
           if (isMounted) {
             setStatus("denied");
-            router.replace(resolveHomeByRole(admin));
+            router.replace(areaHome);
           }
         } catch {
           clearAdminTokens();
