@@ -370,6 +370,17 @@ export const exchangesService = {
     });
   },
 
+  async getPricePerformance(
+    connectionId: string,
+    symbol: string,
+  ): Promise<ApiResponse<PricePerformanceData>> {
+    return apiRequest<never, ApiResponse<PricePerformanceData>>({
+      path: `/exchanges/connections/${connectionId}/price-performance/${symbol}`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
   /**
    * Get coin detail data
    */
@@ -605,6 +616,18 @@ export interface CandleData {
   close: number;
   volume: number;
   closeTime: number;
+}
+
+export interface PricePerformanceData {
+  symbol: string;
+  performance: {
+    '8h': number | null;
+    '1d': number | null;
+    '1w': number | null;
+    '1m': number | null;
+    '3m': number | null;
+    '6m': number | null;
+  };
 }
 
 /** Multi-interval candle data returned by optimized getCoinDetail endpoint */
