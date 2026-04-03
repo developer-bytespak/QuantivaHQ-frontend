@@ -202,10 +202,12 @@ const normalizeOrderStatus = (value: any): string => String(value ?? "UNKNOWN").
 export default function TopTradesPage(props?: TopTradesPageProps) {
   // Connection type detection - using global context
   const { vcPoolId, connectionId: propConnectionId, connectionType: propConnectionType } = props ?? {};
-  const { connectionType: ctxConnectionType, connectionId: ctxConnectionId, isLoading: isCheckingConnection } = useExchange();
+  const { connectionType: ctxConnectionType, connectionId: ctxConnectionId, isLoading: isCheckingConnection, activeConnection } = useExchange();
   const connectionId = propConnectionId ?? ctxConnectionId;
   const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
+  const exchangeName = (activeConnection?.exchange_name || activeConnection?.exchange?.name || "").toLowerCase();
+  const isBybitConnection = exchangeName === "bybit";
   const { currentSubscription } = useSubscriptionStore();
   const canAccessTopTrades = !!vcPoolId || (currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE));
 
@@ -895,7 +897,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       try {
         setOrdersLoading(true);
         setOrdersError(null);
-        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : "/binance-trading";
+        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : isBybitConnection ? "/bybit-trading" : "/binance-trading";
 
         const ordersParams = new URLSearchParams({ limit: '500' });
         if (ordersPeriod !== 'all' && ordersPeriod !== 'custom') {
@@ -948,7 +950,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       try {
         setLeaderboardLoading(true);
         setLeaderboardError(null);
-        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : "/binance-trading";
+        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : isBybitConnection ? "/bybit-trading" : "/binance-trading";
 
         const historyParams = new URLSearchParams({ limit: '500' });
         if (tradeHistoryPeriod !== 'all' && tradeHistoryPeriod !== 'custom') {
