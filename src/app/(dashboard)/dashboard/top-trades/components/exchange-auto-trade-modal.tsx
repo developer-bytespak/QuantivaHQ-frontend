@@ -119,8 +119,8 @@ export function ExchangeAutoTradeModal({
       setError(`Enter a valid ${quoteAsset} amount.`);
       return;
     }
-    if (amountNum < 5) {
-      setError(`Minimum order value is $5 ${quoteAsset}. Please increase the amount.`);
+    if (amountNum < 6) {
+      setError(`Minimum order value is $6 ${quoteAsset}. Please increase the amount.`);
       return;
     }
     if (!isPoolTrade && amountNum > balance) {
