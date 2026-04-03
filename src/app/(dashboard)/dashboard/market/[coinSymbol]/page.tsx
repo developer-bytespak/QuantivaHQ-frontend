@@ -605,8 +605,8 @@ export default function MarketDetailPage() {
                 <p className="text-2xl font-bold text-white">
                   {connectionType === "stocks"
                     ? <span className="text-slate-400">N/A</span>
-                    : (coinData?.coinGeckoData?.market_cap_rank
-                        ? `#${coinData.coinGeckoData.market_cap_rank}`
+                    : ((coinData?.coinGeckoData?.market_cap_rank || coinGeckoDataFallback?.market_cap_rank)
+                        ? `#${coinData?.coinGeckoData?.market_cap_rank || coinGeckoDataFallback?.market_cap_rank}`
                         : <span className="text-slate-400">N/A</span>)
                   }
                 </p>
@@ -672,6 +672,8 @@ export default function MarketDetailPage() {
             avgVolume: stockData.avgVolume,
             description: stockData.description,
           } : undefined}
+          connectionId={connectionId || undefined}
+          tradingPair={coinData?.tradingPair}
           connectionType={connectionType}
           embeddedMarketData={coinData?.coinGeckoData || coinGeckoDataFallback || undefined}
         />

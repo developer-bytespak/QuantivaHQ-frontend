@@ -3,9 +3,21 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { getCoinDetails } from "@/lib/api/coingecko.service";
+import { exchangesService, PricePerformanceData } from "@/lib/api/exchanges.service";
+
+const PERFORMANCE_FILTERS = [
+  { label: "8H", key: "8h" as const, subtitle: "8-hour change" },
+  { label: "1D", key: "1d" as const, subtitle: "1-day change" },
+  { label: "1W", key: "1w" as const, subtitle: "1-week change" },
+  { label: "1M", key: "1m" as const, subtitle: "1-month change" },
+  { label: "3M", key: "3m" as const, subtitle: "3-month change" },
+  { label: "6M", key: "6m" as const, subtitle: "6-month change" },
+];
 
 interface InfoTabProps {
   coinSymbol: string;
+  connectionId?: string;
+  tradingPair?: string;
   stockData?: {
     symbol: string;
     name: string;
@@ -44,12 +56,13 @@ interface InfoTabProps {
   };
 }
 
-export default function InfoTab({ coinSymbol, stockData, connectionType, embeddedMarketData }: InfoTabProps) {
+export default function InfoTab({ coinSymbol, connectionId, tradingPair, stockData, connectionType, embeddedMarketData }: InfoTabProps) {
   const [coinData, setCoinData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDescriptionOverlayOpen, setIsDescriptionOverlayOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [pricePerformance, setPricePerformance] = useState<PricePerformanceData | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -104,6 +117,29 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
       document.body.style.overflow = '';
     };
   }, [isDescriptionOverlayOpen]);
+
+  useEffect(() => {
+    const fetchPricePerformance = async () => {
+      if (connectionType !== "crypto" || !connectionId || !tradingPair) {
+        setPricePerformance(null);
+        return;
+      }
+
+      try {
+        const response = await exchangesService.getPricePerformance(connectionId, tradingPair);
+        if (response.success && response.data) {
+          setPricePerformance(response.data);
+        } else {
+          setPricePerformance(null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch price performance:", err);
+        setPricePerformance(null);
+      }
+    };
+
+    fetchPricePerformance();
+  }, [connectionId, connectionType, tradingPair]);
 
   if (isLoading) {
     return (
@@ -412,6 +448,18 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
 
   const marketData = coinData.market_data || {};
   const links = coinData.links || {};
+  const performanceCards = PERFORMANCE_FILTERS.map((filter) => {
+    const value = pricePerformance?.performance?.[filter.key] ?? null;
+    const hasValue = value !== null && !isNaN(value);
+    const isPositive = hasValue ? value >= 0 : false;
+
+    return {
+      ...filter,
+      value,
+      hasValue,
+      isPositive,
+    };
+  });
 
   // Debug: Log market data structure for price performance troubleshooting
   console.log('InfoTab Debug - Market Data Keys:', Object.keys(marketData));
@@ -591,67 +639,49 @@ export default function InfoTab({ coinSymbol, stockData, connectionType, embedde
       {/* Price Changes */}
       <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
         <h3 className="text-lg font-semibold text-white mb-6">Price Performance</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {[
-            { label: "1h", key: "price_change_percentage_1h_in_currency", fallbackKey: "price_change_percentage_1h", icon: "⏱️" },
-            { label: "24h", key: "price_change_percentage_24h_in_currency", fallbackKey: "price_change_percentage_24h", icon: "📊" },
-            { label: "7d", key: "price_change_percentage_7d_in_currency", fallbackKey: "price_change_percentage_7d", icon: "📈" },
-            { label: "30d", key: "price_change_percentage_30d_in_currency", fallbackKey: "price_change_percentage_30d", icon: "📅" },
-            { label: "1y", key: "price_change_percentage_1y_in_currency", fallbackKey: "price_change_percentage_1y", icon: "🗓️" },
-          ].map(({ label, key, fallbackKey, icon }) => {
-            // Try main key first, then fallback key, then direct property
-            const change = marketData[key]?.usd || marketData[fallbackKey] || marketData[key.replace('_in_currency', '')];
-            const isPositive = change >= 0;
-            const hasData = change !== undefined && change !== null && !isNaN(change);
-            
-            return (
-              <div 
-                key={label} 
-                className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-[1.02] hover:shadow-lg ${
-                  isPositive 
-                    ? "hover:shadow-green-500/20" 
-                    : "hover:shadow-red-500/20"
-                }`}
-              >
-                {/* Decorative corner accent */}
-                <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full opacity-10 ${
-                  isPositive ? "bg-gradient-to-br from-green-500/20 to-transparent" : "bg-gradient-to-br from-red-500/20 to-transparent"
-                }`}></div>
-                
-                <div className="relative space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg">{icon}</span>
-                    <div className={`p-1.5 rounded-lg ${
-                      isPositive 
-                        ? "bg-green-500/20" 
-                        : "bg-red-500/20"
-                    }`}>
-                      {isPositive ? (
-                        <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                        </svg>
-                      ) : (
-                        <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-                    <p className={`text-2xl font-bold ${
-                      isPositive ? "text-green-400" : "text-red-400"
-                    }`}>
-                      {hasData
-                        ? `${isPositive ? "+" : ""}${change.toFixed(2)}%`
-                        : "N/A"}
-                    </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {performanceCards.map((card) => (
+            <div
+              key={card.label}
+              className={`relative group rounded-xl p-4 transition-all duration-300 bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent hover:scale-[1.02] hover:shadow-lg ${
+                card.isPositive ? "hover:shadow-green-500/20" : "hover:shadow-red-500/20"
+              }`}
+            >
+              <div className={`absolute top-0 right-0 w-16 h-16 rounded-bl-full opacity-10 ${
+                card.isPositive ? "bg-gradient-to-br from-green-500/20 to-transparent" : "bg-gradient-to-br from-red-500/20 to-transparent"
+              }`}></div>
+
+              <div className="relative space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{card.label}</p>
+                  <div className={`p-1.5 rounded-lg ${
+                    card.isPositive ? "bg-green-500/20" : "bg-red-500/20"
+                  }`}>
+                    {card.isPositive ? (
+                      <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3 h-3 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    )}
                   </div>
                 </div>
+
+                <div className="space-y-1">
+                  <p className="text-sm text-slate-500">{card.subtitle}</p>
+                  <p className={`text-2xl font-bold ${
+                    card.isPositive ? "text-green-400" : "text-red-400"
+                  }`}>
+                    {card.hasValue
+                      ? `${card.isPositive ? "+" : ""}${card.value!.toFixed(2)}%`
+                      : "N/A"}
+                  </p>
+                </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 
