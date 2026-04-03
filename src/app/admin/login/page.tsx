@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
     try {
       await adminLogin({ email: email.trim(), password });
       showNotification("Login successful", "success");
-      router.replace(getSafeRedirect(returnTo, "/admin/dashboard", "/admin"));
+      router.replace(getSafeRedirect(returnTo, "/vc-pool/admin/dashboard", "/vc-pool/admin"));
     } catch (err: unknown) {
       const message = (err as { message?: string })?.message ?? "Login failed";
       showNotification(message, "error");

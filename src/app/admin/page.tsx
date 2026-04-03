@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function AdminRootPage() {
   const router = useRouter();
   useEffect(() => {
-    router.replace("/admin/login");
+    router.replace("/vc-pool/admin/login");
   }, [router]);
   return (
     <div className="flex h-screen items-center justify-center bg-[--color-background]">

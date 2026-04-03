@@ -11,7 +11,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/admin/login";
+  const isLoginPage = pathname === "/admin/login" || pathname === "/vc-pool/admin/login";
 
   return (
     <div className="min-h-screen bg-[--color-background] text-[--color-foreground]">

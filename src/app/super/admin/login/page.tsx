@@ -132,7 +132,7 @@ export default function SuperAdminLoginPage() {
 
         <div className="mt-4 text-center text-xs text-slate-400">
           VC Pool admin?{" "}
-          <Link href="/admin/login" className="text-[#fc4f02] hover:underline">
+          <Link href="/vc-pool/admin/login" className="text-[#fc4f02] hover:underline">
             Go to admin login
           </Link>
         </div>

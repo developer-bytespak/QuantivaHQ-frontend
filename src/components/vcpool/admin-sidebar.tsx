@@ -8,10 +8,10 @@ import { createPortal } from "react-dom";
 import { useMobileNav } from "@/hooks/useMobileNav";
 
 const BASE_ADMIN_NAV = [
-  { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
-  { label: "Pools", href: "/admin/pools", icon: "pools" },
-  { label: "Binance", href: "/admin/binance", icon: "binance" },
-  { label: "Settings", href: "/admin/settings", icon: "settings" },
+  { label: "Dashboard", href: "/vc-pool/admin/dashboard", icon: "dashboard" },
+  { label: "Pools", href: "/vc-pool/admin/pools", icon: "pools" },
+  { label: "Binance", href: "/vc-pool/admin/binance", icon: "binance" },
+  { label: "Settings", href: "/vc-pool/admin/settings", icon: "settings" },
 ];
 
 const SUPER_ADMIN_NAV = [
@@ -27,7 +27,7 @@ interface AdminSidebarProps {
 
 function AdminLogo({ collapsed, mode }: { collapsed: boolean; mode: "admin" | "super" }) {
   const [imageError, setImageError] = useState(false);
-  const homeHref = mode === "super" ? "/super/admin/users" : "/admin/dashboard";
+  const homeHref = mode === "super" ? "/super/admin/users" : "/vc-pool/admin/dashboard";
   const panelLabel = mode === "super" ? "Super Admin Control" : "VC Pool Admin";
   return (
     <Link

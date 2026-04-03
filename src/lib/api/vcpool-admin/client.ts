@@ -142,7 +142,7 @@ adminAxios.interceptors.response.use(
           if (typeof window !== "undefined") {
             const target = window.location.pathname.startsWith("/super/admin")
               ? "/super/admin/login"
-              : "/admin/login";
+              : "/vc-pool/admin/login";
             window.location.href = target;
           }
         }

@@ -23,7 +23,10 @@ const DASHBOARD_TYPE_KEY = "quantivahq_dashboard_type";
 
 function isAdminArea(): boolean {
   if (typeof window === "undefined") return false;
-  return window.location.pathname.startsWith("/admin");
+  return (
+    window.location.pathname.startsWith("/admin") ||
+    window.location.pathname.startsWith("/vc-pool/admin")
+  );
 }
 
 function getSavedDashboardType(): "crypto" | "stocks" | null {
