@@ -273,7 +273,7 @@ export function ContactSection() {
                         ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
                         : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
                     }`}
-                    placeholder="+1 (555) 123-4567"
+                    placeholder="+1 (747) 800-7952"
                   />
                   {errors.phone && <p className="text-red-400 text-xs mt-1.5">{errors.phone}</p>}
                 </div>
@@ -423,7 +423,7 @@ export function ContactSection() {
                 </svg>
               </div>
               <h3 className="text-base font-semibold text-white mb-2.5">Phone Support</h3>
-              <p className="text-sm text-slate-400 font-medium">+1 (555) 123-4567</p>
+              <p className="text-sm text-slate-400 font-medium">+1 (747) 800-7952</p>
               <p className="text-xs text-slate-500 mt-1">Available during business hours</p>
             </div>
 
