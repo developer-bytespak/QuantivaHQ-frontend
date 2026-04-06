@@ -871,7 +871,7 @@ export default function AdminPoolDetailsPage() {
                                 <p className="text-xs text-red-400 mt-1">Rejected: {p.rejection_reason}</p>
                               )}
                             </div>
-                            {(p.status === "pending" || p.status === "processing") && (
+                            {p.status === "processing" && (
                               <div className="flex gap-2">
                                 <button
                                   type="button"
