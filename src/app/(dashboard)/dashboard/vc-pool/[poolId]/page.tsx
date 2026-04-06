@@ -413,8 +413,15 @@ export default function VcPoolDetailPage() {
         Math.floor((deadline - Date.now()) / 1000)
       );
       setTimeRemaining(rem);
-      if (rem <= 0 && countdownRef.current)
+      if (rem <= 0 && countdownRef.current) {
         clearInterval(countdownRef.current);
+        // Timer expired — refresh data so UI resets to join page
+        // Small delay to give the scheduler time to clean up the reservation
+        setTimeout(() => {
+          loadPaymentStatus();
+          loadPool();
+        }, 3000);
+      }
     };
     tick();
     countdownRef.current = setInterval(tick, 1000);
