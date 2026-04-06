@@ -959,6 +959,11 @@ export default function AdminPoolDetailsPage() {
                                     {m.user.email}
                                   </p>
                                 )}
+                                {m.user_wallet_address && (
+                                  <p className="text-xs text-slate-400 mt-0.5 truncate">
+                                    Wallet: <span className="font-mono text-slate-300">{m.user_wallet_address}</span>
+                                  </p>
+                                )}
                               </div>
                               <div className="flex flex-wrap items-center gap-4 text-slate-300">
                                 <span className="text-xs">
@@ -1015,6 +1020,11 @@ export default function AdminPoolDetailsPage() {
                                 <p className="font-medium text-white">
                                   {c.member?.user?.email ?? c.member?.user?.full_name ?? c.member?.member_id}
                                 </p>
+                                {c.user_wallet_address && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    Wallet: <span className="font-mono text-slate-300">{c.user_wallet_address}</span>
+                                  </p>
+                                )}
                                 <p className="text-xs text-slate-400 mt-1">
                                   Value at exit: {c.member_value_at_exit} · Fee: {c.fee_amount} · Refund: {c.refund_amount} · Status: <span className="capitalize">{c.status}</span>
                                 </p>
@@ -1071,6 +1081,11 @@ export default function AdminPoolDetailsPage() {
                                 {p.member?.user?.email && (
                                   <p className="text-xs text-slate-400 mt-0.5">
                                     {p.member.user.email}
+                                  </p>
+                                )}
+                                {p.member?.user_wallet_address && (
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    Wallet: <span className="font-mono text-slate-300">{p.member.user_wallet_address}</span>
                                   </p>
                                 )}
                                 <p className="text-xs text-slate-400 mt-1">

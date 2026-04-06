@@ -561,6 +561,7 @@ export interface AdminCancellation {
   member_value_at_exit: number;
   fee_amount: number;
   refund_amount: number;
+  user_wallet_address: string | null;
   status: string;
   requested_at: string;
   reviewed_at: string | null;
@@ -619,6 +620,7 @@ export interface AdminPayoutMember {
   member_id: string;
   user: { user_id: string; email?: string; full_name?: string };
   payment_method: string;
+  user_wallet_address?: string | null;
 }
 
 export interface AdminPayout {
