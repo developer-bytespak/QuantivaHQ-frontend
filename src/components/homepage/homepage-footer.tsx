@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export function HomepageFooter() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -108,48 +110,20 @@ export function HomepageFooter() {
             <h4 className="text-xs sm:text-sm font-bold text-white mb-3 sm:mb-4">Legal</h4>
             <ul className="space-y-1.5 sm:space-y-2">
               <li>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Add navigation logic here when Terms of Service page is ready
-                  }}
+                <Link
+                  href="/terms"
                   className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[var(--primary)] transition-colors cursor-pointer"
                 >
                   Terms of Service
-                </button>
+                </Link>
               </li>
               <li>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Add navigation logic here when Privacy Policy page is ready
-                  }}
+                <Link
+                  href="/privacy-policy"
                   className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[var(--primary)] transition-colors cursor-pointer"
                 >
                   Privacy Policy
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Add navigation logic here when Cookie Policy page is ready
-                  }}
-                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[var(--primary)] transition-colors cursor-pointer"
-                >
-                  Cookie Policy
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Add navigation logic here when Risk Disclosure page is ready
-                  }}
-                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[var(--primary)] transition-colors cursor-pointer"
-                >
-                  Risk Disclosure
-                </button>
+                </Link>
               </li>
             </ul>
           </div>
