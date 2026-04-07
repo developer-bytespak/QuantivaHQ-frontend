@@ -23,8 +23,6 @@ export default function AdminHelpSupportPage() {
   const { notification, showNotification, hideNotification } = useNotification();
   const [selectedFAQ, setSelectedFAQ] = useState<FAQ | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -34,16 +32,6 @@ export default function AdminHelpSupportPage() {
     document.body.style.overflow = selectedFAQ ? "hidden" : "unset";
     return () => { document.body.style.overflow = "unset"; };
   }, [selectedFAQ]);
-
-  const handleSubmit = () => {
-    if (!subject.trim() || !message.trim()) {
-      showNotification("Please fill in all fields", "error");
-      return;
-    }
-    showNotification("Message sent! We will get back to you within 24 hours.", "success");
-    setSubject("");
-    setMessage("");
-  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -98,30 +86,6 @@ export default function AdminHelpSupportPage() {
               </div>
             </button>
           ))}
-        </div>
-
-        <h2 className="text-lg sm:text-2xl font-bold text-white mb-4">Contact Us</h2>
-        <div className="space-y-3">
-          <input
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Subject"
-            className="w-full px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50"
-          />
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            rows={5}
-            placeholder="Message"
-            className="w-full px-4 py-2 rounded-lg bg-[--color-surface] border border-[--color-border] text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#fc4f02]/50 resize-none"
-          />
-          <button
-            onClick={handleSubmit}
-            className="px-6 py-2 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fd6a00] text-white font-medium hover:opacity-90 transition-all"
-          >
-            Send Message
-          </button>
         </div>
       </div>
 

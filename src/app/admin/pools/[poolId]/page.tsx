@@ -888,7 +888,7 @@ export default function AdminPoolDetailsPage() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => setRejectPaymentModal({ submissionId: p.submission_id, reason: "Screenshot unclear or invalid" })}
+                                  onClick={() => setRejectPaymentModal({ submissionId: p.submission_id, reason: "" })}
                                   disabled={actionSubmitting !== null}
                                   className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60"
                                 >
@@ -1042,7 +1042,7 @@ export default function AdminPoolDetailsPage() {
                                     <button type="button" onClick={() => handleApproveCancellation(c.cancellation_id)} disabled={actionSubmitting !== null} className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500 disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Approve"}
                                     </button>
-                                    <button type="button" onClick={() => setRejectCancellationModal({ cancellationId: c.cancellation_id, reason: "Please reconsider. Pool is performing well." })} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
+                                    <button type="button" onClick={() => setRejectCancellationModal({ cancellationId: c.cancellation_id, reason: "" })} disabled={actionSubmitting !== null} className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-60">
                                       {actionSubmitting === c.cancellation_id ? "…" : "Reject"}
                                     </button>
                                   </>
