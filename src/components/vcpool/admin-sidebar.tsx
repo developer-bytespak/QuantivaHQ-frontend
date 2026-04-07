@@ -20,6 +20,7 @@ const SUPER_ADMIN_NAV = [
   { label: "Pools Oversight", href: "/super/admin/pools-oversight", icon: "pools" },
   { label: "Finance", href: "/super/admin/finance", icon: "binance" },
   { label: "Contact Submissions", href: "/super/admin/contact-submissions", icon: "contact" },
+  { label: "Default Fees", href: "/super/admin/default-fees", icon: "settings" },
 ];
 
 interface AdminSidebarProps {
