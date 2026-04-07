@@ -223,7 +223,7 @@ export function OptionsEducationModal({ open, onClose }: OptionsEducationModalPr
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0e0e16] shadow-2xl sm:max-h-[85vh]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[--color-border] px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--primary)]/10 text-[var(--primary)]">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -247,7 +247,7 @@ export function OptionsEducationModal({ open, onClose }: OptionsEducationModalPr
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar — section nav */}
-          <div className="hidden w-52 flex-shrink-0 border-r border-white/[0.06] bg-white/[0.01] p-3 sm:block">
+          <div className="hidden w-52 flex-shrink-0 border-r border-[--color-border] bg-white/[0.01] p-3 sm:block">
             <nav className="space-y-1">
               {SECTIONS.map((s, i) => (
                 <button
@@ -327,7 +327,7 @@ export function OptionsEducationModal({ open, onClose }: OptionsEducationModalPr
         </div>
 
         {/* Footer with nav */}
-        <div className="flex items-center justify-between border-t border-white/[0.06] px-6 py-3.5">
+        <div className="flex items-center justify-between border-t border-[--color-border] px-6 py-3.5">
           <button
             onClick={() => setActiveSection((s) => Math.max(0, s - 1))}
             disabled={isFirst}

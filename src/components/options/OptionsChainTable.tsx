@@ -112,38 +112,38 @@ export function OptionsChainTable({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+      <div className="overflow-x-auto rounded-xl border border-[--color-border]">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-white/[0.06] bg-white/[0.02]">
+            <tr className="border-b border-[--color-border] bg-[--color-surface]/40">
               {(filterType === "ALL" || filterType === "CALL") && (
                 <>
-                  <th className="px-3 py-2.5 text-left font-medium text-green-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Bid: Highest price a buyer is willing to pay for this call option" position="top">
                       <span>C Bid</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-green-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Ask: Lowest price a seller is asking. You pay this price when buying." position="top">
                       <span>C Ask</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-green-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Last traded price for this call contract" position="top">
                       <span>C Last</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-green-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Volume: Number of contracts traded today. Higher = more liquid." position="top">
                       <span>C Vol</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-green-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Open Interest: Total outstanding contracts. High OI = established market." position="top">
                       <span>C OI</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-green-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Implied Volatility: Market's expected price swing. High IV = expensive premiums." position="top">
                       <span>C IV</span>
                     </Tooltip>
@@ -157,32 +157,32 @@ export function OptionsChainTable({
               </th>
               {(filterType === "ALL" || filterType === "PUT") && (
                 <>
-                  <th className="px-3 py-2.5 text-left font-medium text-red-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Bid: Highest price a buyer is willing to pay for this put option" position="top">
                       <span>P Bid</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-red-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Ask: Lowest price a seller is asking. You pay this price when buying." position="top">
                       <span>P Ask</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-red-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Last traded price for this put contract" position="top">
                       <span>P Last</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-red-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Volume: Number of contracts traded today. Higher = more liquid." position="top">
                       <span>P Vol</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-red-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Open Interest: Total outstanding contracts. High OI = established market." position="top">
                       <span>P OI</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium text-red-400/80">
+                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Implied Volatility: Market's expected price swing. High IV = expensive premiums." position="top">
                       <span>P IV</span>
                     </Tooltip>
@@ -198,7 +198,7 @@ export function OptionsChainTable({
               return (
                 <tr
                   key={strike}
-                  className="border-b border-white/[0.03] transition-colors hover:bg-white/[0.02]"
+                  className="group/row relative border-b border-[--color-border]/30 transition-colors hover:bg-[--color-surface]/40 before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity hover:before:opacity-100"
                 >
                   {(filterType === "ALL" || filterType === "CALL") && (
                     <>
@@ -236,7 +236,7 @@ export function OptionsChainTable({
                       </td>
                     </>
                   )}
-                  <td className="px-3 py-2 text-center font-mono font-semibold text-slate-100 bg-white/[0.02]">
+                  <td className="px-3 py-2 text-center font-mono font-semibold text-slate-100 bg-[--color-surface]/40">
                     {strike.toLocaleString()}
                   </td>
                   {(filterType === "ALL" || filterType === "PUT") && (

@@ -83,7 +83,7 @@ export function ExpiryTabs({ expiryDates, selectedExpiry, onSelect }: ExpiryTabs
       {canScrollLeft && (
         <button
           onClick={() => scroll("left")}
-          className="absolute left-0 top-0 z-10 flex h-full w-8 items-center justify-center bg-gradient-to-r from-[#0a0a0f] via-[#0a0a0f]/80 to-transparent"
+          className="absolute left-0 top-0 z-10 flex h-full w-8 items-center justify-center bg-gradient-to-r from-[--color-surface-alt] via-[--color-surface-alt]/80 to-transparent"
           aria-label="Scroll left"
         >
           <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -109,7 +109,7 @@ export function ExpiryTabs({ expiryDates, selectedExpiry, onSelect }: ExpiryTabs
               onClick={() => onSelect(expiry)}
               className={`group relative flex flex-shrink-0 flex-col items-center gap-0.5 rounded-xl px-3.5 py-2 transition-all duration-150 ${
                 isActive
-                  ? "bg-[var(--primary)]/10 shadow-[inset_0_0_0_1px_rgba(var(--primary-rgb),,0.3)]"
+                  ? "bg-[var(--primary)]/10 shadow-[inset_0_0_0_1px_rgba(var(--primary-rgb),0.3)]"
                   : "hover:bg-white/[0.04]"
               }`}
             >
@@ -152,7 +152,7 @@ export function ExpiryTabs({ expiryDates, selectedExpiry, onSelect }: ExpiryTabs
       {canScrollRight && (
         <button
           onClick={() => scroll("right")}
-          className="absolute right-0 top-0 z-10 flex h-full w-8 items-center justify-center bg-gradient-to-l from-[#0a0a0f] via-[#0a0a0f]/80 to-transparent"
+          className="absolute right-0 top-0 z-10 flex h-full w-8 items-center justify-center bg-gradient-to-l from-[--color-surface-alt] via-[--color-surface-alt]/80 to-transparent"
           aria-label="Scroll right"
         >
           <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

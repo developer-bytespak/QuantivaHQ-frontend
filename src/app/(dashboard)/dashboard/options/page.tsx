@@ -18,7 +18,12 @@ import {
   ExpiryTabs,
   OptionsEducationModal,
   OptionsAISignals,
+  IvRankBadge,
+  PayoffDiagram,
+  PortfolioGreeksDashboard,
+  OrderBookPanel,
 } from "@/components/options";
+import type { AiOptionsSignal, IvHistoryPoint, PortfolioGreeks, OptionDepth, OptionsPosition } from "@/lib/api/options.service";
 
 // ── ELITE Gate Component ─────────────────────────────────────────────────────
 
@@ -211,6 +216,86 @@ export default function OptionsPage() {
     if (hasAccess && activeTab === "ai-signals") fetchAiSignals();
   }, [activeTab, hasAccess, fetchAiSignals]);
 
+  // ── IV Rank data ───────────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (!store.selectedUnderlying || !hasAccess) return;
+    optionsService.getIvRank(store.selectedUnderlying).then((data) => {
+      store.setIvRankData(data);
+    }).catch(() => {});
+  }, [store.selectedUnderlying, hasAccess]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── IV History (loaded on demand) ──────────────────────────────────────
+
+  const [ivHistory, setIvHistory] = useState<IvHistoryPoint[]>([]);
+  const [isLoadingIvHistory, setIsLoadingIvHistory] = useState(false);
+
+  const loadIvHistory = useCallback(async () => {
+    if (!store.selectedUnderlying) return;
+    setIsLoadingIvHistory(true);
+    try {
+      const history = await optionsService.getIvHistory(store.selectedUnderlying, 90);
+      setIvHistory(history);
+    } catch {} finally {
+      setIsLoadingIvHistory(false);
+    }
+  }, [store.selectedUnderlying]);
+
+  // Reset IV history when underlying changes
+  useEffect(() => { setIvHistory([]); }, [store.selectedUnderlying]);
+
+  // ── Order book (loaded when contract selected) ─────────────────────────
+
+  const [orderBookDepth, setOrderBookDepth] = useState<OptionDepth | null>(null);
+  const [isLoadingDepth, setIsLoadingDepth] = useState(false);
+  const selectedContractSymbol = store.selectedContract?.symbol ?? null;
+
+  useEffect(() => {
+    if (!connectionId || !selectedContractSymbol) {
+      setOrderBookDepth(null);
+      return;
+    }
+    setIsLoadingDepth(true);
+    optionsService.getDepth(selectedContractSymbol, connectionId, 10)
+      .then(setOrderBookDepth)
+      .catch(() => setOrderBookDepth(null))
+      .finally(() => setIsLoadingDepth(false));
+  }, [connectionId, selectedContractSymbol]);
+
+  // ── Portfolio Greeks (loaded on positions tab) ─────────────────────────
+
+  const [portfolioGreeks, setPortfolioGreeks] = useState<PortfolioGreeks | null>(null);
+  const [isLoadingPortfolioGreeks, setIsLoadingPortfolioGreeks] = useState(false);
+
+  useEffect(() => {
+    if (!hasAccess || activeTab !== "positions") return;
+    setIsLoadingPortfolioGreeks(true);
+    optionsService.getPortfolioGreeks()
+      .then(setPortfolioGreeks)
+      .catch(() => setPortfolioGreeks(null))
+      .finally(() => setIsLoadingPortfolioGreeks(false));
+  }, [activeTab, hasAccess]);
+
+  // ── Position History ───────────────────────────────────────────────────
+
+  const [positionHistory, setPositionHistory] = useState<OptionsPosition[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  const loadPositionHistory = useCallback(async () => {
+    setIsLoadingHistory(true);
+    try {
+      const history = await optionsService.getPositionHistory();
+      setPositionHistory(history);
+    } catch {} finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showHistory && positionHistory.length === 0) loadPositionHistory();
+  }, [showHistory, positionHistory.length, loadPositionHistory]);
+
   // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleSelectContract = useCallback(
@@ -277,6 +362,46 @@ export default function OptionsPage() {
       }
     },
     [connectionId, fetchOrders], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ── Close Position Handler ──────────────────────────────────────────────
+
+  const handleClosePosition = useCallback(
+    (pos: OptionsPosition) => {
+      // Pre-fill order form with opposite side and switch to chain tab
+      const contract = store.optionsChain.find((c) => c.symbol === pos.contractSymbol);
+      if (contract) {
+        store.setSelectedContract(contract);
+      }
+      store.setOrderForm({
+        optionType: pos.optionType,
+        side: "SELL", // Close = sell what you bought (or buy back what you sold)
+        quantity: Math.abs(pos.quantity),
+        price: pos.currentPremium || 0,
+      });
+      setActiveTab("chain");
+    },
+    [store.optionsChain], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ── Execute Signal Handler ─────────────────────────────────────────────
+
+  const handleExecuteSignal = useCallback(
+    (signal: AiOptionsSignal) => {
+      if (signal.legs.length === 0) return;
+      // Use the first leg to pre-fill the order form
+      const leg = signal.legs[0];
+      store.setOrderForm({
+        optionType: leg.type,
+        side: leg.side,
+        quantity: 1,
+        price: 0, // User needs to set price from the chain
+      });
+      // Switch to chain tab so user can select the exact contract
+      store.setSelectedUnderlying(signal.underlying);
+      setActiveTab("chain");
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // ── No Connection Guard ─────────────────────────────────────────────────
@@ -389,18 +514,26 @@ export default function OptionsPage() {
         {/* ── Chain Tab ────────────────────────────────────────── */}
         {activeTab === "chain" && (
           <div className="space-y-4">
-            {/* Coin selector with dropdown + price */}
-            <CoinSelector
-              underlyings={store.availableUnderlyings}
-              selected={store.selectedUnderlying}
-              currentPrice={currentUnderlying?.indexPrice ?? 0}
-              onSelect={(symbol) => {
-                store.setSelectedUnderlying(symbol);
-                store.setSelectedExpiry(null);
-                store.setSelectedContract(null);
-                store.setSelectedContractGreeks(null);
-              }}
-            />
+            {/* Coin selector with dropdown + price + IV Rank */}
+            <div className="flex flex-wrap items-center gap-4">
+              <CoinSelector
+                underlyings={store.availableUnderlyings}
+                selected={store.selectedUnderlying}
+                currentPrice={currentUnderlying?.indexPrice ?? 0}
+                onSelect={(symbol) => {
+                  store.setSelectedUnderlying(symbol);
+                  store.setSelectedExpiry(null);
+                  store.setSelectedContract(null);
+                  store.setSelectedContractGreeks(null);
+                }}
+              />
+              <IvRankBadge
+                ivRankData={store.ivRankData}
+                ivHistory={ivHistory}
+                isLoadingHistory={isLoadingIvHistory}
+                onLoadHistory={loadIvHistory}
+              />
+            </div>
 
             {/* Expiry tabs — full width */}
             <ExpiryTabs
@@ -424,24 +557,83 @@ export default function OptionsPage() {
               contractSymbol={store.selectedContract?.symbol}
             />
 
-            {/* Place Order — at the bottom */}
-            <OptionOrderForm
-              selectedContract={store.selectedContract}
-              orderForm={store.orderForm}
-              onFormChange={(form) => store.setOrderForm(form)}
-              onSubmit={handlePlaceOrder}
-              isPlacing={store.isPlacingOrder}
-              accountBalance={store.account?.availableBalance}
-            />
+            {/* Payoff diagram — shows when contract selected */}
+            {store.selectedContract && currentUnderlying && currentUnderlying.indexPrice > 0 && (
+              <PayoffDiagram
+                legs={[{
+                  type: store.selectedContract.type,
+                  side: store.orderForm.side,
+                  strike: store.selectedContract.strike,
+                  premium: store.orderForm.price || store.selectedContract.askPrice,
+                }]}
+                spotPrice={currentUnderlying.indexPrice}
+              />
+            )}
+
+            {/* Order form + Order book side by side */}
+            <div className="grid gap-4 lg:grid-cols-[1fr,300px]">
+              <OptionOrderForm
+                selectedContract={store.selectedContract}
+                orderForm={store.orderForm}
+                onFormChange={(form) => store.setOrderForm(form)}
+                onSubmit={handlePlaceOrder}
+                isPlacing={store.isPlacingOrder}
+                accountBalance={store.account?.availableBalance}
+              />
+              {store.selectedContract && (
+                <OrderBookPanel depth={orderBookDepth} isLoading={isLoadingDepth} />
+              )}
+            </div>
           </div>
         )}
 
         {/* ── Positions Tab ────────────────────────────────────── */}
         {activeTab === "positions" && (
-          <OptionsPositionsTable
-            positions={store.positions}
-            isLoading={store.isLoadingPositions}
-          />
+          <div className="space-y-4">
+            {/* Portfolio Greeks summary */}
+            <PortfolioGreeksDashboard
+              data={portfolioGreeks}
+              isLoading={isLoadingPortfolioGreeks}
+            />
+
+            {/* Open/History toggle */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowHistory(false)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  !showHistory
+                    ? "bg-[var(--primary)] text-white"
+                    : "border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                }`}
+              >
+                Open Positions
+              </button>
+              <button
+                onClick={() => setShowHistory(true)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                  showHistory
+                    ? "bg-[var(--primary)] text-white"
+                    : "border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06]"
+                }`}
+              >
+                History
+              </button>
+            </div>
+
+            {showHistory ? (
+              <OptionsPositionsTable
+                positions={positionHistory}
+                isLoading={isLoadingHistory}
+                showClosed
+              />
+            ) : (
+              <OptionsPositionsTable
+                positions={store.positions}
+                isLoading={store.isLoadingPositions}
+                onClose={handleClosePosition}
+              />
+            )}
+          </div>
         )}
 
         {/* ── Orders Tab ───────────────────────────────────────── */}
@@ -458,6 +650,7 @@ export default function OptionsPage() {
           <OptionsAISignals
             signals={store.aiSignals}
             isLoading={store.isLoadingAiSignals}
+            onExecute={handleExecuteSignal}
           />
         )}      </div>
     </div>

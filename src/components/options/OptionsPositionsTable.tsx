@@ -9,6 +9,7 @@ interface OptionsPositionsTableProps {
   positions: OptionsPosition[];
   isLoading?: boolean;
   showClosed?: boolean;
+  onClose?: (position: OptionsPosition) => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -25,6 +26,7 @@ export function OptionsPositionsTable({
   positions,
   isLoading,
   showClosed = false,
+  onClose,
 }: OptionsPositionsTableProps) {
   const filtered = showClosed ? positions : positions.filter((p) => p.isOpen);
 
@@ -49,50 +51,53 @@ export function OptionsPositionsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+    <div className="overflow-x-auto rounded-xl border border-[--color-border]">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-            <th className="px-3 py-2.5 text-left font-medium text-slate-400">
+          <tr className="border-b border-[--color-border] bg-[--color-surface]/40">
+            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
               <Tooltip content="The options contract — underlying asset, strike price, and expiration date" position="top">
                 <span>Contract</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-left font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
               <Tooltip content="CALL = right to buy. PUT = right to sell. Shows the type of option you hold." position="top">
                 <span>Type</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Number of contracts you currently hold in this position" position="top">
                 <span>Qty</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Average premium paid per contract when you entered this position" position="top">
                 <span>Avg Premium</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Current market premium for this contract" position="top">
                 <span>Current</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Profit/loss if you were to close this position now. Not locked in until you sell." position="top">
                 <span>Unrealized PnL</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Actual profit/loss from portions of this position already closed" position="top">
                 <span>Realized PnL</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Delta: How much this position's value changes per $1 move in the underlying asset" position="top">
                 <span>Delta</span>
               </Tooltip>
             </th>
+            {onClose && (
+              <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">Action</th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -104,7 +109,7 @@ export function OptionsPositionsTable({
             return (
               <tr
                 key={pos.positionId ?? i}
-                className="border-b border-white/[0.03] transition-colors hover:bg-white/[0.02]"
+                className="group/row relative border-b border-[--color-border]/30 transition-colors hover:bg-[--color-surface]/40 before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity hover:before:opacity-100"
               >
                 <td className="px-3 py-2.5">
                   <div className="flex flex-col">
@@ -155,6 +160,19 @@ export function OptionsPositionsTable({
                 <td className="px-3 py-2.5 text-right font-mono text-blue-400">
                   {pos.greeks?.delta?.toFixed(4) ?? "—"}
                 </td>
+                {onClose && pos.isOpen && (
+                  <td className="px-3 py-2.5 text-right">
+                    <button
+                      onClick={() => onClose(pos)}
+                      className="rounded-md bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-400 transition-colors hover:bg-red-500/20"
+                    >
+                      Close
+                    </button>
+                  </td>
+                )}
+                {onClose && !pos.isOpen && (
+                  <td className="px-3 py-2.5 text-right text-[10px] text-slate-500">Closed</td>
+                )}
               </tr>
             );
           })}

@@ -90,7 +90,7 @@ export function Tooltip({ content, children, position = "top", maxWidth = 260 }:
               minWidth: 180,
             }}
           >
-            <span className="block rounded-lg border border-white/[0.12] bg-[#1a1a28]/90 px-3 py-2 text-[11px] leading-relaxed text-slate-200 shadow-2xl backdrop-blur-xl">
+            <span className="block rounded-lg border border-[--color-border] bg-[--color-surface]/90 px-3 py-2 text-[11px] leading-relaxed text-slate-200 shadow-2xl backdrop-blur-xl">
               {content}
             </span>
           </span>,
