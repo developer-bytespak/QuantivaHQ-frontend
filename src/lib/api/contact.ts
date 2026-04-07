@@ -30,7 +30,7 @@ export async function submitAuthenticatedContactForm(
   data: ContactSubmissionRequest
 ): Promise<ContactSubmissionResponse> {
   return apiRequest<ContactSubmissionRequest, ContactSubmissionResponse>({
-    path: "/contact/authenticated",
+    path: "/contact/submit-inquiry",
     method: "POST",
     body: data,
   });
