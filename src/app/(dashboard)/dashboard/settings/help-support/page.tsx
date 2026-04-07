@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { SettingsBackButton } from "@/components/settings/settings-back-button";
 import { useNotification, Notification } from "@/components/common/notification";
+import { submitAuthenticatedContactForm } from "@/lib/api/contact";
 
 const faqs = [
   {
@@ -212,7 +213,15 @@ export default function HelpSupportPage() {
     setIsSubmitting(true);
     setSubmitStatus("idle");
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await submitAuthenticatedContactForm({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        company: formData.company.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        subject: formData.subject,
+        message: formData.message.trim(),
+        source: "help-support",
+      });
       setSubmitStatus("success");
       setFormData({ name: "", email: "", company: "", phone: "", subject: "", message: "" });
       setErrors({});
