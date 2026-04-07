@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { submitContactForm } from "@/lib/api/contact";
 
 export function ContactSection() {
   const [formData, setFormData] = useState({
@@ -97,9 +98,16 @@ export function ContactSection() {
     setIsSubmitting(true);
     setSubmitStatus("idle");
 
-    // Simulate form submission (replace with actual API call)
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await submitContactForm({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        company: formData.company.trim() || undefined,
+        phone: formData.phone.trim() || undefined,
+        subject: formData.subject,
+        message: formData.message.trim(),
+        source: "homepage",
+      });
       setSubmitStatus("success");
       setFormData({
         name: "",
@@ -110,7 +118,7 @@ export function ContactSection() {
         message: "",
       });
       setErrors({});
-    } catch (error) {
+    } catch {
       setSubmitStatus("error");
     } finally {
       setIsSubmitting(false);
