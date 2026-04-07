@@ -620,8 +620,8 @@ export default function AdminPoolDetailsPage() {
 
           {/* ═══════════ ACTION BUTTONS ═══════════ */}
           <div className="flex flex-wrap gap-2 items-center items-center">
-              {/* Top Trade: show when pool is open, full, or active (not draft) */}
-              {(isOpen || isFull || isActive) && (
+              {/* Top Trade: only show when pool is active (started) */}
+              {isActive && (
                 <button
                   type="button"
                   onClick={() => router.push(`/admin/pools/${poolId}/top-trade`)}
