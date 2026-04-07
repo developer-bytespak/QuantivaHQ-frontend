@@ -50,11 +50,10 @@ export function ProfilePage() {
   const holdingValue = dashboardData?.portfolio?.totalValue ?? 0;
   const portfolioChange = dashboardData?.portfolio?.pnlPercent ?? 0;
   const investedValue = dashboardData?.portfolio?.totalCost ?? 0;
+  const usdAsset = dashboardData?.balance?.assets?.find((a) => /^(USD|USDT|BUSD)$/i.test(a.symbol));
   const availableUSD =
     (dashboardData?.balance?.buyingPower ?? 0) ||
-    Number(
-      dashboardData?.balance?.assets?.find((a) => /USD|USDT|BUSD/i.test(a.symbol))?.free ?? 0
-    );
+    Number(usdAsset?.total ?? usdAsset?.free ?? 0);
   const positions = dashboardData?.positions ?? [];
   const isCrypto = connectionType === "crypto";
   const sectionTitle = isCrypto ? "Crypto" : "Stocks";
