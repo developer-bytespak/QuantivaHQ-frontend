@@ -27,6 +27,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/super/admin/vc-pool-admins": "VC Pool Admins",
   "/super/admin/pools-oversight": "Pools Oversight",
   "/super/admin/finance": "Unified Finance",
+  "/super/admin/default-fees": "Default Fees",
 };
 
 function getPageTitle(pathname: string | null): string {

@@ -25,6 +25,7 @@ import {
   adminMarkRefunded,
   adminListPayouts,
   adminMarkPayoutPaid,
+  adminMe,
   type AdminPoolDetails,
   type AdminPaymentSubmission,
   type AdminReservation,
@@ -47,11 +48,13 @@ function EditPoolModal({
   onSave,
   onClose,
   saving,
+  isSuperAdmin,
 }: {
   pool: AdminPoolDetails;
   onSave: (body: UpdatePoolRequest) => void;
   onClose: () => void;
   saving: boolean;
+  isSuperAdmin: boolean;
 }) {
   const [name, setName] = useState(pool.name);
   const [description, setDescription] = useState(pool.description ?? "");
@@ -129,21 +132,21 @@ function EditPoolModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400">Pool fee %</label>
-              <input type="number" min={0} step={0.01} value={poolFeePercent} onChange={(e) => setPoolFeePercent(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <input type="number" min={0} step={0.01} value={poolFeePercent} onChange={(e) => setPoolFeePercent(e.target.value)} className={`mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white${!isSuperAdmin ? " opacity-60 cursor-not-allowed" : ""}`} disabled={!isSuperAdmin} />
             </div>
             <div>
               <label className="block text-sm text-slate-400">Admin profit fee %</label>
-              <input type="number" min={0} step={0.01} value={adminProfitFeePercent} onChange={(e) => setAdminProfitFeePercent(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <input type="number" min={0} step={0.01} value={adminProfitFeePercent} onChange={(e) => setAdminProfitFeePercent(e.target.value)} className={`mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white${!isSuperAdmin ? " opacity-60 cursor-not-allowed" : ""}`} disabled={!isSuperAdmin} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-slate-400">Cancellation fee %</label>
-              <input type="number" min={0} step={0.01} value={cancellationFeePercent} onChange={(e) => setCancellationFeePercent(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <input type="number" min={0} step={0.01} value={cancellationFeePercent} onChange={(e) => setCancellationFeePercent(e.target.value)} className={`mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white${!isSuperAdmin ? " opacity-60 cursor-not-allowed" : ""}`} disabled={!isSuperAdmin} />
             </div>
             <div>
               <label className="block text-sm text-slate-400">Payment window (min)</label>
-              <input type="number" min={1} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className="mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white" />
+              <input type="number" min={1} value={paymentWindowMinutes} onChange={(e) => setPaymentWindowMinutes(e.target.value)} className={`mt-1 w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-3 py-2.5 text-sm text-white${!isSuperAdmin ? " opacity-60 cursor-not-allowed" : ""}`} disabled={!isSuperAdmin} />
             </div>
           </div>
           <div className="flex gap-3 pt-2">
@@ -190,6 +193,7 @@ export default function AdminPoolDetailsPage() {
   const [markPayoutPaidModal, setMarkPayoutPaidModal] = useState<{ payoutId: string; txId: string; notes: string } | null>(null);
   const [rejectCancellationModal, setRejectCancellationModal] = useState<{ cancellationId: string; reason: string } | null>(null);
   const [rejectPaymentModal, setRejectPaymentModal] = useState<{ submissionId: string; reason: string } | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const isDraft = pool?.status === "draft";
   const isFull = pool?.status === "full";
@@ -252,6 +256,7 @@ export default function AdminPoolDetailsPage() {
 
   useEffect(() => {
     load();
+    adminMe().then((me) => setIsSuperAdmin(!!me.is_super_admin)).catch(() => {});
   }, [poolId]);
 
   useEffect(() => {
@@ -1303,6 +1308,7 @@ export default function AdminPoolDetailsPage() {
               onSave={handleUpdatePool}
               onClose={() => setShowEditModal(false)}
               saving={saving}
+              isSuperAdmin={isSuperAdmin}
             />
           )}
         </>
