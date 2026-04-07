@@ -296,6 +296,23 @@ export interface UpdateFeesResponse {
   default_payment_window_minutes: number;
 }
 
+export interface SuperAdminUpdateDefaultFeesRequest {
+  default_pool_fee_percent: number;
+  default_admin_profit_fee_percent: number;
+  default_cancellation_fee_percent: number;
+  default_payment_window_minutes: number;
+  currentPassword: string;
+}
+
+export interface SuperAdminUpdateDefaultFeesResponse {
+  message: string;
+  updated_count: number;
+  default_pool_fee_percent: number;
+  default_admin_profit_fee_percent: number;
+  default_cancellation_fee_percent: number;
+  default_payment_window_minutes: number;
+}
+
 export interface AdminChangePasswordRequest {
   oldPassword: string;
   newPassword: string;
