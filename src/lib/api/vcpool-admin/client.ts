@@ -29,6 +29,8 @@ import type {
   CreateVcPoolAdminResponse,
   DeleteVcPoolAdminRequest,
   DeleteVcPoolAdminResponse,
+  SuperAdminUpdateDefaultFeesRequest,
+  SuperAdminUpdateDefaultFeesResponse,
   AdminPoolsListResponse,
   AdminPoolDetails,
   CreatePoolRequest,
@@ -339,6 +341,18 @@ export async function adminSuperDeleteVcPoolAdmin(
   const { data } = await adminAxios.delete<DeleteVcPoolAdminResponse>(
     `/admin/super-admin/vc-pool-admins/${adminId}`,
     { data: body }
+  );
+
+  return data;
+}
+
+/** PUT /admin/super-admin/default-fees */
+export async function adminSuperUpdateDefaultFees(
+  body: SuperAdminUpdateDefaultFeesRequest
+): Promise<SuperAdminUpdateDefaultFeesResponse> {
+  const { data } = await adminAxios.put<SuperAdminUpdateDefaultFeesResponse>(
+    "/admin/super-admin/default-fees",
+    body
   );
 
   return data;

@@ -19,6 +19,7 @@ const SUPER_ADMIN_NAV = [
   { label: "VC Pool Admins", href: "/super/admin/vc-pool-admins", icon: "shield" },
   { label: "Pools Oversight", href: "/super/admin/pools-oversight", icon: "pools" },
   { label: "Finance", href: "/super/admin/finance", icon: "binance" },
+  { label: "Default Fees", href: "/super/admin/default-fees", icon: "settings" },
 ];
 
 interface AdminSidebarProps {
