@@ -963,9 +963,58 @@ export async function adminBinanceTrades(
 export async function adminBinanceSummary(coin?: string): Promise<{ success: boolean; data: BinanceSummary; last_updated: string }> {
   const query = new URLSearchParams();
   if (coin) query.set("coin", coin);
-  
+
   const { data } = await adminAxios.get(
     `/admin/binance/summary${query.toString() ? `?${query.toString()}` : ""}`
   );
+  return data;
+}
+
+// ---- Contact Submissions ----
+
+export interface ContactSubmissionRow {
+  id: string;
+  user_id: string | null;
+  name: string;
+  email: string;
+  company: string | null;
+  phone: string | null;
+  subject: string;
+  message: string;
+  source: string;
+  created_at: string;
+  user: { user_id: string; username: string; email: string } | null;
+}
+
+export interface ContactSubmissionsResponse {
+  submissions: ContactSubmissionRow[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+/** GET /admin/super-admin/contact-submissions */
+export async function adminSuperListContactSubmissions(params?: {
+  page?: number;
+  limit?: number;
+  source?: string;
+  subject?: string;
+  search?: string;
+}): Promise<ContactSubmissionsResponse> {
+  const search = new URLSearchParams();
+  if (params?.source && params.source !== "all") search.set("source", params.source);
+  if (params?.subject && params.subject !== "all") search.set("subject", params.subject);
+  if (params?.search) search.set("search", params.search);
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+
+  const query = search.toString();
+  const { data } = await adminAxios.get<ContactSubmissionsResponse>(
+    `/admin/super-admin/contact-submissions${query ? `?${query}` : ""}`
+  );
+
   return data;
 }

@@ -19,6 +19,7 @@ const SUPER_ADMIN_NAV = [
   { label: "VC Pool Admins", href: "/super/admin/vc-pool-admins", icon: "shield" },
   { label: "Pools Oversight", href: "/super/admin/pools-oversight", icon: "pools" },
   { label: "Finance", href: "/super/admin/finance", icon: "binance" },
+  { label: "Contact Submissions", href: "/super/admin/contact-submissions", icon: "contact" },
 ];
 
 interface AdminSidebarProps {
@@ -99,6 +100,13 @@ function NavIcon({ name, isActive }: { name: string; isActive: boolean }) {
     return (
       <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3l7 4v5c0 5-3.5 8-7 9-3.5-1-7-4-7-9V7l7-4zm-2 9l1.5 1.5L14 11" />
+      </svg>
+    );
+  }
+  if (name === "contact") {
+    return (
+      <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
       </svg>
     );
   }
