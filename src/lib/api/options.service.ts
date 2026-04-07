@@ -146,7 +146,19 @@ export interface IvRankData {
   underlying: string;
   currentIv: number;
   ivRank: number | null;
+  ivPercentile?: number | null;
   recordedAt: string;
+}
+
+export interface PortfolioGreeks {
+  totalDelta: number;
+  totalGamma: number;
+  totalTheta: number;
+  totalVega: number;
+  totalUnrealizedPnl: number;
+  totalMaxLoss: number;
+  positionCount: number;
+  exposureByUnderlying: Record<string, { delta: number; positions: number }>;
 }
 
 export interface IvHistoryPoint {
@@ -368,6 +380,15 @@ export const optionsService = {
   async getAiSignalById(id: string): Promise<AiOptionsSignal> {
     return apiRequest<never, AiOptionsSignal>({
       path: `/options/ai-signals/${encodeURIComponent(id)}`,
+      method: "GET",
+    });
+  },
+
+  // ── Risk / Portfolio ────────────────────────────────
+
+  async getPortfolioGreeks(): Promise<PortfolioGreeks> {
+    return apiRequest<never, PortfolioGreeks>({
+      path: "/options/portfolio-greeks",
       method: "GET",
     });
   },

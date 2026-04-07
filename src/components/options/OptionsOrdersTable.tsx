@@ -54,31 +54,31 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+    <div className="overflow-x-auto rounded-xl border border-[--color-border]">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-            <th className="px-3 py-2.5 text-left font-medium text-slate-400">
+          <tr className="border-b border-[--color-border] bg-[--color-surface]/40">
+            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
               <Tooltip content="The options contract — underlying asset, strike price, and expiration date" position="top">
                 <span>Contract</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-left font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
               <Tooltip content="CALL = right to buy the asset at strike. PUT = right to sell at strike." position="top">
                 <span>Type</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-left font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
               <Tooltip content="BUY = acquiring the option (pay premium). SELL = writing the option (receive premium)." position="top">
                 <span>Side</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Number of contracts in this order" position="top">
                 <span>Qty</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
               <Tooltip content="Your limit price (premium per contract) for this order" position="top">
                 <span>Price</span>
               </Tooltip>
@@ -88,7 +88,7 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
                 <span>Status</span>
               </Tooltip>
             </th>
-            <th className="px-3 py-2.5 text-right font-medium text-slate-400">Time</th>
+            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">Time</th>
             <th className="px-3 py-2.5 text-center font-medium text-slate-400">Action</th>
           </tr>
         </thead>
@@ -96,7 +96,7 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
           {orders.map((order) => (
             <tr
               key={order.orderId}
-              className="border-b border-white/[0.03] transition-colors hover:bg-white/[0.02]"
+              className="group/row relative border-b border-[--color-border]/30 transition-colors hover:bg-[--color-surface]/40 before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity hover:before:opacity-100"
             >
               <td className="px-3 py-2.5">
                 <div className="flex flex-col">
