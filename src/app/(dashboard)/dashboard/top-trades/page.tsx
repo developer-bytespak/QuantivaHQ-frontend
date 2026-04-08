@@ -895,7 +895,6 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       try {
         setOrdersLoading(true);
         setOrdersError(null);
-        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : "/binance-trading";
 
         const ordersParams = new URLSearchParams({ limit: '500' });
         if (ordersPeriod !== 'all' && ordersPeriod !== 'custom') {
@@ -906,7 +905,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           if (ordersEndDate) ordersParams.set('endTime', String(new Date(ordersEndDate + 'T23:59:59').getTime()));
         }
 
-        const ordersResponse = await apiRequest<never, any>({ path: `${tradingApiBase}/orders/all?${ordersParams.toString()}`, method: "GET" });
+        const ordersPath = isStocksConnection
+          ? `/alpaca-trading/orders/all?${ordersParams.toString()}`
+          : `/exchanges/connections/${connectionId}/orders/all?${ordersParams.toString()}`;
+        const ordersResponse = await apiRequest<never, any>({ path: ordersPath, method: "GET", credentials: "include" });
         if (cancelled) return;
 
         const normalizedOrders: ModalOrder[] = toArray(ordersResponse).map((o: any) => ({
@@ -948,7 +950,6 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       try {
         setLeaderboardLoading(true);
         setLeaderboardError(null);
-        const tradingApiBase = isStocksConnection ? "/alpaca-trading" : "/binance-trading";
 
         const historyParams = new URLSearchParams({ limit: '500' });
         if (tradeHistoryPeriod !== 'all' && tradeHistoryPeriod !== 'custom') {
@@ -959,9 +960,12 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           if (tradeHistoryEndDate) historyParams.set('endTime', String(new Date(tradeHistoryEndDate + 'T23:59:59').getTime()));
         }
 
+        const historyPath = isStocksConnection
+          ? `/alpaca-trading/trade-history?${historyParams.toString()}`
+          : `/exchanges/connections/${connectionId}/trade-history?${historyParams.toString()}`;
         const [positionsResponse, historyResponse] = await Promise.all([
           apiRequest<never, any>({ path: `/exchanges/connections/${connectionId}/positions`, method: "GET", credentials: "include" }),
-          apiRequest<never, any>({ path: `${tradingApiBase}/trade-history?${historyParams.toString()}`, method: "GET" }),
+          apiRequest<never, any>({ path: historyPath, method: "GET", credentials: "include" }),
         ]);
         if (cancelled) return;
 
