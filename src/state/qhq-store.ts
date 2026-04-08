@@ -23,6 +23,7 @@ interface QhqState {
   fetchStats: () => Promise<void>;
   fetchRewardRules: () => Promise<void>;
   linkWallet: (address: string) => Promise<void>;
+  disconnectWallet: () => Promise<{ success: boolean }>;
   confirmClaim: (txHash: string, amount: string) => Promise<void>;
 }
 
@@ -95,6 +96,16 @@ const useQhqStore = create<QhqState>((set) => ({
   linkWallet: async (address: string) => {
     const wallet = await qhqApi.linkWallet(address);
     set({ wallet });
+  },
+
+  disconnectWallet: async () => {
+    try {
+      await qhqApi.deleteWallet();
+      set({ wallet: null });
+      return { success: true };
+    } catch (error) {
+      throw error;
+    }
   },
 
   confirmClaim: async (txHash: string, amount: string) => {
