@@ -960,7 +960,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         }
 
         const [positionsResponse, historyResponse] = await Promise.all([
-          apiRequest<never, any>({ path: `${tradingApiBase}/positions`, method: "GET" }),
+          apiRequest<never, any>({ path: `/exchanges/connections/${connectionId}/positions`, method: "GET", credentials: "include" }),
           apiRequest<never, any>({ path: `${tradingApiBase}/trade-history?${historyParams.toString()}`, method: "GET" }),
         ]);
         if (cancelled) return;
