@@ -41,14 +41,6 @@ export const useBinanceTrading = () => {
     return context;
 };
 
-export const useBinanceOrdersAll = () => {
-    const query = useQuery({
-        queryKey: ['binanceOrdersAll'],
-        queryFn: async () => fetchTradingData('/binance-trading/orders/all')
-    });
-    return query;
-}
-
 export const useBinanceOrdersHistory = () => {
     const query = useQuery({
         queryKey: ['binanceOrdersHistory'],

@@ -906,7 +906,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           if (ordersEndDate) ordersParams.set('endTime', String(new Date(ordersEndDate + 'T23:59:59').getTime()));
         }
 
-        const ordersResponse = await apiRequest<never, any>({ path: `${tradingApiBase}/orders/all?${ordersParams.toString()}`, method: "GET" });
+        const ordersResponse = await apiRequest<never, any>({ path: isStocksConnection ? `${tradingApiBase}/orders/all?${ordersParams.toString()}` : `/exchanges/connections/${connectionId}/orders/all?${ordersParams.toString()}`, method: "GET", credentials: "include" });
         if (cancelled) return;
 
         const normalizedOrders: ModalOrder[] = toArray(ordersResponse).map((o: any) => ({
