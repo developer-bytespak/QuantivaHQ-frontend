@@ -41,51 +41,5 @@ export const useBinanceTrading = () => {
     return context;
 };
 
-export const useBinanceDashboard = () => {
-    const query = useQuery({
-        queryKey: ['binanceDashboard'],
-        queryFn: async () => fetchTradingData('/binance-trading/dashboard')
-    });
-    return query;
-};
 
-export const useBinanceBalance = () => {
-    const query = useQuery({
-        queryKey: ['binanceBalance'],
-        queryFn: async () => fetchTradingData('/binance-trading/balance')
-    });
-    return query;
-}
-
-export const useBinancePosition = () => {
-    const query = useQuery({
-        queryKey: ['binancePosition'],
-        queryFn: async () => fetchTradingData('/binance-trading/positions')
-    });
-    return query;
-}
-
-export const useBinanceOrdersOpen = () => {
-    const query = useQuery({
-        queryKey: ['binanceOrdersOpen'],
-        queryFn: async () => fetchTradingData('/binance-trading/orders/open')
-    });
-    return query;
-}
-
-export const useBinanceOrdersAll = () => {
-    const query = useQuery({
-        queryKey: ['binanceOrdersAll'],
-        queryFn: async () => fetchTradingData('/binance-trading/orders/all')
-    });
-    return query;
-}
-
-export const useBinanceOrdersHistory = () => {
-    const query = useQuery({
-        queryKey: ['binanceOrdersHistory'],
-        queryFn: async () => fetchTradingData('/binance-trading/trade-history')
-    });
-    return query;
-}
 

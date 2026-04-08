@@ -82,6 +82,9 @@ export const qhqApi = {
   linkWallet: (walletAddress: string): Promise<QhqWallet> =>
     apiRequest({ path: '/qhq/wallet/link', method: 'POST', body: { wallet_address: walletAddress } }),
 
+  deleteWallet: (): Promise<{ success: boolean; message: string; wallet_address: string }> =>
+    apiRequest({ path: '/qhq/wallet', method: 'DELETE' }),
+
   getClaimProof: (): Promise<QhqClaimProof> =>
     apiRequest({ path: '/qhq/claim/proof', method: 'GET' }),
 

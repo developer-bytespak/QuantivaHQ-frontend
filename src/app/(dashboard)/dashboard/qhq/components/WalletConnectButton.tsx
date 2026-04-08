@@ -7,13 +7,15 @@ import useQhqStore from '@/state/qhq-store';
 
 export function WalletConnectButton() {
   const { isConnected, address } = useAccount();
-  const { wallet, linkWallet, fetchWallet } = useQhqStore();
+  const { wallet, linkWallet, disconnectWallet, fetchWallet } = useQhqStore();
   const [showRefresh, setShowRefresh] = useState(false);
+  const [wasConnected, setWasConnected] = useState(false);
 
   useEffect(() => {
     fetchWallet();
   }, [fetchWallet]);
 
+  // Handle wallet connection
   useEffect(() => {
     if (isConnected && address) {
       if (!wallet || wallet.wallet_address.toLowerCase() !== address.toLowerCase()) {
@@ -21,8 +23,19 @@ export function WalletConnectButton() {
         fetchWallet();
       }
       setShowRefresh(false);
+      setWasConnected(true);
     }
   }, [isConnected, address, wallet, linkWallet, fetchWallet]);
+
+  // Handle wallet disconnection - delete from backend
+  useEffect(() => {
+    if (!isConnected && wasConnected) {
+      disconnectWallet().catch((error: any) => {
+        console.error('Failed to disconnect wallet from backend:', error);
+      });
+      setWasConnected(false);
+    }
+  }, [isConnected, wasConnected, disconnectWallet]);
 
   if (isConnected) {
     return (

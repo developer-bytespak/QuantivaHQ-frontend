@@ -19,18 +19,23 @@ const STRATEGY_LABELS: Record<string, string> = {
   bull_call_spread: "Bull Call Spread",
   bear_put_spread: "Bear Put Spread",
   iron_condor: "Iron Condor",
+  long_straddle: "Long Straddle",
+  long_strangle: "Long Strangle",
+  long_butterfly: "Long Butterfly",
+  calendar_spread: "Calendar Spread",
+  short_put: "Short Put",
 };
 
 // ── Signal Card ─────────────────────────────────────────────────────────────
 
-function SignalCard({ signal }: { signal: AiOptionsSignal }) {
+function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?: (signal: AiOptionsSignal) => void }) {
   const dir = DIRECTION_STYLES[signal.direction] ?? DIRECTION_STYLES.neutral;
   const expiresAt = new Date(signal.expires_at);
   const isExpired = expiresAt < new Date();
   const createdAt = new Date(signal.created_at);
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#12121a] p-4 transition-colors hover:border-white/[0.10]">
+    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all hover:scale-[1.01] hover:border-[--color-border] hover:shadow-lg">
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -82,7 +87,7 @@ function SignalCard({ signal }: { signal: AiOptionsSignal }) {
       )}
 
       {/* Risk / Reward row */}
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/[0.06] pt-3">
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[--color-border] pt-3">
         <div>
           <span className="text-[10px] uppercase tracking-wide text-slate-500">R:R</span>
           <p className="text-xs font-medium text-slate-300">{signal.risk_reward ?? "—"}</p>
@@ -98,7 +103,7 @@ function SignalCard({ signal }: { signal: AiOptionsSignal }) {
       </div>
 
       {/* IV + Footer */}
-      <div className="mt-3 flex items-center justify-between border-t border-white/[0.06] pt-3 text-[10px] text-slate-500">
+      <div className="mt-3 flex items-center justify-between border-t border-[--color-border] pt-3 text-[10px] text-slate-500">
         <div className="flex gap-3">
           {signal.iv_rank !== null && (
             <span>IV Rank: <span className="text-slate-300">{(Number(signal.iv_rank) * 100).toFixed(0)}%</span></span>
@@ -113,6 +118,16 @@ function SignalCard({ signal }: { signal: AiOptionsSignal }) {
           {createdAt.toLocaleDateString([], { month: "short", day: "numeric" })}
         </span>
       </div>
+
+      {/* Execute button */}
+      {onExecute && !isExpired && signal.legs.length > 0 && (
+        <button
+          onClick={() => onExecute(signal)}
+          className="mt-3 w-full rounded-lg bg-[var(--primary)] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[var(--primary-light)]"
+        >
+          Execute Signal
+        </button>
+      )}
     </div>
   );
 }
@@ -122,9 +137,11 @@ function SignalCard({ signal }: { signal: AiOptionsSignal }) {
 export function OptionsAISignals({
   signals,
   isLoading,
+  onExecute,
 }: {
   signals: AiOptionsSignal[];
   isLoading: boolean;
+  onExecute?: (signal: AiOptionsSignal) => void;
 }) {
   const [filter, setFilter] = useState<string>("all");
 
@@ -143,7 +160,7 @@ export function OptionsAISignals({
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-64 animate-pulse rounded-xl border border-white/[0.06] bg-[#12121a]" />
+          <div key={i} className="h-64 animate-pulse rounded-xl border border-[--color-border] bg-[--color-surface]/60" />
         ))}
       </div>
     );
@@ -202,7 +219,7 @@ export function OptionsAISignals({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((sig) => (
-            <SignalCard key={sig.id} signal={sig} />
+            <SignalCard key={sig.id} signal={sig} onExecute={onExecute} />
           ))}
         </div>
       )}

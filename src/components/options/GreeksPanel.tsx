@@ -41,7 +41,7 @@ const GREEKS_HELP = [
   {
     symbol: "IV",
     name: "Implied Volatility",
-    color: "text-cyan-400",
+    color: "text-[var(--primary)]",
     description: "Market's forecast of future price movement. High IV = expensive premiums (market expects big moves). Low IV = cheaper options.",
   },
 ];
@@ -91,12 +91,12 @@ export function GreeksPanel({ greeks, contractSymbol, isLoading }: GreeksPanelPr
         { symbol: "Γ", label: "Gamma", value: formatGreek(greeks.gamma), color: "text-blue-400" },
         { symbol: "Θ", label: "Theta", value: formatGreek(greeks.theta), color: greekColor(greeks.theta) },
         { symbol: "ν", label: "Vega", value: formatGreek(greeks.vega), color: "text-purple-400" },
-        { symbol: "IV", label: "IV", value: formatIV(iv), color: "text-cyan-400" },
+        { symbol: "IV", label: "IV", value: formatIV(iv), color: "text-[var(--primary)]" },
       ]
     : null;
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#12121a] px-4 py-3">
+    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 px-4 py-3">
       {/* Header row with help */}
       <div className="mb-2.5 flex items-center gap-2">
         <h3 className="text-sm font-semibold text-slate-200">Greeks</h3>
@@ -113,7 +113,7 @@ export function GreeksPanel({ greeks, contractSymbol, isLoading }: GreeksPanelPr
 
           {/* Help popup */}
           {showHelp && (
-            <div className="absolute left-0 top-full z-40 mt-2 w-80 rounded-xl border border-white/[0.08] bg-[#12121a] p-4 shadow-2xl sm:w-96">
+            <div className="absolute left-0 top-full z-40 mt-2 w-80 rounded-xl border border-white/[0.08] bg-[--color-surface]/60 p-4 shadow-2xl sm:w-96">
               <div className="mb-3 flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-slate-200">Understanding Greeks</h4>
                 <button
@@ -155,16 +155,16 @@ export function GreeksPanel({ greeks, contractSymbol, isLoading }: GreeksPanelPr
       {/* Values — single horizontal row */}
       {isLoading ? (
         <div className="flex items-center gap-2 text-xs text-slate-500">
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-500 border-t-transparent" />
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           Loading…
         </div>
       ) : items ? (
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {items.map((item, i) => (
             <div
               key={item.label}
-              className={`flex flex-1 items-center justify-between rounded-lg border border-white/[0.04] bg-white/[0.02] px-3 py-2 ${
-                i === items.length - 1 ? "bg-cyan-500/[0.04]" : ""
+              className={`flex items-center justify-between rounded-lg border border-[--color-border]/40 bg-[--color-surface]/40 px-3 py-2 ${
+                i === items.length - 1 ? "bg-[var(--primary)]/[0.04]" : ""
               }`}
             >
               <div className="flex items-center gap-1.5">

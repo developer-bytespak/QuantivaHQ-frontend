@@ -113,7 +113,7 @@ const sections = [
 export function TermsContent({
   title = "Terms of Service",
   accentClassName = "text-[var(--primary)]",
-  contactEmail = "legal@quantivahq.com",
+  contactEmail = "support@quantivahq.com",
 }: TermsContentProps) {
   return (
     <div className="bg-gradient-to-br from-[--color-surface-alt]/90 to-[--color-surface-alt]/70 backdrop-blur-xl border border-[--color-border] rounded-xl sm:rounded-2xl p-4 sm:p-8 shadow-lg">
@@ -144,7 +144,7 @@ export function TermsContent({
               {section.title === "16. Contact" && (
                 <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg">
                   <p className="text-sm sm:text-base text-white font-medium">Email: {contactEmail}</p>
-                  <p className="text-sm sm:text-base text-slate-400 mt-2">Company address: add your registered business address before publishing.</p>
+                  <p className="text-sm sm:text-base text-slate-400 mt-2">Company address: 24236 W. Stone Bend Ln, West Hills, CA 91304</p>
                 </div>
               )}
             </div>

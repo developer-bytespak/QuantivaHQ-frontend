@@ -46,7 +46,7 @@ export function OptionOrderForm({
   };
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-[#12121a] p-4">
+    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
       <h3 className="mb-4 text-sm font-semibold text-slate-200">Place Order</h3>
 
       {/* Contract info */}
@@ -73,7 +73,7 @@ export function OptionOrderForm({
           </div>
         </div>
       ) : (
-        <div className="mb-4 rounded-lg border border-dashed border-white/[0.08] p-4 text-center text-xs text-slate-500">
+        <div className="mb-4 rounded-lg border border-dashed border-[--color-border] p-4 text-center text-xs text-slate-500">
           Select a contract from the options chain
         </div>
       )}
@@ -116,7 +116,7 @@ export function OptionOrderForm({
           step={1}
           value={orderForm.quantity}
           onChange={(e) => onFormChange({ quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-          className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[var(--primary)]/30 focus:ring-1"
+          className="w-full rounded-lg border border-[--color-border] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[var(--primary)]/30 focus:ring-1"
         />
       </div>
 
@@ -132,7 +132,7 @@ export function OptionOrderForm({
           step={0.01}
           value={orderForm.price}
           onChange={(e) => onFormChange({ price: Math.max(0, parseFloat(e.target.value) || 0) })}
-          className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[var(--primary)]/30 focus:ring-1"
+          className="w-full rounded-lg border border-[--color-border] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[var(--primary)]/30 focus:ring-1"
         />
         {selectedContract && (
           <div className="mt-1 flex gap-2">
@@ -160,7 +160,7 @@ export function OptionOrderForm({
 
       {/* Summary */}
       {maxLoss !== null && maxLoss > 0 && (
-        <div className="mb-4 rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-2.5">
+        <div className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-500/8 p-2.5">
           <p className="flex items-center gap-1.5 text-[10px] font-medium text-yellow-400">
             Max {orderForm.side === "BUY" ? "Loss" : "Risk"}: {maxLoss.toFixed(2)} USDT
             <InfoTip content="Maximum amount you could lose on this trade. For buyers, this equals the total premium paid. The option can expire worthless." position="right" />
@@ -179,7 +179,7 @@ export function OptionOrderForm({
         disabled={!selectedContract || isPlacing || insufficientBalance}
         className={`w-full rounded-lg py-2.5 text-sm font-semibold transition-all ${
           !selectedContract || isPlacing || insufficientBalance
-            ? "cursor-not-allowed bg-white/[0.04] text-slate-600"
+            ? "cursor-not-allowed bg-white/[0.06] text-slate-500"
             : orderForm.side === "BUY"
               ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
               : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
@@ -198,7 +198,7 @@ export function OptionOrderForm({
       {/* Confirmation Modal */}
       {confirmOpen && selectedContract && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#12121a] p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl border border-[--color-border] bg-[--color-surface]/60 p-6 shadow-2xl">
             <h4 className="mb-4 text-base font-semibold text-slate-200">Confirm Order</h4>
             <div className="mb-4 space-y-2 text-sm text-slate-400">
               <p>
@@ -229,7 +229,7 @@ export function OptionOrderForm({
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmOpen(false)}
-                className="flex-1 rounded-lg border border-white/[0.08] py-2 text-sm text-slate-400 hover:bg-white/[0.04]"
+                className="flex-1 rounded-lg border border-[--color-border] py-2 text-sm text-slate-400 hover:bg-white/[0.04]"
               >
                 Cancel
               </button>
