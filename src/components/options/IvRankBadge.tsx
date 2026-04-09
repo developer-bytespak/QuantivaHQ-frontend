@@ -127,7 +127,7 @@ export function IvRankBadge({
 
       {/* Expandable chart */}
       {expanded && (
-        <div className="mt-2 rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3">
+        <div className="mt-2 rounded-xl bg-[--color-surface]/40 p-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-medium text-slate-300">IV History (90 days)</span>
             <span className="text-[10px] text-slate-500">
