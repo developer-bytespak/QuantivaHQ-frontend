@@ -91,7 +91,7 @@ export function ExchangeAutoTradeModal({
     let cancelled = false;
     exchangesService.getBalance(connectionId).then((res) => {
       if (cancelled || !res?.data?.assets) return;
-      const assets = res.data.assets as Array<{ symbol: string; free: string; locked: string }>;
+      const assets = res.data.assets as Array<{ symbol: string; free: string; locked: string; total: string }>;
       const findAsset = (symbol: string) => assets.find((a) => a.symbol === symbol);
 
       const selectedAsset =
@@ -106,7 +106,8 @@ export function ExchangeAutoTradeModal({
 
       if (selectedAsset) {
         setQuoteAsset(selectedAsset.symbol);
-        setBalance(parseFloat(selectedAsset.free || "0") + parseFloat(selectedAsset.locked || "0"));
+        const freeAndLocked = parseFloat(selectedAsset.free || "0") + parseFloat(selectedAsset.locked || "0");
+        setBalance(freeAndLocked || parseFloat(selectedAsset.total || "0"));
       } else {
         setQuoteAsset("USDT");
         setBalance(0);
