@@ -704,6 +704,43 @@ export function SubscriptionSettings() {
                       </ul>
                     </div>
 
+                    {/* Options Trading Fees */}
+                    <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-5">
+                      <h4 className="text-sm font-semibold text-white mb-3">
+                        Options Trading Fees
+                      </h4>
+
+                      <ul className="space-y-2 text-xs text-slate-400">
+                        <li className="flex items-start gap-2">
+                          <span className="w-1.5 h-1.5 bg-[var(--primary)] rounded-full mt-1.5"></span>
+                          <span>
+                            <strong className="text-slate-300">Execution Fee: 0.03%</strong> per trade when opening or closing an options position. Applies to all call and put contracts.
+                          </span>
+                        </li>
+
+                        <li className="flex items-start gap-2">
+                          <span className="w-1.5 h-1.5 bg-[var(--primary)] rounded-full mt-1.5"></span>
+                          <span>
+                            <strong className="text-slate-300">Performance Fee: 0.5% – 3%</strong> of net profit, charged only on profitable AI-driven trades. No fee if there is no profit.
+                          </span>
+                        </li>
+                      </ul>
+
+                      <div className="mt-3 rounded-md bg-slate-900/50 p-3">
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-slate-500 mb-2">Performance Fee Tiers</p>
+                        <div className="grid grid-cols-2 gap-1.5 text-xs">
+                          <span className="text-slate-400">Under $100 profit</span>
+                          <span className="text-right text-slate-300">0.5%</span>
+                          <span className="text-slate-400">$100 – $1,000</span>
+                          <span className="text-right text-slate-300">1%</span>
+                          <span className="text-slate-400">$1,000 – $10,000</span>
+                          <span className="text-right text-slate-300">2%</span>
+                          <span className="text-slate-400">$10,000+</span>
+                          <span className="text-right text-slate-300">3%</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Monthly History */}
                     {feeHistory.length > 0 && (
                       <div>
@@ -747,6 +784,11 @@ export function SubscriptionSettings() {
                               <div className="flex items-center gap-3">
                                 <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${f.side === "BUY" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{f.side || "\u2014"}</span>
                                 <span className="text-sm text-white font-medium">{f.asset_symbol}</span>
+                                {f.source?.startsWith("options_") && (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-[var(--primary)]/15 text-[var(--primary)]">
+                                    {f.source === "options_execution" ? "Options" : "AI Perf."}
+                                  </span>
+                                )}
                                 <span className="text-xs text-slate-500">{new Date(f.created_at).toLocaleDateString()}</span>
                               </div>
                               <div className="text-right">
