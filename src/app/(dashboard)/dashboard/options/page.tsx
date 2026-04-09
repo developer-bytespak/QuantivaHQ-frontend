@@ -141,6 +141,32 @@ export default function OptionsPage() {
     if (hasAccess && activeTab === "chain") fetchChain();
   }, [store.selectedUnderlying, hasAccess, activeTab, fetchChain]);
 
+  // ── Auto-select contract from pending signal after chain loads ─────────
+
+  useEffect(() => {
+    const signal = pendingSignalRef.current;
+    if (!signal || store.optionsChain.length === 0 || store.isLoadingChain) return;
+
+    const leg = signal.legs[0];
+    if (!leg) { pendingSignalRef.current = null; return; }
+
+    // Find matching contract: same type + closest strike
+    const matching = store.optionsChain.find(
+      (c) => c.type === leg.type && Math.abs(c.strike - leg.strike) < 1,
+    );
+
+    if (matching) {
+      handleSelectContract(matching);
+      // Set the correct expiry tab
+      if (matching.expiry) {
+        const expiryDate = matching.expiry.split("T")[0];
+        store.setSelectedExpiry(expiryDate);
+      }
+    }
+
+    pendingSignalRef.current = null;
+  }, [store.optionsChain, store.isLoadingChain]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Fetch account balance ───────────────────────────────────────────────
 
   useEffect(() => {
@@ -303,6 +329,10 @@ export default function OptionsPage() {
 
   const [userPositionQty, setUserPositionQty] = useState<number | null>(null);
 
+  // ── Pending signal execution — auto-select contract after chain loads ──
+
+  const pendingSignalRef = useRef<AiOptionsSignal | null>(null);
+
   // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleSelectContract = useCallback(
@@ -405,16 +435,22 @@ export default function OptionsPage() {
   const handleExecuteSignal = useCallback(
     (signal: AiOptionsSignal) => {
       if (signal.legs.length === 0) return;
-      // Use the first leg to pre-fill the order form
       const leg = signal.legs[0];
+
+      // Store pending signal so the auto-select effect can match it after chain loads
+      pendingSignalRef.current = signal;
+
+      // Pre-fill order form
       store.setOrderForm({
         optionType: leg.type,
         side: leg.side,
         quantity: 1,
-        price: 0, // User needs to set price from the chain
+        price: 0, // Will be set when contract is auto-selected (askPrice)
       });
-      // Switch to chain tab so user can select the exact contract
+
+      // Switch underlying (triggers chain reload) and switch to chain tab
       store.setSelectedUnderlying(signal.underlying);
+      store.setSelectedExpiry(null); // Reset so it picks the right expiry
       setActiveTab("chain");
     },
     [], // eslint-disable-line react-hooks/exhaustive-deps
