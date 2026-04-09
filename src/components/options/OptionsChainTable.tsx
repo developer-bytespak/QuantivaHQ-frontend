@@ -100,10 +100,10 @@ export function OptionsChainTable({
           >
             <button
               onClick={() => setFilterType(t)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
                 filterType === t
-                  ? "bg-[var(--primary)]/15 text-[var(--primary)]"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                  ? "bg-[var(--primary)] text-white shadow-[0_0_12px_rgba(var(--primary-rgb),0.3)]"
+                  : "bg-white/[0.04] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200"
               }`}
             >
               {t}
@@ -112,77 +112,77 @@ export function OptionsChainTable({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-[--color-border]">
+      <div className="overflow-x-auto rounded-xl">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[--color-border] bg-[--color-surface]/40">
+            <tr className="bg-white/[0.04]">
               {(filterType === "ALL" || filterType === "CALL") && (
                 <>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Bid: Highest price a buyer is willing to pay for this call option" position="top">
                       <span>C Bid</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Ask: Lowest price a seller is asking. You pay this price when buying." position="top">
                       <span>C Ask</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Last traded price for this call contract" position="top">
                       <span>C Last</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Volume: Number of contracts traded today. Higher = more liquid." position="top">
                       <span>C Vol</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Open Interest: Total outstanding contracts. High OI = established market." position="top">
                       <span>C OI</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-green-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Implied Volatility: Market's expected price swing. High IV = expensive premiums." position="top">
                       <span>C IV</span>
                     </Tooltip>
                   </th>
                 </>
               )}
-              <th className="px-3 py-2.5 text-center font-semibold text-slate-200 bg-white/[0.03]">
+              <th className="px-2.5 py-2 text-center font-semibold text-slate-200 bg-[var(--primary)]/[0.06]">
                 <Tooltip content="Strike Price: The price at which you can buy (call) or sell (put) the underlying asset at expiry." position="top">
                   <span>Strike</span>
                 </Tooltip>
               </th>
               {(filterType === "ALL" || filterType === "PUT") && (
                 <>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Bid: Highest price a buyer is willing to pay for this put option" position="top">
                       <span>P Bid</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Ask: Lowest price a seller is asking. You pay this price when buying." position="top">
                       <span>P Ask</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Last traded price for this put contract" position="top">
                       <span>P Last</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Volume: Number of contracts traded today. Higher = more liquid." position="top">
                       <span>P Vol</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Open Interest: Total outstanding contracts. High OI = established market." position="top">
                       <span>P OI</span>
                     </Tooltip>
                   </th>
-                  <th className="px-3 py-2.5 text-left font-medium uppercase text-red-400/80">
+                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Implied Volatility: Market's expected price swing. High IV = expensive premiums." position="top">
                       <span>P IV</span>
                     </Tooltip>
@@ -192,18 +192,18 @@ export function OptionsChainTable({
             </tr>
           </thead>
           <tbody>
-            {strikes.map((strike) => {
+            {strikes.map((strike, i) => {
               const call = calls.get(strike);
               const put = puts.get(strike);
               return (
                 <tr
                   key={strike}
-                  className="group/row relative border-b border-[--color-border]/30 transition-colors hover:bg-[--color-surface]/40 before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity hover:before:opacity-100"
+                  className={`transition-colors hover:bg-white/[0.06] ${i % 2 === 0 ? "bg-white/[0.02]" : ""}`}
                 >
                   {(filterType === "ALL" || filterType === "CALL") && (
                     <>
                       <td
-                        className={`cursor-pointer px-3 py-2 text-slate-300 hover:text-green-400 ${
+                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-green-400 ${
                           selectedContractSymbol === call?.symbol
                             ? "bg-green-500/10"
                             : ""
@@ -213,7 +213,7 @@ export function OptionsChainTable({
                         {call ? formatPrice(call.bidPrice) : "—"}
                       </td>
                       <td
-                        className={`cursor-pointer px-3 py-2 text-slate-300 hover:text-green-400 ${
+                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-green-400 ${
                           selectedContractSymbol === call?.symbol
                             ? "bg-green-500/10"
                             : ""
@@ -222,27 +222,27 @@ export function OptionsChainTable({
                       >
                         {call ? formatPrice(call.askPrice) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-400">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-400">
                         {call ? formatPrice(call.lastPrice) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
                         {call ? formatVolume(call.volume) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
                         {call ? formatVolume(call.openInterest) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
                         {call ? formatIV(call.greeks?.impliedVolatility ?? 0) : "—"}
                       </td>
                     </>
                   )}
-                  <td className="px-3 py-2 text-center font-mono font-semibold text-slate-100 bg-[--color-surface]/40">
+                  <td className="px-2.5 py-1.5 text-center font-mono font-semibold text-slate-100 bg-[var(--primary)]/[0.06]">
                     {strike.toLocaleString()}
                   </td>
                   {(filterType === "ALL" || filterType === "PUT") && (
                     <>
                       <td
-                        className={`cursor-pointer px-3 py-2 text-slate-300 hover:text-red-400 ${
+                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-red-400 ${
                           selectedContractSymbol === put?.symbol
                             ? "bg-red-500/10"
                             : ""
@@ -252,7 +252,7 @@ export function OptionsChainTable({
                         {put ? formatPrice(put.bidPrice) : "—"}
                       </td>
                       <td
-                        className={`cursor-pointer px-3 py-2 text-slate-300 hover:text-red-400 ${
+                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-red-400 ${
                           selectedContractSymbol === put?.symbol
                             ? "bg-red-500/10"
                             : ""
@@ -261,16 +261,16 @@ export function OptionsChainTable({
                       >
                         {put ? formatPrice(put.askPrice) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-400">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-400">
                         {put ? formatPrice(put.lastPrice) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
                         {put ? formatVolume(put.volume) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
                         {put ? formatVolume(put.openInterest) : "—"}
                       </td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
                         {put ? formatIV(put.greeks?.impliedVolatility ?? 0) : "—"}
                       </td>
                     </>
