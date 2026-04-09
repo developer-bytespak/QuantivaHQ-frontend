@@ -197,6 +197,16 @@ export function OptionOrderForm({
         </div>
       )}
 
+      {/* Platform fee estimate */}
+      {selectedContract && orderForm.price > 0 && orderForm.quantity > 0 && (
+        <div className="mb-3 flex items-center justify-between text-[10px] text-slate-500">
+          <span>Platform Fee (0.03%)</span>
+          <span className="font-mono text-slate-400">
+            ${(orderForm.price * orderForm.quantity * 0.0003).toFixed(4)} USDT
+          </span>
+        </div>
+      )}
+
       {/* Submit */}
       <button
         onClick={handleSubmit}
