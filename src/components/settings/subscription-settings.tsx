@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import axios from "axios";
+import { apiRequest } from "@/lib/api/client";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier, BillingPeriod, getPlansByTier } from "@/mock-data/subscription-dummy-data";
 import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
@@ -60,15 +60,12 @@ export function SubscriptionSettings() {
   const fetchFeeData = useCallback(async () => {
     setFeeLoading(true);
     try {
-      const token = localStorage.getItem("quantivahq_access_token");
-      const headers = { Authorization: `Bearer ${token}` };
-      const base = process.env.NEXT_PUBLIC_API_URL;
       const [cur, hist] = await Promise.all([
-        axios.get(`${base}/trade-fees/my-fees`, { headers, withCredentials: true }),
-        axios.get(`${base}/trade-fees/history?limit=6`, { headers, withCredentials: true }),
+        apiRequest({ path: "/trade-fees/my-fees" }),
+        apiRequest({ path: "/trade-fees/history?limit=6" }),
       ]);
-      setFeeData(cur.data);
-      setFeeHistory(hist.data?.months ?? []);
+      setFeeData(cur);
+      setFeeHistory((hist as any)?.months ?? []);
     } catch {
       // user may not have fees yet — silent
     } finally {
@@ -111,11 +108,8 @@ export function SubscriptionSettings() {
   const handleCancelClick = async () => {
     setCancelCheckLoading(true);
     try {
-      const token = localStorage.getItem("quantivahq_access_token");
-      const headers = { Authorization: `Bearer ${token}` };
-      const base = process.env.NEXT_PUBLIC_API_URL;
-      const { data } = await axios.get(`${base}/trade-fees/outstanding`, { headers, withCredentials: true });
-      setOutstandingFees(data);
+      const data = await apiRequest({ path: "/trade-fees/outstanding" });
+      setOutstandingFees(data as any);
     } catch {
       setOutstandingFees(null);
     } finally {

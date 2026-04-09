@@ -43,6 +43,12 @@ export default function SignUpPage() {
     
     const checkAuth = async () => {
       try {
+        // If no access token exists, user is definitely not authenticated — skip the API call entirely
+        const token = typeof window !== "undefined" ? localStorage.getItem("quantivahq_access_token") : null;
+        if (!token) {
+          setIsCheckingAuth(false);
+          return;
+        }
         // Try to get current user - if successful, user is authenticated (validates session via cookies)
         await getCurrentUser();
         

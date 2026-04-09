@@ -7,6 +7,7 @@
 import { getCurrentUser } from "../api/user";
 import { getKycStatus } from "../api/kyc";
 import { exchangesService } from "../api/exchanges.service";
+import { apiRequest } from "../api/client";
 
 export type FlowRoute =
   | "/onboarding/personal-info"
@@ -115,21 +116,9 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     // Step 2: Subscription GET API – use hasPlan: true = skip choose-plan, hasPlan false/missing = show choose-plan
     let shouldShowChoosePlan = true;
     try {
-      const subsRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/subscriptions`,
-        {
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${typeof window !== "undefined" ? localStorage.getItem("quantivahq_access_token") : ""}`,
-          },
-        }
-      );
-      if (subsRes.ok) {
-        const subsData = await subsRes.json();
-        // hasPlan true = user already has a plan → don't show choose-plan; false/missing → show
-        if (subsData?.hasPlan === true) {
-          shouldShowChoosePlan = false;
-        }
+      const subsData: any = await apiRequest({ path: "/subscriptions" });
+      if (subsData?.hasPlan === true) {
+        shouldShowChoosePlan = false;
       }
     } catch {
       // API fail – show choose-plan

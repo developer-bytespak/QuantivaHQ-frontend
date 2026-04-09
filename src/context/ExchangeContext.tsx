@@ -80,6 +80,19 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
   );
 
   const fetchConnectionInfo = useCallback(async () => {
+    // Skip fetching on auth pages or when user is not logged in
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path.startsWith("/onboarding")) {
+        setIsLoading(false);
+        return;
+      }
+      const token = localStorage.getItem("quantivahq_access_token");
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+    }
     setIsLoading(true);
     const useAdmin = isAdminArea() && hasAdminToken();
     try {

@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+import { apiRequest } from "./client";
 
 interface AlpacaBalance {
   cash: number;
@@ -53,119 +53,42 @@ interface AlpacaDashboard {
 }
 
 class AlpacaCryptoService {
-  private baseUrl = `${API_BASE_URL}/alpaca-paper-trading`;
+  private basePath = "/alpaca-paper-trading";
 
-  /**
-   * Get Alpaca status and connection
-   */
   async getStatus() {
-    const response = await fetch(`${this.baseUrl}/status`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to get Alpaca status");
-    }
-
-    return response.json();
+    return apiRequest({ path: `${this.basePath}/status` });
   }
 
-  /**
-   * Get account balance - formatted for compatibility with Binance UI
-   */
   async getAccountBalance(): Promise<{
-    balances: Array<{
-      asset: string;
-      free: number;
-      locked: number;
-    }>;
+    balances: Array<{ asset: string; free: number; locked: number }>;
     totalBalanceUSD: number;
   }> {
-    const response = await fetch(`${this.baseUrl}/balance`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      let errorMessage = "Failed to fetch balance";
-      try {
-        const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch {
-        errorMessage = `Failed to fetch balance: ${response.statusText}`;
-      }
-      throw new Error(errorMessage);
-    }
-
-    const result = await response.json();
+    const result: any = await apiRequest({ path: `${this.basePath}/balance` });
     const balance = result.data;
-
-    // Convert Alpaca balance to Binance-compatible format
     return {
-      balances: [
-        {
-          asset: 'USD',
-          free: balance.cash || 0,
-          locked: 0,
-        },
-      ],
+      balances: [{ asset: 'USD', free: balance.cash || 0, locked: 0 }],
       totalBalanceUSD: balance.portfolioValue || 0,
     };
   }
 
-  /**
-   * Get dashboard data (account, positions, orders)
-   */
   async getDashboard(): Promise<AlpacaDashboard> {
-    const response = await fetch(`${this.baseUrl}/dashboard`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch dashboard data");
-    }
-
-    const result = await response.json();
+    const result: any = await apiRequest({ path: `${this.basePath}/dashboard` });
     return result.data;
   }
 
-  /**
-   * Get all positions
-   */
   async getPositions(): Promise<AlpacaPosition[]> {
-    const response = await fetch(`${this.baseUrl}/positions`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch positions");
-    }
-
-    const result = await response.json();
+    const result: any = await apiRequest({ path: `${this.basePath}/positions` });
     return result.data || [];
   }
 
-  /**
-   * Get orders with optional status filter
-   */
   async getOrders(status: 'open' | 'closed' | 'all' = 'all'): Promise<any[]> {
-    const response = await fetch(`${this.baseUrl}/orders?status=${status}`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch orders");
-    }
-
-    const result = await response.json();
+    const result: any = await apiRequest({ path: `${this.basePath}/orders?status=${status}` });
     const orders = result.data || [];
-    
-    // Filter to only crypto orders (symbol contains '/')
-    // Keep Alpaca format (BTC/USD) instead of converting to BTCUSD
     return orders
       .filter((order: AlpacaOrder) => order.symbol.includes('/'))
       .map((order: AlpacaOrder) => ({
-        orderId: parseInt(order.id.replace(/[^0-9]/g, '').slice(-9)) || Date.now(), // Convert UUID to number
-        symbol: order.symbol, // Keep Alpaca format: BTC/USD
+        orderId: parseInt(order.id.replace(/[^0-9]/g, '').slice(-9)) || Date.now(),
+        symbol: order.symbol,
         side: order.side.toUpperCase() as 'BUY' | 'SELL',
         type: order.type.toUpperCase() as 'MARKET' | 'LIMIT',
         quantity: parseFloat(order.qty),
@@ -177,9 +100,6 @@ class AlpacaCryptoService {
       }));
   }
 
-  /**
-   * Map Alpaca order status to Binance-compatible status
-   */
   private mapAlpacaStatus(status: string): 'NEW' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELED' | 'REJECTED' | 'EXPIRED' {
     const statusMap: Record<string, any> = {
       'new': 'NEW',
@@ -192,29 +112,13 @@ class AlpacaCryptoService {
     return statusMap[status] || 'NEW';
   }
 
-  /**
-   * Get ticker price for a symbol
-   */
   async getTickerPrice(symbol: string): Promise<{ price: number }> {
-    const response = await fetch(`${this.baseUrl}/quote/${symbol}`, {
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ticker price for ${symbol}`);
-    }
-
-    const result = await response.json();
+    const result: any = await apiRequest({ path: `${this.basePath}/quote/${symbol}` });
     const quote = result.data;
-    
-    // Return midpoint of bid/ask as price
     const price = quote.ap ? parseFloat(quote.ap) : 0;
     return { price };
   }
 
-  /**
-   * Place an order
-   */
   async placeOrder(payload: {
     symbol: string;
     side: 'buy' | 'sell';
@@ -223,68 +127,23 @@ class AlpacaCryptoService {
     limit_price?: number;
     time_in_force?: 'gtc' | 'ioc' | 'fok';
   }): Promise<AlpacaOrder> {
-    // Default to 'gtc' for crypto orders if not specified
-    const orderPayload = {
-      ...payload,
-      time_in_force: payload.time_in_force || 'gtc',
-    };
-    
-    const response = await fetch(`${this.baseUrl}/orders`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(orderPayload),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to place order");
-    }
-
-    const result = await response.json();
+    const orderPayload = { ...payload, time_in_force: payload.time_in_force || 'gtc' };
+    const result: any = await apiRequest({ path: `${this.basePath}/orders`, method: "POST", body: orderPayload });
     return result.data;
   }
 
-  /**
-   * Cancel an order
-   */
   async cancelOrder(orderId: string): Promise<void> {
-    const response = await fetch(`${this.baseUrl}/orders/${orderId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to cancel order");
-    }
+    await apiRequest({ path: `${this.basePath}/orders/${orderId}`, method: "DELETE" });
   }
 
-  /**
-   * Close a position
-   */
   async closePosition(symbol: string, qty?: number): Promise<AlpacaOrder> {
-    const url = qty 
-      ? `${this.baseUrl}/positions/${symbol}?qty=${qty}`
-      : `${this.baseUrl}/positions/${symbol}`;
-      
-    const response = await fetch(url, {
-      method: "DELETE",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to close position");
-    }
-
-    const result = await response.json();
+    const path = qty
+      ? `${this.basePath}/positions/${symbol}?qty=${qty}`
+      : `${this.basePath}/positions/${symbol}`;
+    const result: any = await apiRequest({ path, method: "DELETE" });
     return result.data;
   }
 }
 
-// Export singleton instance
 export const alpacaCryptoService = new AlpacaCryptoService();
 export default alpacaCryptoService;

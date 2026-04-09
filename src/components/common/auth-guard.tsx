@@ -53,7 +53,17 @@ export function AuthGuard({ children, redirectTo = "/onboarding/sign-up?tab=logi
             setIsAuthenticated(true); // Assume authenticated to prevent redirect loop
             setIsChecking(false);
           } else if (isAuthError) {
-            // Actual auth error - redirect to login
+            // 401/403 → try refreshing the token before redirecting
+            try {
+              await authService.refresh();
+              // Refresh succeeded — re-check auth
+              await authService.getCurrentUser();
+              setIsAuthenticated(true);
+              setIsChecking(false);
+              return; // stay on page
+            } catch {
+              // Refresh also failed → truly expired
+            }
             setIsAuthenticated(false);
             setIsChecking(false);
             

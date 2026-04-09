@@ -68,8 +68,13 @@ export function HomepageHeader() {
       lastScrollY.current = currentScrollY;
     };
 
-    // Also refresh auth status periodically to catch logout from other tabs
-    const authCheckInterval = setInterval(checkAuthStatus, 5000);
+    // Refresh auth status periodically (localStorage-only, no server call)
+    const authCheckInterval = setInterval(() => {
+      if (typeof window !== "undefined") {
+        const authStatus = localStorage.getItem("quantivahq_is_authenticated");
+        setIsAuthenticated(authStatus === "true");
+      }
+    }, 30000);
 
     window.addEventListener("scroll", handleScroll);
     return () => {

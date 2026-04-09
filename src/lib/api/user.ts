@@ -62,32 +62,11 @@ export async function getUserProfile(): Promise<UserInfo> {
       credentials: "include",
     });
   } catch (error: any) {
-    // If we get a 401, try to refresh the token and retry once
-    if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
-      try {
-        // Try to refresh the token
-        const { authService } = await import("../auth/auth.service");
-        await authService.refresh();
-        
-        // Retry the request after refresh
-        return await apiRequest<never, UserInfo>({
-          path: "/users/me",
-          method: "GET",
-          credentials: "include",
-        });
-      } catch (refreshError) {
-        // If refresh fails, fallback to getCurrentUser
-        console.warn("Token refresh failed, falling back to getCurrentUser:", refreshError);
-        return getCurrentUser();
-      }
-    }
-    
-    // For other errors (500, 404, etc.), fallback to getCurrentUser instead of throwing
+    // For non-auth errors (500, 404, etc.), fallback to getCurrentUser
     console.warn("getUserProfile failed, falling back to getCurrentUser:", error);
     try {
       return await getCurrentUser();
     } catch (fallbackError) {
-      // If getCurrentUser also fails, throw the original error
       throw error;
     }
   }
@@ -150,36 +129,12 @@ export async function updatePersonalInfo(
 export async function updateUserProfile(
   data: UpdatePersonalInfoRequest
 ): Promise<UpdatePersonalInfoResponse> {
-  try {
-    return await apiRequest<UpdatePersonalInfoRequest, UpdatePersonalInfoResponse>({
-      path: "/users/me/personal-info",
-      method: "PATCH",
-      body: data,
-      credentials: "include",
-    });
-  } catch (error: any) {
-    // If we get a 401, try to refresh the token and retry once
-    if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
-      try {
-        // Try to refresh the token
-        const { authService } = await import("../auth/auth.service");
-        await authService.refresh();
-        
-        // Retry the request after refresh
-        return await apiRequest<UpdatePersonalInfoRequest, UpdatePersonalInfoResponse>({
-          path: "/users/me/personal-info",
-          method: "PATCH",
-          body: data,
-          credentials: "include",
-        });
-      } catch (refreshError) {
-        // If refresh fails, throw a more helpful error
-        console.error("Token refresh failed:", refreshError);
-        throw new Error("Session expired. Please log in again.");
-      }
-    }
-    throw error;
-  }
+  return apiRequest<UpdatePersonalInfoRequest, UpdatePersonalInfoResponse>({
+    path: "/users/me/personal-info",
+    method: "PATCH",
+    body: data,
+    credentials: "include",
+  });
 }
 
 export interface UploadProfilePictureResponse {
@@ -195,32 +150,10 @@ export interface UploadProfilePictureResponse {
 export async function uploadProfilePicture(
   file: File
 ): Promise<UploadProfilePictureResponse> {
-  try {
-    return await uploadFile<UploadProfilePictureResponse>({
-      path: "/users/me/profile-picture",
-      file,
-    });
-  } catch (error: any) {
-    // If we get a 401, try to refresh the token and retry once
-    if (error.status === 401 || error.statusCode === 401 || error.message?.includes("401") || error.message?.includes("Unauthorized")) {
-      try {
-        // Try to refresh the token
-        const { authService } = await import("../auth/auth.service");
-        await authService.refresh();
-        
-        // Retry the request after refresh
-        return await uploadFile<UploadProfilePictureResponse>({
-          path: "/users/me/profile-picture",
-          file,
-        });
-      } catch (refreshError) {
-        // If refresh fails, throw a more helpful error
-        console.error("Token refresh failed:", refreshError);
-        throw new Error("Session expired. Please log in again.");
-      }
-    }
-    throw error;
-  }
+  return uploadFile<UploadProfilePictureResponse>({
+    path: "/users/me/profile-picture",
+    file,
+  });
 }
 
 /**
