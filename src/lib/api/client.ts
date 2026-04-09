@@ -17,6 +17,8 @@ if (!API_BASE_URL && typeof window !== "undefined") {
 }
 const RESOLVED_API_URL = API_BASE_URL ?? "http://localhost:3000";
 
+let refreshPromise: Promise<string> | null = null;
+
 // Helper function to get or create device ID (crypto-secure)
 function getDeviceId(): string {
   if (typeof window !== "undefined") {
@@ -45,18 +47,79 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken =
+    typeof window !== "undefined" ? localStorage.getItem("quantivahq_refresh_token") : null;
+
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  const { data } = await axios.post(
+    `${RESOLVED_API_URL}/auth/refresh`,
+    { refreshToken },
+    {
+      withCredentials: true,
+      timeout: 30000,
+      headers: typeof window !== "undefined" ? { "x-device-id": getDeviceId() } : undefined,
+    },
+  );
+
+  const newAccessToken: string | undefined = data?.accessToken;
+  const newRefreshToken: string | undefined = data?.refreshToken;
+
+  if (!newAccessToken) {
+    throw new Error("No access token in refresh response");
+  }
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem("quantivahq_access_token", newAccessToken);
+    if (newRefreshToken) {
+      localStorage.setItem("quantivahq_refresh_token", newRefreshToken);
+    }
+  }
+
+  return newAccessToken;
+}
+
+function getRefreshPromise(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 // Attach Authorization header + device ID on every request.
 // Cookies may be blocked cross-origin (Chrome third-party cookie restrictions),
 // so we always send the Bearer token from localStorage as a reliable fallback.
 // Backend accepts both cookie and Authorization header (jwt.strategy.ts).
-axiosInstance.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const accessToken = localStorage.getItem("quantivahq_access_token");
-    if (accessToken) {
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-    config.headers["x-device-id"] = getDeviceId();
+axiosInstance.interceptors.request.use(async (config) => {
+  if (typeof window === "undefined") {
+    return config;
   }
+
+  config.headers["x-device-id"] = getDeviceId();
+
+  const isRefreshRequest = config.url?.includes("/auth/refresh");
+  const accessToken = localStorage.getItem("quantivahq_access_token");
+
+  if (accessToken) {
+    config.headers["Authorization"] = `Bearer ${accessToken}`;
+    return config;
+  }
+
+  // If access token is missing, try to recover it before sending protected requests.
+  if (!isRefreshRequest) {
+    try {
+      const newAccessToken = await getRefreshPromise();
+      config.headers["Authorization"] = `Bearer ${newAccessToken}`;
+    } catch {
+      // Let the request continue; response interceptor/auth flow will handle failures.
+    }
+  }
+
   return config;
 });
 
@@ -103,22 +166,7 @@ axiosInstance.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const refreshToken =
-        typeof window !== "undefined" ? localStorage.getItem("quantivahq_refresh_token") : null;
-      const { data } = await axiosInstance.post(
-        "/auth/refresh",
-        refreshToken ? { refreshToken } : {},
-        { _retry: true } as any,
-      );
-
-      const newAccessToken: string | undefined = data?.accessToken;
-      const newRefreshToken: string | undefined = data?.refreshToken;
-
-      if (!newAccessToken) throw new Error("No access token in refresh response");
-
-      // Persist new tokens
-      localStorage.setItem("quantivahq_access_token", newAccessToken);
-      if (newRefreshToken) localStorage.setItem("quantivahq_refresh_token", newRefreshToken);
+      const newAccessToken = await getRefreshPromise();
 
       // Retry original + all queued requests with fresh token
       originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;

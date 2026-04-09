@@ -87,11 +87,6 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
       }
-      const token = localStorage.getItem("quantivahq_access_token");
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
     }
     setIsLoading(true);
     const useAdmin = isAdminArea() && hasAdminToken();
