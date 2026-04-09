@@ -17,6 +17,8 @@ if (!API_BASE_URL && typeof window !== "undefined") {
 }
 const RESOLVED_API_URL = API_BASE_URL ?? "http://localhost:3000";
 
+let refreshPromise: Promise<string> | null = null;
+
 // Helper function to get or create device ID (crypto-secure)
 function getDeviceId(): string {
   if (typeof window !== "undefined") {
@@ -45,20 +47,150 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken =
+    typeof window !== "undefined" ? localStorage.getItem("quantivahq_refresh_token") : null;
+
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  const { data } = await axios.post(
+    `${RESOLVED_API_URL}/auth/refresh`,
+    { refreshToken },
+    {
+      withCredentials: true,
+      timeout: 30000,
+      headers: typeof window !== "undefined" ? { "x-device-id": getDeviceId() } : undefined,
+    },
+  );
+
+  const newAccessToken: string | undefined = data?.accessToken;
+  const newRefreshToken: string | undefined = data?.refreshToken;
+
+  if (!newAccessToken) {
+    throw new Error("No access token in refresh response");
+  }
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem("quantivahq_access_token", newAccessToken);
+    if (newRefreshToken) {
+      localStorage.setItem("quantivahq_refresh_token", newRefreshToken);
+    }
+  }
+
+  return newAccessToken;
+}
+
+function getRefreshPromise(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = refreshAccessToken().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 // Attach Authorization header + device ID on every request.
 // Cookies may be blocked cross-origin (Chrome third-party cookie restrictions),
 // so we always send the Bearer token from localStorage as a reliable fallback.
 // Backend accepts both cookie and Authorization header (jwt.strategy.ts).
-axiosInstance.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const accessToken = localStorage.getItem("quantivahq_access_token");
-    if (accessToken) {
-      config.headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-    config.headers["x-device-id"] = getDeviceId();
+axiosInstance.interceptors.request.use(async (config) => {
+  if (typeof window === "undefined") {
+    return config;
   }
+
+  config.headers["x-device-id"] = getDeviceId();
+
+  const isRefreshRequest = config.url?.includes("/auth/refresh");
+  const accessToken = localStorage.getItem("quantivahq_access_token");
+
+  if (accessToken) {
+    config.headers["Authorization"] = `Bearer ${accessToken}`;
+    return config;
+  }
+
+  // If access token is missing, try to recover it before sending protected requests.
+  if (!isRefreshRequest) {
+    try {
+      const newAccessToken = await getRefreshPromise();
+      config.headers["Authorization"] = `Bearer ${newAccessToken}`;
+    } catch {
+      // Let the request continue; response interceptor/auth flow will handle failures.
+    }
+  }
+
   return config;
 });
+
+// ─── 401 Auto-Refresh Interceptor ─────────────────────────────────────────────
+// When any request gets a 401, silently refresh the access token and retry.
+// Parallel 401s are queued so only ONE refresh call is made at a time.
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: any) => void }> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token!);
+  });
+  failedQueue = [];
+};
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only intercept 401s; skip auth endpoints and already-retried requests
+    const skipPaths = ["/auth/login", "/auth/register", "/auth/verify-2fa", "/auth/refresh", "/auth/verify-password"];
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      skipPaths.some((p: string) => originalRequest.url?.includes(p))
+    ) {
+      return Promise.reject(error);
+    }
+
+    // If a refresh is already in-flight, queue this request
+    if (isRefreshing) {
+      return new Promise<string>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then((token) => {
+        originalRequest.headers["Authorization"] = `Bearer ${token}`;
+        return axiosInstance(originalRequest);
+      });
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const newAccessToken = await getRefreshPromise();
+
+      // Retry original + all queued requests with fresh token
+      originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+      processQueue(null, newAccessToken);
+      return axiosInstance(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      // Refresh failed → session is dead, redirect to login
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_access_token");
+        localStorage.removeItem("quantivahq_refresh_token");
+        localStorage.removeItem("quantivahq_is_authenticated");
+        // Only redirect if not already on an auth page (prevents infinite reload loop)
+        const currentPath = window.location.pathname;
+        if (!currentPath.startsWith("/onboarding")) {
+          window.location.href = "/onboarding/sign-up?tab=login";
+        }
+      }
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  },
+);
 
 // Main API request function
 export async function apiRequest<TRequest, TResponse = unknown>({
@@ -128,27 +260,9 @@ export async function uploadFile<TResponse = unknown>({
     });
   }
 
-  const headers: HeadersInit = {};
-
-  // Add Authorization header from stored client JWT if available
-  if (typeof window !== "undefined") {
-    const accessToken = localStorage.getItem("quantivahq_access_token");
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-  }
-
-  // Add device ID header for 2FA verification
-  if (typeof window !== "undefined") {
-    headers["x-device-id"] = getDeviceId();
-  }
-
-  // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
-
   // Determine timeout: use provided timeout, or detect KYC operations (longer due to ML processing), or default
   let requestTimeout = timeout;
   if (!requestTimeout) {
-    // KYC selfie verification involves ML processing (liveness detection + face matching)
     if (path.includes('/kyc/selfie')) {
       requestTimeout = 180000; // 3 minutes for selfie verification with ML
     } else if (path.includes('/kyc/')) {
@@ -158,64 +272,16 @@ export async function uploadFile<TResponse = unknown>({
     }
   }
 
-  // Create AbortController for timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
-
   try {
-    const response = await fetch(`${RESOLVED_API_URL}${path}`, {
-      method: "POST",
-      headers,
-      body: formData,
-      credentials: "include", // Include cookies (access_token, refresh_token)
-      cache: "no-store",
-      signal: controller.signal,
+    const response = await axiosInstance.post(path, formData, {
+      timeout: requestTimeout,
+      // Don't set Content-Type - axios auto-sets multipart boundary for FormData
     });
 
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      let errorMessage = `Upload failed: ${response.status} ${response.statusText}`;
-      
-      try {
-        const errorData = await response.json();
-        // NestJS error format: { message: string } or { detail: string } or string[]
-        if (typeof errorData === 'string') {
-          errorMessage = errorData;
-        } else if (Array.isArray(errorData.message)) {
-          // Validation errors: { message: string[] }
-          errorMessage = errorData.message.join(', ');
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
-        } else if (errorData.detail) {
-          errorMessage = errorData.detail;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
-        }
-      } catch (parseError) {
-        // If JSON parsing fails, try to get text response
-        try {
-          const text = await response.text();
-          if (text) {
-            errorMessage = text;
-          }
-        } catch {
-          // Use default error message
-        }
-      }
-      
-      const uploadError = new Error(errorMessage) as any;
-      uploadError.status = response.status;
-      uploadError.statusCode = response.status;
-      throw uploadError;
-    }
-
-    return (await response.json()) as TResponse;
+    return response.data as TResponse;
   } catch (error: any) {
-    clearTimeout(timeoutId);
-    
     // Handle timeout/abort errors
-    if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
       const timeoutSeconds = Math.round(requestTimeout / 1000);
       const isKycOperation = path.includes('/kyc/');
       let errorMessage = `Request timeout after ${timeoutSeconds} seconds. `;
@@ -228,15 +294,27 @@ export async function uploadFile<TResponse = unknown>({
       
       throw new Error(errorMessage);
     }
-    
-    // Re-throw other errors (preserve status if it exists)
-    if (error.status || error.statusCode) {
-      const preservedError = new Error(error.message || 'Upload failed') as any;
-      preservedError.status = error.status || error.statusCode;
-      preservedError.statusCode = error.status || error.statusCode;
-      throw preservedError;
+
+    // Extract error message from response
+    let errorMessage = 'Upload failed';
+    if (error.response?.data) {
+      const errorData = error.response.data;
+      if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      } else if (Array.isArray(errorData.message)) {
+        errorMessage = errorData.message.join(', ');
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.detail) {
+        errorMessage = errorData.detail;
+      } else if (errorData.error) {
+        errorMessage = errorData.error;
+      }
     }
-    
-    throw error;
+
+    const uploadError = new Error(errorMessage) as any;
+    uploadError.status = error.response?.status;
+    uploadError.statusCode = error.response?.status;
+    throw uploadError;
   }
 }

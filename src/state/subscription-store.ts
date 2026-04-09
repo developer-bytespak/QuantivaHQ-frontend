@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { logger } from '@/lib/utils/logger';
+import { apiRequest } from '@/lib/api/client';
 import { 
   PlanTier, 
   BillingPeriod, 
@@ -12,11 +13,6 @@ import {
   PaymentRecord,
   UsageData,
 } from '@/mock-data/subscription-dummy-data';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
-  if (!API_BASE_URL) {
-    throw new Error('API_BASE_URL is not set');
-  }
 
 interface CurrentSubscription {
   subscription_id: string;
@@ -273,23 +269,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   fetchSubscriptionData: async () => {
     set({ isLoading: true, error: null });
     try {
-      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      const response = await fetch(
-        `${API_BASE_URL}/subscriptions`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-          },
-        }
-      );
-
-      logger.info('API response status:', response);
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data: any = await apiRequest({ path: "/subscriptions" });
       logger.info('Fetched subscription data:', data);
 
       // Convert date strings to Date objects for currentSubscription

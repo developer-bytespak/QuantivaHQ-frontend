@@ -36,9 +36,15 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
 
     // Fetch the real authenticated userId on mount (skip on admin-only pages)
     useEffect(() => {
-        if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/vc-pool/admin"))) {
-            return; // Admin pages don't use user auth — skip to avoid 401 errors
+        if (typeof window === "undefined") return;
+        const path = window.location.pathname;
+        // Skip on admin pages and auth/onboarding pages (no valid session)
+        if (path.startsWith("/admin") || path.startsWith("/vc-pool/admin") || path.startsWith("/onboarding")) {
+            return;
         }
+        // Skip if no access token (user is logged out)
+        const token = localStorage.getItem("quantivahq_access_token");
+        if (!token) return;
         getCurrentUser()
             .then((user) => setUserId(user.user_id))
             .catch(() => setUserId(null));

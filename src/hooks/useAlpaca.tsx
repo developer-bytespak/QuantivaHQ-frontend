@@ -1,15 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
-
-const authHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem('quantivahq_access_token')}`,
-});
+import { apiRequest } from "@/lib/api/client";
 
 const fetchAlpacaData = async (path: string) => {
-  const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}${path}`, {
-    headers: authHeaders(),
-  });
-  return res.data;
+  return apiRequest({ path });
 };
 
 export const useAlpacaDashboard = () => {
