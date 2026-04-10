@@ -347,19 +347,19 @@ export default function MyStrategiesPage() {
 
       {/* Modal: show strategy details */}
       {showModal && selected && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-2xl rounded-xl bg-[--color-surface] p-4 sm:p-6 text-slate-100 ring-1 ring-white/5 shadow-lg max-h-[90vh] overflow-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4" onClick={() => { setShowModal(false); setSelected(null); }}>
+          <div className="w-full max-w-4xl rounded-2xl bg-[#0e0e18] border border-white/10 p-4 sm:p-5 text-slate-100 shadow-2xl mt-16" onClick={(e) => e.stopPropagation()}>
             {/* Header */}
-            <div className="flex items-start justify-between gap-4 mb-4">
+            <div className="flex items-start justify-between gap-4 mb-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`inline-block w-2 h-2 rounded-full ${selected.is_active ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
                   <span className="text-xs text-slate-400">{selected.is_active ? 'Active' : 'Inactive'}</span>
                 </div>
-                <h3 className="text-xl font-semibold">{selected.name}</h3>
-                <p className="text-sm text-slate-400 mt-1">{selected.description || 'No description'}</p>
+                <h3 className="text-lg font-semibold">{selected.name}</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{selected.description || 'No description'}</p>
               </div>
-              <button 
+              <button
                 onClick={() => { setShowModal(false); setSelected(null); }}
                 className="p-1 hover:bg-slate-700 rounded"
               >
@@ -369,130 +369,109 @@ export default function MyStrategiesPage() {
               </button>
             </div>
 
-            {/* Target Stocks */}
-            <div className="mb-4">
-              <p className="text-xs text-slate-400 mb-2">Target Stocks</p>
-              <div className="flex flex-wrap gap-2">
-                {(selected.target_assets || []).map((symbol) => (
-                  <span key={symbol} className="px-3 py-1 bg-slate-800 rounded-lg text-sm text-white font-medium">
-                    {symbol}
-                  </span>
-                ))}
+            {/* Target Stocks + Stats side by side */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <p className="text-xs text-slate-400 mb-1.5">Target Stocks</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(selected.target_assets || []).length === 0 ? (
+                    <span className="text-xs text-emerald-400">All trending assets</span>
+                  ) : (selected.target_assets || []).map((symbol) => (
+                    <span key={symbol} className="px-2 py-0.5 bg-slate-800 rounded text-xs text-white font-medium">
+                      {symbol}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-2 p-2 bg-black/20 rounded-lg">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-white">{selected.metrics.total_signals}</p>
+                  <p className="text-[10px] text-slate-400">Total</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-emerald-400">{selected.metrics.buy_signals}</p>
+                  <p className="text-[10px] text-slate-400">BUY</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-red-400">{selected.metrics.sell_signals}</p>
+                  <p className="text-[10px] text-slate-400">SELL</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-blue-400">{(selected.metrics.avg_confidence * 100).toFixed(0)}%</p>
+                  <p className="text-[10px] text-slate-400">Confidence</p>
+                </div>
               </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-3 mb-4 p-3 bg-black/20 rounded-lg">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-white">{selected.metrics.total_signals}</p>
-                <p className="text-xs text-slate-400">Total Signals</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-emerald-400">{selected.metrics.buy_signals}</p>
-                <p className="text-xs text-slate-400">BUY</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-red-400">{selected.metrics.sell_signals}</p>
-                <p className="text-xs text-slate-400">SELL</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-400">{(selected.metrics.avg_confidence * 100).toFixed(0)}%</p>
-                <p className="text-xs text-slate-400">Avg Confidence</p>
-              </div>
-            </div>
-
-            {/* Config */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Risk Level</p>
-                <p className={`font-medium ${selected.risk_level === 'high' ? 'text-red-400' : selected.risk_level === 'medium' ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                  {selected.risk_level?.toUpperCase()}
-                </p>
+            {/* Config + Entry Rules side by side */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-0.5">Risk Level</p>
+                  <p className={`text-sm font-medium ${selected.risk_level === 'high' ? 'text-red-400' : selected.risk_level === 'medium' ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                    {selected.risk_level?.toUpperCase()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-0.5">Timeframe</p>
+                  <p className="text-sm text-white">{selected.timeframe || '1d'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-0.5">Stop Loss</p>
+                  <p className="text-sm text-white">{selected.stop_loss_value ? `${selected.stop_loss_value}%` : '—'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 mb-0.5">Take Profit</p>
+                  <p className="text-sm text-white">{selected.take_profit_value ? `${selected.take_profit_value}%` : '—'}</p>
+                </div>
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-1">Timeframe</p>
-                <p className="text-white">{selected.timeframe || '1d'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Stop Loss</p>
-                <p className="text-white">{selected.stop_loss_value ? `${selected.stop_loss_value}%` : '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 mb-1">Take Profit</p>
-                <p className="text-white">{selected.take_profit_value ? `${selected.take_profit_value}%` : '—'}</p>
-              </div>
-            </div>
-
-            {/* Entry Rules */}
-            <div className="mb-4">
-              <p className="text-xs text-slate-400 mb-2">Entry Rules (BUY Conditions)</p>
-              <div className="bg-black/20 p-3 rounded-lg max-h-32 overflow-auto">
-                {(selected.entry_rules || []).length === 0 ? (
-                  <p className="text-sm text-slate-500">No entry rules defined</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {(selected.entry_rules || []).map((r: any, i: number) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        {i > 0 && <span className="text-xs text-slate-500">{r.logic || 'AND'}</span>}
-                        <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded">{r.indicator}</span>
-                        <span className="text-slate-400">{r.operator}</span>
-                        <span className="text-white font-medium">{r.value}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-
-            {/* Exit Rules */}
-            <div className="mb-4">
-              <p className="text-xs text-slate-400 mb-2">Exit Rules (SELL Conditions)</p>
-              <div className="bg-black/20 p-3 rounded-lg max-h-32 overflow-auto">
-                {(selected.exit_rules || []).length === 0 ? (
-                  <p className="text-sm text-slate-500">No exit rules defined</p>
-                ) : (
-                  <ul className="space-y-2">
-                    {(selected.exit_rules || []).map((r: any, i: number) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        {i > 0 && <span className="text-xs text-slate-500">{r.logic || 'OR'}</span>}
-                        <span className="px-2 py-0.5 bg-red-500/20 text-red-400 rounded">{r.indicator}</span>
-                        <span className="text-slate-400">{r.operator}</span>
-                        <span className="text-white font-medium">{r.value}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <p className="text-xs text-slate-400 mb-1.5">Entry Rules (BUY Conditions)</p>
+                <div className="bg-black/20 p-2 rounded-lg">
+                  {(selected.entry_rules || []).length === 0 ? (
+                    <p className="text-sm text-slate-500">No entry rules defined</p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {(selected.entry_rules || []).map((r: any, i: number) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          {i > 0 && <span className="text-xs text-slate-500">{r.logic || 'AND'}</span>}
+                          <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs">{r.field || r.indicator}</span>
+                          <span className="text-slate-400">{r.operator}</span>
+                          <span className="text-white font-medium">{r.value}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Recent Signals */}
-            <div className="mb-4">
-              <p className="text-xs text-slate-400 mb-2">Recent Signals</p>
-              <div className="bg-black/20 p-3 rounded-lg max-h-40 overflow-auto">
+            <div className="mb-3">
+              <p className="text-xs text-slate-400 mb-1.5">Recent Signals</p>
+              <div className="bg-black/20 p-2 rounded-lg">
                 {loadingModalSignals ? (
-                  <div className="flex items-center justify-center py-3">
+                  <div className="flex items-center justify-center py-2">
                     <div className="w-4 h-4 border-2 border-[var(--primary)]/30 border-t-[var(--primary)] rounded-full animate-spin"></div>
                     <span className="ml-2 text-sm text-slate-400">Loading signals...</span>
                   </div>
                 ) : modalSignals.length === 0 ? (
                   <p className="text-sm text-slate-500">No signals yet</p>
                 ) : (
-                  <div className="space-y-2">
-                    {modalSignals.slice(0, 5).map((sig: any, i: number) => (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {modalSignals.slice(0, 6).map((sig: any, i: number) => (
                       <div key={i} className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
                             sig.action === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' :
                             sig.action === 'SELL' ? 'bg-red-500/20 text-red-400' :
                             'bg-slate-700 text-slate-400'
                           }`}>
                             {sig.action}
                           </span>
-                          <span className="text-white">{sig.asset?.symbol || 'Unknown'}</span>
+                          <span className="text-white text-xs">{sig.asset?.symbol || 'Unknown'}</span>
                         </div>
-                        <div className="text-xs text-slate-400">
-                          Score: {((sig.final_score || 0) * 100).toFixed(0)}%
-                        </div>
+                        <span className="text-[10px] text-slate-400">{((sig.final_score || 0) * 100).toFixed(0)}%</span>
                       </div>
                     ))}
                   </div>
@@ -501,22 +480,20 @@ export default function MyStrategiesPage() {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-between gap-3 pt-4 border-t border-white/10">
+            <div className="flex justify-between gap-3 pt-3 border-t border-white/10">
               <button
                 onClick={() => handleDeleteStrategy(selected.strategy_id)}
                 disabled={deletingStrategy === selected.strategy_id}
-                className="rounded-lg px-4 py-2 bg-red-600/20 text-red-400 hover:bg-red-600/30 disabled:opacity-50 transition-colors"
+                className="rounded-lg px-4 py-1.5 bg-red-600/20 text-red-400 hover:bg-red-600/30 disabled:opacity-50 transition-colors text-sm"
               >
                 {deletingStrategy === selected.strategy_id ? 'Deleting...' : 'Delete Strategy'}
               </button>
-              <div className="flex gap-3">
-                <button 
-                  className="rounded-lg px-4 py-2 bg-slate-700 text-white hover:bg-slate-600" 
-                  onClick={() => { setShowModal(false); setSelected(null); }}
-                >
-                  Close
-                </button>
-              </div>
+              <button
+                className="rounded-lg px-4 py-1.5 bg-slate-700 text-white hover:bg-slate-600 text-sm"
+                onClick={() => { setShowModal(false); setSelected(null); }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
