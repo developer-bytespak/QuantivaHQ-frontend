@@ -102,10 +102,27 @@ export function OptionsPositionsTable({
         </thead>
         <tbody>
           {filtered.map((pos, i) => {
-            const pnlPct =
-              pos.avgPremium > 0
-                ? (((pos.currentPremium ?? 0) - pos.avgPremium) / pos.avgPremium) * 100
-                : 0;
+            // Null-safe numeric coercion (DB may return null/strings for closed positions)
+            const strike = Number(pos.strike) || 0;
+            const quantity = Number(pos.quantity) || 0;
+            const avgPremium = Number(pos.avgPremium) || 0;
+            const currentPremium = Number(pos.currentPremium) || 0;
+            const unrealizedPnl = Number(pos.unrealizedPnl) || 0;
+            const realizedPnl = Number(pos.realizedPnl) || 0;
+            const delta = pos.greeks?.delta !== undefined && pos.greeks?.delta !== null ? Number(pos.greeks.delta) : null;
+
+            const pnlPct = avgPremium > 0 ? ((currentPremium - avgPremium) / avgPremium) * 100 : 0;
+
+            let expiryLabel = "—";
+            try {
+              if (pos.expiry) {
+                const d = new Date(pos.expiry);
+                if (!isNaN(d.getTime())) {
+                  expiryLabel = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                }
+              }
+            } catch {}
+
             return (
               <tr
                 key={pos.positionId ?? i}
@@ -113,9 +130,9 @@ export function OptionsPositionsTable({
               >
                 <td className="px-3 py-2.5">
                   <div className="flex flex-col">
-                    <span className="font-mono text-slate-200">{pos.underlying}</span>
+                    <span className="font-mono text-slate-200">{pos.underlying ?? "—"}</span>
                     <span className="text-[10px] text-slate-500">
-                      ${pos.strike.toLocaleString()} · {new Date(pos.expiry).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      ${strike.toLocaleString()} · {expiryLabel}
                     </span>
                   </div>
                 </td>
@@ -127,23 +144,23 @@ export function OptionsPositionsTable({
                         : "bg-red-500/15 text-red-400"
                     }`}
                   >
-                    {pos.optionType}
+                    {pos.optionType ?? "—"}
                   </span>
                 </td>
                 <td className="px-3 py-2.5 text-right font-mono text-slate-300">
-                  {pos.quantity}
+                  {quantity}
                 </td>
                 <td className="px-3 py-2.5 text-right font-mono text-slate-300">
-                  {pos.avgPremium.toFixed(2)}
+                  {avgPremium.toFixed(2)}
                 </td>
                 <td className="px-3 py-2.5 text-right font-mono text-slate-300">
-                  {(pos.currentPremium ?? 0).toFixed(2)}
+                  {currentPremium.toFixed(2)}
                 </td>
                 <td className="px-3 py-2.5 text-right">
                   <div className="flex flex-col items-end">
-                    <span className={`font-mono font-medium ${pnlColor(pos.unrealizedPnl)}`}>
-                      {pos.unrealizedPnl >= 0 ? "+" : ""}
-                      {pos.unrealizedPnl.toFixed(2)}
+                    <span className={`font-mono font-medium ${pnlColor(unrealizedPnl)}`}>
+                      {unrealizedPnl >= 0 ? "+" : ""}
+                      {unrealizedPnl.toFixed(2)}
                     </span>
                     <span className={`text-[10px] ${pnlColor(pnlPct)}`}>
                       {pnlPct >= 0 ? "+" : ""}
@@ -152,13 +169,13 @@ export function OptionsPositionsTable({
                   </div>
                 </td>
                 <td className="px-3 py-2.5 text-right">
-                  <span className={`font-mono ${pnlColor(pos.realizedPnl)}`}>
-                    {pos.realizedPnl >= 0 ? "+" : ""}
-                    {pos.realizedPnl.toFixed(2)}
+                  <span className={`font-mono ${pnlColor(realizedPnl)}`}>
+                    {realizedPnl >= 0 ? "+" : ""}
+                    {realizedPnl.toFixed(2)}
                   </span>
                 </td>
                 <td className="px-3 py-2.5 text-right font-mono text-blue-400">
-                  {pos.greeks?.delta?.toFixed(4) ?? "—"}
+                  {delta !== null ? delta.toFixed(4) : "—"}
                 </td>
                 {onClose && pos.isOpen && (
                   <td className="px-3 py-2.5 text-right">
