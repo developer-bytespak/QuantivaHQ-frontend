@@ -3,6 +3,7 @@
 import { HomepageLayout } from "./homepage-layout";
 import { HomepageHeader } from "./homepage-header";
 import { HeroSection } from "./hero-section";
+import { AboutSection } from "./about-section";
 import { FeaturesSection } from "./features-section";
 import { HowItWorksSection } from "./how-it-works-section";
 import { TestimonialsSection } from "./testimonials-section";
@@ -89,6 +90,7 @@ export function Homepage() {
     <HomepageLayout>
       <HomepageHeader />
       <HeroSection />
+      <AboutSection />
       <FeaturesSection />
       <HowItWorksSection />
       <TestimonialsSection />

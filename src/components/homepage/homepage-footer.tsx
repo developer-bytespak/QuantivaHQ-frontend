@@ -84,10 +84,7 @@ export function HomepageFooter() {
               </li>
               <li>
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Add navigation logic here when About Us page is ready
-                  }}
+                  onClick={() => scrollToSection("about")}
                   className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[var(--primary)] transition-colors cursor-pointer"
                 >
                   About Us
