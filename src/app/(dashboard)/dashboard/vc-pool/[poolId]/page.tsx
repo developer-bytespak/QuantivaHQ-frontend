@@ -697,6 +697,15 @@ export default function VcPoolDetailPage() {
     return null;
   })();
 
+  /* Cancellation fee preview for the exit-confirmation modal */
+  const cancellationFeePercent = Number(
+    (pool as any)?.cancellation_fee_percent ??
+      (pool as any)?.pool_details?.cancellation_fee_percent ??
+      0,
+  );
+  const exitCancellationFee =
+    (Number(investmentAmount || 0) * cancellationFeePercent) / 100;
+
   /* ═══════════════════════ RENDER ═══════════════════════ */
   return (
     <div className="relative">
@@ -2496,9 +2505,14 @@ export default function VcPoolDetailPage() {
               </div>
 
               <div className="flex items-center justify-between text-sm border-t border-[--color-border] pt-3">
-                <span className="text-slate-400">Cancellation Fee</span>
+                <span className="text-slate-400">
+                  Cancellation Fee
+                  {cancellationFeePercent > 0 && (
+                    <span className="text-slate-500"> ({cancellationFeePercent}%)</span>
+                  )}
+                </span>
                 <span className="text-red-400">
-                  -{paymentStatus?.payment?.pool_fee_amount || "0"} {pool?.coin_type || "USDT"}
+                  -{exitCancellationFee.toFixed(2)} {pool?.coin_type || "USDT"}
                 </span>
               </div>
 
@@ -2506,7 +2520,7 @@ export default function VcPoolDetailPage() {
                 <span className="text-white">You will receive</span>
                 <span className="text-green-400 text-lg">
                   {investmentAmount
-                    ? (Number(investmentAmount) - (Number(paymentStatus?.payment?.pool_fee_amount) || 0)).toFixed(2)
+                    ? (Number(investmentAmount) - exitCancellationFee).toFixed(2)
                     : investmentAmount || "0"} {pool?.coin_type || "USDT"}
                 </span>
               </div>
