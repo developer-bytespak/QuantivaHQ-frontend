@@ -132,6 +132,7 @@ export default function CreateStrategyPage() {
   const [stopLoss, setStopLoss] = useState<number>(5);
   const [takeProfit, setTakeProfit] = useState<number>(15);
   const [targetAssets, setTargetAssets] = useState<string[]>([]);
+  const [forAllAssets, setForAllAssets] = useState(false);
 
   // Engine weights (must sum to 1.0)
   const [engineWeights, setEngineWeights] = useState<EngineWeights>({
@@ -300,7 +301,7 @@ export default function CreateStrategyPage() {
           stop_loss_value: stopLoss,
           take_profit_type: "percentage",
           take_profit_value: takeProfit,
-          target_assets: targetAssets,
+          target_assets: forAllAssets ? null : targetAssets,
           engine_weights: engineWeights,
           entry_rules: entryRules.map((r) => ({
             field: r.field,
@@ -335,7 +336,7 @@ export default function CreateStrategyPage() {
       case "basics":
         return name.trim().length > 0;
       case "assets":
-        return targetAssets.length > 0;
+        return forAllAssets || targetAssets.length > 0;
       case "weights":
         return weightsValid;
       case "rules":
@@ -512,12 +513,38 @@ export default function CreateStrategyPage() {
                 points={[
                   `Search and add ${isStocksConnection ? "stock" : "coin"} symbols one by one.`,
                   "Use quick-add chips to add popular symbols fast.",
-                  "At least one asset is required to continue.",
+                  'Click "For All" to target all trending assets automatically.',
                 ]}
               />
             </div>
+
+            {/* For All Toggle Button */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setForAllAssets(!forAllAssets);
+                  if (!forAllAssets) {
+                    setTargetAssets([]);
+                    setAssetSearch("");
+                    setAssetResults([]);
+                  }
+                }}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${
+                  forAllAssets
+                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white border-[var(--primary)]/50 shadow-lg shadow-[var(--primary)]/20"
+                    : "bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:border-[var(--primary)]/30"
+                }`}
+              >
+                For All
+              </button>
+              {forAllAssets && (
+                <p className="text-sm text-emerald-400">Strategy will run on all top trending {isStocksConnection ? "stocks" : "crypto assets"} automatically</p>
+              )}
+            </div>
+
+            <div className={forAllAssets ? "opacity-40 pointer-events-none" : ""}>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Search & Add {assetTypeLabel} *</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">Search & Add {assetTypeLabel} {!forAllAssets && "*"}</label>
               <div className="relative">
                 <input
                   type="text"
@@ -610,6 +637,7 @@ export default function CreateStrategyPage() {
                 ))}
               </div>
             </div>
+            </div>{/* end disabled wrapper */}
           </div>
         )}
 
@@ -986,12 +1014,16 @@ export default function CreateStrategyPage() {
             </div>
 
             <div className="p-4 bg-black/20 rounded-xl border border-white/5">
-              <p className="text-xs text-slate-400 mb-2">Target {assetTypeLabel} ({targetAssets.length})</p>
-              <div className="flex flex-wrap gap-2">
-                {targetAssets.map((s) => (
-                  <span key={s} className="px-2.5 py-1 bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-light)]/10 border border-[var(--primary)]/20 rounded-lg text-sm text-white">{s}</span>
-                ))}
-              </div>
+              <p className="text-xs text-slate-400 mb-2">Target {assetTypeLabel} {forAllAssets ? "(All)" : `(${targetAssets.length})`}</p>
+              {forAllAssets ? (
+                <p className="text-sm text-emerald-400">All top trending {isStocksConnection ? "stocks" : "crypto assets"}</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {targetAssets.map((s) => (
+                    <span key={s} className="px-2.5 py-1 bg-gradient-to-r from-[var(--primary)]/10 to-[var(--primary-light)]/10 border border-[var(--primary)]/20 rounded-lg text-sm text-white">{s}</span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="p-4 bg-black/20 rounded-xl border border-white/5">
