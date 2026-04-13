@@ -60,6 +60,91 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
+// ── 401 Response Interceptor: auto-refresh expired access tokens ──
+let isRefreshing = false;
+let failedQueue: Array<{ resolve: (token: string) => void; reject: (err: unknown) => void }> = [];
+
+function processQueue(error: unknown, token: string | null) {
+  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token!)));
+  failedQueue = [];
+}
+
+async function getRefreshPromise(): Promise<string> {
+  const refreshToken =
+    typeof window !== "undefined" ? localStorage.getItem("quantivahq_refresh_token") : null;
+  const { data } = await axios.post(
+    `${RESOLVED_API_URL}/auth/refresh`,
+    refreshToken ? { refreshToken } : {},
+    { withCredentials: true }
+  );
+  const newAccess: string = data.accessToken;
+  if (typeof window !== "undefined") {
+    if (newAccess) localStorage.setItem("quantivahq_access_token", newAccess);
+    if (data.refreshToken) localStorage.setItem("quantivahq_refresh_token", data.refreshToken);
+  }
+  return newAccess;
+}
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Only intercept 401s; skip auth endpoints and already-retried requests
+    const skipPaths = ["/auth/login", "/auth/register", "/auth/verify-2fa", "/auth/refresh", "/auth/verify-password"];
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      skipPaths.some((p: string) => originalRequest.url?.includes(p))
+    ) {
+      return Promise.reject(error);
+    }
+
+    // If a refresh is already in-flight, queue this request
+    if (isRefreshing) {
+      return new Promise<string>((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then((token) => {
+        originalRequest.headers["Authorization"] = `Bearer ${token}`;
+        return axiosInstance(originalRequest);
+      });
+    }
+
+    originalRequest._retry = true;
+    isRefreshing = true;
+
+    try {
+      const newAccessToken = await getRefreshPromise();
+
+      // Retry original + all queued requests with fresh token
+      originalRequest.headers["Authorization"] = `Bearer ${newAccessToken}`;
+      processQueue(null, newAccessToken);
+      return axiosInstance(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      // Refresh failed → session is dead
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_access_token");
+        localStorage.removeItem("quantivahq_refresh_token");
+        localStorage.removeItem("quantivahq_is_authenticated");
+        // Only redirect on user-facing authenticated pages (dashboard, etc.)
+        // Never redirect on admin, onboarding, or public pages
+        const currentPath = window.location.pathname;
+        if (
+          currentPath.startsWith("/dashboard") ||
+          currentPath.startsWith("/strategies") ||
+          currentPath.startsWith("/profile")
+        ) {
+          window.location.href = "/onboarding/sign-up?tab=login";
+        }
+      }
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
+  },
+);
+
 // Main API request function
 export async function apiRequest<TRequest, TResponse = unknown>({
   path,
