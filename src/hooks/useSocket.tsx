@@ -36,7 +36,7 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
 
     // Fetch the real authenticated userId on mount (skip on admin-only pages)
     useEffect(() => {
-        if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/vc-pool/admin"))) {
+        if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/vc-pool/admin") || window.location.pathname.startsWith("/super/admin"))) {
             return; // Admin pages don't use user auth — skip to avoid 401 errors
         }
         getCurrentUser()
@@ -46,7 +46,7 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
 
     useEffect(() => {
         if (!userId) return; // Only fetch notifications for authenticated users
-        if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/vc-pool/admin"))) {
+        if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/vc-pool/admin") || window.location.pathname.startsWith("/super/admin"))) {
             return; // Admin pages don't use user notifications
         }
         const getAllNotifications = async () => {

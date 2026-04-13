@@ -25,7 +25,8 @@ function isAdminArea(): boolean {
   if (typeof window === "undefined") return false;
   return (
     window.location.pathname.startsWith("/admin") ||
-    window.location.pathname.startsWith("/vc-pool/admin")
+    window.location.pathname.startsWith("/vc-pool/admin") ||
+    window.location.pathname.startsWith("/super/admin")
   );
 }
 
