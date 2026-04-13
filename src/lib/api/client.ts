@@ -179,9 +179,14 @@ axiosInstance.interceptors.response.use(
         localStorage.removeItem("quantivahq_access_token");
         localStorage.removeItem("quantivahq_refresh_token");
         localStorage.removeItem("quantivahq_is_authenticated");
-        // Only redirect if not already on an auth page (prevents infinite reload loop)
+        // Only redirect if on a user-facing page (prevents redirect on admin/auth pages)
         const currentPath = window.location.pathname;
-        if (!currentPath.startsWith("/onboarding")) {
+        if (
+          !currentPath.startsWith("/onboarding") &&
+          !currentPath.startsWith("/super/admin") &&
+          !currentPath.startsWith("/admin") &&
+          !currentPath.startsWith("/vc-pool/admin")
+        ) {
           window.location.href = "/onboarding/sign-up?tab=login";
         }
       }

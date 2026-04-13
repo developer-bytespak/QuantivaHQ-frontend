@@ -39,7 +39,7 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
         if (typeof window === "undefined") return;
         const path = window.location.pathname;
         // Skip on admin pages and auth/onboarding pages (no valid session)
-        if (path.startsWith("/admin") || path.startsWith("/vc-pool/admin") || path.startsWith("/onboarding")) {
+        if (path.startsWith("/admin") || path.startsWith("/vc-pool/admin") || path.startsWith("/super/admin") || path.startsWith("/onboarding")) {
             return;
         }
         // Skip if no access token (user is logged out)

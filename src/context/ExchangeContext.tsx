@@ -89,8 +89,14 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
         return;
       }
     }
+    // On admin pages, only fetch if admin token exists — never call user API
+    const inAdminArea = isAdminArea();
+    if (inAdminArea && !hasAdminToken()) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
-    const useAdmin = isAdminArea() && hasAdminToken();
+    const useAdmin = inAdminArea;
     try {
       if (useAdmin) {
         const fetched = await adminExchangesService.getConnections();
