@@ -52,8 +52,8 @@ export const SocketProvider = ( {children} : {children: ReactNode} ) => {
 
     useEffect(() => {
         if (!userId) return; // Only fetch notifications for authenticated users
-        if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/vc-pool/admin"))) {
-            return; // Admin pages don't use user notifications
+        if (typeof window !== "undefined" && (window.location.pathname.startsWith("/admin") || window.location.pathname.startsWith("/vc-pool/admin") || window.location.pathname.startsWith("/super/admin"))) {
+            return; // Admin pages don't use user auth — skip to avoid 401 errors
         }
         const getAllNotifications = async () => {
             const accessToken = localStorage.getItem("quantivahq_access_token");
