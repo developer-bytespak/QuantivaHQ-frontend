@@ -635,13 +635,25 @@ export function SubscriptionSettings() {
                   </div>
                 </div>
 
-                {/* ELITE Plus Plan Group - 3 plans (static, coming soon) */}
+                {/* ELITE Plus Plan Group - uses real DB plans if available, else static coming-soon */}
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-white mb-3">ELITE Plus Plan</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                    {getPlansByTier(PlanTier.ELITE_PLUS).map((plan) =>
-                      renderPlanCard({ ...plan, priceId: "" }, true)
-                    )}
+                    {(getPlansGroupedByTier()[PlanTier.ELITE_PLUS]?.length ?? 0) > 0
+                      ? getPlansGroupedByTier()[PlanTier.ELITE_PLUS].map((plan) => {
+                          let priceId = "";
+                          if (plan.billing_period === BillingPeriod.MONTHLY) {
+                            priceId = PRICE_IDS.ELITE_PLUS_PLAN_MONTHLY ?? "";
+                          } else if (plan.billing_period === BillingPeriod.QUARTERLY) {
+                            priceId = PRICE_IDS.ELITE_PLUS_PLAN_QUARTERLY ?? "";
+                          } else if (plan.billing_period === BillingPeriod.YEARLY) {
+                            priceId = PRICE_IDS.ELITE_PLUS_PLAN_YEARLY ?? "";
+                          }
+                          return renderPlanCard({ ...plan, priceId });
+                        })
+                      : getPlansByTier(PlanTier.ELITE_PLUS).map((plan) =>
+                          renderPlanCard({ ...plan, priceId: "" }, true),
+                        )}
                   </div>
                 </div>
 
