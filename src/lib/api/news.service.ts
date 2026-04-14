@@ -60,6 +60,15 @@ export interface StockNewsResponse {
   timestamp: string;
 }
 
+// Per-symbol response cache. Collapses duplicate back-to-back calls from
+// multiple components rendering at the same time so we don't fan out to the
+// backend (and ultimately LunarCrush) on every mount. 2-minute TTL is
+// generous enough to cover a user navigating between pages without feeling
+// stale.
+const CRYPTO_NEWS_TTL_MS = 2 * 60 * 1000;
+const cryptoNewsCache = new Map<string, { data: CryptoNewsResponse; ts: number }>();
+const cryptoNewsInflight = new Map<string, Promise<CryptoNewsResponse>>();
+
 /**
  * Fetch cryptocurrency news with sentiment analysis and social metrics
  * @param symbol - Optional. If not provided, fetches general crypto news
@@ -68,18 +77,42 @@ export async function getCryptoNews(
   symbol?: string,
   limit: number = 2
 ): Promise<CryptoNewsResponse> {
-  try {
-    // If no symbol provided, use "CRYPTO" for general news or make it optional
-    const symbolParam = symbol ? `&symbol=${encodeURIComponent(symbol)}` : '';
-    const response = await apiRequest<never, CryptoNewsResponse>({
-      path: `/news/crypto?limit=${limit}${symbolParam}`,
-      method: "GET",
-    });
-    return response;
-  } catch (error) {
-    console.error("Failed to fetch crypto news:", error);
-    throw error;
+  const cacheKey = `${symbol ?? "__all__"}:${limit}`;
+  const now = Date.now();
+
+  // Fresh cache hit
+  const cached = cryptoNewsCache.get(cacheKey);
+  if (cached && now - cached.ts < CRYPTO_NEWS_TTL_MS) {
+    return cached.data;
   }
+
+  // In-flight dedup: if another caller is already fetching, share its promise
+  const pending = cryptoNewsInflight.get(cacheKey);
+  if (pending) {
+    return pending;
+  }
+
+  const symbolParam = symbol ? `&symbol=${encodeURIComponent(symbol)}` : "";
+  const promise = apiRequest<never, CryptoNewsResponse>({
+    path: `/news/crypto?limit=${limit}${symbolParam}`,
+    method: "GET",
+  })
+    .then((response) => {
+      cryptoNewsCache.set(cacheKey, { data: response, ts: Date.now() });
+      return response;
+    })
+    .catch((error) => {
+      console.error("Failed to fetch crypto news:", error);
+      // Serve stale on error if we have it, otherwise propagate
+      if (cached) return cached.data;
+      throw error;
+    })
+    .finally(() => {
+      cryptoNewsInflight.delete(cacheKey);
+    });
+
+  cryptoNewsInflight.set(cacheKey, promise);
+  return promise;
 }
 
 /**
