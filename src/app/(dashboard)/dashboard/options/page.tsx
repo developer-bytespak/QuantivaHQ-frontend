@@ -37,15 +37,15 @@ function EliteGate() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 className="mb-2 text-xl font-bold text-slate-100">ELITE Feature</h2>
+        <h2 className="mb-2 text-xl font-bold text-slate-100">ELITE Plus Feature</h2>
         <p className="mb-6 text-sm text-slate-400">
-          Options trading with AI-powered recommendations is exclusively available on the ELITE plan.
+          Options trading with AI-powered recommendations is exclusively available on the ELITE Plus plan.
         </p>
         <button
           onClick={() => setShowUpgradeModal(true)}
           className="rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
         >
-          Upgrade to ELITE
+          Upgrade to ELITE Plus
         </button>
       </div>
     </div>

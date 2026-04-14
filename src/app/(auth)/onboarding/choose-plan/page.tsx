@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
@@ -13,6 +13,7 @@ import {
 import { PRICE_IDS } from "@/constant";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
+import { isUSUserFromOnboarding, ELITE_PLUS_US_BLOCK_MESSAGE } from "@/lib/utils/region-restrictions";
 
 const PLAN_CHOSEN_KEY = "quantivahq_plan_chosen";
 
@@ -64,7 +65,12 @@ export default function ChoosePlanPage() {
     BillingPeriod.MONTHLY
   );
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [isUSUser, setIsUSUser] = useState(false);
   const { createCheckout , createSubs } = useSubscription();
+
+  useEffect(() => {
+    setIsUSUser(isUSUserFromOnboarding());
+  }, []);
 
   const handleContinueWithFree = async () => {
     if (typeof window !== "undefined") {
@@ -79,6 +85,10 @@ export default function ChoosePlanPage() {
   };
 
   const handleSelectPaid = (tier: PlanTier) => {
+    if (tier === PlanTier.ELITE_PLUS && isUSUserFromOnboarding()) {
+      toast.error(ELITE_PLUS_US_BLOCK_MESSAGE);
+      return;
+    }
     if (tier === PlanTier.ELITE_PLUS) {
       toast.info("ELITE Plus is coming soon.");
       return;
@@ -322,9 +332,14 @@ export default function ChoosePlanPage() {
             </ul>
             <button
               onClick={() => handleSelectPaid(PlanTier.ELITE_PLUS)}
-              className="w-full rounded-lg border-2 border-white/30 bg-transparent py-2.5 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5"
+              disabled={isUSUser}
+              className={`w-full rounded-lg border-2 py-2.5 text-sm font-semibold transition ${
+                isUSUser
+                  ? "border-red-500/40 bg-red-500/5 text-red-400 cursor-not-allowed"
+                  : "border-white/30 bg-transparent text-white hover:border-white/50 hover:bg-white/5"
+              }`}
             >
-              Coming Soon
+              {isUSUser ? "Not available in the US" : "Coming Soon"}
             </button>
           </div>
         </div>

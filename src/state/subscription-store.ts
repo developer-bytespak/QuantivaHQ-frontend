@@ -132,8 +132,11 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       const plan = allPlans?.find((p) => p.plan_id === currentSubscription.plan_id);
       if (!plan) return false;
 
-      // ELITE tier gets access to all features
-      if (plan.tier === PlanTier.ELITE) return true;
+      // ELITE_PLUS tier gets access to all features including options
+      if (plan.tier === PlanTier.ELITE_PLUS) return true;
+
+      // ELITE tier gets access to all features EXCEPT OPTIONS_TRADING
+      if (plan.tier === PlanTier.ELITE && feature !== FeatureType.OPTIONS_TRADING) return true;
 
       const features = plan.plan_features ?? [];
       const planFeature = features.find((f: any) => f.feature_type === feature);

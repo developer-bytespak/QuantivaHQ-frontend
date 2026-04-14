@@ -6,6 +6,8 @@ import { apiRequest } from "@/lib/api/client";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier, BillingPeriod, getPlansByTier } from "@/mock-data/subscription-dummy-data";
 import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
+import { getCurrentUser } from "@/lib/api/user";
+import { isUSNationality, ELITE_PLUS_US_BLOCK_MESSAGE } from "@/lib/utils/region-restrictions";
 
 type SubscriptionPlanWithPriceId = SubscriptionPlan & { priceId: string };
 import { useSubscription } from "@/hooks/useSubscription";
@@ -26,6 +28,14 @@ export function SubscriptionSettings() {
 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [isUSUser, setIsUSUser] = useState(false);
+
+  // Fetch user nationality once to determine ELITE_PLUS eligibility (Binance.US has no options)
+  useEffect(() => {
+    getCurrentUser()
+      .then((u) => setIsUSUser(isUSNationality(u?.nationality)))
+      .catch(() => setIsUSUser(false));
+  }, []);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [outstandingFees, setOutstandingFees] = useState<{
     has_outstanding: boolean;
@@ -233,12 +243,22 @@ export function SubscriptionSettings() {
                 Current Plan
               </button>
             ) : isStaticComingSoon ? (
-              <button
-                disabled
-                className="w-full px-4 py-2 bg-slate-500/30 text-slate-400 rounded-lg text-sm font-semibold cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
+              isUSUser && plan.tier === PlanTier.ELITE_PLUS ? (
+                <button
+                  disabled
+                  title={ELITE_PLUS_US_BLOCK_MESSAGE}
+                  className="w-full px-4 py-2 bg-red-500/15 text-red-400 rounded-lg text-sm font-semibold cursor-not-allowed"
+                >
+                  Not available in the US
+                </button>
+              ) : (
+                <button
+                  disabled
+                  className="w-full px-4 py-2 bg-slate-500/30 text-slate-400 rounded-lg text-sm font-semibold cursor-not-allowed"
+                >
+                  Coming Soon
+                </button>
+              )
             ) : (
               <button
                 className={`w-full px-4 py-2 ${buttonColor} rounded-lg transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -286,6 +306,13 @@ export function SubscriptionSettings() {
   };
 
   const handleUpgradePlan = ({ planId, priceId = "123" }: { planId: string, priceId?: string }) => {
+    // Block US users from selecting ELITE_PLUS (Binance.US doesn't support options)
+    const elitePlusPlanIds = getPlansByTier(PlanTier.ELITE_PLUS).map((p) => p.plan_id);
+    if (isUSUser && elitePlusPlanIds.includes(planId)) {
+      toast.error(ELITE_PLUS_US_BLOCK_MESSAGE);
+      return;
+    }
+
     setLoadingPlanId(planId);
     const data = {
       plan_id: planId,
