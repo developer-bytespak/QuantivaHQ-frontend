@@ -132,22 +132,6 @@ function processQueue(error: unknown, token: string | null) {
   failedQueue = [];
 }
 
-async function getRefreshPromise(): Promise<string> {
-  const refreshToken =
-    typeof window !== "undefined" ? localStorage.getItem("quantivahq_refresh_token") : null;
-  const { data } = await axios.post(
-    `${RESOLVED_API_URL}/auth/refresh`,
-    refreshToken ? { refreshToken } : {},
-    { withCredentials: true }
-  );
-  const newAccess: string = data.accessToken;
-  if (typeof window !== "undefined") {
-    if (newAccess) localStorage.setItem("quantivahq_access_token", newAccess);
-    if (data.refreshToken) localStorage.setItem("quantivahq_refresh_token", data.refreshToken);
-  }
-  return newAccess;
-}
-
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
