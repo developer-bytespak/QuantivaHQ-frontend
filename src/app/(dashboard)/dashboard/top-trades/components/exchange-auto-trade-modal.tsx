@@ -19,6 +19,7 @@ interface ExchangeAutoTradeModalProps {
   onSuccess: () => void;
   strategy?: { stop_loss_value?: number; take_profit_value?: number };
   side?: "BUY" | "SELL";
+  exchangeName?: string;
 }
 
 export function ExchangeAutoTradeModal({
@@ -28,7 +29,10 @@ export function ExchangeAutoTradeModal({
   onSuccess,
   strategy,
   side: sideProp,
+  exchangeName: exchangeNameProp,
 }: ExchangeAutoTradeModalProps) {
+  const isBybit = exchangeNameProp?.toLowerCase() === 'bybit';
+  const exchangeLabel = isBybit ? 'Bybit' : 'Binance';
   const vcPoolId = useTopTradeVcPoolId();
   const [balance, setBalance] = useState(0);
   const [quoteAsset, setQuoteAsset] = useState("USDT");
@@ -65,11 +69,11 @@ export function ExchangeAutoTradeModal({
   const stopLossPercent = parsePercent(String(signal?.stopLoss ?? signal?.stop_loss_pct ?? defaultStopLoss)) || defaultStopLoss;
   const takeProfitPercent = parsePercent(String(signal?.takeProfit1 ?? signal?.take_profit_pct ?? defaultTakeProfit)) || defaultTakeProfit;
 
-  const BINANCE_FEE_RATE = 0.001; // 0.1% standard taker fee
+  const EXCHANGE_FEE_RATE = 0.001; // 0.1% standard taker fee (same for Binance & Bybit)
 
   const amountNum = parseFloat(usdtAmount) || 0;
-  const binanceFee = amountNum * BINANCE_FEE_RATE;
-  const netOrderValue = amountNum - binanceFee;
+  const exchangeFee = amountNum * EXCHANGE_FEE_RATE;
+  const netOrderValue = amountNum - exchangeFee;
   const quantity = entryPrice > 0 ? netOrderValue / entryPrice : 0;
   const prices = calculatePrices(entryPrice, stopLossPercent, takeProfitPercent, side);
   const maxLossAmount = netOrderValue * (stopLossPercent / 100);
@@ -87,7 +91,7 @@ export function ExchangeAutoTradeModal({
     let cancelled = false;
     exchangesService.getBalance(connectionId).then((res) => {
       if (cancelled || !res?.data?.assets) return;
-      const assets = res.data.assets as Array<{ symbol: string; free: string; locked: string }>;
+      const assets = res.data.assets as Array<{ symbol: string; free: string; locked: string; total: string }>;
       const findAsset = (symbol: string) => assets.find((a) => a.symbol === symbol);
 
       const selectedAsset =
@@ -102,7 +106,8 @@ export function ExchangeAutoTradeModal({
 
       if (selectedAsset) {
         setQuoteAsset(selectedAsset.symbol);
-        setBalance(parseFloat(selectedAsset.free || "0") + parseFloat(selectedAsset.locked || "0"));
+        const freeAndLocked = parseFloat(selectedAsset.free || "0") + parseFloat(selectedAsset.locked || "0");
+        setBalance(freeAndLocked || parseFloat(selectedAsset.total || "0"));
       } else {
         setQuoteAsset("USDT");
         setBalance(0);
@@ -158,8 +163,8 @@ export function ExchangeAutoTradeModal({
           source: "top_trade",  // 👈 Signal backend to auto-place OCO
         });
         if (response?.success) {
-          // Show a warning if the OCO (stop-loss / take-profit) order failed
-          if ((response as any).ocoError) {
+          // Show a warning if the OCO (stop-loss / take-profit) order failed (Binance only)
+          if (!isBybit && (response as any).ocoError) {
             setError(`✅ Order filled — but OCO protection failed: ${(response as any).ocoError}. Set a stop-loss manually.`);
             onSuccess();
           } else {
@@ -183,7 +188,7 @@ export function ExchangeAutoTradeModal({
       if (raw.includes("MIN_NOTIONAL") || raw.includes("min_notional") || raw.includes("notional") || raw.toLowerCase().includes("minimum required")) {
         msg = `Order value is below the minimum. Increase the ${quoteAsset} amount and try again.`;
       } else if (raw.includes("MARKET_LOT_SIZE") || raw.includes("LOT_SIZE") || raw.includes("filter failure")) {
-        msg = "Quantity doesn't meet Binance's step size requirements. Try a slightly different amount.";
+        msg = "Quantity doesn't meet the exchange's step size requirements. Try a slightly different amount.";
       } else if (raw.includes("PERCENT_PRICE") || raw.includes("percent_price")) {
         msg = "Order price deviates too far from the current market price. The price may have moved — try refreshing.";
       } else if (raw.includes("PRICE_FILTER") || raw.includes("price_filter")) {
@@ -285,8 +290,8 @@ export function ExchangeAutoTradeModal({
               <span className="font-medium text-white">{formatCurrency(amountNum)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Binance fee (0.1%):</span>
-              <span className="font-medium text-amber-400">-{formatCurrency(binanceFee)}</span>
+              <span className="text-slate-400">{exchangeLabel} fee (0.1%):</span>
+              <span className="font-medium text-amber-400">-{formatCurrency(exchangeFee)}</span>
             </div>
             <div className="flex justify-between border-b border-slate-700 pb-2">
               <span className="text-slate-300 font-medium">Net order value:</span>

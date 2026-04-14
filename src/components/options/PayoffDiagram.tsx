@@ -100,7 +100,7 @@ export function PayoffDiagram({ legs, spotPrice, compact = false }: PayoffDiagra
   const height = compact ? 120 : 200;
 
   return (
-    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3">
+    <div className="rounded-xl bg-[--color-surface]/40 p-3">
       {!compact && (
         <div className="mb-2 flex items-center justify-between">
           <span className="text-xs font-medium text-slate-300">P&L at Expiry</span>

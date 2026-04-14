@@ -78,8 +78,11 @@ export default function OptionsPage() {
   // Local tab state (simpler than store for page-only concern)
   const [activeTab, setActiveTab] = useState<OptionsTab>("chain");
 
-  // Education modal — open by default on every visit
-  const [showEducation, setShowEducation] = useState(true);
+  // Education modal — only show once per user (persisted in localStorage)
+  const [showEducation, setShowEducation] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("quantivahq_options_guide_seen");
+  });
 
   // WebSocket for live chain updates
   const { chainUpdate, isConnected: wsConnected } = useOptionsSocket({
@@ -101,7 +104,7 @@ export default function OptionsPage() {
     if (!connectionId || !hasAccess) return;
     (async () => {
       try {
-        const underlyings = await optionsService.getAvailableUnderlyings(connectionId);
+        const underlyings = await optionsService.getAvailableUnderlyings();
         store.setAvailableUnderlyings(underlyings);
         // Auto-select first underlying if none selected
         if (!store.selectedUnderlying && underlyings.length > 0) {
@@ -120,7 +123,7 @@ export default function OptionsPage() {
     store.setIsLoadingChain(true);
     store.setError(null);
     try {
-      const response = await optionsService.getOptionsChain(store.selectedUnderlying, connectionId);
+      const response = await optionsService.getOptionsChain(store.selectedUnderlying);
       store.setOptionsChain(response.contracts);
       store.setExpiryDates(response.expiryDates);
       // Auto-select first expiry
@@ -137,6 +140,32 @@ export default function OptionsPage() {
   useEffect(() => {
     if (hasAccess && activeTab === "chain") fetchChain();
   }, [store.selectedUnderlying, hasAccess, activeTab, fetchChain]);
+
+  // ── Auto-select contract from pending signal after chain loads ─────────
+
+  useEffect(() => {
+    const signal = pendingSignalRef.current;
+    if (!signal || store.optionsChain.length === 0 || store.isLoadingChain) return;
+
+    const leg = signal.legs[0];
+    if (!leg) { pendingSignalRef.current = null; return; }
+
+    // Find matching contract: same type + closest strike
+    const matching = store.optionsChain.find(
+      (c) => c.type === leg.type && Math.abs(c.strike - leg.strike) < 1,
+    );
+
+    if (matching) {
+      handleSelectContract(matching);
+      // Set the correct expiry tab
+      if (matching.expiry) {
+        const expiryDate = matching.expiry.split("T")[0];
+        store.setSelectedExpiry(expiryDate);
+      }
+    }
+
+    pendingSignalRef.current = null;
+  }, [store.optionsChain, store.isLoadingChain]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch account balance ───────────────────────────────────────────────
 
@@ -251,16 +280,16 @@ export default function OptionsPage() {
   const selectedContractSymbol = store.selectedContract?.symbol ?? null;
 
   useEffect(() => {
-    if (!connectionId || !selectedContractSymbol) {
+    if (!selectedContractSymbol) {
       setOrderBookDepth(null);
       return;
     }
     setIsLoadingDepth(true);
-    optionsService.getDepth(selectedContractSymbol, connectionId, 10)
+    optionsService.getDepth(selectedContractSymbol, 10)
       .then(setOrderBookDepth)
       .catch(() => setOrderBookDepth(null))
       .finally(() => setIsLoadingDepth(false));
-  }, [connectionId, selectedContractSymbol]);
+  }, [selectedContractSymbol]);
 
   // ── Portfolio Greeks (loaded on positions tab) ─────────────────────────
 
@@ -296,6 +325,14 @@ export default function OptionsPage() {
     if (showHistory && positionHistory.length === 0) loadPositionHistory();
   }, [showHistory, positionHistory.length, loadPositionHistory]);
 
+  // ── User position qty for sell-to-close ─────────────────────────────
+
+  const [userPositionQty, setUserPositionQty] = useState<number | null>(null);
+
+  // ── Pending signal execution — auto-select contract after chain loads ──
+
+  const pendingSignalRef = useRef<AiOptionsSignal | null>(null);
+
   // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleSelectContract = useCallback(
@@ -305,17 +342,24 @@ export default function OptionsPage() {
         optionType: contract.type,
         price: contract.askPrice, // Default to ask for BUY
       });
+
+      // Check if user has an open position for this contract (sell-to-close context)
+      const matchingPosition = store.positions.find(
+        (p) => p.contractSymbol === contract.symbol && p.isOpen,
+      );
+      setUserPositionQty(matchingPosition ? matchingPosition.quantity : null);
+
       // Fetch greeks for selected contract
       if (connectionId) {
         try {
-          const greeks = await optionsService.getGreeks(contract.symbol, connectionId);
+          const greeks = await optionsService.getGreeks(contract.symbol);
           store.setSelectedContractGreeks(greeks);
         } catch {
           store.setSelectedContractGreeks(null);
         }
       }
     },
-    [connectionId], // eslint-disable-line react-hooks/exhaustive-deps
+    [connectionId, store.positions], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handlePlaceOrder = useCallback(async () => {
@@ -375,10 +419,12 @@ export default function OptionsPage() {
       }
       store.setOrderForm({
         optionType: pos.optionType,
-        side: "SELL", // Close = sell what you bought (or buy back what you sold)
+        side: pos.quantity > 0 ? "SELL" : "BUY", // close long = sell, close short = buy
         quantity: Math.abs(pos.quantity),
         price: pos.currentPremium || 0,
       });
+      // Set position qty so the order form knows this is a sell-to-close
+      setUserPositionQty(Math.abs(pos.quantity));
       setActiveTab("chain");
     },
     [store.optionsChain], // eslint-disable-line react-hooks/exhaustive-deps
@@ -389,16 +435,22 @@ export default function OptionsPage() {
   const handleExecuteSignal = useCallback(
     (signal: AiOptionsSignal) => {
       if (signal.legs.length === 0) return;
-      // Use the first leg to pre-fill the order form
       const leg = signal.legs[0];
+
+      // Store pending signal so the auto-select effect can match it after chain loads
+      pendingSignalRef.current = signal;
+
+      // Pre-fill order form
       store.setOrderForm({
         optionType: leg.type,
         side: leg.side,
         quantity: 1,
-        price: 0, // User needs to set price from the chain
+        price: 0, // Will be set when contract is auto-selected (askPrice)
       });
-      // Switch to chain tab so user can select the exact contract
+
+      // Switch underlying (triggers chain reload) and switch to chain tab
       store.setSelectedUnderlying(signal.underlying);
+      store.setSelectedExpiry(null); // Reset so it picks the right expiry
       setActiveTab("chain");
     },
     [], // eslint-disable-line react-hooks/exhaustive-deps
@@ -507,7 +559,10 @@ export default function OptionsPage() {
       )}
 
       {/* Education Modal */}
-      <OptionsEducationModal open={showEducation} onClose={() => setShowEducation(false)} />
+      <OptionsEducationModal open={showEducation} onClose={() => {
+        setShowEducation(false);
+        localStorage.setItem("quantivahq_options_guide_seen", "1");
+      }} />
 
       {/* Tab Content */}
       <div>
@@ -579,6 +634,7 @@ export default function OptionsPage() {
                 onSubmit={handlePlaceOrder}
                 isPlacing={store.isPlacingOrder}
                 accountBalance={store.account?.availableBalance}
+                userPositionQty={userPositionQty}
               />
               {store.selectedContract && (
                 <OrderBookPanel depth={orderBookDepth} isLoading={isLoadingDepth} />

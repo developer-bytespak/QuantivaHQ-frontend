@@ -218,51 +218,52 @@ export const optionsService = {
   /**
    * Get all available underlying assets for options trading.
    */
-  async getAvailableUnderlyings(connectionId: string): Promise<AvailableUnderlying[]> {
+  async getAvailableUnderlyings(): Promise<AvailableUnderlying[]> {
     return apiRequest<never, AvailableUnderlying[]>({
-      path: `/options/underlyings?connectionId=${connectionId}`,
+      path: "/options/underlyings",
       method: "GET",
     });
   },
 
   /**
-   * Fetch full options chain for an underlying (BTC, ETH, SOL, etc.)
+   * Fetch full options chain for an underlying (public data).
    */
-  async getOptionsChain(underlying: string, connectionId: string): Promise<OptionsChainResponse> {
+  async getOptionsChain(underlying: string): Promise<OptionsChainResponse> {
     return apiRequest<never, OptionsChainResponse>({
-      path: `/options/chain/${underlying}?connectionId=${connectionId}`,
+      path: `/options/chain/${underlying}`,
       method: "GET",
     });
   },
 
   /**
-   * Fetch Greeks for a specific option contract.
+   * Fetch Greeks for a specific option contract (public data).
    */
-  async getGreeks(contractSymbol: string, connectionId: string): Promise<Greeks> {
+  async getGreeks(contractSymbol: string): Promise<Greeks> {
     return apiRequest<never, Greeks>({
-      path: `/options/greeks/${encodeURIComponent(contractSymbol)}?connectionId=${connectionId}`,
+      path: `/options/greeks/${encodeURIComponent(contractSymbol)}`,
       method: "GET",
     });
   },
 
   /**
-   * Fetch 24hr ticker for a specific option contract.
+   * Fetch 24hr ticker for a specific option contract (public data).
    */
-  async getTicker(contractSymbol: string, connectionId: string): Promise<OptionTicker> {
+  async getTicker(contractSymbol: string): Promise<OptionTicker> {
     return apiRequest<never, OptionTicker>({
-      path: `/options/ticker/${encodeURIComponent(contractSymbol)}?connectionId=${connectionId}`,
+      path: `/options/ticker/${encodeURIComponent(contractSymbol)}`,
       method: "GET",
     });
   },
 
   /**
-   * Fetch order book depth for an option contract.
+   * Fetch order book depth for an option contract (public data).
    */
-  async getDepth(contractSymbol: string, connectionId: string, limit?: number): Promise<OptionDepth> {
-    const params = new URLSearchParams({ connectionId });
+  async getDepth(contractSymbol: string, limit?: number): Promise<OptionDepth> {
+    const params = new URLSearchParams();
     if (limit) params.append("limit", String(limit));
+    const query = params.toString();
     return apiRequest<never, OptionDepth>({
-      path: `/options/depth/${encodeURIComponent(contractSymbol)}?${params}`,
+      path: `/options/depth/${encodeURIComponent(contractSymbol)}${query ? `?${query}` : ""}`,
       method: "GET",
     });
   },

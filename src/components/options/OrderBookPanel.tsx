@@ -56,7 +56,7 @@ export function OrderBookPanel({ depth, isLoading }: OrderBookPanelProps) {
   const spreadPct = midPrice > 0 ? (spread / midPrice) * 100 : 0;
 
   return (
-    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3">
+    <div className="rounded-xl bg-[--color-surface]/40 p-3">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs font-medium text-slate-300">Order Book</span>
         {spread > 0 && (

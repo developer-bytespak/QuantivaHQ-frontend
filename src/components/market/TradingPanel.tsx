@@ -92,8 +92,8 @@ export default function TradingPanel({
         (asset) => asset.symbol.toUpperCase() === baseSymbol.toUpperCase()
       );
 
-      const nextQuoteBalance = quoteAsset ? parseFloat(quoteAsset.free) : NaN;
-      const nextBaseBalance = baseAsset ? parseFloat(baseAsset.free) : NaN;
+      const nextQuoteBalance = quoteAsset ? (parseFloat(quoteAsset.free) || parseFloat(quoteAsset.total || '0')) : NaN;
+      const nextBaseBalance = baseAsset ? (parseFloat(baseAsset.free) || parseFloat(baseAsset.total || '0')) : NaN;
       const nextLockedBase = baseAsset ? parseFloat(baseAsset.locked) : NaN;
 
       if (

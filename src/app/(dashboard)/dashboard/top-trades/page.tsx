@@ -202,7 +202,7 @@ const normalizeOrderStatus = (value: any): string => String(value ?? "UNKNOWN").
 export default function TopTradesPage(props?: TopTradesPageProps) {
   // Connection type detection - using global context
   const { vcPoolId, connectionId: propConnectionId, connectionType: propConnectionType } = props ?? {};
-  const { connectionType: ctxConnectionType, connectionId: ctxConnectionId, isLoading: isCheckingConnection } = useExchange();
+  const { connectionType: ctxConnectionType, connectionId: ctxConnectionId, isLoading: isCheckingConnection, activeConnection } = useExchange();
   const connectionId = propConnectionId ?? ctxConnectionId;
   const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
@@ -1849,6 +1849,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           onClose={() => { setShowAutoTradeModal(false); setSelectedSignal(null); }}
           onSuccess={handleAutoTradeSuccess}
           strategy={currentStrategy ?? undefined}
+          exchangeName={activeConnection?.exchange?.name}
         />
       )}
 
@@ -2006,7 +2007,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                             }`}>{order.side}</span>
                           </td>
                           <td className="py-2.5 px-3 text-slate-300">
-                            {order.type === 'MARKET' ? 'Market' : order.type === 'LIMIT' ? 'Limit' : order.type === 'STOP_LOSS_LIMIT' ? 'Stop Loss' : order.type === 'TAKE_PROFIT_LIMIT' ? 'Take Profit' : order.type || '—'}
+                            {order.type || '—'}
                           </td>
                           <td className="py-2.5 px-3 text-slate-300">
                             {formatQuantity(order.filledQuantity)} / {formatQuantity(order.quantity)}
