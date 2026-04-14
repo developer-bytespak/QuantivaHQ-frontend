@@ -96,7 +96,7 @@ export function GreeksPanel({ greeks, contractSymbol, isLoading }: GreeksPanelPr
     : null;
 
   return (
-    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 px-4 py-3">
+    <div className="rounded-xl bg-[--color-surface]/40 px-4 py-3">
       {/* Header row with help */}
       <div className="mb-2.5 flex items-center gap-2">
         <h3 className="text-sm font-semibold text-slate-200">Greeks</h3>
@@ -163,7 +163,7 @@ export function GreeksPanel({ greeks, contractSymbol, isLoading }: GreeksPanelPr
           {items.map((item, i) => (
             <div
               key={item.label}
-              className={`flex items-center justify-between rounded-lg border border-[--color-border]/40 bg-[--color-surface]/40 px-3 py-2 ${
+              className={`flex items-center justify-between rounded-lg bg-white/[0.04] px-3 py-2 ${
                 i === items.length - 1 ? "bg-[var(--primary)]/[0.04]" : ""
               }`}
             >

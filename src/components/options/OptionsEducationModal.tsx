@@ -220,7 +220,7 @@ export function OptionsEducationModal({ open, onClose }: OptionsEducationModalPr
   const isFirst = activeSection === 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0e0e16] shadow-2xl sm:max-h-[85vh]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[--color-border] px-6 py-4">

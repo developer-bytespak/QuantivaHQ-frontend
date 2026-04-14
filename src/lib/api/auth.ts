@@ -110,53 +110,16 @@ export async function resetPasswordForgot(resetToken: string, newPassword: strin
 /**
  * Verify user's current password
  * Used before sensitive operations like account deletion
- * Note: This uses a custom fetch to avoid the global 401 redirect in apiRequest,
- * since a 401 here means "Invalid password", not "session expired"
+ * Note: /auth/verify-password is in the interceptor's skipPaths so 401 here
+ * means "Invalid password", NOT "session expired" — no auto-refresh/redirect.
  */
 export async function verifyPassword(
   password: string
 ): Promise<VerifyPasswordResponse> {
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-  
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
-
-  // Add Authorization header from stored client JWT if available
-  if (typeof window !== "undefined") {
-    const accessToken = localStorage.getItem("quantivahq_access_token");
-    if (accessToken) {
-      headers["Authorization"] = `Bearer ${accessToken}`;
-    }
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/verify-password`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ password }),
-      credentials: "include",
-      cache: "no-store",
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      
-      // Handle invalid password (401) - don't redirect, just throw error
-      if (response.status === 401) {
-        throw new Error(errorData.message || "Invalid password. Please enter your correct password.");
-      }
-      
-      throw new Error(errorData.message || `API error: ${response.status}`);
-    }
-
-    return await response.json() as VerifyPasswordResponse;
-  } catch (error: any) {
-    // Re-throw with user-friendly message
-    if (error.message?.includes("Invalid password") || error.message?.includes("correct password")) {
-      throw error;
-    }
-    throw new Error(error.message || "Failed to verify password. Please try again.");
-  }
+  return apiRequest<VerifyPasswordRequest, VerifyPasswordResponse>({
+    path: "/auth/verify-password",
+    method: "POST",
+    body: { password },
+  });
 }
 

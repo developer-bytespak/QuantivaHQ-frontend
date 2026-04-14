@@ -1,31 +1,9 @@
 /**
  * User Binance API client
- * Base path: /users/binance — Uses user JWT (quantivahq_access_token in localStorage).
+ * Base path: /users/binance — Uses centralized apiRequest with auto-refresh.
  */
 
-import axios, { AxiosInstance } from "axios";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-function getUserAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("quantivahq_access_token");
-}
-
-export const userBinanceAxios: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true,
-  timeout: 30000,
-  headers: { "Content-Type": "application/json" },
-});
-
-userBinanceAxios.interceptors.request.use((config) => {
-  const token = getUserAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import { apiRequest } from "../client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,8 +106,7 @@ export interface UserBinanceSummary {
 // ─── API Functions ────────────────────────────────────────────────────────────
 
 export async function userBinanceAccount(): Promise<{ data: UserBinanceAccount; last_updated: string }> {
-  const res = await userBinanceAxios.get("/users/binance/account");
-  return res.data;
+  return apiRequest({ path: "/users/binance/account" });
 }
 
 export interface UserDepositParams {
@@ -144,8 +121,10 @@ export interface UserDepositParams {
 export async function userBinanceDeposits(
   params?: UserDepositParams
 ): Promise<{ data: UserDeposit[]; count: number; last_updated: string }> {
-  const res = await userBinanceAxios.get("/users/binance/deposits", { params });
-  return res.data;
+  const query = params ? "?" + new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
+  ).toString() : "";
+  return apiRequest({ path: `/users/binance/deposits${query}` });
 }
 
 export interface UserWithdrawalParams {
@@ -160,13 +139,15 @@ export interface UserWithdrawalParams {
 export async function userBinanceWithdrawals(
   params?: UserWithdrawalParams
 ): Promise<{ data: UserWithdrawal[]; count: number; last_updated: string }> {
-  const res = await userBinanceAxios.get("/users/binance/withdrawals", { params });
-  return res.data;
+  const query = params ? "?" + new URLSearchParams(
+    Object.entries(params).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
+  ).toString() : "";
+  return apiRequest({ path: `/users/binance/withdrawals${query}` });
 }
 
 export async function userBinanceSummary(
   coin?: string
 ): Promise<{ data: UserBinanceSummary; last_updated: string }> {
-  const res = await userBinanceAxios.get("/users/binance/summary", { params: coin ? { coin } : undefined });
-  return res.data;
+  const query = coin ? `?coin=${coin}` : "";
+  return apiRequest({ path: `/users/binance/summary${query}` });
 }

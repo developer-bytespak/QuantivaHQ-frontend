@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSocket } from "@/hooks/useSocket";
-import axios from "axios";
+import { apiRequest } from "@/lib/api/client";
 import { toast } from "react-toastify";
 import { Trash2 } from "lucide-react";
 
@@ -93,48 +93,39 @@ export function NotificationDropdown() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
-  const authHeaders = typeof window !== "undefined" && localStorage.getItem("quantivahq_access_token")
-    ? { Authorization: `Bearer ${localStorage.getItem("quantivahq_access_token")}` }
-    : {};
-
   const handleGetAllNotifications = async () => {
     try {
-      const response = await axios.get(`${apiBase}/notifications`, { withCredentials: true, headers: authHeaders });
-      if (response.status === 200) {
-        setNotifications(response.data);
-        setUnreadCount(0);
-        setNotificationCount(0);
-      } else {
-        toast.error("Error fetching notifications");
-      }
+      const data: any = await apiRequest({ path: "/notifications" });
+      setNotifications(data);
+      setUnreadCount(0);
+      setNotificationCount(0);
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Error fetching notifications";
+      const msg = err.message || "Error fetching notifications";
       toast.error(msg);
     }
   };
 
   const handleClearAll = async () => {
     try {
-      await axios.delete(`${apiBase}/notifications/delete`, { withCredentials: true, headers: authHeaders });
+      await apiRequest({ path: "/notifications/delete", method: "DELETE" });
       setNotifications([]);
       setUnreadCount(0);
       setNotificationCount(0);
       toast.success("All notifications cleared");
     } catch (err: any) {
       console.log("handleClearAll error", err); 
-      const msg = err.response?.data?.message || err.message || "Failed to clear notifications";
+      const msg = err.message || "Failed to clear notifications";
       toast.error(msg);
     }
   };
 
   const handleDeleteNotification = async (id: string) => {
     try {
-      await axios.delete(`${apiBase}/notifications/delete/${id}`, { withCredentials: true, headers: authHeaders });
+      await apiRequest({ path: `/notifications/delete/${id}`, method: "DELETE" });
       setNotifications((prev) => prev.filter((n) => (n._id ?? n.id) !== id));
       toast.success("Notification removed");
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Failed to delete notification";
+      const msg = err.message || "Failed to delete notification";
       toast.error(msg);
     }
   };

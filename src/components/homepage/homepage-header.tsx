@@ -68,8 +68,13 @@ export function HomepageHeader() {
       lastScrollY.current = currentScrollY;
     };
 
-    // Also refresh auth status periodically to catch logout from other tabs
-    const authCheckInterval = setInterval(checkAuthStatus, 5000);
+    // Refresh auth status periodically (localStorage-only, no server call)
+    const authCheckInterval = setInterval(() => {
+      if (typeof window !== "undefined") {
+        const authStatus = localStorage.getItem("quantivahq_is_authenticated");
+        setIsAuthenticated(authStatus === "true");
+      }
+    }, 30000);
 
     window.addEventListener("scroll", handleScroll);
     return () => {
@@ -124,6 +129,12 @@ export function HomepageHeader() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
+            <button
+              onClick={() => scrollToSection("about")}
+              className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              About
+            </button>
             <button
               onClick={() => scrollToSection("features")}
               className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
@@ -208,6 +219,12 @@ export function HomepageHeader() {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-[--color-border] bg-black/95 backdrop-blur-md">
           <nav className="px-4 py-4 space-y-3">
+            <button
+              onClick={() => scrollToSection("about")}
+              className="block w-full text-left text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"
+            >
+              About
+            </button>
             <button
               onClick={() => scrollToSection("features")}
               className="block w-full text-left text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"

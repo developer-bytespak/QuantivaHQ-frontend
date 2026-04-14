@@ -81,7 +81,15 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
   );
 
   const fetchConnectionInfo = useCallback(async () => {
-    // On admin pages without admin token (e.g. login page), skip — never call user API
+    // Skip fetching on auth pages or when user is not logged in
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path.startsWith("/onboarding")) {
+        setIsLoading(false);
+        return;
+      }
+    }
+    // On admin pages, only fetch if admin token exists — never call user API
     const inAdminArea = isAdminArea();
     if (inAdminArea && !hasAdminToken()) {
       setIsLoading(false);
