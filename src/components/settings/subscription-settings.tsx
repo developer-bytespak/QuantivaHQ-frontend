@@ -658,7 +658,8 @@ export function SubscriptionSettings() {
                 </div>
 
                 {currentSubscription.tier !== PlanTier.FREE &&
-                  currentSubscription.tier !== PlanTier.ELITE && (
+                  currentSubscription.tier !== PlanTier.ELITE &&
+                  currentSubscription.tier !== PlanTier.ELITE_PLUS && (
                     <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                       <p className="text-sm text-blue-300">
                         <span className="font-semibold">💡 Tip:</span> If you upgrade mid-cycle, we'll

@@ -66,7 +66,7 @@ export function LockedFeatureOverlay({ featureName, requiredTier, message }: Loc
         <p className="text-sm text-slate-300 mb-4 break-words leading-relaxed">
           {message || defaultMessage}
         </p>
-        {currentSubscription.tier !== PlanTier.ELITE && (
+        {currentSubscription.tier !== PlanTier.ELITE && currentSubscription.tier !== PlanTier.ELITE_PLUS && (
           <Link
             href="/dashboard/settings/subscription?tab=change"
             className="inline-block px-6 py-2.5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold"
