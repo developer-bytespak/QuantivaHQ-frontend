@@ -855,3 +855,11 @@ export interface AdminSuperUpgradeSubscriptionResponse {
   };
 }
 
+export interface AdminSuperUserLookupResponse {
+  found: boolean;
+  is_us_user: boolean;
+  email?: string;
+  username?: string;
+  current_tier?: PlanTier;
+}
+
