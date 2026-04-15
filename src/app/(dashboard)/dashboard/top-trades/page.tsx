@@ -207,7 +207,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
   const { currentSubscription } = useSubscriptionStore();
-  const canAccessTopTrades = !!vcPoolId || (currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE));
+  const canAccessTopTrades = !!vcPoolId || (currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE || currentSubscription.tier === PlanTier.ELITE_PLUS));
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -905,9 +905,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           if (ordersEndDate) ordersParams.set('endTime', String(new Date(ordersEndDate + 'T23:59:59').getTime()));
         }
 
-        const ordersPath = isStocksConnection
-          ? `/alpaca-trading/orders/all?${ordersParams.toString()}`
-          : `/exchanges/connections/${connectionId}/orders/all?${ordersParams.toString()}`;
+        // Always use the unified endpoint. The backend routes by connection
+        // type internally and applies the Alpaca status/field mapper, so the
+        // legacy /alpaca-trading/orders/all path is no longer needed.
+        const ordersPath = `/exchanges/connections/${connectionId}/orders/all?${ordersParams.toString()}`;
         const ordersResponse = await apiRequest<never, any>({ path: ordersPath, method: "GET", credentials: "include" });
         if (cancelled) return;
 
@@ -960,9 +961,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           if (tradeHistoryEndDate) historyParams.set('endTime', String(new Date(tradeHistoryEndDate + 'T23:59:59').getTime()));
         }
 
-        const historyPath = isStocksConnection
-          ? `/alpaca-trading/trade-history?${historyParams.toString()}`
-          : `/exchanges/connections/${connectionId}/trade-history?${historyParams.toString()}`;
+        // Always use the unified endpoint. Same reasoning as the orders modal:
+        // the backend routes Alpaca through getTradeHistoryEnriched's Alpaca
+        // branch and applies FIFO P&L matching, matching the crypto shape.
+        const historyPath = `/exchanges/connections/${connectionId}/trade-history?${historyParams.toString()}`;
         const [positionsResponse, historyResponse] = await Promise.all([
           apiRequest<never, any>({ path: `/exchanges/connections/${connectionId}/positions`, method: "GET", credentials: "include" }),
           apiRequest<never, any>({ path: historyPath, method: "GET", credentials: "include" }),
@@ -1150,7 +1152,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur p-8">
         <div className="text-center max-w-md">
-          <h3 className="text-lg font-semibold text-white mb-2">Top Trades is for PRO and ELITE</h3>
+          <h3 className="text-lg font-semibold text-white mb-2">Top Trades is for PRO, ELITE and ELITE Plus</h3>
           <p className="text-sm text-slate-400 mb-6">
             Generate stock signals and view trading opportunities. Upgrade to access Top Trades.
           </p>
