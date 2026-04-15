@@ -823,3 +823,43 @@ export interface AdminCloseExchangeOrderRequest {
   exit_price_usdt: number;
 }
 
+// ---- Super Admin: Upgrade user subscription ----
+
+export type PlanTier = "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+export type BillingPeriod = "MONTHLY" | "QUARTERLY" | "YEARLY";
+
+export interface AdminSuperUpgradeSubscriptionRequest {
+  email: string;
+  tier: PlanTier;
+  billing_period: BillingPeriod;
+}
+
+export interface AdminSuperUpgradeSubscriptionResponse {
+  message: string;
+  user: {
+    user_id: string;
+    email: string;
+    username: string;
+    full_name: string | null;
+    previous_tier: PlanTier;
+    new_tier: PlanTier;
+  };
+  subscription: {
+    subscription_id: string;
+    tier: PlanTier;
+    billing_period: BillingPeriod;
+    status: string;
+    current_period_start: string;
+    current_period_end: string;
+    billing_provider: string;
+  };
+}
+
+export interface AdminSuperUserLookupResponse {
+  found: boolean;
+  is_us_user: boolean;
+  email?: string;
+  username?: string;
+  current_tier?: PlanTier;
+}
+

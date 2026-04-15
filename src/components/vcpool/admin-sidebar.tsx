@@ -21,6 +21,7 @@ const SUPER_ADMIN_NAV = [
   { label: "Finance", href: "/super/admin/finance", icon: "binance" },
   { label: "Contact Submissions", href: "/super/admin/contact-submissions", icon: "contact" },
   { label: "Default Fees", href: "/super/admin/default-fees", icon: "settings" },
+  { label: "Upgrade Plan", href: "/super/admin/upgrade-plan", icon: "upgrade" },
 ];
 
 interface AdminSidebarProps {
@@ -108,6 +109,13 @@ function NavIcon({ name, isActive }: { name: string; isActive: boolean }) {
     return (
       <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    );
+  }
+  if (name === "upgrade") {
+    return (
+      <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
       </svg>
     );
   }

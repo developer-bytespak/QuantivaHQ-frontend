@@ -29,6 +29,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/super/admin/finance": "Unified Finance",
   "/super/admin/contact-submissions": "Contact Submissions",
   "/super/admin/default-fees": "Default Fees",
+  "/super/admin/upgrade-plan": "Upgrade Plan",
 };
 
 function getPageTitle(pathname: string | null): string {
