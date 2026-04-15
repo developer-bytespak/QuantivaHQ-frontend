@@ -66,6 +66,8 @@ import type {
   AdminPlaceExchangeOrderResponse,
   AdminExchangeOrdersListResponse,
   AdminCloseExchangeOrderRequest,
+  AdminSuperUpgradeSubscriptionRequest,
+  AdminSuperUpgradeSubscriptionResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -1030,5 +1032,16 @@ export async function adminSuperListContactSubmissions(params?: {
     `/admin/super-admin/contact-submissions${query ? `?${query}` : ""}`
   );
 
+  return data;
+}
+
+/** POST /admin/super-admin/users/upgrade-subscription */
+export async function adminSuperUpgradeUserSubscription(
+  body: AdminSuperUpgradeSubscriptionRequest
+): Promise<AdminSuperUpgradeSubscriptionResponse> {
+  const { data } = await adminAxios.post<AdminSuperUpgradeSubscriptionResponse>(
+    "/admin/super-admin/users/upgrade-subscription",
+    body
+  );
   return data;
 }
