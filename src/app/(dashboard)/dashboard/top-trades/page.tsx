@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
+import { exchangesService } from "@/lib/api/exchanges.service";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
 import { useExchange } from "@/context/ExchangeContext";
@@ -253,6 +254,12 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
   const [selectedSignal, setSelectedSignal] = useState<any>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  // Custom success-toast copy. Lets the auto-trade modal communicate edge
+  // cases (queued for market open, delayed protection, etc.) without
+  // resorting to alert() — the toast keeps the UI feel consistent.
+  const [successToastMessage, setSuccessToastMessage] = useState<string>(
+    "Trade executed successfully!",
+  );
 
   // Paper trading mock usage detection and pagination
   const searchParams = useSearchParams();
@@ -265,6 +272,13 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [paperPositionsPage, setPaperPositionsPage] = useState(1);
   const PAPER_POS_PER_PAGE = 20;
   const paperPositions = (paperTradingDummy.positions || []);
+
+  // Note: queued-trades tracking lives entirely in the backend (DB + cron).
+  // The user never sees queued-trades state directly — they only see their
+  // real Alpaca orders via the existing /orders/all endpoint once the cron
+  // has promoted them to live Alpaca orders at market open. The modal
+  // alerts about "queued" and "delayed protection" explain the BUY state
+  // but we don't surface the internal sell-order tracking to the UI.
   const paperPositionsTotalPages = Math.max(1, Math.ceil(paperPositions.length / PAPER_POS_PER_PAGE));
   const pagedPaperPositions = useMemo(() => {
     const s = (paperPositionsPage - 1) * PAPER_POS_PER_PAGE;
@@ -1123,11 +1137,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     setShowAutoTradeModal(true);
   };
 
-  const handleAutoTradeSuccess = () => {
+  const handleAutoTradeSuccess = (customMessage?: string) => {
     setShowAutoTradeModal(false);
     setSelectedSignal(null);
+    setSuccessToastMessage(customMessage || "Trade executed successfully!");
     setShowSuccessToast(true);
-    setTimeout(() => setShowSuccessToast(false), 3000);
+    // Longer timeout for longer messages so the user has time to read.
+    const timeoutMs = customMessage && customMessage.length > 80 ? 6000 : 3000;
+    setTimeout(() => setShowSuccessToast(false), timeoutMs);
     if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
   };
 
@@ -1215,6 +1232,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           </button>
         </div>
       </div>
+
 
       {/* Paper Trading - Open Positions & Leaderboard (dummy data) */}
       {effectivePaperMock && (
@@ -1866,10 +1884,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         />
       )}
 
-      {/* Success Toast */}
+      {/* Success Toast — also used by the auto-trade modal to surface
+          queued / delayed-protection / filled states without using alert(). */}
       {showSuccessToast && (
-        <div className="fixed top-8 right-8 z-[10000] animate-fade-in rounded-lg bg-green-600 px-6 py-3 text-white shadow-lg">
-          Trade executed successfully!
+        <div className="fixed top-8 right-8 z-[10000] animate-fade-in rounded-lg bg-green-600 px-5 py-3 text-white shadow-lg max-w-md flex items-start gap-3">
+          <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="text-sm leading-snug">{successToastMessage}</span>
         </div>
       )}
 

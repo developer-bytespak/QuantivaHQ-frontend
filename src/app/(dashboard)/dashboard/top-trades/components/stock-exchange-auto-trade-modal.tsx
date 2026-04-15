@@ -16,7 +16,9 @@ interface StockExchangeAutoTradeModalProps {
   connectionId: string;
   signal: any;
   onClose: () => void;
-  onSuccess: () => void;
+  /** Optional custom message forwarded to the parent's success toast. When
+   *  omitted, the parent shows its default "Trade executed successfully!" copy. */
+  onSuccess: (message?: string) => void;
   strategy?: { stop_loss_value?: number; take_profit_value?: number };
   side?: "BUY" | "SELL";
 }
@@ -33,7 +35,11 @@ export function StockExchangeAutoTradeModal({
   const isPoolTrade = !!vcPoolId;
   const [balance, setBalance] = useState(0);
   const [loadingBalance, setLoadingBalance] = useState(true);
-  const [usdAmount, setUsdAmount] = useState("");
+  // Users input whole shares for stocks (not a USD amount). Stocks are
+  // naturally thought of in share count, and Alpaca requires whole-share
+  // quantities on the protective LIMIT (TP) and STOP (SL) orders — so
+  // fractional input would leave a fractional-share sliver unprotected.
+  const [sharesAmount, setSharesAmount] = useState("");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,13 +54,16 @@ export function StockExchangeAutoTradeModal({
   const stopLossPercent = parsePercent(String(signal?.stopLoss ?? signal?.stop_loss_pct ?? defaultStopLoss)) || defaultStopLoss;
   const takeProfitPercent = parsePercent(String(signal?.takeProfit1 ?? signal?.take_profit_pct ?? defaultTakeProfit)) || defaultTakeProfit;
 
-  const amountNum = parseFloat(usdAmount) || 0;
-  const quantity = entryPrice > 0 ? amountNum / entryPrice : 0;
+  // Shares drive the math now — USD amount is derived for display/validation.
+  const sharesNum = Math.max(0, Math.floor(parseFloat(sharesAmount) || 0));
+  const amountNum = sharesNum * entryPrice;
   const prices = calculatePrices(entryPrice, stopLossPercent, takeProfitPercent, side);
   const maxLossAmount = amountNum * (stopLossPercent / 100);
   const potentialGainAmount = amountNum * (takeProfitPercent / 100);
   const riskRewardRatio = calculateRiskRewardRatio(maxLossAmount, potentialGainAmount);
-  const quantityDisplay = quantity > 0 ? quantity.toFixed(4).replace(/\.?0+$/, "") : "—";
+  const quantityDisplay = sharesNum > 0 ? sharesNum.toString() : "—";
+  // Max shares the user could afford with their current USD buying power.
+  const maxAffordableShares = entryPrice > 0 ? Math.floor(balance / entryPrice) : 0;
   // Platform fee (0.1%)
   const tradeFeePercent = 0.1;
   const tradeFeeAmount = amountNum * (tradeFeePercent / 100);
@@ -76,21 +85,18 @@ export function StockExchangeAutoTradeModal({
   const handleExecute = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!amountNum || amountNum <= 0) {
-      setError("Enter a valid USD amount");
-      return;
-    }
-    if (!isPoolTrade && amountNum > balance) {
-      setError(`Insufficient balance. Need ${formatCurrency(amountNum)} but only have ${formatCurrency(balance)}`);
+    if (!sharesNum || sharesNum < 1) {
+      setError("Enter at least 1 share");
       return;
     }
     if (!entryPrice || entryPrice <= 0) {
       setError("Invalid entry price");
       return;
     }
-    const shares = Math.floor(quantity * 10000) / 10000;
-    if (shares < 0.0001) {
-      setError("Amount too small. Minimum order value may apply.");
+    if (!isPoolTrade && amountNum > balance) {
+      setError(
+        `Insufficient balance. ${sharesNum} share${sharesNum === 1 ? "" : "s"} at ${formatCurrency(entryPrice)} = ${formatCurrency(amountNum)}, but you only have ${formatCurrency(balance)}.`,
+      );
       return;
     }
     try {
@@ -99,7 +105,7 @@ export function StockExchangeAutoTradeModal({
         await adminCreateTrade(vcPoolId, {
           asset_pair: symbol,
           action: side,
-          quantity: shares,
+          quantity: sharesNum,
           entry_price_usdt: entryPrice,
           notes: null,
         });
@@ -110,12 +116,44 @@ export function StockExchangeAutoTradeModal({
           symbol,
           side,
           type: "MARKET",
-          quantity: shares,
+          quantity: sharesNum,
           autoOco: true,
           source: "top_trade",
+          takeProfit: takeProfitPercent / 100,
+          stopLoss: stopLossPercent / 100,
         });
         if (response?.success) {
-          onSuccess();
+          // The backend can respond in several shapes depending on market state:
+          //   1. { queued: true }             — market fully closed (weekend/holiday).
+          //                                     Trade stored in DB queue; cron submits
+          //                                     at next market open.
+          //   2. { delayedProtection: {...} } — buy ACCEPTED by Alpaca but not yet
+          //                                     filled (weekday pre/post-market). Cron
+          //                                     will attach TP/SL at fill.
+          //   3. { oco: {...} }               — happy path: buy filled + TP/SL live now.
+          //   4. { ocoError }                 — buy placed, TP/SL unattachable.
+          // Forward a human-readable message to the parent's green success toast
+          // for each case instead of blocking the UI with alert().
+          const r = response as any;
+          let toastMsg: string;
+
+          if (r?.queued === true) {
+            toastMsg =
+              r?.message ||
+              `Markets are closed. Your ${side === "BUY" ? "buy" : "sell"} of ${sharesNum} ${symbol} is queued and will submit automatically at the next market open.`;
+          } else if (r?.delayedProtection) {
+            toastMsg =
+              r?.delayedProtection?.message ||
+              `Your ${sharesNum} ${symbol} ${side.toLowerCase()} is accepted but hasn't filled yet (pre/post-market). Take-Profit and Stop-Loss will attach automatically when it fills at market open.`;
+          } else if (r?.ocoError) {
+            toastMsg = `Trade placed for ${sharesNum} ${symbol}, but Take-Profit / Stop-Loss could not be attached: ${r.ocoError}. Please add protection manually once the position opens.`;
+          } else if (r?.oco) {
+            toastMsg = `Bought ${sharesNum} ${symbol}. Take-Profit and Stop-Loss are attached (${takeProfitPercent}% / ${stopLossPercent}%).`;
+          } else {
+            toastMsg = `Trade executed: ${side} ${sharesNum} ${symbol}.`;
+          }
+
+          onSuccess(toastMsg);
           onClose();
         } else {
           setError("Order failed");
@@ -175,23 +213,45 @@ export function StockExchangeAutoTradeModal({
               </span>
             </div>
           </div>
+          {/* Issue 6 disclosure — stop-market orders can fill at a worse
+              price than the trigger when the market gaps overnight or
+              during illiquid sessions. Users should know this going in. */}
+          <div className="mt-3 flex items-start gap-1.5 rounded-md bg-amber-500/[0.06] border border-amber-500/20 px-2.5 py-2 text-[10px] leading-relaxed text-amber-200/80">
+            <svg className="w-3.5 h-3.5 mt-px flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>
+              Stop-loss may fill at a lower price than shown if the stock gaps down overnight or during illiquid sessions. For most liquid stocks during regular hours, the fill is within pennies of the stop price.
+            </span>
+          </div>
         </div>
 
         <div className="mb-6">
           <label className="mb-3 block text-sm font-medium text-slate-300">
-            Amount (USD):
+            Shares:
           </label>
           <input
             type="number"
-            step="any"
-            min="0"
-            placeholder="0.00"
-            value={usdAmount}
-            onChange={(e) => setUsdAmount(e.target.value)}
+            step="1"
+            min="1"
+            max={!isPoolTrade && maxAffordableShares > 0 ? maxAffordableShares : undefined}
+            placeholder="0"
+            value={sharesAmount}
+            onChange={(e) => {
+              // Accept only non-negative whole numbers; strip decimals and signs.
+              const raw = e.target.value;
+              const cleaned = raw.replace(/[^\d]/g, "");
+              setSharesAmount(cleaned);
+            }}
             className="w-full rounded-lg bg-slate-800 border border-slate-600 px-4 py-3 text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
           />
           {!loadingBalance && (
-            <p className="mt-2 text-xs text-slate-500">Available: {formatCurrency(balance)} USD</p>
+            <p className="mt-2 text-xs text-slate-500">
+              Available: {formatCurrency(balance)} USD
+              {entryPrice > 0 && maxAffordableShares > 0 && (
+                <> · max {maxAffordableShares} share{maxAffordableShares === 1 ? "" : "s"} at {formatCurrency(entryPrice)} each</>
+              )}
+            </p>
           )}
         </div>
 
@@ -199,12 +259,12 @@ export function StockExchangeAutoTradeModal({
           <h3 className="mb-3 text-sm font-medium text-slate-300">Calculated Trade:</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-slate-400">Investment:</span>
-              <span className="font-medium text-white">{formatCurrency(amountNum)}</span>
-            </div>
-            <div className="flex justify-between">
               <span className="text-slate-400">Shares:</span>
               <span className="font-medium text-white">{quantityDisplay}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Estimated Cost:</span>
+              <span className="font-medium text-white">{formatCurrency(amountNum)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Max Loss:</span>
@@ -251,7 +311,7 @@ export function StockExchangeAutoTradeModal({
           <button
             type="button"
             onClick={handleExecute}
-            disabled={executing || loadingBalance || !amountNum}
+            disabled={executing || loadingBalance || !sharesNum}
             className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
           >
             {executing ? "Executing..." : "Confirm & Execute"}

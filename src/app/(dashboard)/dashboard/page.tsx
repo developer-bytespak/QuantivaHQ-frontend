@@ -504,6 +504,29 @@ export default function DashboardPage() {
     );
   }, [dashboardData]);
 
+  // Set of symbols that have at least one active (NEW / PARTIALLY_FILLED)
+  // SELL order. Used to render a "Protected" shield next to positions that
+  // still have live Take-Profit or Stop-Loss orders attached on the exchange.
+  // Issue 7 from ALPACA_TP_SL_ISSUES.md.
+  const protectedSymbols = useMemo<Set<string>>(() => {
+    const out = new Set<string>();
+    if (!dashboardData?.orders) return out;
+    const stripQuote = (s: string) =>
+      (s || '').toUpperCase().replace(/(USDT|USDC|USD|BUSD|TUSD|USDP|DAI|FDUSD)$/, '');
+    for (const o of (dashboardData.orders as any[])) {
+      const side = String(o?.side || '').toUpperCase();
+      const status = String(o?.status || '').toUpperCase();
+      if (
+        side === 'SELL' &&
+        (status === 'NEW' || status === 'PARTIALLY_FILLED' || status === 'OPEN')
+      ) {
+        const base = stripQuote(String(o?.symbol || ''));
+        if (base) out.add(base);
+      }
+    }
+    return out;
+  }, [dashboardData]);
+
   const otherStatusOrders = useMemo(() => {
     if (!dashboardData || !dashboardData.orders) return [];
     return (dashboardData.orders || [])
@@ -798,6 +821,27 @@ export default function DashboardPage() {
                             <div className="flex items-center gap-2">
                               <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.07] text-[10px] font-bold text-white">{symbol.slice(0, 2)}</div>
                               <span className="text-[10px] sm:text-sm font-semibold text-white">{symbol}</span>
+                              {protectedSymbols.has(symbol.toUpperCase()) ? (
+                                <span
+                                  className="inline-flex items-center gap-0.5 rounded-full bg-green-500/10 border border-green-500/30 px-1.5 py-0.5 text-[9px] font-medium text-green-400"
+                                  title="Take-Profit and Stop-Loss orders are active on this position"
+                                >
+                                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  <span className="hidden sm:inline">Protected</span>
+                                </span>
+                              ) : (
+                                <span
+                                  className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-medium text-amber-400"
+                                  title="No Take-Profit or Stop-Loss is currently protecting this position"
+                                >
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                  </svg>
+                                  <span className="hidden sm:inline">Unprotected</span>
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300 text-right">{position.quantity.toFixed(4)}</td>
@@ -1330,7 +1374,32 @@ export default function DashboardPage() {
                       const symbol = stripped || position.symbol;
                       return (
                         <tr key={position.symbol + idx} className="hover:bg-[--color-surface]/40">
-                          <td className="py-2 px-2 text-white font-medium">{symbol}</td>
+                          <td className="py-2 px-2 text-white font-medium">
+                            <span className="inline-flex items-center gap-2">
+                              {symbol}
+                              {protectedSymbols.has(symbol.toUpperCase()) ? (
+                                <span
+                                  className="inline-flex items-center gap-0.5 rounded-full bg-green-500/10 border border-green-500/30 px-1.5 py-0.5 text-[9px] font-medium text-green-400"
+                                  title="Take-Profit and Stop-Loss orders are active on this position"
+                                >
+                                  <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                  Protected
+                                </span>
+                              ) : (
+                                <span
+                                  className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-medium text-amber-400"
+                                  title="No Take-Profit or Stop-Loss is currently protecting this position"
+                                >
+                                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                  </svg>
+                                  Unprotected
+                                </span>
+                              )}
+                            </span>
+                          </td>
                           <td className="py-2 px-2 text-slate-300">{position.quantity.toFixed(4)}</td>
                           <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
                           <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice)}</td>

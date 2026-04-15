@@ -446,6 +446,8 @@ export const exchangesService = {
       price?: number;
       autoOco?: boolean;
       source?: string;
+      takeProfit?: number;
+      stopLoss?: number;
     }
   ): Promise<ApiResponse<Order>> {
     return apiRequest<{
@@ -456,6 +458,8 @@ export const exchangesService = {
       price?: number;
       autoOco?: boolean;
       source?: string;
+      takeProfit?: number;
+      stopLoss?: number;
     }, ApiResponse<Order>>({
       path: `/exchanges/connections/${connectionId}/orders/place`,
       method: "POST",
@@ -463,6 +467,7 @@ export const exchangesService = {
       credentials: "include",
     });
   },
+
 
   async getOrderBook(
     connectionId: string,
