@@ -174,13 +174,9 @@ export default function OptionsPage() {
     (async () => {
       store.setIsLoadingAccount(true);
       try {
-        // Use the same exchange balance API as top trades — reads the real spot USDT wallet
-        const res = await exchangesService.getBalance(connectionId);
-        const assets = res.data?.assets ?? [];
-        const usdt = assets.find((a) => a.symbol === "USDT");
-        const available = usdt ? parseFloat(usdt.free || "0") : 0;
-        const total = usdt ? parseFloat(usdt.total || usdt.free || "0") : 0;
-        store.setAccount({ availableBalance: available, totalBalance: total, unrealizedPnl: 0, marginBalance: 0 });
+        // Use the Options margin wallet (USDT funded for options trading), not spot wallet
+        const account = await optionsService.getBalance(connectionId);
+        store.setAccount(account);
       } catch {
         // Non-critical
       } finally {
