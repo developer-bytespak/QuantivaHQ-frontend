@@ -475,7 +475,7 @@ export default function ApiKeysPage() {
             </div>
 
             {/* Alpaca OAuth Connect (Stocks only) */}
-            {selectedExchange === "alpaca" && (
+            {/* {selectedExchange === "alpaca" && (
               <div className="mb-4">
                 <p className="text-xs text-slate-400 mb-2">Prefer connecting via Alpaca OAuth? Click below to connect your Alpaca account.</p>
                 <div className="flex gap-3">
@@ -496,7 +496,7 @@ export default function ApiKeysPage() {
                   </button>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Submit Button */}
             <div className="flex justify-center mt-3 sm:mt-4 px-2 sm:px-0">

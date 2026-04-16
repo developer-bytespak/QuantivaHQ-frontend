@@ -13,7 +13,6 @@ import {
 import { PRICE_IDS } from "@/constant";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
-import { isUSUserFromOnboarding, ELITE_PLUS_US_BLOCK_MESSAGE } from "@/lib/utils/region-restrictions";
 
 const PLAN_CHOSEN_KEY = "quantivahq_plan_chosen";
 
@@ -65,12 +64,7 @@ export default function ChoosePlanPage() {
     BillingPeriod.MONTHLY
   );
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-  const [isUSUser, setIsUSUser] = useState(false);
   const { createCheckout , createSubs } = useSubscription();
-
-  useEffect(() => {
-    setIsUSUser(isUSUserFromOnboarding());
-  }, []);
 
   const handleContinueWithFree = async () => {
     if (typeof window !== "undefined") {
@@ -85,15 +79,6 @@ export default function ChoosePlanPage() {
   };
 
   const handleSelectPaid = (tier: PlanTier) => {
-    if (tier === PlanTier.ELITE_PLUS && isUSUserFromOnboarding()) {
-      toast.error(ELITE_PLUS_US_BLOCK_MESSAGE);
-      return;
-    }
-    if (tier === PlanTier.ELITE_PLUS) {
-      toast.info("ELITE Plus is coming soon.");
-      return;
-    }
-
     const plans = getPlansByTier(tier).filter(
       (p) => p.billing_period === billingPeriod
     );
@@ -115,6 +100,13 @@ export default function ChoosePlanPage() {
           : billingPeriod === BillingPeriod.QUARTERLY
             ? PRICE_IDS.ELITE_PLAN_QUARTERLY
             : PRICE_IDS.ELITE_PLAN_YEARLY;
+    } else if (tier === PlanTier.ELITE_PLUS) {
+      priceId =
+        billingPeriod === BillingPeriod.MONTHLY
+          ? PRICE_IDS.ELITE_PLUS_PLAN_MONTHLY
+          : billingPeriod === BillingPeriod.QUARTERLY
+            ? PRICE_IDS.ELITE_PLUS_PLAN_QUARTERLY
+            : PRICE_IDS.ELITE_PLUS_PLAN_YEARLY;
     }
 
     setLoadingPlanId(plan.plan_id);
@@ -198,6 +190,12 @@ export default function ChoosePlanPage() {
         <p className="mb-6 text-center text-sm text-slate-400">
           Select a plan to get started with Quantiva
         </p>
+
+        <div className="mb-6 w-full max-w-6xl rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <p className="text-center text-xs sm:text-sm text-amber-200">
+            <span className="font-semibold">Note:</span> ELITE Plus is recommended for Binance users only.
+          </p>
+        </div>
 
         {/* Billing period toggle */}
         <div className="mb-8 flex flex-wrap justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5">
@@ -332,14 +330,12 @@ export default function ChoosePlanPage() {
             </ul>
             <button
               onClick={() => handleSelectPaid(PlanTier.ELITE_PLUS)}
-              disabled={isUSUser}
-              className={`w-full rounded-lg border-2 py-2.5 text-sm font-semibold transition ${
-                isUSUser
-                  ? "border-red-500/40 bg-red-500/5 text-red-400 cursor-not-allowed"
-                  : "border-white/30 bg-transparent text-white hover:border-white/50 hover:bg-white/5"
-              }`}
+              disabled={createCheckout.isPending || !!loadingPlanId}
+              className="w-full rounded-lg border-2 border-white/30 bg-transparent py-2.5 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5 disabled:opacity-50"
             >
-              {isUSUser ? "Not available in the US" : "Coming Soon"}
+              {loadingPlanId && getPlansByTier(PlanTier.ELITE_PLUS).some((p) => p.plan_id === loadingPlanId)
+                ? "Loading..."
+                : "Get Started"}
             </button>
           </div>
         </div>

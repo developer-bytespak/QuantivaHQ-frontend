@@ -295,6 +295,12 @@ export function PricingSection() {
           </div>
         </div>
 
+        <div className="mx-auto mb-6 max-w-4xl rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <p className="text-center text-xs sm:text-sm text-amber-200">
+            <span className="font-semibold">Note:</span> ELITE Plus is recommended for Binance users only.
+          </p>
+        </div>
+
         {/* Pricing Grid - Mobile responsive (4 plans: Free, PRO, ELITE, ELITE Plus) */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 max-w-6xl mx-auto">
           {tiers.map((tier, index) => (
