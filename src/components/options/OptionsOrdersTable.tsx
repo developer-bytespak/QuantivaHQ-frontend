@@ -30,6 +30,10 @@ function statusBadge(status: string) {
   );
 }
 
+// Grid template: 7 columns (Action column added conditionally)
+const BASE_GRID_COLS = "minmax(180px,2fr) 80px 80px 80px 90px 110px minmax(120px,1.5fr)";
+const GRID_COLS_WITH_ACTION = `${BASE_GRID_COLS} 100px`;
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrdersTableProps) {
@@ -53,60 +57,91 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
     );
   }
 
+  const nowTs = Date.now();
+
+  // Show Action column only if at least one order is cancellable (pending + handler provided)
+  const showAction = !!onCancel && orders.some((o) => {
+    const expTs = o.expiry ? new Date(o.expiry).getTime() : null;
+    const stalePending =
+      ["pending", "submitting", "partially_filled"].includes(o.status) &&
+      expTs !== null &&
+      !isNaN(expTs) &&
+      expTs < nowTs;
+    const eff = stalePending ? "expired" : o.status;
+    return eff === "pending";
+  });
+
+  const gridCols = showAction ? GRID_COLS_WITH_ACTION : BASE_GRID_COLS;
+  const minWidth = showAction ? "900px" : "800px";
+
   return (
     <div className="overflow-x-auto rounded-xl border border-[--color-border]">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="border-b border-[--color-border] bg-[--color-surface]/40">
-            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
-              <Tooltip content="The options contract — underlying asset, strike price, and expiration date" position="top">
-                <span>Contract</span>
-              </Tooltip>
-            </th>
-            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
-              <Tooltip content="CALL = right to buy the asset at strike. PUT = right to sell at strike." position="top">
-                <span>Type</span>
-              </Tooltip>
-            </th>
-            <th className="px-3 py-2.5 text-left font-medium uppercase text-slate-400">
-              <Tooltip content="BUY = acquiring the option (pay premium). SELL = writing the option (receive premium)." position="top">
-                <span>Side</span>
-              </Tooltip>
-            </th>
-            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
-              <Tooltip content="Number of contracts in this order" position="top">
-                <span>Qty</span>
-              </Tooltip>
-            </th>
-            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">
-              <Tooltip content="Your limit price (premium per contract) for this order" position="top">
-                <span>Price</span>
-              </Tooltip>
-            </th>
-            <th className="px-3 py-2.5 text-center font-medium text-slate-400">
-              <Tooltip content="Order status: Pending (waiting to fill), Filled (executed), Partial, Cancelled, or Rejected" position="top">
-                <span>Status</span>
-              </Tooltip>
-            </th>
-            <th className="px-3 py-2.5 text-right font-medium uppercase text-slate-400">Time</th>
-            <th className="px-3 py-2.5 text-center font-medium text-slate-400">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr
+      <div className="text-xs" style={{ minWidth }}>
+        {/* Header */}
+        <div
+          className="grid items-center gap-2 border-b border-[--color-border] bg-[--color-surface]/40 px-3 py-2.5 font-medium uppercase text-slate-400"
+          style={{ gridTemplateColumns: gridCols }}
+        >
+          <div className="text-left">
+            <Tooltip content="The options contract — underlying asset, strike price, and expiration date" position="top">
+              <span>Contract</span>
+            </Tooltip>
+          </div>
+          <div className="text-left">
+            <Tooltip content="CALL = right to buy the asset at strike. PUT = right to sell at strike." position="top">
+              <span>Type</span>
+            </Tooltip>
+          </div>
+          <div className="text-left">
+            <Tooltip content="BUY = acquiring the option (pay premium). SELL = writing the option (receive premium)." position="top">
+              <span>Side</span>
+            </Tooltip>
+          </div>
+          <div className="text-right">
+            <Tooltip content="Number of contracts in this order" position="top">
+              <span>Qty</span>
+            </Tooltip>
+          </div>
+          <div className="text-right">
+            <Tooltip content="Your limit price (premium per contract) for this order" position="top">
+              <span>Price</span>
+            </Tooltip>
+          </div>
+          <div className="text-center">
+            <Tooltip content="Order status: Pending (waiting to fill), Filled (executed), Partial, Cancelled, or Rejected" position="top">
+              <span>Status</span>
+            </Tooltip>
+          </div>
+          <div className="text-right">Time</div>
+          {showAction && <div className="text-center">Action</div>}
+        </div>
+
+        {/* Rows */}
+        {orders.map((order) => {
+          const expiryTs = order.expiry ? new Date(order.expiry).getTime() : null;
+          const isStalePending =
+            ["pending", "submitting", "partially_filled"].includes(order.status) &&
+            expiryTs !== null &&
+            !isNaN(expiryTs) &&
+            expiryTs < nowTs;
+          const effectiveStatus = isStalePending ? "expired" : order.status;
+
+          return (
+            <div
               key={order.orderId}
-              className="group/row relative border-b border-[--color-border]/30 transition-colors hover:bg-[--color-surface]/40 before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity hover:before:opacity-100"
+              className="grid items-center gap-2 border-b border-[--color-border]/30 px-3 py-2.5 transition-colors hover:bg-[--color-surface]/40"
+              style={{ gridTemplateColumns: gridCols }}
             >
-              <td className="px-3 py-2.5">
-                <div className="flex flex-col">
-                  <span className="font-mono text-slate-200">{order.underlying}</span>
-                  <span className="text-[10px] text-slate-500">
-                    ${order.strike.toLocaleString()} · {new Date(order.expiry).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </span>
+              {/* Contract */}
+              <div className="text-left">
+                <div className="font-mono text-slate-200">{order.underlying || "—"}</div>
+                <div className="text-[10px] text-slate-500">
+                  ${Number(order.strike || 0).toLocaleString()} · {order.expiry ? new Date(order.expiry).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                 </div>
-              </td>
-              <td className="px-3 py-2.5">
+              </div>
+
+              {/* Type */}
+              <div className="text-left">
                 <span
                   className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
                     order.optionType === "CALL"
@@ -116,8 +151,10 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
                 >
                   {order.optionType}
                 </span>
-              </td>
-              <td className="px-3 py-2.5">
+              </div>
+
+              {/* Side */}
+              <div className="text-left">
                 <span
                   className={`text-xs font-medium ${
                     order.side === "BUY" ? "text-green-400" : "text-red-400"
@@ -125,36 +162,44 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
                 >
                   {order.side}
                 </span>
-              </td>
-              <td className="px-3 py-2.5 text-right font-mono text-slate-300">
-                {order.quantity}
-              </td>
-              <td className="px-3 py-2.5 text-right font-mono text-slate-300">
-                {order.price.toFixed(2)}
-              </td>
-              <td className="px-3 py-2.5 text-center">{statusBadge(order.status)}</td>
-              <td className="px-3 py-2.5 text-right text-slate-500">
+              </div>
+
+              {/* Qty */}
+              <div className="text-right font-mono text-slate-300">{order.quantity}</div>
+
+              {/* Price */}
+              <div className="text-right font-mono text-slate-300">{order.price.toFixed(2)}</div>
+
+              {/* Status */}
+              <div className="text-center">{statusBadge(effectiveStatus)}</div>
+
+              {/* Time */}
+              <div className="text-right text-slate-500">
                 {new Date(order.createdAt).toLocaleString("en-US", {
                   month: "short",
                   day: "numeric",
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
-              </td>
-              <td className="px-3 py-2.5 text-center">
-                {order.status === "pending" && onCancel && (
-                  <button
-                    onClick={() => onCancel(order)}
-                    className="rounded-md bg-red-500/10 px-2 py-1 text-[10px] font-medium text-red-400 hover:bg-red-500/20 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+              </div>
+
+              {/* Action (only when column is shown) */}
+              {showAction && (
+                <div className="text-center">
+                  {effectiveStatus === "pending" && onCancel && (
+                    <button
+                      onClick={() => onCancel(order)}
+                      className="rounded-md bg-red-500/10 px-2 py-1 text-[10px] font-medium text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
