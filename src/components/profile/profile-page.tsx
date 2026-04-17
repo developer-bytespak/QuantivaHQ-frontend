@@ -50,9 +50,10 @@ export function ProfilePage() {
   const portfolioChange = dashboardData?.portfolio?.pnlPercent ?? 0;
   const totals = dashboardData?.totals;
   const holdingValue = totals?.portfolio ?? 0;
-  const investedValue = totals?.invested ?? 0;
   const availableSpotUSD = totals?.availableSpot ?? 0;
   const availableMarginUSD = totals?.availableMargin ?? 0;
+  const investedSpotUSD = Math.max(0, (totals?.spot ?? 0) - availableSpotUSD);
+  const investedMarginUSD = Math.max(0, (totals?.margin ?? 0) - availableMarginUSD);
   const positions = dashboardData?.positions ?? [];
   const isCrypto = connectionType === "crypto";
   const sectionTitle = isCrypto ? "Crypto" : "Stocks";
@@ -69,14 +70,18 @@ export function ProfilePage() {
                 <p className="text-xs sm:text-sm text-white/80 mb-1">Holding value</p>
                 <p className="text-3xl sm:text-4xl font-bold text-white">${formatNumber(holdingValue)}</p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mt-4 sm:mt-6">
+              <div className="grid grid-cols-2 gap-3 sm:gap-6 mt-4 sm:mt-6">
                 <div>
-                  <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value</p>
-                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedValue)}</p>
+                  <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value (Spot)</p>
+                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedSpotUSD)}</p>
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Spot)</p>
                   <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(availableSpotUSD)}</p>
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value (Margin)</p>
+                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedMarginUSD)}</p>
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Margin)</p>

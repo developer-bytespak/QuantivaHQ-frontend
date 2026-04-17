@@ -630,7 +630,12 @@ export default function DashboardPage() {
                 <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
                   <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs text-slate-400">Total Portfolio Value</p>
                   <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
-                    {formatCurrency(dashboardData.portfolio.totalValue)}
+                    {formatCurrency(dashboardData.totals?.portfolio ?? dashboardData.portfolio.totalValue)}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-slate-400 leading-tight">
+                    Spot {formatCurrency(dashboardData.totals?.spot ?? dashboardData.portfolio.totalValue)}
+                    {" · "}
+                    Margin {formatCurrency(dashboardData.totals?.margin ?? 0)}
                   </p>
                 </div>
 
