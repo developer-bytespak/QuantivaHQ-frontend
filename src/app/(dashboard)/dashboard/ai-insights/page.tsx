@@ -164,14 +164,18 @@ function enhanceStockNewsWithAI(news: StockNewsItem, symbol: string): AIEnhanced
     news.sentiment.score > 0.1 ? "up" : 
     news.sentiment.score < -0.1 ? "down" : "neutral";
 
-  // Generate AI summary for stocks
-  const aiSummary = `This ${news.sentiment.label === "positive" ? "positive" : news.sentiment.label === "negative" ? "negative" : "neutral"} news indicates ${
-    marketMood === "Bullish" ? "increased investor confidence" :
-    marketMood === "Bearish" ? "potential market concerns" :
-    "neutral market sentiment"
-  } for ${symbol}. Based on sentiment analysis, the stock may ${
-    marketMood === "Bullish" ? "see upward movement" : marketMood === "Bearish" ? "face downward pressure" : "remain stable"
-  } in the short term.`;
+  // Prefer the actual article body (already fetched from StockNewsAPI /
+  // Finnhub and persisted on the row) over the generic template. Fall back
+  // to the template only when the description is missing or too short to
+  // be meaningful. Same approach as the crypto enhancer above.
+  const description = (news.description || "").trim();
+  const aiSummary = description.length > 30
+    ? (description.length > 280 ? description.slice(0, 277) + "…" : description)
+    : `This ${news.sentiment.label === "positive" ? "positive" : news.sentiment.label === "negative" ? "negative" : "neutral"} news indicates ${
+        marketMood === "Bullish" ? "increased investor confidence" :
+        marketMood === "Bearish" ? "potential market concerns" :
+        "neutral market sentiment"
+      } for ${symbol}.`;
 
   // Generate sparkline data
   const sparklineData = Array.from({ length: 20 }, (_, i) => {

@@ -199,20 +199,40 @@ export default function TradingPanel({
   const displayBalanceUnit = side === "BUY" ? quoteCurrency : baseSymbol;
 
   const setPercentage = (percent: number) => {
-    const currentPriceValue = currentPrice || 0;
-    const priceValue = parseFloat(price) || currentPriceValue;
-
+    setError(null);
     if (side === "SELL") {
+      if (balances.base <= 0) {
+        setError(`You don't hold any ${baseSymbol} to sell.`);
+        setQuantity("");
+        return;
+      }
       const qty = (balances.base * percent) / 100;
+      if (qty <= 0) {
+        setError(`${percent}% of your ${baseSymbol} balance is 0.`);
+        setQuantity("");
+        return;
+      }
       setQuantity(qty.toFixed(8));
       return;
     }
 
+    const priceValue = orderType === "MARKET" ? (currentPrice || 0) : (parseFloat(price) || currentPrice || 0);
+    if (priceValue <= 0) {
+      setError("Waiting for a valid price before sizing an order.");
+      return;
+    }
+    if (balances.quote <= 0) {
+      setError(`You have no ${quoteCurrency} balance to spend.`);
+      setQuantity("");
+      return;
+    }
     const amount = (balances.quote * percent) / 100;
-
-    if (priceValue <= 0) return;
-
-    const qty = orderType === "MARKET" ? amount / currentPriceValue : amount / priceValue;
+    const qty = amount / priceValue;
+    if (qty <= 0) {
+      setError(`${percent}% of your ${quoteCurrency} balance isn't enough to buy any ${baseSymbol}.`);
+      setQuantity("");
+      return;
+    }
     setQuantity(qty.toFixed(8));
   };
 
@@ -406,6 +426,22 @@ export default function TradingPanel({
             placeholder="0.00"
             required
           />
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {[25, 50, 75, 100].map((percent) => (
+              <button
+                key={percent}
+                type="button"
+                onClick={() => setPercentage(percent)}
+                className={`rounded-lg backdrop-blur px-3 py-2 text-xs font-medium transition-all duration-300 ${
+                  side === "BUY"
+                    ? "bg-gradient-to-br from-green-500/10 to-transparent text-slate-300 hover:text-white hover:from-green-500/20"
+                    : "bg-gradient-to-br from-red-500/10 to-transparent text-slate-300 hover:text-white hover:from-red-500/20"
+                }`}
+              >
+                {percent}%
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Order Summary */}
