@@ -48,14 +48,20 @@ function calcPayoff(legs: PayoffLeg[], price: number): number {
 function findBreakevens(data: { price: number; pnl: number }[]): number[] {
   const breakevens: number[] = [];
   for (let i = 1; i < data.length; i++) {
-    if (
-      (data[i - 1].pnl <= 0 && data[i].pnl >= 0) ||
-      (data[i - 1].pnl >= 0 && data[i].pnl <= 0)
-    ) {
-      // Linear interpolation
-      const ratio = Math.abs(data[i - 1].pnl) / (Math.abs(data[i - 1].pnl) + Math.abs(data[i].pnl));
-      breakevens.push(data[i - 1].price + ratio * (data[i].price - data[i - 1].price));
-    }
+    const prev = data[i - 1].pnl;
+    const curr = data[i].pnl;
+    // Only consider real sign changes (one strictly negative, other strictly positive)
+    const crossesZero = (prev < 0 && curr > 0) || (prev > 0 && curr < 0);
+    if (!crossesZero) continue;
+
+    const absPrev = Math.abs(prev);
+    const absCurr = Math.abs(curr);
+    const denom = absPrev + absCurr;
+    if (denom === 0) continue; // safety — shouldn't happen given the sign-change guard
+
+    const ratio = absPrev / denom;
+    const be = data[i - 1].price + ratio * (data[i].price - data[i - 1].price);
+    if (isFinite(be)) breakevens.push(be);
   }
   return breakevens;
 }
@@ -73,6 +79,8 @@ export function PayoffDiagram({ legs, spotPrice, compact = false }: PayoffDiagra
   const data = useMemo(() => {
     const stableLegs = stableLegsRef.current;
     if (stableLegs.length === 0 || spotPrice <= 0) return [];
+    // Skip when any leg has an invalid or zero premium — payoff would be meaningless
+    if (stableLegs.some((l) => !isFinite(l.premium) || l.premium <= 0)) return [];
 
     // Range: +/- 20% of spot
     const low = spotPrice * 0.8;

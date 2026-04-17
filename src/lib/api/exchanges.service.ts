@@ -100,12 +100,38 @@ export interface TickerPrice {
   changePercent24h: number;
 }
 
+export interface DashboardOptionsAccount {
+  totalBalance: number;
+  availableBalance: number;
+  unrealizedPnl: number;
+  marginBalance: number;
+}
+
+export interface DashboardTotals {
+  /** Spot total + margin total — the Portfolio card's "Holding value". */
+  portfolio: number;
+  /** Spot wallet total (positions valued at current price, including free cash). */
+  spot: number;
+  /** Options margin wallet total. 0 when no options account. */
+  margin: number;
+  /** Free USD/USDT in the spot wallet (or buyingPower for stocks). */
+  availableSpot: number;
+  /** Free USDT in the options margin wallet. 0 when no options account. */
+  availableMargin: number;
+  /** portfolio − availableSpot − availableMargin (clamped ≥ 0). */
+  invested: number;
+}
+
 export interface DashboardData {
   balance: AccountBalance;
   positions: Position[];
   orders: Order[];
   portfolio: Portfolio;
   prices: TickerPrice[];
+  /** Binance options margin wallet. Null when not applicable (non-Binance, no options, elite-gated). */
+  optionsAccount?: DashboardOptionsAccount | null;
+  /** Ready-to-render aggregates: portfolio = spot + margin. */
+  totals?: DashboardTotals;
 }
 
 export interface ApiResponse<T> {

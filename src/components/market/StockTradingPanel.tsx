@@ -27,6 +27,7 @@ export default function StockTradingPanel({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [balance, setBalance] = useState<AlpacaBalance | null>(null);
+  const [positionQty, setPositionQty] = useState<number>(0);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
   const [marketOpen, setMarketOpen] = useState<boolean | null>(null);
 
@@ -36,8 +37,11 @@ export default function StockTradingPanel({
       try {
         setIsLoadingBalance(true);
         if (connectionId) {
-          const res = await exchangesService.getBalance(connectionId);
-          const data = res?.data;
+          const [balRes, posRes] = await Promise.all([
+            exchangesService.getBalance(connectionId),
+            exchangesService.getPositions(connectionId).catch(() => null),
+          ]);
+          const data = balRes?.data;
           if (data) {
             const buyingPower =
               (data as { buyingPower?: number }).buyingPower ??
@@ -53,10 +57,14 @@ export default function StockTradingPanel({
               dailyChangePercent: 0,
             });
           }
+          const pos = posRes?.data?.find((p) => p.symbol.toUpperCase() === symbol.toUpperCase());
+          setPositionQty(pos ? Math.floor(pos.quantity) : 0);
           setMarketOpen(null);
         } else {
           const dashboard = await alpacaPaperTradingService.getDashboard();
           setBalance(dashboard.balance);
+          const pos = dashboard.positions?.find((p) => p.symbol.toUpperCase() === symbol.toUpperCase());
+          setPositionQty(pos ? Math.floor(parseFloat(pos.qty)) : 0);
           setMarketOpen(dashboard.clock?.isOpen ?? null);
         }
       } catch (err: any) {
@@ -67,7 +75,7 @@ export default function StockTradingPanel({
     };
 
     fetchBalance();
-  }, [connectionId]);
+  }, [connectionId, symbol]);
 
   useEffect(() => {
     setLimitPrice(currentPrice.toFixed(2));
@@ -113,7 +121,10 @@ export default function StockTradingPanel({
         if (!response?.data) throw new Error("No order data returned");
         setSuccess(`Order placed successfully! ${side.toUpperCase()} ${quantityNum} shares of ${symbol}`);
         setQuantity("");
-        const res = await exchangesService.getBalance(connectionId);
+        const [res, posRes] = await Promise.all([
+          exchangesService.getBalance(connectionId),
+          exchangesService.getPositions(connectionId).catch(() => null),
+        ]);
         const data = res?.data;
         if (data) {
           const buyingPower =
@@ -125,6 +136,8 @@ export default function StockTradingPanel({
               : null
           );
         }
+        const pos = posRes?.data?.find((p) => p.symbol.toUpperCase() === symbol.toUpperCase());
+        setPositionQty(pos ? Math.floor(pos.quantity) : 0);
       } else {
         const orderParams: PlaceOrderParams = {
           symbol: symbol.toUpperCase(),
@@ -139,6 +152,8 @@ export default function StockTradingPanel({
         setQuantity("");
         const dashboard = await alpacaPaperTradingService.getDashboard();
         setBalance(dashboard.balance);
+        const pos = dashboard.positions?.find((p) => p.symbol.toUpperCase() === symbol.toUpperCase());
+        setPositionQty(pos ? Math.floor(parseFloat(pos.qty)) : 0);
       }
     } catch (err: any) {
       console.error("Failed to place order:", err);
@@ -155,12 +170,39 @@ export default function StockTradingPanel({
   };
 
   const setPercentage = (percent: number) => {
+    setError(null);
+    if (side === "sell") {
+      if (positionQty <= 0) {
+        setError(`You don't hold any shares of ${symbol} to sell.`);
+        setQuantity("");
+        return;
+      }
+      const qty = Math.floor((positionQty * percent) / 100);
+      if (qty < 1) {
+        setError(`${percent}% of your ${positionQty}-share position rounds to 0. Try a larger percentage.`);
+        setQuantity("");
+        return;
+      }
+      setQuantity(qty.toString());
+      return;
+    }
+
     if (!balance) return;
-    const maxAmount = balance.buyingPower;
     const price = orderType === "market" ? currentPrice : parseFloat(limitPrice) || currentPrice;
-    const amount = (maxAmount * percent) / 100;
+    if (!price || price <= 0) {
+      setError("Waiting for a valid price before sizing an order.");
+      return;
+    }
+    const amount = (balance.buyingPower * percent) / 100;
     const qty = Math.floor(amount / price);
-    setQuantity(qty > 0 ? qty.toString() : "1");
+    if (qty < 1) {
+      setError(
+        `${percent}% of your $${balance.buyingPower.toFixed(2)} buying power isn't enough for 1 share at $${price.toFixed(2)}.`
+      );
+      setQuantity("");
+      return;
+    }
+    setQuantity(qty.toString());
   };
 
   if (isLoadingBalance) {

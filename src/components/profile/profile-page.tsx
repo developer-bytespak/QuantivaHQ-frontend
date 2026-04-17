@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useEffect, useCallback, useState } from "react";
 import { useExchange } from "@/context/ExchangeContext";
 import { exchangesService, type DashboardData } from "@/lib/api/exchanges.service";
-import { optionsService, type OptionsAccount } from "@/lib/api/options.service";
 
 const formatNumber = (num: number, decimals: number = 2): string => {
   return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
@@ -20,29 +19,18 @@ export function ProfilePage() {
   const router = useRouter();
   const { connectionId, connectionType, isLoading: isLoadingConnection } = useExchange();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [optionsAccount, setOptionsAccount] = useState<OptionsAccount | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchDashboard = useCallback(async (connId: string) => {
     try {
       setError(null);
-      const [dashRes, optsAcc] = await Promise.allSettled([
-        exchangesService.getDashboard(connId),
-        optionsService.getBalance(connId),
-      ]);
-      if (dashRes.status === "fulfilled") setDashboardData(dashRes.value.data);
-      else {
-        console.error("Profile: failed to fetch dashboard", dashRes.reason);
-        setDashboardData(null);
-      }
-      // Options balance is only meaningful for Binance crypto connections; silently ignore failures
-      setOptionsAccount(optsAcc.status === "fulfilled" ? optsAcc.value : null);
+      const dashRes = await exchangesService.getDashboard(connId);
+      setDashboardData(dashRes.data);
     } catch (err: unknown) {
       console.error("Profile: failed to fetch dashboard", err);
       setError(err instanceof Error ? err.message : "Failed to load portfolio");
       setDashboardData(null);
-      setOptionsAccount(null);
     } finally {
       setIsLoading(false);
     }
@@ -59,16 +47,12 @@ export function ProfilePage() {
     fetchDashboard(connectionId);
   }, [connectionId, isLoadingConnection, fetchDashboard]);
 
-  const spotHoldingValue = dashboardData?.portfolio?.totalValue ?? 0;
   const portfolioChange = dashboardData?.portfolio?.pnlPercent ?? 0;
-  const usdAsset = dashboardData?.balance?.assets?.find((a) => /^(USD|USDT|BUSD)$/i.test(a.symbol));
-  const availableSpotUSD =
-    (dashboardData?.balance?.buyingPower ?? 0) ||
-    Number(usdAsset?.total ?? usdAsset?.free ?? 0);
-  const availableMarginUSD = optionsAccount?.availableBalance ?? 0;
-  const marginTotal = optionsAccount?.totalBalance ?? 0;
-  // Holding value = spot portfolio total + options margin wallet total
-  const holdingValue = spotHoldingValue + marginTotal;
+  const totals = dashboardData?.totals;
+  const holdingValue = totals?.portfolio ?? 0;
+  const investedValue = totals?.invested ?? 0;
+  const availableSpotUSD = totals?.availableSpot ?? 0;
+  const availableMarginUSD = totals?.availableMargin ?? 0;
   const positions = dashboardData?.positions ?? [];
   const isCrypto = connectionType === "crypto";
   const sectionTitle = isCrypto ? "Crypto" : "Stocks";
@@ -88,7 +72,7 @@ export function ProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mt-4 sm:mt-6">
                 <div>
                   <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value</p>
-                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(holdingValue - availableSpotUSD - availableMarginUSD)}</p>
+                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedValue)}</p>
                 </div>
                 <div>
                   <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Spot)</p>
