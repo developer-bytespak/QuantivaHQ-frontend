@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { alpacaPaperTradingService, PlaceOrderParams, AlpacaBalance } from "@/lib/api/alpaca-paper-trading.service";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { useKycGuard } from "@/components/common/kyc-gate";
 
 interface StockTradingPanelProps {
   symbol: string;
@@ -18,6 +19,7 @@ export default function StockTradingPanel({
   stockName,
   connectionId,
 }: StockTradingPanelProps) {
+  const { isApproved: kycApproved } = useKycGuard();
   const [orderType, setOrderType] = useState<"market" | "limit">("market");
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [quantity, setQuantity] = useState<string>("");
@@ -85,6 +87,11 @@ export default function StockTradingPanel({
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    if (!kycApproved) {
+      setError("Identity verification required. Complete KYC to start trading.");
+      return;
+    }
 
     const quantityNum = parseInt(quantity, 10);
     if (!quantityNum || quantityNum < 1) {
@@ -502,7 +509,8 @@ export default function StockTradingPanel({
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !kycApproved}
+            title={!kycApproved ? "Identity verification required to trade." : undefined}
             className={`w-full relative rounded-lg px-4 py-4 font-bold text-white transition-all duration-300 shadow-lg overflow-hidden group ${
               side === "buy"
                 ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:shadow-xl hover:shadow-green-500/50"

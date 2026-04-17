@@ -19,6 +19,7 @@ import {
 import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
+import { useKycGuard } from "@/components/common/kyc-gate";
 import {
   useNotification,
   Notification,
@@ -509,8 +510,19 @@ export default function VcPoolDetailPage() {
 
   /* ═══════════════════════ HANDLERS ═══════════════════════ */
 
+  const { isApproved: kycApproved } = useKycGuard();
+
   /** Step 0 → Step 1 */
-  const handleStartJoin = () => setJoinStep("enter-wallet");
+  const handleStartJoin = () => {
+    if (!kycApproved) {
+      showNotification(
+        "Identity verification is required to join a VC Pool. Complete your KYC to continue.",
+        "error"
+      );
+      return;
+    }
+    setJoinStep("enter-wallet");
+  };
 
   /** Step 1 → Step 2: confirm wallet & create reservation */
   const handleConfirmWallet = async () => {

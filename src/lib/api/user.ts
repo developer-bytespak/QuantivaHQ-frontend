@@ -163,6 +163,40 @@ export async function deleteProfilePicture(): Promise<void> {
   await apiRequest({ method: "DELETE", path: "/users/me/profile-picture" });
 }
 
+export type DeleteSelfReason = "final_rejection" | "voluntary";
+
+export interface DeleteSelfRequest {
+  reason: DeleteSelfReason;
+}
+
+export interface DeleteSelfResponse {
+  success: boolean;
+  message: string;
+}
+
+/**
+ * Self-delete for the KYC flow.
+ *
+ * Hits DELETE /users/me (JWT-auth only, no password/2FA) with a reason:
+ *  - "final_rejection": user was permanently rejected by Sumsub. Backend
+ *    deletes local data and PRESERVES the Sumsub applicant so fraud/forgery
+ *    identities can never sign up again with the same face+ID.
+ *  - "voluntary": user chose to leave. Backend deletes local data AND the
+ *    Sumsub applicant so they can re-register with the same ID later.
+ *
+ * Different from deleteAccount() below which is the password+2FA settings flow.
+ */
+export async function deleteSelfAccount(
+  reason: DeleteSelfReason,
+): Promise<DeleteSelfResponse> {
+  return apiRequest<DeleteSelfRequest, DeleteSelfResponse>({
+    path: "/users/me",
+    method: "DELETE",
+    body: { reason },
+    credentials: "include",
+  });
+}
+
 export interface DeleteAccountRequest {
   password: string;
   twoFactorCode: string;

@@ -61,55 +61,69 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     }
 
     // Step 1: Check KYC status
-    let kycStatus: "pending" | "approved" | "rejected" | "review" | null =
-      currentUser.kyc_status || null;
+    // NOTE: users.kyc_status defaults to "pending" for brand-new users and
+    // after admin resets, so we can't trust it alone. Always call
+    // /kyc/status and use kyc_id + has_submission + review_reject_type.
+    let kycStatus: "pending" | "approved" | "rejected" | "review" | null = null;
     let hasKycRecord = false;
     let kycId: string | null = null;
+    let reviewRejectType: "RETRY" | "FINAL" | null = null;
 
-    // If kyc_status is not available, try to get it from KYC endpoint
-    if (!kycStatus || kycStatus === null) {
-      try {
-        const kycResponse = await getKycStatus();
-        kycStatus = kycResponse.status;
-        kycId = kycResponse.kyc_id;
-        hasKycRecord = true;
-      } catch (kycError: any) {
-        // If KYC endpoint returns 404 or error, user hasn't started KYC
-        if (
-          kycError.message?.includes("404") ||
-          kycError.message?.includes("not found")
-        ) {
-          hasKycRecord = false;
-          kycStatus = null;
-        } else {
-          console.log("Error checking KYC status:", kycError);
-          // On error, assume no KYC record
-          kycStatus = null;
-        }
+    try {
+      const kycResponse = await getKycStatus();
+      kycStatus = kycResponse.status;
+      kycId = kycResponse.kyc_id;
+      reviewRejectType =
+        (kycResponse.review_reject_type as "RETRY" | "FINAL" | null) ?? null;
+      // "Has a real KYC submission" means a row exists AND Sumsub has actually
+      // received docs. An empty applicant (SDK opened but not completed) has
+      // kyc_id set but has_submission === false — treat that as no record.
+      hasKycRecord = kycId !== null && kycResponse.has_submission !== false;
+    } catch (kycError: any) {
+      if (
+        kycError?.message?.includes("404") ||
+        kycError?.message?.includes("not found")
+      ) {
+        hasKycRecord = false;
+        kycStatus = null;
+      } else {
+        console.log("Error checking KYC status:", kycError);
+        kycStatus = currentUser.kyc_status || null;
+        hasKycRecord = false;
       }
-    } else {
-      // If we have kyc_status, assume KYC record exists
-      hasKycRecord = true;
     }
 
     const isKycApproved = kycStatus === "approved";
+    const isKycUnderReview = kycStatus === "review"; // Sumsub onHold
 
-    if (!isKycApproved) {
-      // If KYC is pending/review and was submitted to SumSub, show status page
-      if (
-        hasKycRecord &&
-        (kycStatus === "pending" || kycStatus === "review")
-      ) {
+    // KYC gating policy:
+    //   • approved / review (onHold) → continue past KYC. onHold users can
+    //     finish onboarding while Sumsub's reviewers work in the background;
+    //     trading/withdrawal actions on the dashboard are gated separately.
+    //   • pending / RETRY-rejected / no-record → back into the Sumsub SDK.
+    //     The SDK owns the waiting UI, the "please retake" prompts, and
+    //     RETRY resubmission. Our /verification-status page no longer
+    //     renders any of those states.
+    //   • FINAL-rejected → /verification-status shows the Delete Account UI
+    //     (the ONLY state we own).
+    if (!isKycApproved && !isKycUnderReview) {
+      if (hasKycRecord && kycStatus === "rejected" && reviewRejectType === "FINAL") {
         return {
           route: "/onboarding/verification-status",
-          reason: "KYC submitted, awaiting verification result",
+          reason: "KYC permanently rejected — show delete-account UI",
         };
       }
 
-      // Otherwise launch the SumSub SDK verification flow
+      // Everything else — pending, RETRY rejections, no record — goes back
+      // into the Sumsub SDK where the user either waits or resubmits.
       return {
         route: "/onboarding/kyc-verification",
-        reason: "KYC not started or rejected, launching SDK verification",
+        reason:
+          kycStatus === "rejected"
+            ? "KYC rejected (RETRY) — resubmit in SDK"
+            : kycStatus === "pending"
+              ? "KYC in progress — SDK owns the waiting UI"
+              : "KYC not started — launch SDK",
       };
     }
 

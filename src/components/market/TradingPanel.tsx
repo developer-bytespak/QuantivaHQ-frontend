@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { useKycGuard } from "@/components/common/kyc-gate";
 
 interface TradingPanelProps {
   connectionId: string;
@@ -26,6 +27,7 @@ export default function TradingPanel({
   lockedBaseBalance,
   quoteCurrency,
 }: TradingPanelProps) {
+  const { isApproved: kycApproved } = useKycGuard();
   const [orderType, setOrderType] = useState<"MARKET" | "LIMIT">("MARKET");
   const [side, setSide] = useState<"BUY" | "SELL">("BUY");
   const [quantity, setQuantity] = useState<string>("");
@@ -124,6 +126,11 @@ export default function TradingPanel({
     e.preventDefault();
     setError(null);
     setSuccess(null);
+
+    if (!kycApproved) {
+      setError("Identity verification required. Complete KYC to start trading.");
+      return;
+    }
 
     if (!canTrade) {
       setError("Trading is not enabled for your account");
@@ -514,7 +521,8 @@ export default function TradingPanel({
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !kycApproved}
+          title={!kycApproved ? "Identity verification required to trade." : undefined}
           className={`w-full relative rounded-lg px-4 py-4 font-bold text-white transition-all duration-300 shadow-lg overflow-hidden group ${
             side === "BUY"
               ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 hover:shadow-xl hover:shadow-green-500/50"

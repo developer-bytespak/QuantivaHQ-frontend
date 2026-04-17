@@ -17,6 +17,18 @@ export default function KycVerificationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // `continueKind` decides WHICH Continue button we show below the SDK iframe:
+  //   • "approved" — Sumsub returned GREEN. User can proceed to choose-plan.
+  //   • "longWait" — Sumsub is taking an unusually long time (5+ min) or
+  //                  placed the applicant on hold for manual review. User
+  //                  can proceed now and we'll keep checking in the
+  //                  background / via dashboard banner.
+  //   • null      — no Continue button. SDK owns the UI.
+  const [continueKind, setContinueKind] = useState<
+    "approved" | "longWait" | null
+  >(null);
+  const [continueLoading, setContinueLoading] = useState(false);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -88,6 +100,19 @@ export default function KycVerificationPage() {
     };
   }, [router]);
 
+  // If Sumsub takes unusually long to finalise (≥5 minutes since the SDK
+  // loaded) we surface the long-wait Continue button so the user can carry
+  // on with onboarding instead of staring at the spinner. If the SDK
+  // resolves sooner (GREEN, RED, onHold — all handled above), those
+  // handlers set continueKind or redirect first and this timer is a no-op.
+  useEffect(() => {
+    if (!accessToken) return; // only start ticking once SDK is loaded
+    const t = setTimeout(() => {
+      setContinueKind((curr) => curr ?? "longWait");
+    }, 5 * 60 * 1000);
+    return () => clearTimeout(t);
+  }, [accessToken]);
+
   const handleAccessTokenExpiration = useCallback(async () => {
     try {
       const response = await getSdkToken();
@@ -100,24 +125,96 @@ export default function KycVerificationPage() {
 
   const handleMessage = useCallback(
     (type: string, payload: any) => {
-      if (type === "idCheck.onApplicantSubmitted") {
-        setTimeout(() => {
-          router.push("/onboarding/verification-status");
-        }, 1500);
-      }
+      console.info("[kyc-verification] SDK event:", type, payload);
 
-      if (type === "idCheck.onApplicantResubmitted") {
-        setTimeout(() => {
+      // NOTE: We intentionally do NOT navigate on `onApplicantSubmitted` any
+      // more — Sumsub's SDK shows its own processing/waiting UI (spinner +
+      // "submission received" screen) that is strictly better than anything
+      // we'd render. We stay inside the SDK and only leave once there's a
+      // real outcome (reviewAnswer GREEN/RED) or the user is sent to manual
+      // review (onHold).
+
+      if (
+        type === "idCheck.onApplicantStatusChanged" ||
+        type === "idCheck.onApplicantReviewed" ||
+        type === "idCheck.onApplicantLoaded" ||
+        type === "idCheck.onActionSubmitted" ||
+        type === "idCheck.onStepCompleted"
+      ) {
+        const reviewAnswer = payload?.reviewResult?.reviewAnswer;
+        const reviewStatus =
+          payload?.reviewStatus || payload?.reviewResult?.reviewStatus;
+        const rejectType = payload?.reviewResult?.reviewRejectType;
+
+        // Policy: keep the user inside the Sumsub SDK for everything Sumsub
+        // can handle. Our own code takes over in exactly two places:
+        //   • FINAL rejection → route to /verification-status which renders
+        //                       the Delete Account UI (Sumsub can't trigger
+        //                       account deletion on our platform).
+        //   • GREEN or onHold → show a Continue button BELOW the SDK iframe
+        //                       so the user can proceed to the next
+        //                       onboarding step on their own action.
+        // RETRY rejections, "verifying…", retake prompts, etc. stay inside
+        // the Sumsub SDK — it handles them natively.
+        const isFinalised = reviewStatus === "completed";
+        const isPrecheckedGreen =
+          reviewStatus === "prechecked" && reviewAnswer === "GREEN";
+
+        // GREEN (approved) — no auto-redirect. Show an in-page Continue
+        // button right below the SDK iframe so the user sees Sumsub's own
+        // "verified" confirmation first, then proceeds on their own click.
+        if (isPrecheckedGreen || (isFinalised && reviewAnswer === "GREEN")) {
+          setContinueKind("approved");
+          return;
+        }
+
+        // FINAL rejection — the only case where we route to a custom screen
+        // (Delete Account UI at /verification-status).
+        if (
+          isFinalised &&
+          ((reviewAnswer === "RED" && rejectType === "FINAL") ||
+            rejectType === "FINAL")
+        ) {
           router.push("/onboarding/verification-status");
-        }, 1500);
+          return;
+        }
+
+        // onHold — Sumsub routed to human review. Let the user continue
+        // onboarding in the meantime; the dashboard KYC banner will reflect
+        // the final verdict once it's in.
+        if (reviewStatus === "onHold") {
+          setContinueKind("longWait");
+          return;
+        }
+
+        // Everything else (RETRY rejections, prechecked RED, "verifying"
+        // states) stays inside the Sumsub SDK — it shows its own retake /
+        // retry / error prompts and the user handles it there.
       }
     },
     [router]
   );
 
-  const handleError = useCallback((error: any) => {
-    console.error("SumSub SDK error:", error);
-  }, []);
+  const handleError = useCallback(
+    (error: any) => {
+      console.error("SumSub SDK error:", error);
+      // Duplicate applicant / document-already-submitted errors — Sumsub tries
+      // to show its own hosted page. Intercept and send the user to our own
+      // verification-status screen so the rejection UX stays in-app.
+      const errorCode = String(error?.code || error?.type || "").toLowerCase();
+      const errorMessage = String(error?.message || error?.reason || "").toLowerCase();
+      const isDuplicate =
+        errorCode.includes("duplicate") ||
+        errorCode.includes("already") ||
+        errorMessage.includes("another profile") ||
+        errorMessage.includes("already submitted") ||
+        errorMessage.includes("duplicate");
+      if (isDuplicate) {
+        router.push("/onboarding/verification-status");
+      }
+    },
+    [router]
+  );
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">
@@ -234,6 +331,44 @@ export default function KycVerificationPage() {
                       onMessage={handleMessage}
                       onError={handleError}
                     />
+                  </div>
+                )}
+
+                {/* Continue button below the SDK iframe.
+                    - "approved" kind: Sumsub returned GREEN. Labelled as a
+                      primary call-to-action — user has explicit confirmation
+                      and is expected to click through.
+                    - "longWait" kind: verification is taking >5 min or Sumsub
+                      routed to human review. The button reassures the user
+                      they can proceed now and we'll notify them later. */}
+                {continueKind && !error && (
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <button
+                      onClick={async () => {
+                        setContinueLoading(true);
+                        try {
+                          const { navigateToNextRoute } = await import(
+                            "@/lib/auth/flow-router.service"
+                          );
+                          await navigateToNextRoute(router);
+                        } catch {
+                          router.push("/onboarding/choose-plan");
+                        }
+                      }}
+                      disabled={continueLoading}
+                      className="rounded-lg sm:rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {continueLoading
+                        ? "Continuing…"
+                        : continueKind === "approved"
+                          ? "Continue to Subscription"
+                          : "Continue Setup"}
+                    </button>
+                    <p className="text-[10px] text-slate-500 text-center max-w-md">
+                      {continueKind === "approved"
+                        ? "Your identity has been verified."
+                        : "Verification is taking longer than usual. You can continue setting up your account — we'll email you once the review is complete."}
+                    </p>
                   </div>
                 )}
               </div>

@@ -20,9 +20,18 @@ export interface KycStatusResponse {
   face_match_score?: number;
   doc_authenticity_score?: number;
   /** Sumsub rejection type: "RETRY" (temporary, user can resubmit) or "FINAL" (permanent) */
-  review_reject_type?: string | null;
+  review_reject_type?: "RETRY" | "FINAL" | null;
   /** Human-readable rejection reasons from Sumsub */
   rejection_reasons?: string[];
+  /** Raw Sumsub review status ("init", "pending", "onHold", "completed") */
+  sumsub_review_status?: string | null;
+  /**
+   * True only when Sumsub has actually received docs + selfie from the user.
+   * False for newly-created applicants that haven't completed the SDK flow
+   * (so the frontend knows to send them back to the SDK page rather than
+   * trapping them on a pending spinner).
+   */
+  has_submission?: boolean;
 }
 
 export interface VerificationDetails {

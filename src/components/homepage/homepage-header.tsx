@@ -84,14 +84,14 @@ export function HomepageHeader() {
   }, []);
 
   const handleGoToDashboard = async () => {
-    // Check if user has active session before redirecting
+    // Check if user has active session, then route through flow-router so
+    // users with pending/rejected KYC, missing plan, or no exchange get
+    // sent to the right onboarding step instead of landing on /dashboard.
     try {
       await authService.getCurrentUser();
-      
-      // User has active session, redirect to unified dashboard
-      router.push("/dashboard");
+      const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
+      await navigateToNextRoute(router);
     } catch (error: any) {
-      // No active session, redirect to login
       router.push("/onboarding/sign-up?tab=login");
     }
   };
