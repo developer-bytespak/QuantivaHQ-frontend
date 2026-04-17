@@ -269,12 +269,14 @@ html {
 
 .animate-logo-rotate {
   animation: logo-rotate 2s linear infinite;
+  transform-origin: 50% 40.65%;
 }
 
 .animate-logo-rotate-splash {
   animation: logo-rotate-splash 3.5s ease-in-out forwards;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
+  transform-origin: 50% 40.65%;
 }
 
 .animate-text-enter {
