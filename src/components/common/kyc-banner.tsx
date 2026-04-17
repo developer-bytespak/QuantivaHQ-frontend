@@ -64,13 +64,19 @@ export function KycBanner() {
   const handleDelete = async () => {
     setDeleteLoading(true);
     try {
-      await deleteSelfAccount("final_rejection");
+      const result = await deleteSelfAccount("final_rejection");
+      console.info("[KYC Banner] Delete response:", result);
       try {
         await authService.logout();
       } catch {}
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("quantivahq_access_token");
+        localStorage.removeItem("quantivahq_refresh_token");
+        localStorage.removeItem("quantivahq_is_authenticated");
+      }
       router.push("/");
-    } catch (err) {
-      console.error("Delete failed:", err);
+    } catch (err: any) {
+      console.error("[KYC Banner] Delete failed:", err);
       setDeleteLoading(false);
     }
   };

@@ -54,8 +54,11 @@ const useKycStore = create<KycState>((set, get) => ({
     fetchStatus();
     const handle = setInterval(() => {
       const { status } = get();
-      // Stop polling once we hit a terminal state
-      if (status === "approved") {
+      // Stop polling once we hit a terminal state. "approved" and
+      // "rejected" are both terminal from the dashboard-banner POV — no
+      // further transitions are expected, so there's no reason to keep
+      // hammering /kyc/status every 30s.
+      if (status === "approved" || status === "rejected") {
         get().stopPolling();
         return;
       }
