@@ -111,13 +111,46 @@ export default function KycVerificationPage() {
           router.push("/onboarding/verification-status");
         }, 1500);
       }
+
+      // Sumsub blocks the applicant inline (outside the iframe flow) when it
+      // detects a duplicate or regulatory/fraud issue. Catch those events and
+      // redirect to our verification-status screen so the user sees our own
+      // FINAL rejection UI (with Delete Account button) rather than Sumsub's
+      // hosted "in.sumsub.com" page.
+      if (
+        type === "idCheck.onApplicantStatusChanged" ||
+        type === "idCheck.onActionSubmitted"
+      ) {
+        const reviewAnswer = payload?.reviewResult?.reviewAnswer;
+        const rejectType = payload?.reviewResult?.reviewRejectType;
+        if (reviewAnswer === "RED" || rejectType === "FINAL") {
+          router.push("/onboarding/verification-status");
+        }
+      }
     },
     [router]
   );
 
-  const handleError = useCallback((error: any) => {
-    console.error("SumSub SDK error:", error);
-  }, []);
+  const handleError = useCallback(
+    (error: any) => {
+      console.error("SumSub SDK error:", error);
+      // Duplicate applicant / document-already-submitted errors — Sumsub tries
+      // to show its own hosted page. Intercept and send the user to our own
+      // verification-status screen so the rejection UX stays in-app.
+      const errorCode = String(error?.code || error?.type || "").toLowerCase();
+      const errorMessage = String(error?.message || error?.reason || "").toLowerCase();
+      const isDuplicate =
+        errorCode.includes("duplicate") ||
+        errorCode.includes("already") ||
+        errorMessage.includes("another profile") ||
+        errorMessage.includes("already submitted") ||
+        errorMessage.includes("duplicate");
+      if (isDuplicate) {
+        router.push("/onboarding/verification-status");
+      }
+    },
+    [router]
+  );
 
   return (
     <div className="relative flex h-full w-full overflow-hidden">

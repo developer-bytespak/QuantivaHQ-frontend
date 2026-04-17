@@ -20,7 +20,7 @@ export interface KycStatusResponse {
   face_match_score?: number;
   doc_authenticity_score?: number;
   /** Sumsub rejection type: "RETRY" (temporary, user can resubmit) or "FINAL" (permanent) */
-  review_reject_type?: string | null;
+  review_reject_type?: "RETRY" | "FINAL" | null;
   /** Human-readable rejection reasons from Sumsub */
   rejection_reasons?: string[];
 }

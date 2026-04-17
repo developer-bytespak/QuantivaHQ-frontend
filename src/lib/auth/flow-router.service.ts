@@ -93,23 +93,32 @@ export async function determineNextRoute(): Promise<FlowCheckResult> {
     }
 
     const isKycApproved = kycStatus === "approved";
+    const isKycUnderReview = kycStatus === "review"; // Sumsub onHold — manual review
 
-    if (!isKycApproved) {
-      // If KYC is pending/review and was submitted to SumSub, show status page
-      if (
-        hasKycRecord &&
-        (kycStatus === "pending" || kycStatus === "review")
-      ) {
+    // onHold users are allowed to continue onboarding. Trading/withdrawals are
+    // gated separately on the dashboard so they can set up their plan + exchange
+    // while Sumsub's review team finishes their check (can take hours).
+    if (!isKycApproved && !isKycUnderReview) {
+      // pending → still in automated review; lock them on status page
+      if (hasKycRecord && kycStatus === "pending") {
         return {
           route: "/onboarding/verification-status",
-          reason: "KYC submitted, awaiting verification result",
+          reason: "KYC submitted, awaiting automated verification result",
         };
       }
 
-      // Otherwise launch the SumSub SDK verification flow
+      // rejected → show rejection screen (retry or delete-account UI)
+      if (hasKycRecord && kycStatus === "rejected") {
+        return {
+          route: "/onboarding/verification-status",
+          reason: "KYC rejected — show retry or delete-account UI",
+        };
+      }
+
+      // No KYC record yet → launch the Sumsub SDK
       return {
         route: "/onboarding/kyc-verification",
-        reason: "KYC not started or rejected, launching SDK verification",
+        reason: "KYC not started, launching SDK verification",
       };
     }
 
