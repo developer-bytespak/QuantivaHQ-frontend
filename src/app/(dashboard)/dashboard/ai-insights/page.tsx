@@ -104,14 +104,18 @@ function enhanceNewsWithAI(news: CryptoNewsItem, symbol: string): AIEnhancedNews
     news.sentiment.score > 0.1 ? "up" : 
     news.sentiment.score < -0.1 ? "down" : "neutral";
 
-  // Generate AI summary
-  const aiSummary = `This ${news.sentiment.label === "positive" ? "positive" : news.sentiment.label === "negative" ? "negative" : "neutral"} news suggests ${
-    marketMood === "Bullish" ? "increased market interest" :
-    marketMood === "Bearish" ? "potential market concerns" :
-    "neutral market conditions"
-  }. Historically, similar news has ${
-    marketMood === "Bullish" ? "boosted" : marketMood === "Bearish" ? "impacted" : "maintained"
-  } ${symbol} by ${Math.abs(news.sentiment.score * 10).toFixed(1)}-${(Math.abs(news.sentiment.score * 10) + 5).toFixed(1)}% within 24 hours.`;
+  // Prefer the actual article body (already fetched from LunarCrush and
+  // persisted on the row) over the generic template. Fall back to the
+  // template only when the description is missing or too short to be
+  // meaningful.
+  const description = (news.description || "").trim();
+  const aiSummary = description.length > 30
+    ? (description.length > 280 ? description.slice(0, 277) + "…" : description)
+    : `This ${news.sentiment.label === "positive" ? "positive" : news.sentiment.label === "negative" ? "negative" : "neutral"} news suggests ${
+        marketMood === "Bullish" ? "increased market interest" :
+        marketMood === "Bearish" ? "potential market concerns" :
+        "neutral market conditions"
+      }.`;
 
   // Generate sparkline data (simulated price movement)
   const sparklineData = Array.from({ length: 20 }, (_, i) => {
