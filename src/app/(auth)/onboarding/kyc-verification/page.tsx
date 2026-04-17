@@ -17,16 +17,11 @@ export default function KycVerificationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // `continueKind` decides WHICH Continue button we show below the SDK iframe:
-  //   • "approved" — Sumsub returned GREEN. User can proceed to choose-plan.
-  //   • "longWait" — Sumsub is taking an unusually long time (5+ min) or
-  //                  placed the applicant on hold for manual review. User
-  //                  can proceed now and we'll keep checking in the
-  //                  background / via dashboard banner.
-  //   • null      — no Continue button. SDK owns the UI.
-  const [continueKind, setContinueKind] = useState<
-    "approved" | "longWait" | null
-  >(null);
+  // `showContinue` flips true ONLY when Sumsub returns GREEN (approved).
+  // For every other state (onHold, pending, RETRY, verifying) the user
+  // stays inside the Sumsub SDK — no "continue anyway" escape hatch.
+  // Only a fully approved KYC unlocks the rest of onboarding.
+  const [showContinue, setShowContinue] = useState(false);
   const [continueLoading, setContinueLoading] = useState(false);
 
   useEffect(() => {
@@ -100,19 +95,6 @@ export default function KycVerificationPage() {
     };
   }, [router]);
 
-  // If Sumsub takes unusually long to finalise (≥5 minutes since the SDK
-  // loaded) we surface the long-wait Continue button so the user can carry
-  // on with onboarding instead of staring at the spinner. If the SDK
-  // resolves sooner (GREEN, RED, onHold — all handled above), those
-  // handlers set continueKind or redirect first and this timer is a no-op.
-  useEffect(() => {
-    if (!accessToken) return; // only start ticking once SDK is loaded
-    const t = setTimeout(() => {
-      setContinueKind((curr) => curr ?? "longWait");
-    }, 5 * 60 * 1000);
-    return () => clearTimeout(t);
-  }, [accessToken]);
-
   const handleAccessTokenExpiration = useCallback(async () => {
     try {
       const response = await getSdkToken();
@@ -146,30 +128,27 @@ export default function KycVerificationPage() {
           payload?.reviewStatus || payload?.reviewResult?.reviewStatus;
         const rejectType = payload?.reviewResult?.reviewRejectType;
 
-        // Policy: keep the user inside the Sumsub SDK for everything Sumsub
-        // can handle. Our own code takes over in exactly two places:
-        //   • FINAL rejection → route to /verification-status which renders
-        //                       the Delete Account UI (Sumsub can't trigger
-        //                       account deletion on our platform).
-        //   • GREEN or onHold → show a Continue button BELOW the SDK iframe
-        //                       so the user can proceed to the next
-        //                       onboarding step on their own action.
-        // RETRY rejections, "verifying…", retake prompts, etc. stay inside
-        // the Sumsub SDK — it handles them natively.
+        // Strict policy: ONLY a fully-approved KYC (GREEN) unlocks the rest
+        // of onboarding. Our own code takes over in exactly two places:
+        //   • FINAL rejection → /verification-status (Delete Account UI —
+        //                       Sumsub can't trigger account deletion on
+        //                       our platform).
+        //   • GREEN (approved) → show Continue button below the SDK so the
+        //                        user proceeds to subscription.
+        // Every other state (pending, review/onHold, RETRY, "verifying")
+        // stays inside the Sumsub SDK — there is no "continue anyway"
+        // escape hatch.
         const isFinalised = reviewStatus === "completed";
         const isPrecheckedGreen =
           reviewStatus === "prechecked" && reviewAnswer === "GREEN";
 
-        // GREEN (approved) — no auto-redirect. Show an in-page Continue
-        // button right below the SDK iframe so the user sees Sumsub's own
-        // "verified" confirmation first, then proceeds on their own click.
+        // GREEN (approved) — show in-page Continue button below the SDK.
         if (isPrecheckedGreen || (isFinalised && reviewAnswer === "GREEN")) {
-          setContinueKind("approved");
+          setShowContinue(true);
           return;
         }
 
-        // FINAL rejection — the only case where we route to a custom screen
-        // (Delete Account UI at /verification-status).
+        // FINAL rejection — Delete Account UI at /verification-status.
         if (
           isFinalised &&
           ((reviewAnswer === "RED" && rejectType === "FINAL") ||
@@ -179,17 +158,9 @@ export default function KycVerificationPage() {
           return;
         }
 
-        // onHold — Sumsub routed to human review. Let the user continue
-        // onboarding in the meantime; the dashboard KYC banner will reflect
-        // the final verdict once it's in.
-        if (reviewStatus === "onHold") {
-          setContinueKind("longWait");
-          return;
-        }
-
-        // Everything else (RETRY rejections, prechecked RED, "verifying"
-        // states) stays inside the Sumsub SDK — it shows its own retake /
-        // retry / error prompts and the user handles it there.
+        // Everything else (onHold, RETRY, prechecked RED, "verifying" etc.)
+        // stays inside the Sumsub SDK. No Continue button, no escape hatch.
+        // Only a fully-approved KYC unlocks the rest of onboarding.
       }
     },
     [router]
@@ -334,14 +305,10 @@ export default function KycVerificationPage() {
                   </div>
                 )}
 
-                {/* Continue button below the SDK iframe.
-                    - "approved" kind: Sumsub returned GREEN. Labelled as a
-                      primary call-to-action — user has explicit confirmation
-                      and is expected to click through.
-                    - "longWait" kind: verification is taking >5 min or Sumsub
-                      routed to human review. The button reassures the user
-                      they can proceed now and we'll notify them later. */}
-                {continueKind && !error && (
+                {/* Continue button appears ONLY when Sumsub returns GREEN
+                    (approved). No longWait / onHold escape hatch — the user
+                    stays in the SDK until they're fully verified. */}
+                {showContinue && !error && (
                   <div className="mt-4 flex flex-col items-center gap-2">
                     <button
                       onClick={async () => {
@@ -358,16 +325,10 @@ export default function KycVerificationPage() {
                       disabled={continueLoading}
                       className="rounded-lg sm:rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      {continueLoading
-                        ? "Continuing…"
-                        : continueKind === "approved"
-                          ? "Continue to Subscription"
-                          : "Continue Setup"}
+                      {continueLoading ? "Continuing…" : "Continue to Subscription"}
                     </button>
                     <p className="text-[10px] text-slate-500 text-center max-w-md">
-                      {continueKind === "approved"
-                        ? "Your identity has been verified."
-                        : "Verification is taking longer than usual. You can continue setting up your account — we'll email you once the review is complete."}
+                      Your identity has been verified.
                     </p>
                   </div>
                 )}

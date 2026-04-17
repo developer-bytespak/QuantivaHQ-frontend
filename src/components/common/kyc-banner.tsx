@@ -165,20 +165,10 @@ export function KycBanner() {
     );
   }
 
-  // ── Pending / onHold (review) — informational ──
-  if (status === "pending" || status === "review") {
-    return (
-      <div className="flex items-center gap-3 border-b border-amber-500/30 bg-gradient-to-r from-amber-950/50 to-yellow-900/40 px-6 py-3 text-sm text-amber-100">
-        <svg className="h-5 w-5 flex-shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span className="font-medium">
-          Your identity verification is{" "}
-          {status === "review" ? "under manual review" : "in progress"}. Trading and withdrawals will unlock once verified.
-        </span>
-      </div>
-    );
-  }
+  // pending / review states are unreachable on the dashboard — flow-router
+  // only lets approved users through. If the store ever sees one of these
+  // (e.g. stale state from an earlier session), render nothing rather than
+  // showing a misleading "in progress" banner.
 
   return null;
 }
