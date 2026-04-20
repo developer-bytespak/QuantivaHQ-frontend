@@ -600,6 +600,7 @@ export default function OptionsPage() {
               onSelectContract={handleSelectContract}
               selectedContractSymbol={store.selectedContract?.symbol}
               isLoading={store.isLoadingChain}
+              spotPrice={currentUnderlying?.indexPrice ?? 0}
             />
 
             {/* Greeks — inline row */}
