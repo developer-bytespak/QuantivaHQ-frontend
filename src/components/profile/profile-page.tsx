@@ -52,8 +52,8 @@ export function ProfilePage() {
   const holdingValue = totals?.portfolio ?? 0;
   const availableSpotUSD = totals?.availableSpot ?? 0;
   const availableMarginUSD = totals?.availableMargin ?? 0;
-  const investedSpotUSD = Math.max(0, (totals?.spot ?? 0) - availableSpotUSD);
-  const investedMarginUSD = Math.max(0, (totals?.margin ?? 0) - availableMarginUSD);
+  const investedSpotUSD = totals?.investedSpot ?? 0;
+  const investedMarginUSD = totals?.investedMargin ?? 0;
   const positions = dashboardData?.positions ?? [];
   const isCrypto = connectionType === "crypto";
   const sectionTitle = isCrypto ? "Crypto" : "Stocks";

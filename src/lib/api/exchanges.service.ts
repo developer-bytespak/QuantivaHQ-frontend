@@ -118,8 +118,10 @@ export interface DashboardTotals {
   availableSpot: number;
   /** Free USDT in the options margin wallet. 0 when no options account. */
   availableMargin: number;
-  /** portfolio − availableSpot − availableMargin (clamped ≥ 0). */
-  invested: number;
+  /** spot − availableSpot (clamped ≥ 0). */
+  investedSpot: number;
+  /** margin − availableMargin (clamped ≥ 0). */
+  investedMargin: number;
 }
 
 export interface DashboardData {
