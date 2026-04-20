@@ -30,6 +30,8 @@ export interface User {
   email_verified: boolean;
   kyc_status: string;
   created_at?: string;
+  isAdmin?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 export const authService = {
@@ -125,6 +127,8 @@ export const authService = {
         localStorage.removeItem("quantivahq_pending_email");
         localStorage.removeItem("quantivahq_pending_password");
         localStorage.removeItem("quantivahq_device_id");
+        localStorage.removeItem("quantivahq_is_admin");
+        localStorage.removeItem("quantivahq_is_super_admin");
         sessionStorage.clear();
       } catch (cleanupErr) {
         console.warn("authService.logout: client cleanup failed", cleanupErr);
