@@ -1140,10 +1140,13 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const handleAutoTradeSuccess = (customMessage?: string) => {
     setShowAutoTradeModal(false);
     setSelectedSignal(null);
-    setSuccessToastMessage(customMessage || "Trade executed successfully!");
+    const msg = customMessage || "Trade executed successfully!";
+    setSuccessToastMessage(msg);
     setShowSuccessToast(true);
-    // Longer timeout for longer messages so the user has time to read.
-    const timeoutMs = customMessage && customMessage.length > 80 ? 6000 : 3000;
+    // Scale duration with message length (~50ms/char) so long explanatory
+    // messages (e.g. PDT block) stay visible long enough to actually read.
+    // Floor at 4s for short confirmations, cap at 20s.
+    const timeoutMs = Math.min(20000, Math.max(4000, msg.length * 50));
     setTimeout(() => setShowSuccessToast(false), timeoutMs);
     if (currentStrategy) fetchStrategySignals(currentStrategy.strategy_id);
   };

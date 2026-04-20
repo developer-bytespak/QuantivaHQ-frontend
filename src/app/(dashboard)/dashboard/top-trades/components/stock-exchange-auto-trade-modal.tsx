@@ -137,10 +137,23 @@ export function StockExchangeAutoTradeModal({
           const r = response as any;
           let toastMsg: string;
 
+          // Alpaca rejects same-day sells for PDT-flagged accounts. That blocks
+          // the TP/SL sell orders, but the buy itself is fine. Detect the PDT
+          // error text (can come via ocoError or delayedProtection.message)
+          // and tell the user plainly that protection will attach overnight.
+          const pdtSignal = String(
+            r?.ocoError || r?.delayedProtection?.message || "",
+          ).toLowerCase();
+          const isPdtBlocked =
+            pdtSignal.includes("pattern day trading") || pdtSignal.includes("pdt");
+
           if (r?.queued === true) {
             toastMsg =
               r?.message ||
               `Markets are closed. Your ${side === "BUY" ? "buy" : "sell"} of ${sharesNum} ${symbol} is queued and will submit automatically at the next market open.`;
+          } else if (isPdtBlocked) {
+            toastMsg =
+              `Your ${side === "BUY" ? "buy" : "sell"} of ${sharesNum} ${symbol} was placed successfully. Take-Profit and Stop-Loss could not be attached yet because your broker (Alpaca) blocks same-day sells under its Pattern Day Trading (PDT) rule. Your protection orders will attach automatically once the position becomes an overnight hold — usually at the next market open. No action needed on your side.`;
           } else if (r?.delayedProtection) {
             toastMsg =
               r?.delayedProtection?.message ||

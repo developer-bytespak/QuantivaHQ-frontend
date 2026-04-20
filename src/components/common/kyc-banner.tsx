@@ -7,8 +7,6 @@ import { clearKycForRetry } from "@/lib/api/kyc";
 import { deleteSelfAccount } from "@/lib/api/user";
 import { authService } from "@/lib/auth/auth.service";
 
-const APPROVED_DISMISS_KEY = "quantivahq_kyc_approved_dismissed";
-
 export function KycBanner() {
   const router = useRouter();
   const { status, reviewRejectType, rejectionReasons, fetchStatus, startPolling, stopPolling } =
@@ -16,7 +14,6 @@ export function KycBanner() {
   const [retryLoading, setRetryLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [approvedDismissed, setApprovedDismissed] = useState(false);
 
   useEffect(() => {
     fetchStatus();
@@ -24,24 +21,8 @@ export function KycBanner() {
     return () => stopPolling();
   }, [fetchStatus, startPolling, stopPolling]);
 
-  // Auto-hide the approved banner 5 seconds after the user has seen it at least once.
-  useEffect(() => {
-    if (status !== "approved") return;
-    if (typeof window === "undefined") return;
-    const dismissed = sessionStorage.getItem(APPROVED_DISMISS_KEY);
-    if (dismissed === "true") {
-      setApprovedDismissed(true);
-      return;
-    }
-    const t = setTimeout(() => {
-      sessionStorage.setItem(APPROVED_DISMISS_KEY, "true");
-      setApprovedDismissed(true);
-    }, 5000);
-    return () => clearTimeout(t);
-  }, [status]);
-
   if (!status) return null;
-  if (status === "approved" && approvedDismissed) return null;
+  if (status === "approved") return null;
 
   const isFinal = status === "rejected" && reviewRejectType === "FINAL";
   const isRetry = status === "rejected" && reviewRejectType !== "FINAL";
@@ -80,20 +61,6 @@ export function KycBanner() {
       setDeleteLoading(false);
     }
   };
-
-  // ── Approved (temporary success banner) ──
-  if (status === "approved") {
-    return (
-      <div className="flex items-center gap-3 border-b border-emerald-500/30 bg-gradient-to-r from-emerald-900/40 to-green-900/30 px-6 py-3 text-sm text-emerald-100">
-        <svg className="h-5 w-5 flex-shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <span className="font-medium">
-          Your identity has been verified! Full access unlocked.
-        </span>
-      </div>
-    );
-  }
 
   // ── FINAL rejection (destructive, delete account) ──
   if (isFinal) {
