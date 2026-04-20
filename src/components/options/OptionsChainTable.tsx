@@ -210,9 +210,10 @@ export function OptionsChainTable({
               const isAtm = atmStrike !== null && strike === atmStrike;
               const isCallSelected = !!call && selectedContractSymbol === call.symbol;
               const isPutSelected = !!put && selectedContractSymbol === put.symbol;
-              // Selection takes precedence over ITM tint
-              const callBgCls = isCallSelected ? "bg-green-500/15" : isCallItm ? "bg-green-500/[0.06]" : "";
-              const putBgCls = isPutSelected ? "bg-red-500/15" : isPutItm ? "bg-red-500/[0.06]" : "";
+              // Selection uses Quantiva primary (orange-yellow) to distinguish from ITM tint
+              const selectedCls = "bg-[var(--primary)]/25 ring-1 ring-inset ring-[var(--primary)]/50";
+              const callBgCls = isCallSelected ? selectedCls : isCallItm ? "bg-green-500/[0.06]" : "";
+              const putBgCls = isPutSelected ? selectedCls : isPutItm ? "bg-red-500/[0.06]" : "";
               const callCellCls = `cursor-pointer px-2.5 py-1.5 font-mono tabular-nums ${callBgCls}`;
               const putCellCls = `cursor-pointer px-2.5 py-1.5 font-mono tabular-nums ${putBgCls}`;
               const handleCallClick = () => call && onSelectContract(call);
