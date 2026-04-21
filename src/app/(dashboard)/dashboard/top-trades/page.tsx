@@ -12,6 +12,7 @@ import { ComingSoon } from "@/components/common/coming-soon";
 import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
 import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
 import { TopTradeVcPoolContext } from "./context/top-trade-vc-pool-context";
+import SellConfirmModal from "@/components/trading/SellConfirmModal";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
@@ -315,6 +316,20 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [modalOrders, setModalOrders] = useState<ModalOrder[]>([]);
   const [modalTradeHistory, setModalTradeHistory] = useState<ModalTradeHistory[]>([]);
   const [modalTradeSummary, setModalTradeSummary] = useState<any>(null);
+
+  // Sell confirmation state (top-trades leaderboard positions)
+  const [sellTarget, setSellTarget] = useState<{
+    symbol: string;
+    quantity: number;
+    currentPrice: number;
+  } | null>(null);
+  const [sellToast, setSellToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  useEffect(() => {
+    if (!sellToast) return;
+    const t = setTimeout(() => setSellToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [sellToast]);
 
   // Create strategy form state
   const [createName, setCreateName] = useState("");
@@ -1125,6 +1140,74 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   }, [modalPositions.length, leaderboardPositionsPage]);
 
   useEffect(() => { setCurrentPage(1); }, [timeFilter, sortBy, currentTrades.length, activeTab]);
+
+  // --- Sell handlers (leaderboard open positions) ---
+  const exchangeName = activeConnection?.exchange?.name || "";
+  const isAlpacaStocksSell = connectionType === "stocks" && /alpaca/i.test(exchangeName);
+
+  const openSellPosition = (position: ModalPosition) => {
+    const rawQty = position.quantity;
+    // Alpaca stocks require whole-share quantities on SELL
+    const qty = isAlpacaStocksSell ? Math.floor(rawQty) : rawQty;
+    if (!qty || qty <= 0) {
+      setSellToast({
+        type: "error",
+        msg: isAlpacaStocksSell
+          ? "Alpaca requires whole shares. Position is below 1 share."
+          : "Position quantity is zero.",
+      });
+      return;
+    }
+    setSellTarget({
+      symbol: position.symbol,
+      quantity: qty,
+      currentPrice: position.currentPrice,
+    });
+  };
+
+  const reloadLeaderboardPositions = async () => {
+    if (!connectionId) return;
+    try {
+      const positionsResponse = await apiRequest<never, any>({
+        path: `/exchanges/connections/${connectionId}/positions`,
+        method: "GET",
+        credentials: "include",
+      });
+      const normalized: ModalPosition[] = toArray(positionsResponse).map((p: any) => ({
+        symbol: String(p.symbol ?? p.asset ?? '—'),
+        quantity: toNumber(p.quantity ?? p.qty, 0),
+        avgEntryPrice: toNumber(p.avgEntryPrice ?? p.avg_entry_price ?? p.entryPrice, 0),
+        currentPrice: toNumber(p.currentPrice ?? p.current_price, 0),
+        marketValue: toNumber(p.marketValue ?? p.market_value, 0),
+        totalCost: toNumber(p.totalCost ?? p.total_cost, 0),
+        unrealizedPnl: toNumber(p.unrealizedPnl ?? p.totalPnl ?? p.total_pnl, 0),
+        unrealizedPnlPercent: toNumber(p.unrealizedPnlPercent ?? p.totalPnlPercent ?? p.total_pnl_percent, 0),
+        dailyChangePnl: toNumber(p.dailyChangePnl ?? p.todayPnl ?? p.today_pnl, 0),
+        dailyChangePercent: toNumber(p.dailyChangePercent ?? p.todayPnlPercent ?? p.pnlPercent, 0),
+        hasRealEntry: !!p.hasRealEntry,
+      }));
+      setModalPositions(normalized);
+    } catch {
+      // Silent — refresh failure shouldn't surface to user after a successful order.
+    }
+  };
+
+  const confirmSell = async () => {
+    if (!sellTarget || !connectionId) throw new Error("Missing sale context");
+    const response = await exchangesService.placeOrder(connectionId, {
+      symbol: sellTarget.symbol,
+      side: "SELL",
+      type: "MARKET",
+      quantity: sellTarget.quantity,
+      source: "top_trades_leaderboard_sell",
+      closePosition: true,
+    });
+    if (response && (response as any).success === false) {
+      throw new Error((response as any).message || "Sell order rejected");
+    }
+    setSellToast({ type: "success", msg: `Sell order placed for ${sellTarget.symbol}` });
+    reloadLeaderboardPositions();
+  };
 
   // --- View Trade handler ---
   const handleViewTrade = async (index: number) => {
@@ -2409,7 +2492,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                             </div>
                           </div>
 
-                          {/* Row 2: Left = Avg + Current  |  Right = Cost + Value */}
+                          {/* Row 2: Left = Avg + Current  |  Right = Cost + Value + Sell */}
                           <div className="flex items-center justify-between text-[11px]">
                             <div className="flex items-center gap-3">
                               {position.hasRealEntry && (
@@ -2422,6 +2505,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                                 <span className="text-slate-500">Cost <span className="text-slate-300">{formatCurrency(position.totalCost)}</span></span>
                               )}
                               <span className="text-slate-500">Value <span className="text-white font-semibold">{formatCurrency(position.marketValue)}</span></span>
+                              <button
+                                onClick={() => openSellPosition(position)}
+                                disabled={position.quantity <= 0}
+                                className="rounded-md bg-rose-500/10 border border-rose-500/30 px-2.5 py-1 text-[11px] font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={`Sell ${position.symbol} at market`}
+                              >
+                                Sell
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -2461,6 +2552,42 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Sell Confirmation Modal (leaderboard open positions) */}
+      <SellConfirmModal
+        isOpen={!!sellTarget}
+        onClose={() => setSellTarget(null)}
+        onConfirm={confirmSell}
+        symbol={sellTarget?.symbol || ""}
+        quantity={sellTarget?.quantity || 0}
+        currentPrice={sellTarget?.currentPrice}
+        exchangeLabel={exchangeName || undefined}
+        quantityLabel={connectionType === "stocks" ? "Shares" : "Quantity"}
+        quantityPrecision={connectionType === "stocks" ? 0 : 6}
+      />
+
+      {sellToast && (
+        <div
+          className={`fixed top-8 right-8 z-[12000] max-w-md rounded-lg px-5 py-3 text-white shadow-lg flex items-start gap-3 animate-fade-in ${
+            sellToast.type === "success" ? "bg-green-600" : "bg-rose-600"
+          }`}
+        >
+          <svg
+            className="w-5 h-5 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            {sellToast.type === "success" ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            )}
+          </svg>
+          <span className="text-sm leading-snug">{sellToast.msg}</span>
         </div>
       )}
     </div>

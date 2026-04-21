@@ -12,6 +12,7 @@ import { useStocksMarket } from "@/hooks/useStocksMarket";
 import { apiRequest } from "@/lib/api/client";
 import { getTrendingAssetsWithInsights, type Strategy } from "@/lib/api/strategies";
 import { MarketTable } from "@/components/market/MarketTable";
+import SellConfirmModal from "@/components/trading/SellConfirmModal";
 import {
   formatMarketCap,
   formatPrice,
@@ -556,6 +557,74 @@ export default function DashboardPage() {
   // Holdings modal
   const [showHoldingsModal, setShowHoldingsModal] = useState(false);
 
+  // Sell confirmation modal state
+  const [sellTarget, setSellTarget] = useState<{
+    symbol: string;
+    rawSymbol: string;
+    quantity: number;
+    currentPrice: number;
+  } | null>(null);
+  const [sellToast, setSellToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const exchangeName = activeConnection?.exchange?.name || "";
+  const isAlpacaStocks = connectionType === "stocks" && /alpaca/i.test(exchangeName);
+
+  // Alpaca stocks require whole-share quantities for sells
+  const normalizeSellQty = useCallback(
+    (qty: number) => (isAlpacaStocks ? Math.floor(qty) : qty),
+    [isAlpacaStocks]
+  );
+
+  const openSellModal = useCallback(
+    (position: { symbol: string; quantity: number; currentPrice: number }, displaySymbol: string) => {
+      const qty = normalizeSellQty(position.quantity);
+      if (qty <= 0) {
+        setSellToast({
+          type: "error",
+          msg: isAlpacaStocks
+            ? "Alpaca requires whole shares. Position is below 1 share."
+            : "Position quantity is zero.",
+        });
+        return;
+      }
+      setSellTarget({
+        symbol: displaySymbol,
+        rawSymbol: position.symbol,
+        quantity: qty,
+        currentPrice: position.currentPrice,
+      });
+    },
+    [normalizeSellQty, isAlpacaStocks]
+  );
+
+  const confirmSell = useCallback(async () => {
+    if (!sellTarget || !connectionId) {
+      throw new Error("Missing sale context");
+    }
+    const response = await exchangesService.placeOrder(connectionId, {
+      symbol: sellTarget.rawSymbol,
+      side: "SELL",
+      type: "MARKET",
+      quantity: sellTarget.quantity,
+      source: "dashboard_sell_button",
+      closePosition: true,
+    });
+    if (response && (response as any).success === false) {
+      throw new Error((response as any).message || "Sell order rejected");
+    }
+    setSellToast({
+      type: "success",
+      msg: `Sell order placed for ${sellTarget.symbol}`,
+    });
+    fetchDashboardData(connectionId, false);
+  }, [sellTarget, connectionId, fetchDashboardData]);
+
+  useEffect(() => {
+    if (!sellToast) return;
+    const t = setTimeout(() => setSellToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [sellToast]);
+
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
       {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
@@ -802,12 +871,13 @@ export default function DashboardPage() {
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Price</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">24h %</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider hidden sm:table-cell">24h $</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
                   {isLoading && !dashboardData ? (
                     <tr>
-                      <td colSpan={6} className="py-6 sm:py-8 text-center">
+                      <td colSpan={7} className="py-6 sm:py-8 text-center">
                         <div className="flex items-center justify-center">
                           <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
                         </div>
@@ -858,12 +928,22 @@ export default function DashboardPage() {
                           <td className={`py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-right hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                             {formatCurrency(position.unrealizedPnl)}
                           </td>
+                          <td className="py-3 px-1 sm:px-2 text-right">
+                            <button
+                              onClick={() => openSellModal(position, symbol)}
+                              disabled={position.quantity <= 0}
+                              className="rounded-md bg-rose-500/10 border border-rose-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                              title={`Sell ${symbol} at market`}
+                            >
+                              Sell
+                            </button>
+                          </td>
                         </tr>
                       );
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-6 sm:py-8 text-center text-xs sm:text-sm text-slate-400">
+                      <td colSpan={7} className="py-6 sm:py-8 text-center text-xs sm:text-sm text-slate-400">
                         No positions found
                       </td>
                     </tr>
@@ -1366,12 +1446,13 @@ export default function DashboardPage() {
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Price</th>
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">24h %</th>
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">24h $</th>
+                    <th className="py-2 px-2 text-right text-xs sm:text-sm font-medium text-white">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
                   {(!dashboardData || dashboardData.positions.length === 0) ? (
                     <tr>
-                      <td colSpan={6} className="py-6 text-center text-slate-400">No positions found</td>
+                      <td colSpan={7} className="py-6 text-center text-slate-400">No positions found</td>
                     </tr>
                   ) : (
                     dashboardData.positions.map((position: any, idx: number) => {
@@ -1410,6 +1491,16 @@ export default function DashboardPage() {
                           <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice)}</td>
                           <td className={`py-2 px-2 font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(position.pnlPercent)}</td>
                           <td className={`py-2 px-2 text-slate-400 hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(position.unrealizedPnl)}</td>
+                          <td className="py-2 px-2 text-right">
+                            <button
+                              onClick={() => openSellModal(position, symbol)}
+                              disabled={position.quantity <= 0}
+                              className="rounded-md bg-rose-500/10 border border-rose-500/30 px-3 py-1 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                              title={`Sell ${symbol} at market`}
+                            >
+                              Sell
+                            </button>
+                          </td>
                         </tr>
                       );
                     })
@@ -1594,6 +1685,43 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Sell Confirmation Modal */}
+      <SellConfirmModal
+        isOpen={!!sellTarget}
+        onClose={() => setSellTarget(null)}
+        onConfirm={confirmSell}
+        symbol={sellTarget?.symbol || ""}
+        quantity={sellTarget?.quantity || 0}
+        currentPrice={sellTarget?.currentPrice}
+        exchangeLabel={exchangeName || undefined}
+        quantityLabel={connectionType === "stocks" ? "Shares" : "Quantity"}
+        quantityPrecision={connectionType === "stocks" ? 0 : 6}
+      />
+
+      {/* Sell result toast */}
+      {sellToast && (
+        <div
+          className={`fixed top-8 right-8 z-[12000] max-w-md rounded-lg px-5 py-3 text-white shadow-lg flex items-start gap-3 animate-fade-in ${
+            sellToast.type === "success" ? "bg-green-600" : "bg-rose-600"
+          }`}
+        >
+          <svg
+            className="w-5 h-5 flex-shrink-0 mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2.5}
+          >
+            {sellToast.type === "success" ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            )}
+          </svg>
+          <span className="text-sm leading-snug">{sellToast.msg}</span>
         </div>
       )}
     </div>
