@@ -248,6 +248,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   // UI filters / pagination / overlay
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
   const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
+  const [minEntryFilter, setMinEntryFilter] = useState("");
+  const [maxEntryFilter, setMaxEntryFilter] = useState("");
+  const [showEntryFilter, setShowEntryFilter] = useState(false);
   const ITEMS_PER_PAGE = 8;
   const [currentPage, setCurrentPage] = useState(1);
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
@@ -891,8 +894,30 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   };
 
   // --- Pagination / sorting helpers ---
+  const parsedMinEntryFilter = Number(minEntryFilter);
+  const parsedMaxEntryFilter = Number(maxEntryFilter);
+  const hasMinEntryFilter =
+    minEntryFilter.trim() !== "" && Number.isFinite(parsedMinEntryFilter);
+  const hasMaxEntryFilter =
+    maxEntryFilter.trim() !== "" && Number.isFinite(parsedMaxEntryFilter);
+
   const filteredAndSortedTrades = useMemo(() => {
     let filtered = [...currentTrades];
+
+    if (hasMinEntryFilter || hasMaxEntryFilter) {
+      filtered = filtered.filter((trade) => {
+        const entryValue = toNumber(
+          trade.entryPrice && trade.entryPrice !== "—" ? trade.entryPrice : trade.entry,
+          Number.NaN,
+        );
+
+        if (!Number.isFinite(entryValue)) return false;
+        if (hasMinEntryFilter && entryValue < parsedMinEntryFilter) return false;
+        if (hasMaxEntryFilter && entryValue > parsedMaxEntryFilter) return false;
+        return true;
+      });
+    }
+
     if (timeFilter !== "all") {
       const hoursLimit = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 168 : 720;
       filtered = filtered.filter((trade) => trade.hoursAgo <= hoursLimit);
@@ -910,7 +935,15 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       }
     });
     return filtered;
-  }, [timeFilter, sortBy, currentTrades]);
+  }, [
+    timeFilter,
+    sortBy,
+    currentTrades,
+    hasMinEntryFilter,
+    hasMaxEntryFilter,
+    parsedMinEntryFilter,
+    parsedMaxEntryFilter,
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(filteredAndSortedTrades.length / ITEMS_PER_PAGE));
   const paginatedTrades = filteredAndSortedTrades.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -1139,7 +1172,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     if (leaderboardPositionsPage > maxPositionsPage) setLeaderboardPositionsPage(maxPositionsPage);
   }, [modalPositions.length, leaderboardPositionsPage]);
 
-  useEffect(() => { setCurrentPage(1); }, [timeFilter, sortBy, currentTrades.length, activeTab]);
+  useEffect(() => { setCurrentPage(1); }, [timeFilter, sortBy, minEntryFilter, maxEntryFilter, currentTrades.length, activeTab]);
 
   // --- Sell handlers (leaderboard open positions) ---
   const exchangeName = activeConnection?.exchange?.name || "";
@@ -1491,7 +1524,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
       {/* Signals/Trades List */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-semibold text-white">
             {currentStrategy ? `${currentStrategy.name} Signals` : 'Trading Signals'}
           </h2>
@@ -1507,6 +1540,82 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </select>
           </div>
         </div>
+
+        {/* Filter toggle button */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowEntryFilter((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
+              showEntryFilter || hasMinEntryFilter || hasMaxEntryFilter
+                ? "border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]"
+                : "border-[--color-border] bg-[--color-surface] text-slate-400 hover:border-slate-500 hover:text-white"
+            }`}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h10a1 1 0 010 2H7a1 1 0 01-1-1zm4 4a1 1 0 011-1h4a1 1 0 010 2h-4a1 1 0 01-1-1z" />
+            </svg>
+            Filter by Entry
+            {(hasMinEntryFilter || hasMaxEntryFilter) && (
+              <span className="ml-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--primary)] text-[9px] font-bold text-white">
+                {[hasMinEntryFilter, hasMaxEntryFilter].filter(Boolean).length}
+              </span>
+            )}
+          </button>
+          {(hasMinEntryFilter || hasMaxEntryFilter) && (
+            <button
+              type="button"
+              onClick={() => { setMinEntryFilter(""); setMaxEntryFilter(""); }}
+              className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-400 transition-colors"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Collapsible filter panel */}
+        {showEntryFilter && (
+          <div className="rounded-xl border border-[var(--primary)]/20 bg-[--color-surface]/60 p-4 backdrop-blur">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Filter by Entry Point (USD)</p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Min Entry Price"
+                  value={minEntryFilter}
+                  onChange={(e) => setMinEntryFilter(e.target.value)}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                />
+              </div>
+              <span className="hidden text-xs text-slate-500 sm:block">to</span>
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Max Entry Price"
+                  value={maxEntryFilter}
+                  onChange={(e) => setMaxEntryFilter(e.target.value)}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => { setMinEntryFilter(""); setMaxEntryFilter(""); setShowEntryFilter(false); }}
+                className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-red-500/50 hover:text-red-400 whitespace-nowrap"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        )}
 
         {currentStrategy && loadingSignals[currentStrategy.strategy_id] ? (
           <div className="rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur">
@@ -1718,7 +1827,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         ) : (
           <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
             <p className="text-sm text-slate-400">
-              {currentStrategy 
+              {(hasMinEntryFilter || hasMaxEntryFilter)
+                ? 'No signals found for selected entry range'
+                : currentStrategy 
                 ? `No signals available for ${currentStrategy.name}. ${isStocksConnection ? 'Stock signals are generated every 10 minutes during market hours.' : 'Signals are generated every 10 minutes.'}`
                 : 'No signals found for the selected time period'}
             </p>

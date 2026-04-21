@@ -38,6 +38,9 @@ export default function MarketPage() {
   
   // Common state
   const [searchQuery, setSearchQuery] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [showPriceFilter, setShowPriceFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const coinsPerPage = 50;
 
@@ -139,10 +142,17 @@ export default function MarketPage() {
   };
 
   // Filter coins based on search query
+  const parsedMinPrice = Number(minPrice);
+  const parsedMaxPrice = Number(maxPrice);
+  const hasMinPriceFilter = minPrice.trim() !== "" && !Number.isNaN(parsedMinPrice);
+  const hasMaxPriceFilter = maxPrice.trim() !== "" && !Number.isNaN(parsedMaxPrice);
+
   const filteredCoins = coins.filter(
     (coin) =>
-      coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      coin.symbol.toLowerCase().includes(searchQuery.toLowerCase())
+      (coin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        coin.symbol.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (!hasMinPriceFilter || coin.current_price >= parsedMinPrice) &&
+      (!hasMaxPriceFilter || coin.current_price <= parsedMaxPrice)
   );
 
   // Pagination calculations
@@ -154,7 +164,7 @@ export default function MarketPage() {
   // Reset to page 1 when search query changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, minPrice, maxPrice]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -175,9 +185,11 @@ export default function MarketPage() {
   // Render stocks market if stocks connection
   if (connectionType === "stocks") {
     const filteredStocks = stocks.filter((stock) =>
-      stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      stock.sector.toLowerCase().includes(searchQuery.toLowerCase())
+      (stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        stock.sector.toLowerCase().includes(searchQuery.toLowerCase())) &&
+      (!hasMinPriceFilter || stock.price >= parsedMinPrice) &&
+      (!hasMaxPriceFilter || stock.price <= parsedMaxPrice)
     );
 
     const totalPages = Math.ceil(filteredStocks.length / coinsPerPage);
@@ -204,19 +216,76 @@ export default function MarketPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by symbol, name, or sector..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
-            />
+        <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4 space-y-3">
+          {/* Search + filter toggle row */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by symbol, name, or sector..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPriceFilter((v) => !v)}
+              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all whitespace-nowrap ${
+                showPriceFilter || minPrice || maxPrice
+                  ? "border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]"
+                  : "border-[--color-border] bg-[--color-surface] text-slate-400 hover:border-slate-500 hover:text-white"
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h10a1 1 0 010 2H7a1 1 0 01-1-1zm4 4a1 1 0 011-1h4a1 1 0 010 2h-4a1 1 0 01-1-1z" />
+              </svg>
+              <span className="hidden sm:inline">Price Filter</span>
+              {(minPrice || maxPrice) && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--primary)] text-[9px] font-bold text-white">
+                  {[minPrice, maxPrice].filter(Boolean).length}
+                </span>
+              )}
+            </button>
           </div>
+
+          {/* Collapsible price filter */}
+          {showPriceFilter && (
+            <div className="rounded-lg border border-[var(--primary)]/20 bg-[--color-surface] p-3">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Filter by Price (USD)</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                  <input
+                    type="number" min="0" step="0.01" placeholder="Min Price"
+                    value={minPrice}
+                    onChange={(e) => setMinPrice(e.target.value)}
+                    className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  />
+                </div>
+                <span className="hidden text-xs text-slate-500 sm:block">to</span>
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                  <input
+                    type="number" min="0" step="0.01" placeholder="Max Price"
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(e.target.value)}
+                    className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setMinPrice(""); setMaxPrice(""); setShowPriceFilter(false); }}
+                  className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-red-500/50 hover:text-red-400 whitespace-nowrap"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Loading/Error */}
@@ -248,25 +317,33 @@ export default function MarketPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[--color-border]">
-                    {currentStocks.map((stock, index) => (
-                      <tr key={stock.symbol} className="group cursor-pointer hover:bg-slate-800/40 transition-colors" onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}>
-                        <td className="py-4 px-4 text-sm font-medium text-slate-400">{startIndex + index + 1}</td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-white">{stock.symbol}</p>
-                              <p className="text-xs text-slate-400">{stock.name}</p>
+                    {currentStocks.length > 0 ? (
+                      currentStocks.map((stock, index) => (
+                        <tr key={stock.symbol} className="group cursor-pointer hover:bg-slate-800/40 transition-colors" onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}>
+                          <td className="py-4 px-4 text-sm font-medium text-slate-400">{startIndex + index + 1}</td>
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-white">{stock.symbol}</p>
+                                <p className="text-xs text-slate-400">{stock.name}</p>
+                              </div>
                             </div>
-                          </div>
+                          </td>
+                          <td className="py-4 px-4 text-sm font-medium text-white">{formatPrice(stock.price)}</td>
+                          <td className={`py-4 px-4 text-sm font-medium ${stock.changePercent24h >= 0 ? "text-green-400" : "text-red-400"}`}>
+                            {formatPercent(stock.changePercent24h)}
+                          </td>
+                          <td className="py-4 px-4 text-sm text-slate-300 hidden md:table-cell">{formatMarketCap(stock.marketCap)}</td>
+                          <td className="py-4 px-4 text-sm text-slate-300 hidden lg:table-cell">{formatVolume(stock.volume24h)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-slate-400 text-sm">
+                          No stocks found for selected filters
                         </td>
-                        <td className="py-4 px-4 text-sm font-medium text-white">{formatPrice(stock.price)}</td>
-                        <td className={`py-4 px-4 text-sm font-medium ${stock.changePercent24h >= 0 ? "text-green-400" : "text-red-400"}`}>
-                          {formatPercent(stock.changePercent24h)}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-slate-300 hidden md:table-cell">{formatMarketCap(stock.marketCap)}</td>
-                        <td className="py-4 px-4 text-sm text-slate-300 hidden lg:table-cell">{formatVolume(stock.volume24h)}</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -318,29 +395,79 @@ export default function MarketPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
-        <div className="relative">
-          <svg
-            className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4 space-y-3">
+        {/* Search + filter toggle row */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg
+              className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400"
+              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search by name or symbol..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
             />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by name or symbol..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
-          />
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPriceFilter((v) => !v)}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all whitespace-nowrap ${
+              showPriceFilter || minPrice || maxPrice
+                ? "border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]"
+                : "border-[--color-border] bg-[--color-surface] text-slate-400 hover:border-slate-500 hover:text-white"
+            }`}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h10a1 1 0 010 2H7a1 1 0 01-1-1zm4 4a1 1 0 011-1h4a1 1 0 010 2h-4a1 1 0 01-1-1z" />
+            </svg>
+            <span className="hidden sm:inline">Price Filter</span>
+            {(minPrice || maxPrice) && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--primary)] text-[9px] font-bold text-white">
+                {[minPrice, maxPrice].filter(Boolean).length}
+              </span>
+            )}
+          </button>
         </div>
+
+        {/* Collapsible price filter */}
+        {showPriceFilter && (
+          <div className="rounded-lg border border-[var(--primary)]/20 bg-[--color-surface] p-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Filter by Price (USD)</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input
+                  type="number" min="0" step="0.01" placeholder="Min Price"
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                />
+              </div>
+              <span className="hidden text-xs text-slate-500 sm:block">to</span>
+              <div className="relative flex-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
+                <input
+                  type="number" min="0" step="0.01" placeholder="Max Price"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => { setMinPrice(""); setMaxPrice(""); setShowPriceFilter(false); }}
+                className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-red-500/50 hover:text-red-400 whitespace-nowrap"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Error Display */}
