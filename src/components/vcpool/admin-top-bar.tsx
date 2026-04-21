@@ -91,7 +91,7 @@ export function AdminTopBar({ mode = "admin" }: AdminTopBarProps) {
   const initial = admin?.full_name?.charAt(0)?.toUpperCase() || admin?.email?.charAt(0)?.toUpperCase() || "A";
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#fc4f02]/30 bg-[--color-surface]/80 px-4 sm:px-6 backdrop-blur-sm">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#fc4f02]/30 bg-[#060b12] px-4 sm:px-6">
       <div className="flex items-center gap-3">
         <button
           onClick={toggleMobile}
@@ -117,7 +117,7 @@ export function AdminTopBar({ mode = "admin" }: AdminTopBarProps) {
           <button
             type="button"
             onClick={() => setDropdownOpen((o) => !o)}
-            className="flex items-center gap-2 rounded-lg border border-[--color-border] bg-[--color-surface-alt]/50 px-3 py-2 hover:bg-[--color-surface-alt] transition-colors"
+            className="flex items-center gap-2 rounded-lg border border-slate-700 bg-[#0b1220] px-3 py-2 transition-colors hover:bg-[#121b2c]"
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#fc4f02]/30 to-[#fda300]/30 text-sm font-bold text-white">
               {initial}
@@ -130,15 +130,17 @@ export function AdminTopBar({ mode = "admin" }: AdminTopBarProps) {
             </svg>
           </button>
           {dropdownOpen && (
-            <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-[--color-border] bg-[--color-surface] py-1 shadow-xl">
-              <div className="border-b border-[--color-border] px-3 py-2">
+            <div
+              className="absolute right-0 top-full z-[90] mt-1 w-56 rounded-xl border border-slate-700 bg-[#070d17] py-1 shadow-2xl ring-1 ring-black/60"
+            >
+              <div className="border-b border-slate-700/80 px-3 py-2">
                 <p className="truncate text-sm font-medium text-white">{admin?.full_name || "Admin"}</p>
                 <p className="truncate text-xs text-slate-400">{admin?.email}</p>
               </div>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-[--color-surface-alt] hover:text-white"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-300 hover:bg-[#141c2b] hover:text-white"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

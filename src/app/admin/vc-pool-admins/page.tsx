@@ -261,8 +261,8 @@ export default function VcPoolAdminsPage() {
       </div>
 
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-xl border border-[--color-border] bg-[--color-surface] p-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-[1px] px-4">
+          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-[#0b111a] p-5 shadow-2xl">
             <h4 className="text-lg font-semibold text-white">Delete VC Pool Admin</h4>
             <p className="mt-2 text-sm text-slate-300">
               Enter your current password to delete {deleteTarget.email}.

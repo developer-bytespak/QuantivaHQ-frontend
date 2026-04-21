@@ -25,7 +25,7 @@ export default function SuperAdminLayout({
             <AdminSidebar mode="super" />
             <div className="flex flex-1 flex-col overflow-hidden">
               <AdminTopBar mode="super" />
-              <main className="flex-1 overflow-y-auto bg-[--color-surface-alt]/60 px-4 sm:px-6 pb-10 pt-6">
+              <main className="flex-1 overflow-y-auto bg-[#050a12] px-4 sm:px-6 pb-10 pt-6">
                 <div className="mx-auto w-full max-w-5xl">{children}</div>
               </main>
             </div>
