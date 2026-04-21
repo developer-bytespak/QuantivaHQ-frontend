@@ -476,6 +476,12 @@ export const exchangesService = {
       source?: string;
       takeProfit?: number;
       stopLoss?: number;
+      /**
+       * When true and side=SELL, backend cancels any open TP/SL on the symbol,
+       * then places the market sell, then (Binance only) converts residual
+       * dust to USDT. Used by Dashboard holdings + Top-trades leaderboard.
+       */
+      closePosition?: boolean;
     }
   ): Promise<ApiResponse<Order>> {
     return apiRequest<{
@@ -488,6 +494,7 @@ export const exchangesService = {
       source?: string;
       takeProfit?: number;
       stopLoss?: number;
+      closePosition?: boolean;
     }, ApiResponse<Order>>({
       path: `/exchanges/connections/${connectionId}/orders/place`,
       method: "POST",
