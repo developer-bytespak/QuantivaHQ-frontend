@@ -79,6 +79,8 @@ export default function Verify2FAPage() {
       localStorage.setItem("quantivahq_user_name", userData.username);
       localStorage.setItem("quantivahq_user_id", userData.user_id);
       localStorage.setItem("quantivahq_is_authenticated", "true");
+      localStorage.setItem("quantivahq_is_admin", String(userData.isAdmin ?? false));
+      localStorage.setItem("quantivahq_is_super_admin", String(userData.isSuperAdmin ?? false));
       localStorage.removeItem("quantivahq_pending_email");
 
       // Store tokens from response as fallback if cookies don't work (cross-origin issue)

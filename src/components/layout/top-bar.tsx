@@ -11,6 +11,7 @@ import { useExchange } from "@/context/ExchangeContext";
 import { QhqBalanceChip } from "@/components/common/qhq-balance-chip";
 import { isValidImageUrl } from "@/lib/utils/security";
 import useSubscriptionStore from "@/state/subscription-store";
+import { useSessionStore } from "@/state/session-store";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -97,6 +98,28 @@ function UserProfileSection() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { currentSubscription } = useSubscriptionStore();
+  const { isAdmin, isSuperAdmin, setAdminFlags } = useSessionStore();
+
+  // Sync admin flags from localStorage on mount (in case store was not hydrated)
+  useEffect(() => {
+    const adminFlag = localStorage.getItem("quantivahq_is_admin") === "true";
+    const superAdminFlag = localStorage.getItem("quantivahq_is_super_admin") === "true";
+    setAdminFlags(adminFlag, superAdminFlag);
+  }, [setAdminFlags]);
+
+  const handleSwitchToAdmin = () => {
+    setIsOpen(false);
+    const email = localStorage.getItem("quantivahq_user_email") ?? "";
+    const params = email ? `?email=${encodeURIComponent(email)}` : "";
+    window.location.href = `/admin/login${params}`;
+  };
+
+  const handleSwitchToSuperAdmin = () => {
+    setIsOpen(false);
+    const email = localStorage.getItem("quantivahq_user_email") ?? "";
+    const params = email ? `?email=${encodeURIComponent(email)}` : "";
+    window.location.href = `/super/admin${params}`;
+  };
 
   const loadProfileData = async () => {
     if (typeof window !== "undefined") {
@@ -271,7 +294,7 @@ function UserProfileSection() {
       {isOpen && dropdownPosition && typeof window !== "undefined" && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[200] w-44 sm:w-48 rounded-xl bg-[#161616]/90 backdrop-blur-xl border border-white/[0.08] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
+          className="fixed z-[200] w-56 rounded-xl bg-[#161616]/90 backdrop-blur-xl border border-white/[0.08] p-1.5 sm:p-2 shadow-2xl shadow-black/50"
           style={{
             top: `${dropdownPosition.top}px`,
             right: `${dropdownPosition.right}px`,
@@ -300,6 +323,35 @@ function UserProfileSection() {
               </svg>
               <span>Settings</span>
             </button>
+
+            {/* Admin Switch Buttons — show only one based on role priority */}
+            {(isSuperAdmin || (isAdmin && !isSuperAdmin)) && (
+              <div className="mx-2 border-t border-white/[0.08]" />
+            )}
+
+            {isAdmin && !isSuperAdmin && (
+              <button
+                onClick={handleSwitchToAdmin}
+                className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-blue-500/10 hover:text-blue-400"
+              >
+                <svg className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span>Switch to Admin</span>
+              </button>
+            )}
+
+            {isSuperAdmin && (
+              <button
+                onClick={handleSwitchToSuperAdmin}
+                className="group flex w-full items-center gap-2 sm:gap-3 rounded-lg px-2 sm:px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-slate-200 transition-all duration-200 hover:bg-purple-500/10 hover:text-purple-400"
+              >
+                <svg className="h-4 w-4 sm:h-5 sm:w-5 text-purple-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+                <span className="whitespace-nowrap">Switch to Super Admin</span>
+              </button>
+            )}
 
             {/* Divider */}
             <div className="mx-2 border-t border-white/[0.08]" />

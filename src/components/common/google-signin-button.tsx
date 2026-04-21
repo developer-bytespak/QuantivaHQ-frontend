@@ -116,6 +116,11 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
             data.user.username || data.user.email.split("@")[0]
           );
         }
+        localStorage.setItem("quantivahq_is_admin", String(data?.user?.isAdmin ?? false));
+        localStorage.setItem(
+          "quantivahq_is_super_admin",
+          String(data?.user?.isSuperAdmin ?? false)
+        );
         localStorage.setItem("quantivahq_auth_method", "google");
         // Store tokens (client-JWT flow)
         if (data?.accessToken)

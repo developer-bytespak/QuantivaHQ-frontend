@@ -12,6 +12,7 @@ interface OptionsChainTableProps {
   onSelectContract: (contract: OptionContract) => void;
   selectedContractSymbol?: string | null;
   isLoading?: boolean;
+  spotPrice?: number; // used for ATM highlight + ITM shading
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -40,11 +41,12 @@ export function OptionsChainTable({
   onSelectContract,
   selectedContractSymbol,
   isLoading,
+  spotPrice,
 }: OptionsChainTableProps) {
   const [filterType, setFilterType] = useState<"ALL" | "CALL" | "PUT">("ALL");
 
   // Group contracts by strike, filtered by expiry
-  const { calls, puts, strikes } = useMemo(() => {
+  const { calls, puts, strikes, atmStrike } = useMemo(() => {
     let filtered = contracts;
     if (selectedExpiry) {
       // selectedExpiry is date-only "2026-03-09", contract.expiry may be ISO "2026-03-09T08:00:00.000Z"
@@ -62,8 +64,15 @@ export function OptionsChainTable({
     }
 
     const sortedStrikes = Array.from(strikeSet).sort((a, b) => a - b);
-    return { calls: callMap, puts: putMap, strikes: sortedStrikes };
-  }, [contracts, selectedExpiry]);
+    // Find the strike closest to spot (ATM)
+    let atmStrike: number | null = null;
+    if (spotPrice && spotPrice > 0 && sortedStrikes.length > 0) {
+      atmStrike = sortedStrikes.reduce((best, s) =>
+        Math.abs(s - spotPrice) < Math.abs(best - spotPrice) ? s : best,
+      sortedStrikes[0]);
+    }
+    return { calls: callMap, puts: putMap, strikes: sortedStrikes, atmStrike };
+  }, [contracts, selectedExpiry, spotPrice]);
 
   if (isLoading) {
     return (
@@ -195,43 +204,49 @@ export function OptionsChainTable({
             {strikes.map((strike, i) => {
               const call = calls.get(strike);
               const put = puts.get(strike);
+              // ITM flags (relative to spot): call ITM when strike < spot; put ITM when strike > spot
+              const isCallItm = spotPrice !== undefined && spotPrice > 0 && strike < spotPrice;
+              const isPutItm = spotPrice !== undefined && spotPrice > 0 && strike > spotPrice;
+              const isAtm = atmStrike !== null && strike === atmStrike;
+              const isCallSelected = !!call && selectedContractSymbol === call.symbol;
+              const isPutSelected = !!put && selectedContractSymbol === put.symbol;
+              // Selection uses Quantiva primary (orange-yellow) to distinguish from ITM tint
+              const selectedCls = "bg-[var(--primary)]/25 ring-1 ring-inset ring-[var(--primary)]/50";
+              const callBgCls = isCallSelected ? selectedCls : isCallItm ? "bg-green-500/[0.06]" : "";
+              const putBgCls = isPutSelected ? selectedCls : isPutItm ? "bg-red-500/[0.06]" : "";
+              const callCellCls = `cursor-pointer px-2.5 py-1.5 font-mono tabular-nums ${callBgCls}`;
+              const putCellCls = `cursor-pointer px-2.5 py-1.5 font-mono tabular-nums ${putBgCls}`;
+              const handleCallClick = () => call && onSelectContract(call);
+              const handlePutClick = () => put && onSelectContract(put);
               return (
                 <tr
                   key={strike}
-                  className={`transition-colors hover:bg-white/[0.06] ${i % 2 === 0 ? "bg-white/[0.02]" : ""}`}
+                  className={`transition-colors hover:bg-white/[0.06] ${
+                    isAtm
+                      ? "bg-[var(--primary)]/[0.08] border-y border-[var(--primary)]/30"
+                      : i % 2 === 0
+                        ? "bg-white/[0.02]"
+                        : ""
+                  }`}
                 >
                   {(filterType === "ALL" || filterType === "CALL") && (
                     <>
-                      <td
-                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-green-400 ${
-                          selectedContractSymbol === call?.symbol
-                            ? "bg-green-500/10"
-                            : ""
-                        }`}
-                        onClick={() => call && onSelectContract(call)}
-                      >
+                      <td className={`${callCellCls} text-slate-200 hover:text-green-400`} onClick={handleCallClick}>
                         {call ? formatPrice(call.bidPrice) : "—"}
                       </td>
-                      <td
-                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-green-400 ${
-                          selectedContractSymbol === call?.symbol
-                            ? "bg-green-500/10"
-                            : ""
-                        }`}
-                        onClick={() => call && onSelectContract(call)}
-                      >
+                      <td className={`${callCellCls} text-slate-200 hover:text-green-400`} onClick={handleCallClick}>
                         {call ? formatPrice(call.askPrice) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-400">
+                      <td className={`${callCellCls} text-slate-400`} onClick={handleCallClick}>
                         {call ? formatPrice(call.lastPrice) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
+                      <td className={`${callCellCls} text-slate-500`} onClick={handleCallClick}>
                         {call ? formatVolume(call.volume) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
+                      <td className={`${callCellCls} text-slate-500`} onClick={handleCallClick}>
                         {call ? formatVolume(call.openInterest) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
+                      <td className={`${callCellCls} text-slate-500`} onClick={handleCallClick}>
                         {call ? formatIV(call.greeks?.impliedVolatility ?? 0) : "—"}
                       </td>
                     </>
@@ -241,36 +256,22 @@ export function OptionsChainTable({
                   </td>
                   {(filterType === "ALL" || filterType === "PUT") && (
                     <>
-                      <td
-                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-red-400 ${
-                          selectedContractSymbol === put?.symbol
-                            ? "bg-red-500/10"
-                            : ""
-                        }`}
-                        onClick={() => put && onSelectContract(put)}
-                      >
+                      <td className={`${putCellCls} text-slate-200 hover:text-red-400`} onClick={handlePutClick}>
                         {put ? formatPrice(put.bidPrice) : "—"}
                       </td>
-                      <td
-                        className={`cursor-pointer px-2.5 py-1.5 font-mono tabular-nums text-slate-200 hover:text-red-400 ${
-                          selectedContractSymbol === put?.symbol
-                            ? "bg-red-500/10"
-                            : ""
-                        }`}
-                        onClick={() => put && onSelectContract(put)}
-                      >
+                      <td className={`${putCellCls} text-slate-200 hover:text-red-400`} onClick={handlePutClick}>
                         {put ? formatPrice(put.askPrice) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-400">
+                      <td className={`${putCellCls} text-slate-400`} onClick={handlePutClick}>
                         {put ? formatPrice(put.lastPrice) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
+                      <td className={`${putCellCls} text-slate-500`} onClick={handlePutClick}>
                         {put ? formatVolume(put.volume) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
+                      <td className={`${putCellCls} text-slate-500`} onClick={handlePutClick}>
                         {put ? formatVolume(put.openInterest) : "—"}
                       </td>
-                      <td className="px-2.5 py-1.5 font-mono tabular-nums text-slate-500">
+                      <td className={`${putCellCls} text-slate-500`} onClick={handlePutClick}>
                         {put ? formatIV(put.greeks?.impliedVolatility ?? 0) : "—"}
                       </td>
                     </>
