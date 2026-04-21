@@ -201,8 +201,8 @@ export default function OptionsPage() {
   }, [connectionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (hasAccess && activeTab === "positions") fetchPositions();
-  }, [activeTab, hasAccess, fetchPositions]);
+    if (hasAccess && connectionId) fetchPositions();
+  }, [hasAccess, connectionId, fetchPositions]);
 
   // ── Fetch orders ────────────────────────────────────────────────────────
 
