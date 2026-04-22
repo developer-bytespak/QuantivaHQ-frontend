@@ -56,6 +56,8 @@ interface Trade {
   assetId?: string;
   symbol?: string; // Clean symbol without USDT
   pair: string;
+  name?: string;
+  logoUrl?: string;
   type: "BUY" | "SELL";
   confidence: "HIGH" | "MEDIUM" | "LOW";
   ext: string;
@@ -970,9 +972,11 @@ export default function PaperTradingPage() {
         ? `${cleanSymbol} / USD` 
         : `${cleanSymbol} / USDT`;
       
-      const score = Number(signal.final_score ?? 0);
+      const rawScore = Number(signal.final_score ?? 0);
+      // Normalize: crypto pipeline returns 0..100, stock pipeline returns 0..1
+      const normalizedScore = rawScore > 1 ? rawScore / 100 : rawScore;
       const confidence: Trade["confidence"] =
-        score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
+        normalizedScore >= 0.7 ? "HIGH" : normalizedScore >= 0.4 ? "MEDIUM" : "LOW";
 
       // Get realtime data, treating 0 as invalid (API returned no data)
       const realtimePrice = signal.realtime_data?.price && signal.realtime_data.price > 0 
@@ -1008,6 +1012,8 @@ export default function PaperTradingPage() {
         assetId: signal.asset_id ?? asset.asset_id ?? cleanSymbol,
         symbol: cleanSymbol, // Store clean symbol for API calls
         pair,
+        name: asset.name ?? asset.display_name ?? undefined,
+        logoUrl: asset.logo_url ?? undefined,
         type: signal.action && signal.action.toUpperCase() === "SELL" ? "SELL" : "BUY",
         confidence,
         ext: entryPrice ? String(entryPrice) : "—",
@@ -1015,7 +1021,7 @@ export default function PaperTradingPage() {
         stopLoss,
         progressMin: 0,
         progressMax: 100,
-        progressValue: Math.min(100, Math.max(0, Math.floor(score * 100))),
+        progressValue: Math.min(100, Math.max(0, Math.round(normalizedScore * 100))),
         entryPrice: String(entryPrice),
         stopLossPrice: stopLoss,
         takeProfit1: takeProfit,

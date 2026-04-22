@@ -62,36 +62,14 @@ const formatQuantity = (v: number) => {
   });
 };
 
-// Helper to get trend direction color and icon
-const getTrendDirectionBadge = (direction?: string) => {
-  switch (direction) {
-    case 'TRENDING_UP':
-      return { color: 'bg-green-500/20 text-green-400', number: '1', label: 'UP' };
-    case 'TRENDING_DOWN':
-      return { color: 'bg-red-500/20 text-red-400', number: '2', label: 'DOWN' };
-    default:
-      return { color: 'bg-slate-500/20 text-slate-300', number: '3', label: 'STABLE' };
-  }
-};
-
-// Helper to get volume status color
-const getVolumeStatusBadge = (status?: string) => {
-  switch (status) {
-    case 'MASSIVE_SURGE':
-      return { color: 'bg-purple-500/20 text-purple-300', number: '1', label: 'SURGE' };
-    case 'VOLUME_SURGE':
-      return { color: 'bg-blue-500/20 text-blue-300', number: '2', label: 'SURGE' };
-    default:
-      return { color: 'bg-slate-600/20 text-slate-400', number: '3', label: 'NORMAL' };
-  }
-};
-
 type StrategyState = "DISCOVERY" | "PREVIEW" | "EXECUTED";
 
 interface Trade {
   id: number;
   assetId?: string;
   pair: string;
+  name?: string;
+  logoUrl?: string;
   type: "BUY" | "SELL";
   confidence: "HIGH" | "MEDIUM" | "LOW";
   ext: string;
@@ -370,8 +348,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       
       // Format pair based on asset type
       const pair = item.pair ?? (isStockAsset ? `${cleanSymbol} / USD` : `${cleanSymbol} / USDT`);
-      const score = Number(item.final_score ?? item.score ?? 0);
-      const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
+      const rawScore = Number(item.final_score ?? item.score ?? 0);
+      // Normalize: crypto pipeline returns 0..100, stock pipeline returns 0..1
+      const normalizedScore = rawScore > 1 ? rawScore / 100 : rawScore;
+      const confidence: Trade["confidence"] = normalizedScore >= 0.7 ? "HIGH" : normalizedScore >= 0.4 ? "MEDIUM" : "LOW";
       
       // Use realtime_data if available, otherwise fallback to old fields
       const realtimePrice = item.realtime_data?.price ?? null;
@@ -385,6 +365,8 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         id: idx + 1,
         assetId: item.asset_id ?? item.asset?.asset_id ?? item.assetId ?? null,
         pair,
+        name: item.name ?? item.asset?.name ?? item.display_name ?? undefined,
+        logoUrl: item.logo_url ?? item.asset?.logo_url ?? undefined,
         type: (item.action && item.action.toUpperCase() === 'SELL') ? 'SELL' : 'BUY',
         confidence,
         ext: price ? String(price) : "—",
@@ -392,7 +374,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         stopLoss: item.stop_loss || item.stopLoss || "—",
         progressMin: 0,
         progressMax: 100,
-        progressValue: Math.min(100, Math.max(0, Math.floor((score || 0) * 100))),
+        progressValue: Math.min(100, Math.max(0, Math.round(normalizedScore * 100))),
         entryPrice: item.entryPrice ? String(item.entryPrice) : price ? String(price) : "—",
         stopLossPrice: item.stopLossPrice ? String(item.stopLossPrice) : item.stop_loss ? String(item.stop_loss) : "—",
         takeProfit1: item.take_profit || item.takeProfit || "—",
@@ -616,7 +598,8 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           asset: {
             asset_id: asset.asset_id,
             symbol: asset.symbol,
-            display_name: asset.display_name,
+            display_name: (asset as any).name ?? asset.display_name,
+            logo_url: (asset as any).logo_url,
             asset_type: asset.asset_type, // Include asset type for stock detection
             trend_score: asset.trend_score, // Include trend_score from asset
           },
@@ -747,9 +730,11 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         ? `${cleanSymbol} / USD` 
         : `${cleanSymbol} / USDT`;
       
-      const score = Number(signal.final_score ?? 0);
-      const confidence: Trade["confidence"] = score >= 0.7 ? "HIGH" : score >= 0.4 ? "MEDIUM" : "LOW";
-      
+      const rawScore = Number(signal.final_score ?? 0);
+      // Normalize: crypto pipeline returns 0..100, stock pipeline returns 0..1
+      const normalizedScore = rawScore > 1 ? rawScore / 100 : rawScore;
+      const confidence: Trade["confidence"] = normalizedScore >= 0.7 ? "HIGH" : normalizedScore >= 0.4 ? "MEDIUM" : "LOW";
+
       // Use realtime_data if available
       const realtimePrice = signal.realtime_data?.price ?? null;
       const realtimeVolume = signal.realtime_data?.volume24h ?? null;
@@ -794,6 +779,8 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         id: idx + 1,
         assetId: asset.asset_id || signal.asset_id || null,
         pair,
+        name: (asset as any).display_name || undefined,
+        logoUrl: (asset as any).logo_url || undefined,
         type: (signal.action && signal.action.toUpperCase() === 'SELL') ? 'SELL' : 'BUY',
         confidence,
         ext: entryPrice ? String(entryPrice) : "—",
@@ -801,7 +788,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         stopLoss: stopLossPct !== null && stopLossPct !== undefined ? `${stopLossPct}%` : "—",
         progressMin: 0,
         progressMax: 100,
-        progressValue: Math.min(100, Math.max(0, Math.floor((score || 0) * 100))),
+        progressValue: Math.min(100, Math.max(0, Math.round(normalizedScore * 100))),
         entryPrice: entryPrice ? String(entryPrice) : "—",
         stopLossPrice: stopLossPrice ? String(stopLossPrice) : "—",
         takeProfit1: takeProfitPct !== null && takeProfitPct !== undefined ? `${takeProfitPct}%` : "—",
@@ -1648,38 +1635,31 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               {paginatedTrades.map((trade, index) => (
                 <div key={trade.id} className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
                   <div className="space-y-3 sm:space-y-4">
-                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                      <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY" ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
-                        {trade.type}
-                      </span>
-                      <span className="text-sm font-medium text-white">{trade.pair}</span>
-                      <span className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : trade.confidence === "MEDIUM" ? "bg-slate-600" : "bg-slate-500"}`}>
-                        {trade.confidence}
-                      </span>
-                      
-                      {/* NEW: Trend Direction Badge */}
-                      {(() => {
-                        const trendBadge = getTrendDirectionBadge(trade.trend_direction);
-                        return (
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${trendBadge.color}`}>
-                            #{trendBadge.number} {trendBadge.label}
+                    <div className="flex items-center gap-3">
+                      {trade.logoUrl ? (
+                        <img
+                          src={trade.logoUrl}
+                          alt={trade.name || trade.pair}
+                          className="h-9 w-9 rounded-full bg-slate-800 object-cover ring-1 ring-white/10"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
+                        />
+                      ) : (
+                        <div className="h-9 w-9 rounded-full bg-slate-800 ring-1 ring-white/10" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY" ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
+                            {trade.type}
                           </span>
-                        );
-                      })()}
-                      
-                      {/* NEW: Volume Status Badge */}
-                      {(() => {
-                        const volBadge = getVolumeStatusBadge(trade.volume_status);
-                        return (
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${volBadge.color}`}>
-                            #{volBadge.number} {volBadge.label}
+                          <span className="text-sm font-medium text-white">{trade.pair}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : trade.confidence === "MEDIUM" ? "bg-slate-600" : "bg-slate-500"}`}>
+                            {trade.confidence}
                           </span>
-                        );
-                      })()}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
-                      <p className="text-xs text-slate-400">Ext. {trade.ext ? formatCurrency(trade.ext) : '—'}</p>
                       <div className="flex items-center gap-2 text-sm">
                         <span className="text-slate-400">Entry</span>
                         <span className="font-medium text-white">{formatCurrency(trade.entryPrice ?? trade.entry)}</span>
@@ -1697,8 +1677,8 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span>${trade.progressMin}</span>
-                        <span>${trade.progressMax}</span>
+                        <span>Signal Score</span>
+                        <span className="text-slate-300">{trade.progressValue}/100</span>
                       </div>
                       <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
                         <div className={`h-full bg-gradient-to-r ${trade.type === "BUY" ? "from-green-500 to-emerald-500" : "from-red-500 to-red-600"}`} style={{ width: `${trade.progressValue}%` }} />
