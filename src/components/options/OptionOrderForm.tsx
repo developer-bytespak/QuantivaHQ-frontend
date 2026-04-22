@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { OptionType, OptionContract } from "@/lib/api/options.service";
 import { InfoTip } from "./Tooltip";
+import { getUsEquityOptionsSession } from "./MarketHoursBanner";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +20,7 @@ interface OptionOrderFormProps {
   isPlacing: boolean;
   accountBalance?: number;
   userPositionQty?: number | null; // qty user holds for selected contract (null = no position)
+  venue?: string;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -31,8 +33,18 @@ export function OptionOrderForm({
   isPlacing,
   accountBalance,
   userPositionQty,
+  venue,
 }: OptionOrderFormProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [marketSession, setMarketSession] = useState(() => getUsEquityOptionsSession());
+
+  useEffect(() => {
+    if (venue !== "ALPACA") return;
+    const id = setInterval(() => setMarketSession(getUsEquityOptionsSession()), 30_000);
+    return () => clearInterval(id);
+  }, [venue]);
+
+  const marketClosed = venue === "ALPACA" && marketSession.state !== "rth";
 
   const maxLoss = orderForm.side === "BUY" ? orderForm.price * orderForm.quantity : null;
   const insufficientBalance = accountBalance !== undefined && maxLoss !== null && maxLoss > accountBalance;
@@ -207,12 +219,19 @@ export function OptionOrderForm({
         </div>
       )}
 
+      {/* Market-closed notice (Alpaca only) */}
+      {marketClosed && (
+        <p className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+          Markets closed — options orders resume at 09:30 ET
+        </p>
+      )}
+
       {/* Submit */}
       <button
         onClick={handleSubmit}
-        disabled={!selectedContract || isPlacing || insufficientBalance || sellBlocked}
+        disabled={!selectedContract || isPlacing || insufficientBalance || sellBlocked || marketClosed}
         className={`w-full rounded-xl py-2.5 text-sm font-semibold transition-all ${
-          !selectedContract || isPlacing || insufficientBalance || sellBlocked
+          !selectedContract || isPlacing || insufficientBalance || sellBlocked || marketClosed
             ? "cursor-not-allowed bg-white/[0.04] text-slate-600"
             : orderForm.side === "BUY"
               ? "bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30"

@@ -52,28 +52,31 @@ function ExchangeCard({ name, description, logo, gradient, delay, onSelect }: Ex
 export default function StockExchangePage() {
     const router = useRouter();
     const [showFAQModal, setShowFAQModal] = useState(false);
+    const [pendingExchange, setPendingExchange] = useState<"alpaca" | null>(null);
 
     const handleExchangeSelect = (exchange: "alpaca") => {
+        setPendingExchange(exchange);
+    };
+
+    const confirmAndContinue = () => {
+        if (!pendingExchange) return;
         // Get existing selected exchanges
         const existingExchanges = JSON.parse(
             localStorage.getItem("quantivahq_selected_exchanges") || "[]"
         );
-        
-        // Add exchange if not already selected
+
         const exchangeData = {
             name: "Alpaca",
             type: "stocks",
-            code: exchange,
+            code: pendingExchange,
         };
-        
-        if (!existingExchanges.find((e: any) => e.code === exchange)) {
+
+        if (!existingExchanges.find((e: any) => e.code === pendingExchange)) {
             existingExchanges.push(exchangeData);
             localStorage.setItem("quantivahq_selected_exchanges", JSON.stringify(existingExchanges));
         }
-        
-        // Also save current selection for immediate use
-        localStorage.setItem("quantivahq_selected_exchange", exchange);
-        
+
+        localStorage.setItem("quantivahq_selected_exchange", pendingExchange);
         router.push("/onboarding/api-key-tutorial");
     };
 
@@ -137,6 +140,42 @@ export default function StockExchangePage() {
                             />
                         ))}
                     </div>
+
+                    {/* Alpaca options nudge (shown after selecting Alpaca, before continuing) */}
+                    {pendingExchange === "alpaca" && (
+                        <div className="w-full max-w-lg mx-auto mt-2 mb-2 rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-4 sm:p-5 animate-text-enter">
+                            <div className="flex items-start gap-3">
+                                <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--primary)]/20">
+                                    <svg className="h-4 w-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-semibold text-white">Enable Options Trading on Alpaca</p>
+                                    <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                                        To use QuantivaHQ&apos;s options features, you&apos;ll need to enable options approval in your Alpaca account. Paper accounts are auto-approved to Level 3.
+                                    </p>
+                                    <a
+                                        href="https://app.alpaca.markets/brokerage/settings/account"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:text-[var(--primary-light)] transition-colors"
+                                    >
+                                        Open Alpaca Settings
+                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                        </svg>
+                                    </a>
+                                </div>
+                            </div>
+                            <button
+                                onClick={confirmAndContinue}
+                                className="mt-4 w-full rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02]"
+                            >
+                                Continue to API Setup →
+                            </button>
+                        </div>
+                    )}
 
                     {/* Help Link Section */}
                     <div className="w-full flex-shrink-0 text-center animate-text-enter px-3" style={{ animationDelay: "0.8s" }}>

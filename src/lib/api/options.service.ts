@@ -349,9 +349,11 @@ export const optionsService = {
   /**
    * Get historical (closed) positions from DB.
    */
-  async getPositionHistory(): Promise<OptionsPosition[]> {
+  async getPositionHistory(venue?: string): Promise<OptionsPosition[]> {
+    const params = new URLSearchParams();
+    if (venue) params.append("venue", venue);
     return apiRequest<never, OptionsPosition[]>({
-      path: "/options/positions/history",
+      path: `/options/positions/history?${params}`,
       method: "GET",
     });
   },
@@ -437,10 +439,11 @@ export const optionsService = {
 
   // ── AI Signals ──────────────────────────────────────────
 
-  async getAiSignals(underlying?: string, limit?: number): Promise<AiOptionsSignal[]> {
+  async getAiSignals(underlying?: string, limit?: number, venue?: string): Promise<AiOptionsSignal[]> {
     const params = new URLSearchParams();
     if (underlying) params.append("underlying", underlying);
     if (limit) params.append("limit", String(limit));
+    if (venue) params.append("venue", venue);
     return apiRequest<never, AiOptionsSignal[]>({
       path: `/options/ai-signals?${params}`,
       method: "GET",
@@ -465,16 +468,19 @@ export const optionsService = {
 
   // ── IV Data ─────────────────────────────────────────────
 
-  async getIvRank(underlying: string): Promise<IvRankData | null> {
+  async getIvRank(underlying: string, venue?: string): Promise<IvRankData | null> {
+    const params = new URLSearchParams();
+    if (venue) params.append("venue", venue);
     return apiRequest<never, IvRankData | null>({
-      path: `/options/iv/rank/${encodeURIComponent(underlying)}`,
+      path: `/options/iv/rank/${encodeURIComponent(underlying)}?${params}`,
       method: "GET",
     });
   },
 
-  async getIvHistory(underlying: string, days?: number): Promise<IvHistoryPoint[]> {
+  async getIvHistory(underlying: string, days?: number, venue?: string): Promise<IvHistoryPoint[]> {
     const params = new URLSearchParams();
     if (days) params.append("days", String(days));
+    if (venue) params.append("venue", venue);
     return apiRequest<never, IvHistoryPoint[]>({
       path: `/options/iv/history/${encodeURIComponent(underlying)}?${params}`,
       method: "GET",

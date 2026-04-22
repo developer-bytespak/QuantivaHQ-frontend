@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { AiOptionsSignal } from "@/lib/api/options.service";
 import { useOptionsStore } from "@/state/options-store";
+import { getUsEquityOptionsSession } from "./MarketHoursBanner";
 
 // ── Direction badge colours ─────────────────────────────────────────────────
 
@@ -42,6 +43,14 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
   const legCount = signal.legs?.length ?? 0;
   const isMultiLeg = legCount > 1;
   const mlegBlocked = venue === "ALPACA" && isMultiLeg && approvalLevel < 3;
+
+  const [marketSession, setMarketSession] = useState(() => getUsEquityOptionsSession());
+  useEffect(() => {
+    if (venue !== "ALPACA") return;
+    const id = setInterval(() => setMarketSession(getUsEquityOptionsSession()), 30_000);
+    return () => clearInterval(id);
+  }, [venue]);
+  const marketClosed = venue === "ALPACA" && marketSession.state !== "rth";
 
   return (
     <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all hover:scale-[1.01] hover:border-[--color-border] hover:shadow-lg">
@@ -131,18 +140,25 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
       {/* Execute button + Alpaca Level 3 gate for multi-leg strategies */}
       {onExecute && !isExpired && legCount > 0 && (
         <div className="mt-3 space-y-1.5">
+          {marketClosed && (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[10px] text-amber-300">
+              Markets closed — options orders resume at 09:30 ET
+            </p>
+          )}
           <button
             onClick={() => onExecute(signal)}
-            disabled={mlegBlocked}
+            disabled={mlegBlocked || marketClosed}
             title={
-              mlegBlocked
+              marketClosed
+                ? "Markets are currently closed"
+                : mlegBlocked
                 ? "Requires Level 3 options approval on Alpaca"
                 : isMultiLeg
                 ? `Place as ${legCount}-leg order`
                 : "Execute signal"
             }
             className={`w-full rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
-              mlegBlocked
+              mlegBlocked || marketClosed
                 ? "cursor-not-allowed bg-white/[0.04] text-slate-500"
                 : "bg-[var(--primary)] text-white hover:bg-[var(--primary-light)]"
             }`}

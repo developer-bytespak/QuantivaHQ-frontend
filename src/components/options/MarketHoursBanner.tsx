@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 
 type SessionState = "rth" | "closed" | "weekend";
 
-function getUsEquityOptionsSession(now: Date = new Date()): {
+export function getUsEquityOptionsSession(now: Date = new Date()): {
   state: SessionState;
   /** Human label shown in the banner — e.g. "Market closes in 2h 14m". */
   label: string;
