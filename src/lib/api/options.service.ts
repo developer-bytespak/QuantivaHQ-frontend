@@ -188,6 +188,37 @@ export interface CancelOptionOrderRequest {
   orderId: string; // our DB order_id or binance order_id
 }
 
+export type MultiLegPositionIntent =
+  | "buy_to_open"
+  | "sell_to_open"
+  | "buy_to_close"
+  | "sell_to_close";
+
+export interface MultiLegOrderLeg {
+  contractSymbol: string;
+  side: "buy" | "sell";
+  ratioQty: number;
+  positionIntent: MultiLegPositionIntent;
+}
+
+export interface PlaceMultiLegOrderRequest {
+  connectionId: string;
+  underlying: string;
+  qty: number;
+  type: "market" | "limit";
+  limitPrice?: number;
+  timeInForce?: "day" | "gtc";
+  signalId?: string;
+  legs: MultiLegOrderLeg[];
+}
+
+export interface MultiLegOrderResponse {
+  groupId: string;
+  brokerOrderId: string;
+  legs: string[];
+  status: string;
+}
+
 export interface OptionTicker {
   symbol: string;
   lastPrice: number;
@@ -217,53 +248,76 @@ export const optionsService = {
 
   /**
    * Get all available underlying assets for options trading.
+   * Pass `connectionId` to scope the list to the active venue (Alpaca
+   * equities vs Binance crypto). Backend defaults to Binance if omitted.
    */
-  async getAvailableUnderlyings(): Promise<AvailableUnderlying[]> {
+  async getAvailableUnderlyings(connectionId?: string): Promise<AvailableUnderlying[]> {
+    const q = connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : "";
     return apiRequest<never, AvailableUnderlying[]>({
-      path: "/options/underlyings",
+      path: `/options/underlyings${q}`,
       method: "GET",
     });
   },
 
-  /**
-   * Fetch full options chain for an underlying (public data).
-   */
-  async getOptionsChain(underlying: string): Promise<OptionsChainResponse> {
+  async getOptionsChain(
+    underlying: string,
+    connectionId?: string,
+  ): Promise<OptionsChainResponse> {
+    const q = connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : "";
     return apiRequest<never, OptionsChainResponse>({
-      path: `/options/chain/${underlying}`,
+      path: `/options/chain/${underlying}${q}`,
       method: "GET",
     });
   },
 
-  /**
-   * Fetch Greeks for a specific option contract (public data).
-   */
-  async getGreeks(contractSymbol: string): Promise<Greeks> {
+  async getGreeks(contractSymbol: string, connectionId?: string): Promise<Greeks> {
+    const q = connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : "";
     return apiRequest<never, Greeks>({
-      path: `/options/greeks/${encodeURIComponent(contractSymbol)}`,
+      path: `/options/greeks/${encodeURIComponent(contractSymbol)}${q}`,
       method: "GET",
     });
   },
 
-  /**
-   * Fetch 24hr ticker for a specific option contract (public data).
-   */
-  async getTicker(contractSymbol: string): Promise<OptionTicker> {
+  async getTicker(contractSymbol: string, connectionId?: string): Promise<OptionTicker> {
+    const q = connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : "";
     return apiRequest<never, OptionTicker>({
-      path: `/options/ticker/${encodeURIComponent(contractSymbol)}`,
+      path: `/options/ticker/${encodeURIComponent(contractSymbol)}${q}`,
       method: "GET",
     });
   },
 
-  /**
-   * Fetch order book depth for an option contract (public data).
-   */
-  async getDepth(contractSymbol: string, limit?: number): Promise<OptionDepth> {
+  async getDepth(
+    contractSymbol: string,
+    limit?: number,
+    connectionId?: string,
+  ): Promise<OptionDepth> {
     const params = new URLSearchParams();
     if (limit) params.append("limit", String(limit));
+    if (connectionId) params.append("connectionId", connectionId);
     const query = params.toString();
     return apiRequest<never, OptionDepth>({
       path: `/options/depth/${encodeURIComponent(contractSymbol)}${query ? `?${query}` : ""}`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * Returns the options approval level for the venue behind `connectionId`.
+   * Binance always reports `{ level: 3, status: 'approved' }`; Alpaca
+   * reports the user's real `options_approved_level` (0–3). The frontend
+   * gates multi-leg entry points on `level >= 3`.
+   */
+  async getApprovalStatus(connectionId: string): Promise<{
+    venue: "BINANCE" | "ALPACA";
+    level: 0 | 1 | 2 | 3;
+    status: "approved" | "pending" | "rejected" | "not_applied";
+  }> {
+    return apiRequest<never, {
+      venue: "BINANCE" | "ALPACA";
+      level: 0 | 1 | 2 | 3;
+      status: "approved" | "pending" | "rejected" | "not_applied";
+    }>({
+      path: `/options/approval-status?connectionId=${encodeURIComponent(connectionId)}`,
       method: "GET",
     });
   },
@@ -295,9 +349,11 @@ export const optionsService = {
   /**
    * Get historical (closed) positions from DB.
    */
-  async getPositionHistory(): Promise<OptionsPosition[]> {
+  async getPositionHistory(venue?: string): Promise<OptionsPosition[]> {
+    const params = new URLSearchParams();
+    if (venue) params.append("venue", venue);
     return apiRequest<never, OptionsPosition[]>({
-      path: "/options/positions/history",
+      path: `/options/positions/history?${params}`,
       method: "GET",
     });
   },
@@ -322,6 +378,21 @@ export const optionsService = {
     return apiRequest<CancelOptionOrderRequest, { success: boolean }>({
       path: "/options/order",
       method: "DELETE",
+      body: dto,
+    });
+  },
+
+  /**
+   * Place an Alpaca multi-leg (mleg) order. Up to 4 legs fill atomically.
+   * Backend returns 403 if the user's Alpaca approval level is below 3.
+   * Caller should catch the 403 and offer the single-leg fallback CTA.
+   */
+  async placeMultiLegOrder(
+    dto: PlaceMultiLegOrderRequest,
+  ): Promise<MultiLegOrderResponse> {
+    return apiRequest<PlaceMultiLegOrderRequest, MultiLegOrderResponse>({
+      path: "/options/orders/multi-leg",
+      method: "POST",
       body: dto,
     });
   },
@@ -368,10 +439,11 @@ export const optionsService = {
 
   // ── AI Signals ──────────────────────────────────────────
 
-  async getAiSignals(underlying?: string, limit?: number): Promise<AiOptionsSignal[]> {
+  async getAiSignals(underlying?: string, limit?: number, venue?: string): Promise<AiOptionsSignal[]> {
     const params = new URLSearchParams();
     if (underlying) params.append("underlying", underlying);
     if (limit) params.append("limit", String(limit));
+    if (venue) params.append("venue", venue);
     return apiRequest<never, AiOptionsSignal[]>({
       path: `/options/ai-signals?${params}`,
       method: "GET",
@@ -396,16 +468,19 @@ export const optionsService = {
 
   // ── IV Data ─────────────────────────────────────────────
 
-  async getIvRank(underlying: string): Promise<IvRankData | null> {
+  async getIvRank(underlying: string, venue?: string): Promise<IvRankData | null> {
+    const params = new URLSearchParams();
+    if (venue) params.append("venue", venue);
     return apiRequest<never, IvRankData | null>({
-      path: `/options/iv/rank/${encodeURIComponent(underlying)}`,
+      path: `/options/iv/rank/${encodeURIComponent(underlying)}?${params}`,
       method: "GET",
     });
   },
 
-  async getIvHistory(underlying: string, days?: number): Promise<IvHistoryPoint[]> {
+  async getIvHistory(underlying: string, days?: number, venue?: string): Promise<IvHistoryPoint[]> {
     const params = new URLSearchParams();
     if (days) params.append("days", String(days));
+    if (venue) params.append("venue", venue);
     return apiRequest<never, IvHistoryPoint[]>({
       path: `/options/iv/history/${encodeURIComponent(underlying)}?${params}`,
       method: "GET",

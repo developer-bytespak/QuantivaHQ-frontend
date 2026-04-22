@@ -130,13 +130,20 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       const { currentSubscription, allPlans } = get();
       if (!currentSubscription) return false;
       const plan = allPlans?.find((p) => p.plan_id === currentSubscription.plan_id);
-      if (!plan) return false;
+
+      // Use tier from matched plan if found, otherwise fall back to currentSubscription.tier directly.
+      // This handles ELITE_PLUS users whose plan may not yet appear in allPlans (e.g. plan list
+      // not loaded yet, or backend omits it from allSubscriptions).
+      const tier = plan?.tier ?? currentSubscription.tier;
 
       // ELITE_PLUS tier gets access to all features including options
-      if (plan.tier === PlanTier.ELITE_PLUS) return true;
+      if (tier === PlanTier.ELITE_PLUS) return true;
 
       // ELITE tier gets access to all features EXCEPT OPTIONS_TRADING
-      if (plan.tier === PlanTier.ELITE && feature !== FeatureType.OPTIONS_TRADING) return true;
+      if (tier === PlanTier.ELITE && feature !== FeatureType.OPTIONS_TRADING) return true;
+
+      // Without the full plan object we cannot check per-feature flags
+      if (!plan) return false;
 
       const features = plan.plan_features ?? [];
       const planFeature = features.find((f: any) => f.feature_type === feature);

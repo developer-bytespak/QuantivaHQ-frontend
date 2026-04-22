@@ -6,6 +6,7 @@ import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType } from "@/mock-data/subscription-dummy-data";
 import { useOptionsStore } from "@/state/options-store";
 import { useOptionsSocket } from "@/hooks/useOptionsSocket";
+import { useActiveOptionsVenue } from "@/hooks/useActiveOptionsVenue";
 import { optionsService } from "@/lib/api/options.service";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import type { OptionsOrder, OptionContract } from "@/lib/api/options.service";
@@ -23,6 +24,8 @@ import {
   PortfolioGreeksDashboard,
   OrderBookPanel,
 } from "@/components/options";
+import { MarketHoursBanner } from "@/components/options/MarketHoursBanner";
+import { Level3GateBanner } from "@/components/options/Level3GateBanner";
 import type { AiOptionsSignal, IvHistoryPoint, PortfolioGreeks, OptionDepth, OptionsPosition } from "@/lib/api/options.service";
 
 // ── ELITE Gate Component ─────────────────────────────────────────────────────
@@ -75,6 +78,10 @@ export default function OptionsPage() {
   // Store
   const store = useOptionsStore();
 
+  // Populate store.venue / store.approvalLevel from the user's active
+  // exchange connection (crypto → Binance options, stocks → Alpaca options).
+  useActiveOptionsVenue();
+
   // Local tab state (simpler than store for page-only concern)
   const [activeTab, setActiveTab] = useState<OptionsTab>("chain");
 
@@ -104,7 +111,7 @@ export default function OptionsPage() {
     if (!connectionId || !hasAccess) return;
     (async () => {
       try {
-        const underlyings = await optionsService.getAvailableUnderlyings();
+        const underlyings = await optionsService.getAvailableUnderlyings(connectionId);
         store.setAvailableUnderlyings(underlyings);
         // Auto-select first underlying if none selected
         if (!store.selectedUnderlying && underlyings.length > 0) {
@@ -123,7 +130,7 @@ export default function OptionsPage() {
     store.setIsLoadingChain(true);
     store.setError(null);
     try {
-      const response = await optionsService.getOptionsChain(store.selectedUnderlying);
+      const response = await optionsService.getOptionsChain(store.selectedUnderlying, connectionId);
       store.setOptionsChain(response.contracts);
       store.setExpiryDates(response.expiryDates);
       // Auto-select first expiry
@@ -228,14 +235,14 @@ export default function OptionsPage() {
     store.setIsLoadingAiSignals(true);
     try {
       // Fetch all signals — filtering by coin is done client-side in the component
-      const signals = await optionsService.getAiSignals();
+      const signals = await optionsService.getAiSignals(undefined, undefined, store.venue);
       store.setAiSignals(signals);
     } catch (err: any) {
       store.setError(err.message ?? "Failed to load AI signals");
     } finally {
       store.setIsLoadingAiSignals(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [store.venue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (hasAccess && activeTab === "ai-signals") fetchAiSignals();
@@ -245,10 +252,10 @@ export default function OptionsPage() {
 
   useEffect(() => {
     if (!store.selectedUnderlying || !hasAccess) return;
-    optionsService.getIvRank(store.selectedUnderlying).then((data) => {
+    optionsService.getIvRank(store.selectedUnderlying, store.venue).then((data) => {
       store.setIvRankData(data);
     }).catch(() => {});
-  }, [store.selectedUnderlying, hasAccess]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [store.selectedUnderlying, store.venue, hasAccess]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── IV History (loaded on demand) ──────────────────────────────────────
 
@@ -259,12 +266,12 @@ export default function OptionsPage() {
     if (!store.selectedUnderlying) return;
     setIsLoadingIvHistory(true);
     try {
-      const history = await optionsService.getIvHistory(store.selectedUnderlying, 90);
+      const history = await optionsService.getIvHistory(store.selectedUnderlying, 90, store.venue);
       setIvHistory(history);
     } catch {} finally {
       setIsLoadingIvHistory(false);
     }
-  }, [store.selectedUnderlying]);
+  }, [store.selectedUnderlying, store.venue]);
 
   // Reset IV history when underlying changes
   useEffect(() => { setIvHistory([]); }, [store.selectedUnderlying]);
@@ -310,12 +317,12 @@ export default function OptionsPage() {
   const loadPositionHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     try {
-      const history = await optionsService.getPositionHistory();
+      const history = await optionsService.getPositionHistory(store.venue);
       setPositionHistory(history);
     } catch {} finally {
       setIsLoadingHistory(false);
     }
-  }, []);
+  }, [store.venue]);
 
   useEffect(() => {
     if (showHistory && positionHistory.length === 0) loadPositionHistory();
@@ -490,7 +497,9 @@ export default function OptionsPage() {
               Options Trading
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              AI-powered options recommendations · Binance Options
+              AI-powered options recommendations ·{" "}
+              {store.venue === "ALPACA" ? "Alpaca US Equity Options" : "Binance Crypto Options"}
+              {store.isPaper && store.venue === "ALPACA" ? " · Paper" : ""}
             </p>
           </div>
 
@@ -541,6 +550,16 @@ export default function OptionsPage() {
         </div>
       </div>
 
+      {/* Alpaca-only banners: market hours + Level 3 approval nudge.
+          Binance crypto options trade 24/7 and have no approval flow, so
+          these only render when the active venue is ALPACA. */}
+      {store.venue === "ALPACA" && (
+        <div className="space-y-2">
+          <MarketHoursBanner />
+          <Level3GateBanner level={store.approvalLevel} />
+        </div>
+      )}
+
       {/* Error banner */}
       {store.error && (
         <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-2.5 text-sm text-red-400">
@@ -571,6 +590,7 @@ export default function OptionsPage() {
                 underlyings={store.availableUnderlyings}
                 selected={store.selectedUnderlying}
                 currentPrice={currentUnderlying?.indexPrice ?? 0}
+                venue={store.venue}
                 onSelect={(symbol) => {
                   store.setSelectedUnderlying(symbol);
                   store.setSelectedExpiry(null);
@@ -632,6 +652,7 @@ export default function OptionsPage() {
                 isPlacing={store.isPlacingOrder}
                 accountBalance={store.account?.availableBalance}
                 userPositionQty={userPositionQty}
+                venue={store.venue}
               />
               {store.selectedContract && (
                 <OrderBookPanel depth={orderBookDepth} isLoading={isLoadingDepth} />
@@ -716,13 +737,16 @@ function CoinSelector({
   underlyings,
   selected,
   currentPrice,
+  venue,
   onSelect,
 }: {
   underlyings: { symbol: string; indexPrice: number; contractCount: number }[];
   selected: string | null;
   currentPrice: number;
+  venue?: string;
   onSelect: (symbol: string) => void;
 }) {
+  const isAlpaca = venue === "ALPACA";
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -747,7 +771,7 @@ function CoinSelector({
           onClick={() => setOpen(!open)}
           className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 transition-colors hover:bg-white/[0.06]"
         >
-          <span className="text-base font-bold text-slate-100">{selected ?? "Select"}</span>
+          <span className="text-base font-bold text-slate-100">{selected ?? (isAlpaca ? "Select Symbol" : "Select Coin")}</span>
           <svg
             className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
             fill="none"
@@ -795,7 +819,7 @@ function CoinSelector({
           <span className="text-xl font-bold tabular-nums text-slate-100">
             ${currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
-          <span className="text-[11px] text-slate-500">Index Price</span>
+          <span className="text-[11px] text-slate-500">{isAlpaca ? "Last Price" : "Index Price"}</span>
         </div>
       )}
     </div>

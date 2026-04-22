@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { AiOptionsSignal } from "@/lib/api/options.service";
+import { useOptionsStore } from "@/state/options-store";
+import { getUsEquityOptionsSession } from "./MarketHoursBanner";
 
 // ── Direction badge colours ─────────────────────────────────────────────────
 
@@ -33,6 +35,22 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
   const expiresAt = new Date(signal.expires_at);
   const isExpired = expiresAt < new Date();
   const createdAt = new Date(signal.created_at);
+
+  // Alpaca users need Level 3 approval to place multi-leg orders. Single-leg
+  // strategies (long_call, long_put) are placeable at Level 2+.
+  const venue = useOptionsStore((s) => s.venue);
+  const approvalLevel = useOptionsStore((s) => s.approvalLevel);
+  const legCount = signal.legs?.length ?? 0;
+  const isMultiLeg = legCount > 1;
+  const mlegBlocked = venue === "ALPACA" && isMultiLeg && approvalLevel < 3;
+
+  const [marketSession, setMarketSession] = useState(() => getUsEquityOptionsSession());
+  useEffect(() => {
+    if (venue !== "ALPACA") return;
+    const id = setInterval(() => setMarketSession(getUsEquityOptionsSession()), 30_000);
+    return () => clearInterval(id);
+  }, [venue]);
+  const marketClosed = venue === "ALPACA" && marketSession.state !== "rth";
 
   return (
     <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all hover:scale-[1.01] hover:border-[--color-border] hover:shadow-lg">
@@ -119,14 +137,45 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
         </span>
       </div>
 
-      {/* Execute button */}
-      {onExecute && !isExpired && signal.legs.length > 0 && (
-        <button
-          onClick={() => onExecute(signal)}
-          className="mt-3 w-full rounded-lg bg-[var(--primary)] px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-[var(--primary-light)]"
-        >
-          Execute Signal
-        </button>
+      {/* Execute button + Alpaca Level 3 gate for multi-leg strategies */}
+      {onExecute && !isExpired && legCount > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {marketClosed && (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[10px] text-amber-300">
+              Markets closed — options orders resume at 09:30 ET
+            </p>
+          )}
+          <button
+            onClick={() => onExecute(signal)}
+            disabled={mlegBlocked || marketClosed}
+            title={
+              marketClosed
+                ? "Markets are currently closed"
+                : mlegBlocked
+                ? "Requires Level 3 options approval on Alpaca"
+                : isMultiLeg
+                ? `Place as ${legCount}-leg order`
+                : "Execute signal"
+            }
+            className={`w-full rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+              mlegBlocked || marketClosed
+                ? "cursor-not-allowed bg-white/[0.04] text-slate-500"
+                : "bg-[var(--primary)] text-white hover:bg-[var(--primary-light)]"
+            }`}
+          >
+            {mlegBlocked
+              ? `Level 3 Required (${legCount} legs)`
+              : isMultiLeg
+              ? `Place as ${legCount}-leg Order`
+              : "Execute Signal"}
+          </button>
+          {mlegBlocked && (
+            <p className="text-[10px] leading-relaxed text-slate-500">
+              Multi-leg strategies require Alpaca options Level 3 approval. Enable it in
+              your Alpaca account, or dismiss this signal.
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
