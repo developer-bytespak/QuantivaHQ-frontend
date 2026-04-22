@@ -6,6 +6,7 @@ import useSubscriptionStore from "@/state/subscription-store";
 import { FeatureType } from "@/mock-data/subscription-dummy-data";
 import { useOptionsStore } from "@/state/options-store";
 import { useOptionsSocket } from "@/hooks/useOptionsSocket";
+import { useActiveOptionsVenue } from "@/hooks/useActiveOptionsVenue";
 import { optionsService } from "@/lib/api/options.service";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import type { OptionsOrder, OptionContract } from "@/lib/api/options.service";
@@ -23,6 +24,8 @@ import {
   PortfolioGreeksDashboard,
   OrderBookPanel,
 } from "@/components/options";
+import { MarketHoursBanner } from "@/components/options/MarketHoursBanner";
+import { Level3GateBanner } from "@/components/options/Level3GateBanner";
 import type { AiOptionsSignal, IvHistoryPoint, PortfolioGreeks, OptionDepth, OptionsPosition } from "@/lib/api/options.service";
 
 // ── ELITE Gate Component ─────────────────────────────────────────────────────
@@ -75,6 +78,10 @@ export default function OptionsPage() {
   // Store
   const store = useOptionsStore();
 
+  // Populate store.venue / store.approvalLevel from the user's active
+  // exchange connection (crypto → Binance options, stocks → Alpaca options).
+  useActiveOptionsVenue();
+
   // Local tab state (simpler than store for page-only concern)
   const [activeTab, setActiveTab] = useState<OptionsTab>("chain");
 
@@ -104,7 +111,7 @@ export default function OptionsPage() {
     if (!connectionId || !hasAccess) return;
     (async () => {
       try {
-        const underlyings = await optionsService.getAvailableUnderlyings();
+        const underlyings = await optionsService.getAvailableUnderlyings(connectionId);
         store.setAvailableUnderlyings(underlyings);
         // Auto-select first underlying if none selected
         if (!store.selectedUnderlying && underlyings.length > 0) {
@@ -123,7 +130,7 @@ export default function OptionsPage() {
     store.setIsLoadingChain(true);
     store.setError(null);
     try {
-      const response = await optionsService.getOptionsChain(store.selectedUnderlying);
+      const response = await optionsService.getOptionsChain(store.selectedUnderlying, connectionId);
       store.setOptionsChain(response.contracts);
       store.setExpiryDates(response.expiryDates);
       // Auto-select first expiry
@@ -490,7 +497,9 @@ export default function OptionsPage() {
               Options Trading
             </h1>
             <p className="mt-1 text-sm text-slate-500">
-              AI-powered options recommendations · Binance Options
+              AI-powered options recommendations ·{" "}
+              {store.venue === "ALPACA" ? "Alpaca US Equity Options" : "Binance Crypto Options"}
+              {store.isPaper && store.venue === "ALPACA" ? " · Paper" : ""}
             </p>
           </div>
 
@@ -540,6 +549,16 @@ export default function OptionsPage() {
           ))}
         </div>
       </div>
+
+      {/* Alpaca-only banners: market hours + Level 3 approval nudge.
+          Binance crypto options trade 24/7 and have no approval flow, so
+          these only render when the active venue is ALPACA. */}
+      {store.venue === "ALPACA" && (
+        <div className="space-y-2">
+          <MarketHoursBanner />
+          <Level3GateBanner level={store.approvalLevel} />
+        </div>
+      )}
 
       {/* Error banner */}
       {store.error && (

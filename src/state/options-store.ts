@@ -16,7 +16,16 @@ import type {
 
 export type OptionsTab = "chain" | "positions" | "orders" | "recommendations" | "ai-signals";
 
+export type OptionsVenue = "BINANCE" | "ALPACA";
+export type OptionsApprovalLevel = 0 | 1 | 2 | 3;
+
 interface OptionsState {
+  // ── Venue (auto-detected from active exchange connection) ─
+  venue: OptionsVenue;
+  connectionId: string | null;
+  approvalLevel: OptionsApprovalLevel;
+  isPaper: boolean;
+
   // ── Data ──────────────────────────────────────────────
   availableUnderlyings: AvailableUnderlying[];
   selectedUnderlying: string | null;
@@ -52,6 +61,16 @@ interface OptionsState {
   error: string | null;
 
   // ── Setters ───────────────────────────────────────────
+  setVenue: (venue: OptionsVenue) => void;
+  setConnectionId: (id: string | null) => void;
+  setApprovalLevel: (level: OptionsApprovalLevel) => void;
+  setIsPaper: (v: boolean) => void;
+  resetForVenueChange: (next: {
+    venue: OptionsVenue;
+    connectionId: string | null;
+    isPaper: boolean;
+    approvalLevel: OptionsApprovalLevel;
+  }) => void;
   setAvailableUnderlyings: (u: AvailableUnderlying[]) => void;
   setSelectedUnderlying: (u: string | null) => void;
   setSelectedExpiry: (e: string | null) => void;
@@ -88,6 +107,10 @@ const defaultOrderForm = {
 };
 
 const defaultState = {
+  venue: "BINANCE" as OptionsVenue,
+  connectionId: null as string | null,
+  approvalLevel: 3 as OptionsApprovalLevel, // Binance is always "approved"
+  isPaper: false,
   availableUnderlyings: [],
   selectedUnderlying: null,
   selectedExpiry: null,
@@ -117,6 +140,25 @@ const defaultState = {
 
 export const useOptionsStore = create<OptionsState>((set) => ({
   ...defaultState,
+
+  setVenue: (venue) => set({ venue }),
+  setConnectionId: (connectionId) => set({ connectionId }),
+  setApprovalLevel: (approvalLevel) => set({ approvalLevel }),
+  setIsPaper: (isPaper) => set({ isPaper }),
+  /**
+   * Atomically swap the venue and wipe all venue-scoped data so the new
+   * venue's fetchers start from a clean slate (BTC chain shouldn't briefly
+   * render while Alpaca SPY chain is loading).
+   */
+  resetForVenueChange: ({ venue, connectionId, isPaper, approvalLevel }) =>
+    set({
+      ...defaultState,
+      orderForm: { ...defaultOrderForm },
+      venue,
+      connectionId,
+      isPaper,
+      approvalLevel,
+    }),
 
   setAvailableUnderlyings: (availableUnderlyings) => set({ availableUnderlyings }),
   setSelectedUnderlying: (selectedUnderlying) => set({ selectedUnderlying }),
