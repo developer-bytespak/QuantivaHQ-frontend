@@ -25,72 +25,50 @@ export function StrategyCard({
   hideTradeButtons = false,
   isStockMode = false,
 }: StrategyCardProps) {
-  // Helper to get trend direction badge
-  const getTrendDirectionBadge = (direction?: string) => {
-    switch (direction) {
-      case "TRENDING_UP":
-        return { color: "bg-green-500/20 text-green-400", number: "1", label: "UP" };
-      case "TRENDING_DOWN":
-        return { color: "bg-red-500/20 text-red-400", number: "2", label: "DOWN" };
-      default:
-        return { color: "bg-slate-500/20 text-slate-300", number: "3", label: "STABLE" };
-    }
-  };
-
-  // Helper to get volume status badge
-  const getVolumeStatusBadge = (status?: string) => {
-    switch (status) {
-      case "MASSIVE_SURGE":
-        return { color: "bg-purple-500/20 text-purple-300", number: "1", label: "SURGE" };
-      case "VOLUME_SURGE":
-        return { color: "bg-blue-500/20 text-blue-300", number: "2", label: "SURGE" };
-      default:
-        return { color: "bg-slate-600/20 text-slate-400", number: "3", label: "NORMAL" };
-    }
-  };
-
-  const trendBadge = getTrendDirectionBadge(signal.trend_direction);
-  const volBadge = getVolumeStatusBadge(signal.volume_status);
-
   return (
     <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
       <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-          <span
-            className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${
-              signal.type === "BUY"
-                ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
-                : "bg-gradient-to-r from-red-500 to-red-600"
-            }`}
-          >
-            {signal.type}
-          </span>
-          <span className="text-sm font-medium text-white">{signal.pair}</span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${
-              signal.confidence === "HIGH"
-                ? "bg-slate-700"
-                : signal.confidence === "MEDIUM"
-                ? "bg-slate-600"
-                : "bg-slate-500"
-            }`}
-          >
-            {signal.confidence}
-          </span>
-
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${trendBadge.color}`}>
-            #{trendBadge.number} {trendBadge.label}
-          </span>
-
-          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${volBadge.color}`}>
-            #{volBadge.number} {volBadge.label}
-          </span>
+        <div className="flex items-center gap-3">
+          {signal.logoUrl ? (
+            <img
+              src={signal.logoUrl}
+              alt={signal.name || signal.pair}
+              className="h-9 w-9 rounded-full bg-slate-800 object-cover ring-1 ring-white/10"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+              }}
+            />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-slate-800 ring-1 ring-white/10" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${
+                  signal.type === "BUY"
+                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
+                    : "bg-gradient-to-r from-red-500 to-red-600"
+                }`}
+              >
+                {signal.type}
+              </span>
+              <span className="text-sm font-medium text-white">{signal.pair}</span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs text-slate-300 ${
+                  signal.confidence === "HIGH"
+                    ? "bg-slate-700"
+                    : signal.confidence === "MEDIUM"
+                    ? "bg-slate-600"
+                    : "bg-slate-500"
+                }`}
+              >
+                {signal.confidence}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs text-slate-400">
-            Ext. {signal.ext ? formatCurrency(signal.ext) : "—"}
-          </p>
           <div className="flex items-center gap-2 text-sm">
             <span className="text-slate-400">Entry</span>
             <span className="font-medium text-white">
@@ -126,8 +104,8 @@ export function StrategyCard({
 
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>${signal.progressMin}</span>
-            <span>${signal.progressMax}</span>
+            <span>Signal Score</span>
+            <span className="text-slate-300">{signal.progressValue}/100</span>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
             <div
