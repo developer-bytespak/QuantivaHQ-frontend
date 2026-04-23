@@ -388,6 +388,15 @@ export default function CustomStrategiesTradingPage() {
     setShowDetailsModal(true);
   };
 
+  const handleViewChart = (trade: Trade) => {
+    const symbol = String(trade?.pair ?? "")
+      .split("/")[0]
+      ?.trim()
+      ?.toUpperCase();
+    if (!symbol) return;
+    router.push(`/dashboard/market/${symbol}`);
+  };
+
   const handleGenerateInsight = async (strategyId: string, assetId: string) => {
     const key = `${strategyId}-${assetId}`;
     if (loadingInsight[key]) return;
@@ -692,6 +701,7 @@ export default function CustomStrategiesTradingPage() {
                   onAutoTrade={() => handleAutoTrade(trade)}
                   onManualTrade={() => handleManualTrade(trade)}
                   onViewDetails={() => handleViewDetails(trade)}
+                  onViewChart={() => handleViewChart(trade)}
                   isStockMode={isStocksConnection}
                   aiInsight={insight || null}
                   onGenerateInsight={

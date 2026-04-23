@@ -17,6 +17,7 @@ interface StrategyCardProps {
   aiInsight?: { text: string; timestamp: number } | null;
   onGenerateInsight?: () => void;
   isGeneratingInsight?: boolean;
+  onViewChart?: () => void;
 }
 
 function formatInsightTimeAgo(timestamp: number) {
@@ -40,6 +41,7 @@ export function StrategyCard({
   aiInsight = null,
   onGenerateInsight,
   isGeneratingInsight = false,
+  onViewChart,
 }: StrategyCardProps) {
   return (
     <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
@@ -237,22 +239,59 @@ export function StrategyCard({
           )}
         </div>
 
-        <div className="flex gap-2 pt-2">
-          {!hideTradeButtons && onAutoTrade && (
+        {onViewChart ? (
+          <div className="space-y-2 pt-2">
+            {!hideTradeButtons && onAutoTrade && (
+              <button
+                onClick={onAutoTrade}
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:-translate-y-[1px] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40 active:translate-y-0"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v12m6-6H6" />
+                </svg>
+                Auto Trade
+              </button>
+            )}
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-700/40 bg-slate-900/40 p-1">
+              <button
+                onClick={onViewChart}
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800/60 px-3 text-sm font-medium text-slate-200 transition-all duration-300 hover:bg-slate-700/70 hover:text-white"
+              >
+                <svg className="h-4 w-4 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 5.656m1.414-7.07l4.95-4.95a4 4 0 115.657 5.657l-4.95 4.95m-7.07 1.414l-4.95 4.95a4 4 0 01-5.657-5.657l4.95-4.95" />
+                </svg>
+                View Chart Detail
+              </button>
+              <button
+                onClick={onViewDetails}
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800/60 px-3 text-sm font-medium text-slate-200 transition-all duration-300 hover:bg-slate-700/70 hover:text-white"
+              >
+                <svg className="h-4 w-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Details
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2 pt-2">
+            {!hideTradeButtons && onAutoTrade && (
+              <button
+                onClick={onAutoTrade}
+                className="flex-1 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
+              >
+                Auto Trade
+              </button>
+            )}
             <button
-              onClick={onAutoTrade}
-              className="flex-1 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.4)]"
+              onClick={onViewDetails}
+              className="rounded-xl bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white"
             >
-              Auto Trade
+              View Details
             </button>
-          )}
-          <button
-            onClick={onViewDetails}
-            className="rounded-xl bg-[--color-surface] px-4 py-2.5 text-sm font-medium text-slate-300 transition-all duration-300 hover:text-white"
-          >
-            View Details
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1806,7 +1806,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                           <svg className="h-4 w-4 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 5.656m1.414-7.07l4.95-4.95a4 4 0 115.657 5.657l-4.95 4.95m-7.07 1.414l-4.95 4.95a4 4 0 01-5.657-5.657l4.95-4.95" />
                           </svg>
-                          View Coin Detail
+                          View Chart Detail
                         </button>
                         <button
                           onClick={() => handleViewTrade(index)}
