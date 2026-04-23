@@ -9,6 +9,7 @@ import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
 import { useExchange } from "@/context/ExchangeContext";
 import { ComingSoon } from "@/components/common/coming-soon";
+import { AssetAvatar } from "@/components/common/asset-avatar";
 import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
 import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
 import { TopTradeVcPoolContext } from "./context/top-trade-vc-pool-context";
@@ -1636,16 +1637,11 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 <div key={trade.id} className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center gap-3">
-                      {trade.logoUrl ? (
-                        <img
-                          src={trade.logoUrl}
-                          alt={trade.name || trade.pair}
-                          className="h-9 w-9 rounded-full bg-slate-800 object-cover ring-1 ring-white/10"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = 'hidden'; }}
-                        />
-                      ) : (
-                        <div className="h-9 w-9 rounded-full bg-slate-800 ring-1 ring-white/10" />
-                      )}
+                      <AssetAvatar
+                        src={trade.logoUrl}
+                        pair={trade.pair}
+                        name={trade.name}
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className={`rounded-lg px-3 py-1 text-sm font-semibold text-white ${trade.type === "BUY" ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]" : "bg-gradient-to-r from-red-500 to-red-600"}`}>
@@ -1806,7 +1802,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                           <svg className="h-4 w-4 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 5.656m1.414-7.07l4.95-4.95a4 4 0 115.657 5.657l-4.95 4.95m-7.07 1.414l-4.95 4.95a4 4 0 01-5.657-5.657l4.95-4.95" />
                           </svg>
-                          View Coin Detail
+                          View Chart Detail
                         </button>
                         <button
                           onClick={() => handleViewTrade(index)}

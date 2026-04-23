@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { alpacaCryptoService } from "@/lib/api/alpaca-crypto.service";
 import { alpacaPaperTradingService, type AlpacaDashboard } from "@/lib/api/alpaca-paper-trading.service";
 import { apiRequest } from "@/lib/api/client";
+import { generateAssetInsight } from "@/lib/api/strategies";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import { useExchange } from "@/context/ExchangeContext";
 import { BalanceOverview } from "../paper-trading/components/balance-overview";
@@ -131,6 +132,12 @@ export default function CustomStrategiesTradingPage() {
   const [loadingSignals, setLoadingSignals] = useState<Record<string, boolean>>({});
   const [signalsError, setSignalsError] = useState<Record<string, string>>({});
   const [lastRefresh, setLastRefresh] = useState<Record<string, Date>>({});
+
+  // On-demand AI insights: keyed by strategy_id → asset_id → { text, timestamp }
+  const [aiInsights, setAiInsights] = useState<
+    Record<string, Record<string, { text: string; timestamp: number }>>
+  >({});
+  const [loadingInsight, setLoadingInsight] = useState<Record<string, boolean>>({});
 
   // Trade modals
   const [showAutoTradeModal, setShowAutoTradeModal] = useState(false);
@@ -379,6 +386,37 @@ export default function CustomStrategiesTradingPage() {
   const handleViewDetails = (trade: Trade) => {
     setSelectedSignal(trade);
     setShowDetailsModal(true);
+  };
+
+  const handleViewChart = (trade: Trade) => {
+    const symbol = String(trade?.pair ?? "")
+      .split("/")[0]
+      ?.trim()
+      ?.toUpperCase();
+    if (!symbol) return;
+    router.push(`/dashboard/market/${symbol}`);
+  };
+
+  const handleGenerateInsight = async (strategyId: string, assetId: string) => {
+    const key = `${strategyId}-${assetId}`;
+    if (loadingInsight[key]) return;
+
+    setLoadingInsight((p) => ({ ...p, [key]: true }));
+    try {
+      const response = await generateAssetInsight(strategyId, assetId);
+      setAiInsights((p) => ({
+        ...p,
+        [strategyId]: {
+          ...(p[strategyId] || {}),
+          [assetId]: { text: response.insight, timestamp: Date.now() },
+        },
+      }));
+    } catch (err: any) {
+      console.error(`Failed to generate insight for ${assetId}:`, err);
+      alert(`Failed to generate insight: ${err?.message || String(err)}`);
+    } finally {
+      setLoadingInsight((p) => ({ ...p, [key]: false }));
+    }
   };
 
   const refreshBalanceAndOrders = async () => {
@@ -650,17 +688,31 @@ export default function CustomStrategiesTradingPage() {
           </div>
         ) : currentTrades.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 gap-4">
-            {currentTrades.map((trade, idx) => (
-              <StrategyCard
-                key={trade.id}
-                signal={trade}
-                index={idx}
-                onAutoTrade={() => handleAutoTrade(trade)}
-                onManualTrade={() => handleManualTrade(trade)}
-                onViewDetails={() => handleViewDetails(trade)}
-                isStockMode={isStocksConnection}
-              />
-            ))}
+            {currentTrades.map((trade, idx) => {
+              const assetId = (trade as any).assetId || (trade as any).asset_id;
+              const strategyId = currentStrategy!.strategy_id;
+              const key = assetId ? `${strategyId}-${assetId}` : "";
+              const insight = assetId ? aiInsights[strategyId]?.[assetId] : undefined;
+              return (
+                <StrategyCard
+                  key={trade.id}
+                  signal={trade}
+                  index={idx}
+                  onAutoTrade={() => handleAutoTrade(trade)}
+                  onManualTrade={() => handleManualTrade(trade)}
+                  onViewDetails={() => handleViewDetails(trade)}
+                  onViewChart={() => handleViewChart(trade)}
+                  isStockMode={isStocksConnection}
+                  aiInsight={insight || null}
+                  onGenerateInsight={
+                    assetId
+                      ? () => handleGenerateInsight(strategyId, assetId)
+                      : undefined
+                  }
+                  isGeneratingInsight={!!loadingInsight[key]}
+                />
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-16 rounded-2xl bg-white/5 border border-white/5">

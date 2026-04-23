@@ -231,7 +231,7 @@ export async function generateAssetInsight(strategyId: string, assetId: string):
   signal?: any;
 }> {
   return apiRequest<unknown, any>({
-    path: `/strategies/pre-built/${strategyId}/assets/${assetId}/generate-insight`,
+    path: `/strategies/strategy/${strategyId}/assets/${assetId}/generate-insight`,
     method: 'POST',
   });
 }
