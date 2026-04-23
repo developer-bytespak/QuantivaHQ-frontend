@@ -54,6 +54,12 @@ export function OptionOrderForm({
 
   const contractTypeLabel = selectedContract?.type === "CALL" ? "Call" : selectedContract?.type === "PUT" ? "Put" : "Option";
 
+  // Liquidity / price sanity — both venues reject limit buys on contracts
+  // with no active ask. Catch it here with a clear message instead of
+  // letting the venue return an opaque error after the user clicks Buy.
+  const hasAsk = !!selectedContract && selectedContract.askPrice > 0;
+  const invalidPrice = !(orderForm.price > 0);
+
   const handleSubmit = () => {
     if (!selectedContract) return;
     setConfirmOpen(true);
@@ -64,7 +70,13 @@ export function OptionOrderForm({
     onSubmit();
   };
 
-  const submitDisabled = !selectedContract || isPlacing || insufficientBalance || marketClosed;
+  const submitDisabled =
+    !selectedContract ||
+    isPlacing ||
+    insufficientBalance ||
+    marketClosed ||
+    !hasAsk ||
+    invalidPrice;
 
   return (
     <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
@@ -155,6 +167,28 @@ export function OptionOrderForm({
           </div>
         )}
       </div>
+
+      {/* Liquidity warning — no ask price means nothing is being offered
+          for sale, so any limit buy will be rejected by the venue. */}
+      {selectedContract && !hasAsk && (
+        <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5">
+          <p className="text-[10px] font-medium text-amber-300">
+            ⚠ No ask price — this contract has no active sell offers right now.
+            Pick a different strike or expiry, or wait for a fresh quote.
+          </p>
+        </div>
+      )}
+
+      {/* Price-input nudge — only when there's a real market but the user
+          hasn't typed a price yet (or cleared it). */}
+      {selectedContract && hasAsk && invalidPrice && (
+        <div className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5">
+          <p className="text-[10px] font-medium text-amber-300">
+            Enter a limit price above 0 — tap Bid / Ask / Mark below the price
+            field for quick fill.
+          </p>
+        </div>
+      )}
 
       {/* Summary */}
       {maxLoss > 0 && (
