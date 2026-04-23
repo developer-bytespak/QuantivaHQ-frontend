@@ -5,6 +5,7 @@ import {
   formatPercent,
   formatNumberCompact,
 } from "@/lib/trading/paper-trading-utils";
+import { AssetAvatar } from "@/components/common/asset-avatar";
 
 interface StrategyCardProps {
   signal: any;
@@ -47,18 +48,12 @@ export function StrategyCard({
     <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-3">
-          {signal.logoUrl ? (
-            <img
-              src={signal.logoUrl}
-              alt={signal.name || signal.pair}
-              className="h-9 w-9 rounded-full bg-slate-800 object-cover ring-1 ring-white/10"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-              }}
-            />
-          ) : (
-            <div className="h-9 w-9 rounded-full bg-slate-800 ring-1 ring-white/10" />
-          )}
+          <AssetAvatar
+            src={signal.logoUrl}
+            symbol={signal.symbol}
+            pair={signal.pair}
+            name={signal.name}
+          />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span
