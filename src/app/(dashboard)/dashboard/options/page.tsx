@@ -23,6 +23,7 @@ import {
   PayoffDiagram,
   PortfolioGreeksDashboard,
   OrderBookPanel,
+  SellPositionModal,
 } from "@/components/options";
 import { MarketHoursBanner } from "@/components/options/MarketHoursBanner";
 import { Level3GateBanner } from "@/components/options/Level3GateBanner";
@@ -158,28 +159,11 @@ export default function OptionsPage() {
     if (hasAccess && activeTab === "chain") fetchChain();
   }, [store.selectedUnderlying, hasAccess, activeTab, fetchChain]);
 
-  // ── Auto-select contract from pending sell-to-close or signal after chain loads ─────
+  // ── Auto-select contract from pending signal after chain loads ─────────
 
   useEffect(() => {
-    if (store.optionsChain.length === 0 || store.isLoadingChain) return;
-
-    // Pending sell-to-close: find contract by exact symbol
-    if (pendingCloseRef.current) {
-      const pos = pendingCloseRef.current;
-      pendingCloseRef.current = null;
-      const matching = store.optionsChain.find((c) => c.symbol === pos.contractSymbol);
-      if (matching) {
-        store.setSelectedContract(matching);
-        // Use bid price for sell orders, not ask
-        store.setOrderForm({ price: matching.bidPrice > 0 ? matching.bidPrice : matching.markPrice });
-        if (matching.expiry) store.setSelectedExpiry(matching.expiry.split("T")[0]);
-      }
-      return;
-    }
-
-    // Pending signal: find contract by type + closest strike
     const signal = pendingSignalRef.current;
-    if (!signal) return;
+    if (!signal || store.optionsChain.length === 0 || store.isLoadingChain) return;
     pendingSignalRef.current = null;
 
     const leg = signal.legs[0];
@@ -348,14 +332,13 @@ export default function OptionsPage() {
     if (showHistory && positionHistory.length === 0) loadPositionHistory();
   }, [showHistory, positionHistory.length, loadPositionHistory]);
 
-  // ── User position qty for sell-to-close ─────────────────────────────
+  // ── Sell position modal ────────────────────────────────────────────────────
 
-  const [userPositionQty, setUserPositionQty] = useState<number | null>(null);
+  const [sellModalPos, setSellModalPos] = useState<OptionsPosition | null>(null);
 
-  // ── Pending signal/close execution — auto-select contract after chain loads ──
+  // ── Pending signal execution — auto-select contract after chain loads ──
 
   const pendingSignalRef = useRef<AiOptionsSignal | null>(null);
-  const pendingCloseRef = useRef<OptionsPosition | null>(null);
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
@@ -366,12 +349,6 @@ export default function OptionsPage() {
         optionType: contract.type,
         price: contract.askPrice, // Default to ask for BUY
       });
-
-      // Check if user has an open position for this contract (sell-to-close context)
-      const matchingPosition = store.positions.find(
-        (p) => p.contractSymbol === contract.symbol && p.isOpen,
-      );
-      setUserPositionQty(matchingPosition ? matchingPosition.quantity : null);
 
       // Fetch greeks for selected contract
       if (connectionId) {
@@ -434,34 +411,9 @@ export default function OptionsPage() {
 
   // ── Sell-to-Close Handler ───────────────────────────────────────────────
 
-  const handleClosePosition = useCallback(
-    (pos: OptionsPosition) => {
-      // Store the position so the auto-select effect can find the contract
-      // after the chain loads — the chain may be empty or for a different underlying.
-      pendingCloseRef.current = pos;
-
-      // Pre-fill side/qty/type. Price will be set to bidPrice by the auto-select
-      // effect once the contract is found in the chain.
-      store.setOrderForm({
-        optionType: pos.optionType,
-        side: pos.quantity > 0 ? "SELL" : "BUY",
-        quantity: Math.abs(pos.quantity),
-        price: pos.currentPremium || 0,
-      });
-      setUserPositionQty(Math.abs(pos.quantity));
-
-      // Switching the underlying triggers a fresh chain load for this asset.
-      // The expiry is pre-set so the correct expiry tab is already active
-      // when the chain renders — no second selection needed.
-      store.setSelectedUnderlying(pos.underlying);
-      store.setSelectedContract(null);
-      const expiryDateStr = pos.expiry ? pos.expiry.split("T")[0] : null;
-      store.setSelectedExpiry(expiryDateStr);
-
-      setActiveTab("chain");
-    },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const handleClosePosition = useCallback((pos: OptionsPosition) => {
+    setSellModalPos(pos);
+  }, []);
 
   // ── Execute Signal Handler ─────────────────────────────────────────────
 
@@ -690,7 +642,6 @@ export default function OptionsPage() {
                 onSubmit={handlePlaceOrder}
                 isPlacing={store.isPlacingOrder}
                 accountBalance={store.account?.availableBalance}
-                userPositionQty={userPositionQty}
                 venue={store.venue}
               />
               {store.selectedContract && (
@@ -766,6 +717,21 @@ export default function OptionsPage() {
             onExecute={handleExecuteSignal}
           />
         )}      </div>
+
+      {/* Sell-to-close modal */}
+      {sellModalPos && connectionId && (
+        <SellPositionModal
+          position={sellModalPos}
+          connectionId={connectionId}
+          venue={store.venue}
+          onClose={() => setSellModalPos(null)}
+          onSuccess={() => {
+            setSellModalPos(null);
+            fetchPositions();
+            fetchOrders();
+          }}
+        />
+      )}
     </div>
   );
 }

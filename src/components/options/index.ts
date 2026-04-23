@@ -12,3 +12,4 @@ export { IvRankBadge } from "./IvRankBadge";
 export { PayoffDiagram } from "./PayoffDiagram";
 export { PortfolioGreeksDashboard } from "./PortfolioGreeksDashboard";
 export { OrderBookPanel } from "./OrderBookPanel";
+export { SellPositionModal } from "./SellPositionModal";
