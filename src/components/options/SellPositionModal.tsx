@@ -10,7 +10,7 @@ interface SellPositionModalProps {
   connectionId: string;
   venue?: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (message?: string) => void;
 }
 
 function pnlColor(value: number) {
@@ -78,7 +78,7 @@ export function SellPositionModal({
     setIsPlacing(true);
     setError(null);
     try {
-      await optionsService.placeOrder({
+      const result = await optionsService.placeOrder({
         connectionId,
         contractSymbol: position.contractSymbol,
         underlying: position.underlying,
@@ -89,7 +89,7 @@ export function SellPositionModal({
         quantity: qtyNum,
         price: priceNum,
       });
-      onSuccess();
+      onSuccess(result.message);
     } catch (err: any) {
       setError(err.message ?? "Order placement failed");
       setIsPlacing(false);

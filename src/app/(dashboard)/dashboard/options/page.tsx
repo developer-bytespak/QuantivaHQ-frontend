@@ -336,6 +336,15 @@ export default function OptionsPage() {
 
   const [sellModalPos, setSellModalPos] = useState<OptionsPosition | null>(null);
 
+  // ── Toast for place-order success messages from the API ───────────────────
+
+  const [orderToast, setOrderToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!orderToast) return;
+    const t = setTimeout(() => setOrderToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [orderToast]);
+
   // ── Pending signal execution — auto-select contract after chain loads ──
 
   const pendingSignalRef = useRef<AiOptionsSignal | null>(null);
@@ -368,7 +377,7 @@ export default function OptionsPage() {
     store.setIsPlacingOrder(true);
     store.setError(null);
     try {
-      await optionsService.placeOrder({
+      const result = await optionsService.placeOrder({
         connectionId,
         contractSymbol: store.selectedContract.symbol,
         underlying: store.selectedContract.underlying,
@@ -379,6 +388,7 @@ export default function OptionsPage() {
         quantity: store.orderForm.quantity,
         price: store.orderForm.price,
       });
+      if (result.message) setOrderToast(result.message);
       // Refresh orders and positions
       fetchOrders();
       fetchPositions();
@@ -532,6 +542,19 @@ export default function OptionsPage() {
           <button
             onClick={() => store.setError(null)}
             className="ml-2 text-red-500 hover:text-red-300"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Success toast — surfaces API `message` on order placement */}
+      {orderToast && (
+        <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5 text-sm text-emerald-300">
+          {orderToast}
+          <button
+            onClick={() => setOrderToast(null)}
+            className="ml-2 text-emerald-500 hover:text-emerald-300"
           >
             ✕
           </button>
@@ -707,8 +730,9 @@ export default function OptionsPage() {
           connectionId={connectionId}
           venue={store.venue}
           onClose={() => setSellModalPos(null)}
-          onSuccess={() => {
+          onSuccess={(message) => {
             setSellModalPos(null);
+            if (message) setOrderToast(message);
             fetchPositions();
             fetchOrders();
           }}

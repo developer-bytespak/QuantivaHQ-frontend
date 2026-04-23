@@ -91,6 +91,10 @@ export interface OptionsOrder {
   binanceOrderId: string;
   maxLoss: number;
   createdAt: string;
+  /** Present on `POST /options/order` responses; absent on list/history reads. */
+  success?: boolean;
+  /** Present on `POST /options/order` responses — human-readable confirmation. */
+  message?: string;
 }
 
 export interface OptionsRecommendation {
