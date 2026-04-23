@@ -280,10 +280,21 @@ export const optionsService = {
 
   async getTicker(contractSymbol: string, connectionId?: string): Promise<OptionTicker> {
     const q = connectionId ? `?connectionId=${encodeURIComponent(connectionId)}` : "";
-    return apiRequest<never, OptionTicker>({
+    const raw = await apiRequest<never, OptionTicker>({
       path: `/options/ticker/${encodeURIComponent(contractSymbol)}${q}`,
       method: "GET",
     });
+    return {
+      ...raw,
+      lastPrice: Number(raw.lastPrice) || 0,
+      bidPrice: Number(raw.bidPrice) || 0,
+      askPrice: Number(raw.askPrice) || 0,
+      volume: Number(raw.volume) || 0,
+      high: Number(raw.high) || 0,
+      low: Number(raw.low) || 0,
+      priceChange: Number(raw.priceChange) || 0,
+      priceChangePercent: Number(raw.priceChangePercent) || 0,
+    };
   },
 
   async getDepth(

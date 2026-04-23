@@ -8,7 +8,6 @@ import { Tooltip } from "./Tooltip";
 interface OptionsOrdersTableProps {
   orders: OptionsOrder[];
   isLoading?: boolean;
-  onCancel?: (order: OptionsOrder) => void;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -30,13 +29,11 @@ function statusBadge(status: string) {
   );
 }
 
-// Grid template: 7 columns (Action column added conditionally)
-const BASE_GRID_COLS = "minmax(180px,2fr) 80px 80px 80px 90px 110px minmax(120px,1.5fr)";
-const GRID_COLS_WITH_ACTION = `${BASE_GRID_COLS} 100px`;
+const GRID_COLS = "minmax(180px,2fr) 80px 80px 80px 90px 110px minmax(120px,1.5fr)";
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrdersTableProps) {
+export function OptionsOrdersTable({ orders, isLoading }: OptionsOrdersTableProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
@@ -59,28 +56,13 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
 
   const nowTs = Date.now();
 
-  // Show Action column only if at least one order is cancellable (pending + handler provided)
-  const showAction = !!onCancel && orders.some((o) => {
-    const expTs = o.expiry ? new Date(o.expiry).getTime() : null;
-    const stalePending =
-      ["pending", "submitting", "partially_filled"].includes(o.status) &&
-      expTs !== null &&
-      !isNaN(expTs) &&
-      expTs < nowTs;
-    const eff = stalePending ? "expired" : o.status;
-    return eff === "pending";
-  });
-
-  const gridCols = showAction ? GRID_COLS_WITH_ACTION : BASE_GRID_COLS;
-  const minWidth = showAction ? "900px" : "800px";
-
   return (
     <div className="overflow-x-auto rounded-xl border border-[--color-border]">
-      <div className="text-xs" style={{ minWidth }}>
+      <div className="text-xs" style={{ minWidth: "800px" }}>
         {/* Header */}
         <div
           className="grid items-center gap-2 border-b border-[--color-border] bg-[--color-surface]/40 px-3 py-2.5 font-medium uppercase text-slate-400"
-          style={{ gridTemplateColumns: gridCols }}
+          style={{ gridTemplateColumns: GRID_COLS }}
         >
           <div className="text-left">
             <Tooltip content="The options contract — underlying asset, strike price, and expiration date" position="top">
@@ -113,7 +95,6 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
             </Tooltip>
           </div>
           <div className="text-right">Time</div>
-          {showAction && <div className="text-center">Action</div>}
         </div>
 
         {/* Rows */}
@@ -130,7 +111,7 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
             <div
               key={order.orderId}
               className="grid items-center gap-2 border-b border-[--color-border]/30 px-3 py-2.5 transition-colors hover:bg-[--color-surface]/40"
-              style={{ gridTemplateColumns: gridCols }}
+              style={{ gridTemplateColumns: GRID_COLS }}
             >
               {/* Contract */}
               <div className="text-left">
@@ -182,20 +163,6 @@ export function OptionsOrdersTable({ orders, isLoading, onCancel }: OptionsOrder
                   minute: "2-digit",
                 })}
               </div>
-
-              {/* Action (only when column is shown) */}
-              {showAction && (
-                <div className="text-center">
-                  {effectiveStatus === "pending" && onCancel && (
-                    <button
-                      onClick={() => onCancel(order)}
-                      className="rounded-md bg-red-500/10 px-2 py-1 text-[10px] font-medium text-red-400 hover:bg-red-500/20 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              )}
             </div>
           );
         })}

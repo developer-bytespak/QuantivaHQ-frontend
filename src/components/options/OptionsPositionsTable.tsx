@@ -125,7 +125,7 @@ export function OptionsPositionsTable({
 
           return (
             <div
-              key={pos.positionId ?? i}
+              key={pos.positionId || `${pos.contractSymbol ?? "pos"}-${i}`}
               className="grid items-center gap-2 border-b border-[--color-border]/30 px-3 py-2.5 transition-colors hover:bg-[--color-surface]/40"
               style={{ gridTemplateColumns: gridCols }}
             >

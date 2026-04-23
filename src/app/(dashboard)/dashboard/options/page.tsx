@@ -9,7 +9,7 @@ import { useOptionsSocket } from "@/hooks/useOptionsSocket";
 import { useActiveOptionsVenue } from "@/hooks/useActiveOptionsVenue";
 import { optionsService } from "@/lib/api/options.service";
 import { exchangesService } from "@/lib/api/exchanges.service";
-import type { OptionsOrder, OptionContract } from "@/lib/api/options.service";
+import type { OptionContract } from "@/lib/api/options.service";
 import {
   OptionsChainTable,
   GreeksPanel,
@@ -392,23 +392,6 @@ export default function OptionsPage() {
     }
   }, [connectionId, store.selectedContract, store.orderForm, fetchOrders, fetchPositions]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleCancelOrder = useCallback(
-    async (order: OptionsOrder) => {
-      if (!connectionId || !order.binanceOrderId) return;
-      try {
-        await optionsService.cancelOrder({
-          connectionId,
-          contractSymbol: order.contractSymbol,
-          orderId: order.binanceOrderId,
-        });
-        fetchOrders();
-      } catch (err: any) {
-        store.setError(err.message ?? "Failed to cancel order");
-      }
-    },
-    [connectionId, fetchOrders], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-
   // ── Sell-to-Close Handler ───────────────────────────────────────────────
 
   const handleClosePosition = useCallback((pos: OptionsPosition) => {
@@ -705,7 +688,6 @@ export default function OptionsPage() {
           <OptionsOrdersTable
             orders={store.orders}
             isLoading={store.isLoadingOrders}
-            onCancel={handleCancelOrder}
           />
         )}
 
