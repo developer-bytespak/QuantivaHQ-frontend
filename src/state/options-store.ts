@@ -72,6 +72,7 @@ interface OptionsState {
     approvalLevel: OptionsApprovalLevel;
   }) => void;
   setAvailableUnderlyings: (u: AvailableUnderlying[]) => void;
+  updateUnderlyingPrice: (symbol: string, price: number) => void;
   setSelectedUnderlying: (u: string | null) => void;
   setSelectedExpiry: (e: string | null) => void;
   setExpiryDates: (dates: string[]) => void;
@@ -161,6 +162,12 @@ export const useOptionsStore = create<OptionsState>((set) => ({
     }),
 
   setAvailableUnderlyings: (availableUnderlyings) => set({ availableUnderlyings }),
+  updateUnderlyingPrice: (symbol, price) =>
+    set((state) => ({
+      availableUnderlyings: state.availableUnderlyings.map((u) =>
+        u.symbol === symbol ? { ...u, indexPrice: price } : u,
+      ),
+    })),
   setSelectedUnderlying: (selectedUnderlying) => set({ selectedUnderlying }),
   setSelectedExpiry: (selectedExpiry) => set({ selectedExpiry }),
   setExpiryDates: (expiryDates) => set({ expiryDates }),

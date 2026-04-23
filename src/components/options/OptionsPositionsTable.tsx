@@ -184,7 +184,7 @@ export function OptionsPositionsTable({
                     onClick={() => onClose(pos)}
                     className="rounded-md bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-400 transition-colors hover:bg-red-500/20"
                   >
-                    Close
+                    Sell
                   </button>
                 </div>
               )}
