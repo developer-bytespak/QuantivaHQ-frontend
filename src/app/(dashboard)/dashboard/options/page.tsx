@@ -98,9 +98,9 @@ export default function OptionsPage() {
     enabled: hasAccess && activeTab === "chain",
   });
 
-  // Merge WS updates into store
+  // Merge WS updates into store — only when an underlying is actively selected
   useEffect(() => {
-    if (chainUpdate && chainUpdate.length > 0) {
+    if (chainUpdate && chainUpdate.length > 0 && store.selectedUnderlying) {
       store.setOptionsChain(chainUpdate);
     }
   }, [chainUpdate]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -121,24 +121,34 @@ export default function OptionsPage() {
         store.setError(err.message ?? "Failed to load underlyings");
       }
     })();
-  }, [connectionId, hasAccess]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [connectionId, hasAccess, store.venue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch chain when underlying changes ─────────────────────────────────
 
   const fetchChain = useCallback(async () => {
     if (!connectionId || !store.selectedUnderlying) return;
+    const capturedUnderlying = store.selectedUnderlying;
     store.setIsLoadingChain(true);
     store.setError(null);
     try {
-      const response = await optionsService.getOptionsChain(store.selectedUnderlying, connectionId);
+      const response = await optionsService.getOptionsChain(capturedUnderlying, connectionId);
+      // Abort stale write: underlying changed (venue reset, user re-selection) while in-flight
+      if (useOptionsStore.getState().selectedUnderlying !== capturedUnderlying) return;
       store.setOptionsChain(response.contracts);
       store.setExpiryDates(response.expiryDates);
+      // Backfill spot price into availableUnderlyings — critical for Alpaca where
+      // getAvailableUnderlyings seeds indexPrice: 0 (no static price list endpoint).
+      if (response.underlyingPrice > 0) {
+        store.updateUnderlyingPrice(capturedUnderlying, response.underlyingPrice);
+      }
       // Auto-select first expiry
       if (response.expiryDates.length > 0 && !store.selectedExpiry) {
         store.setSelectedExpiry(response.expiryDates[0]);
       }
     } catch (err: any) {
-      store.setError(err.message ?? "Failed to load options chain");
+      if (useOptionsStore.getState().selectedUnderlying === capturedUnderlying) {
+        store.setError(err.message ?? "Failed to load options chain");
+      }
     } finally {
       store.setIsLoadingChain(false);
     }
@@ -148,30 +158,40 @@ export default function OptionsPage() {
     if (hasAccess && activeTab === "chain") fetchChain();
   }, [store.selectedUnderlying, hasAccess, activeTab, fetchChain]);
 
-  // ── Auto-select contract from pending signal after chain loads ─────────
+  // ── Auto-select contract from pending sell-to-close or signal after chain loads ─────
 
   useEffect(() => {
+    if (store.optionsChain.length === 0 || store.isLoadingChain) return;
+
+    // Pending sell-to-close: find contract by exact symbol
+    if (pendingCloseRef.current) {
+      const pos = pendingCloseRef.current;
+      pendingCloseRef.current = null;
+      const matching = store.optionsChain.find((c) => c.symbol === pos.contractSymbol);
+      if (matching) {
+        store.setSelectedContract(matching);
+        // Use bid price for sell orders, not ask
+        store.setOrderForm({ price: matching.bidPrice > 0 ? matching.bidPrice : matching.markPrice });
+        if (matching.expiry) store.setSelectedExpiry(matching.expiry.split("T")[0]);
+      }
+      return;
+    }
+
+    // Pending signal: find contract by type + closest strike
     const signal = pendingSignalRef.current;
-    if (!signal || store.optionsChain.length === 0 || store.isLoadingChain) return;
+    if (!signal) return;
+    pendingSignalRef.current = null;
 
     const leg = signal.legs[0];
-    if (!leg) { pendingSignalRef.current = null; return; }
+    if (!leg) return;
 
-    // Find matching contract: same type + closest strike
     const matching = store.optionsChain.find(
       (c) => c.type === leg.type && Math.abs(c.strike - leg.strike) < 1,
     );
-
     if (matching) {
       handleSelectContract(matching);
-      // Set the correct expiry tab
-      if (matching.expiry) {
-        const expiryDate = matching.expiry.split("T")[0];
-        store.setSelectedExpiry(expiryDate);
-      }
+      if (matching.expiry) store.setSelectedExpiry(matching.expiry.split("T")[0]);
     }
-
-    pendingSignalRef.current = null;
   }, [store.optionsChain, store.isLoadingChain]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch account balance ───────────────────────────────────────────────
@@ -216,14 +236,14 @@ export default function OptionsPage() {
   const fetchOrders = useCallback(async () => {
     store.setIsLoadingOrders(true);
     try {
-      const orders = await optionsService.getOrders(undefined, 50);
+      const orders = await optionsService.getOrders(undefined, 50, store.venue);
       store.setOrders(orders);
     } catch (err: any) {
       store.setError(err.message ?? "Failed to load orders");
     } finally {
       store.setIsLoadingOrders(false);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [store.venue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (hasAccess && activeTab === "orders") fetchOrders();
@@ -332,9 +352,10 @@ export default function OptionsPage() {
 
   const [userPositionQty, setUserPositionQty] = useState<number | null>(null);
 
-  // ── Pending signal execution — auto-select contract after chain loads ──
+  // ── Pending signal/close execution — auto-select contract after chain loads ──
 
   const pendingSignalRef = useRef<AiOptionsSignal | null>(null);
+  const pendingCloseRef = useRef<OptionsPosition | null>(null);
 
   // ── Handlers ────────────────────────────────────────────────────────────
 
@@ -411,26 +432,35 @@ export default function OptionsPage() {
     [connectionId, fetchOrders], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // ── Close Position Handler ──────────────────────────────────────────────
+  // ── Sell-to-Close Handler ───────────────────────────────────────────────
 
   const handleClosePosition = useCallback(
     (pos: OptionsPosition) => {
-      // Pre-fill order form with opposite side and switch to chain tab
-      const contract = store.optionsChain.find((c) => c.symbol === pos.contractSymbol);
-      if (contract) {
-        store.setSelectedContract(contract);
-      }
+      // Store the position so the auto-select effect can find the contract
+      // after the chain loads — the chain may be empty or for a different underlying.
+      pendingCloseRef.current = pos;
+
+      // Pre-fill side/qty/type. Price will be set to bidPrice by the auto-select
+      // effect once the contract is found in the chain.
       store.setOrderForm({
         optionType: pos.optionType,
-        side: pos.quantity > 0 ? "SELL" : "BUY", // close long = sell, close short = buy
+        side: pos.quantity > 0 ? "SELL" : "BUY",
         quantity: Math.abs(pos.quantity),
         price: pos.currentPremium || 0,
       });
-      // Set position qty so the order form knows this is a sell-to-close
       setUserPositionQty(Math.abs(pos.quantity));
+
+      // Switching the underlying triggers a fresh chain load for this asset.
+      // The expiry is pre-set so the correct expiry tab is already active
+      // when the chain renders — no second selection needed.
+      store.setSelectedUnderlying(pos.underlying);
+      store.setSelectedContract(null);
+      const expiryDateStr = pos.expiry ? pos.expiry.split("T")[0] : null;
+      store.setSelectedExpiry(expiryDateStr);
+
       setActiveTab("chain");
     },
-    [store.optionsChain], // eslint-disable-line react-hooks/exhaustive-deps
+    [], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // ── Execute Signal Handler ─────────────────────────────────────────────
@@ -606,22 +636,31 @@ export default function OptionsPage() {
               />
             </div>
 
-            {/* Expiry tabs — full width */}
-            <ExpiryTabs
-              expiryDates={store.expiryDates}
-              selectedExpiry={store.selectedExpiry}
-              onSelect={(e) => store.setSelectedExpiry(e)}
-            />
+            {/* Expiry tabs + chain table — only when a symbol is selected */}
+            {store.selectedUnderlying ? (
+              <>
+                <ExpiryTabs
+                  expiryDates={store.expiryDates}
+                  selectedExpiry={store.selectedExpiry}
+                  onSelect={(e) => store.setSelectedExpiry(e)}
+                />
 
-            {/* Chain table — full width */}
-            <OptionsChainTable
-              contracts={store.optionsChain}
-              selectedExpiry={store.selectedExpiry}
-              onSelectContract={handleSelectContract}
-              selectedContractSymbol={store.selectedContract?.symbol}
-              isLoading={store.isLoadingChain}
-              spotPrice={currentUnderlying?.indexPrice ?? 0}
-            />
+                <OptionsChainTable
+                  contracts={store.optionsChain}
+                  selectedExpiry={store.selectedExpiry}
+                  onSelectContract={handleSelectContract}
+                  selectedContractSymbol={store.selectedContract?.symbol}
+                  isLoading={store.isLoadingChain}
+                  spotPrice={currentUnderlying?.indexPrice ?? 0}
+                />
+              </>
+            ) : (
+              <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                <p className="text-sm text-slate-500">
+                  Select a {store.venue === "ALPACA" ? "symbol" : "coin"} above to view the options chain
+                </p>
+              </div>
+            )}
 
             {/* Greeks — inline row */}
             <GreeksPanel

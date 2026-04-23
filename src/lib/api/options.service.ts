@@ -400,10 +400,11 @@ export const optionsService = {
   /**
    * Get user's option orders from DB.
    */
-  async getOrders(status?: string, limit?: number): Promise<OptionsOrder[]> {
+  async getOrders(status?: string, limit?: number, venue?: string): Promise<OptionsOrder[]> {
     const params = new URLSearchParams();
     if (status) params.append("status", status);
     if (limit) params.append("limit", String(limit));
+    if (venue) params.append("venue", venue);
     const query = params.toString();
     return apiRequest<never, OptionsOrder[]>({
       path: `/options/orders${query ? `?${query}` : ""}`,
