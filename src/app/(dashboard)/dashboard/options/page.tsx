@@ -24,6 +24,7 @@ import {
   PortfolioGreeksDashboard,
   OrderBookPanel,
   SellPositionModal,
+  MultiLegOrderModal,
 } from "@/components/options";
 import { MarketHoursBanner } from "@/components/options/MarketHoursBanner";
 import { Level3GateBanner } from "@/components/options/Level3GateBanner";
@@ -336,6 +337,10 @@ export default function OptionsPage() {
 
   const [sellModalPos, setSellModalPos] = useState<OptionsPosition | null>(null);
 
+  // ── Multi-leg order modal (opened from AI Signals CTA) ─────────────────────
+
+  const [mlegSignal, setMlegSignal] = useState<AiOptionsSignal | null>(null);
+
   // ── Toast for place-order success messages from the API ───────────────────
 
   const [orderToast, setOrderToast] = useState<string | null>(null);
@@ -413,25 +418,53 @@ export default function OptionsPage() {
   const handleExecuteSignal = useCallback(
     (signal: AiOptionsSignal) => {
       if (signal.legs.length === 0) return;
+
+      // Multi-leg signals → open the dedicated mleg confirmation modal.
+      // Only Alpaca has atomic mleg execution; on Binance we'd need to fire
+      // legs sequentially (leg-risk), which we explicitly don't support.
+      if (signal.legs.length > 1) {
+        if (store.venue !== "ALPACA") {
+          setOrderToast(
+            "Multi-leg signals can only be executed on Alpaca. Binance users must place legs individually.",
+          );
+          return;
+        }
+        const missingSymbol = signal.legs.some((l) => !l.symbol);
+        if (missingSymbol) {
+          setOrderToast("Signal is missing contract symbols — cannot be executed directly.");
+          return;
+        }
+        setMlegSignal(signal);
+        return;
+      }
+
+      // Single-leg signal.
       const leg = signal.legs[0];
 
-      // Store pending signal so the auto-select effect can match it after chain loads
-      pendingSignalRef.current = signal;
+      // SELL-to-open single-leg (e.g. short_put) is blocked by our
+      // sell-to-close-only rule. Surface that instead of silently routing
+      // to the Chain where the form would reject it.
+      if (leg.side !== "BUY") {
+        setOrderToast(
+          "This strategy sells a contract to open a naked-short — not supported. Use a spread instead.",
+        );
+        return;
+      }
 
-      // Pre-fill order form
+      // Single-leg BUY — existing Chain-redirect flow.
+      pendingSignalRef.current = signal;
       store.setOrderForm({
         optionType: leg.type,
-        side: leg.side,
+        side: "BUY",
         quantity: 1,
-        price: 0, // Will be set when contract is auto-selected (askPrice)
+        price: 0, // set when contract is auto-selected (askPrice)
       });
-
-      // Switch underlying (triggers chain reload) and switch to chain tab
       store.setSelectedUnderlying(signal.underlying);
-      store.setSelectedExpiry(null); // Reset so it picks the right expiry
+      store.setSelectedExpiry(null);
       setActiveTab("chain");
     },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [store.venue],
   );
 
   // ── No Connection Guard ─────────────────────────────────────────────────
@@ -732,6 +765,23 @@ export default function OptionsPage() {
           onClose={() => setSellModalPos(null)}
           onSuccess={(message) => {
             setSellModalPos(null);
+            if (message) setOrderToast(message);
+            fetchPositions();
+            fetchOrders();
+          }}
+        />
+      )}
+
+      {/* Multi-leg order confirmation — opens from AI Signals CTA */}
+      {connectionId && (
+        <MultiLegOrderModal
+          isOpen={!!mlegSignal}
+          signal={mlegSignal}
+          connectionId={connectionId}
+          venue={store.venue}
+          onClose={() => setMlegSignal(null)}
+          onSuccess={(message) => {
+            setMlegSignal(null);
             if (message) setOrderToast(message);
             fetchPositions();
             fetchOrders();

@@ -44,6 +44,16 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
   const isMultiLeg = legCount > 1;
   const mlegBlocked = venue === "ALPACA" && isMultiLeg && approvalLevel < 3;
 
+  // Execution capability: Alpaca can fill any defined-risk mleg package
+  // atomically; Binance has no mleg primitive, so we can only execute
+  // single-leg BUYs (placing each leg of a spread manually creates
+  // leg-risk we refuse to own). Single-leg SELLs on either venue would
+  // be naked shorts — blocked by the sell-to-close rule server-side.
+  const firstLegSide = signal.legs?.[0]?.side;
+  const unsupported =
+    (legCount === 1 && firstLegSide !== "BUY") ||
+    (venue !== "ALPACA" && isMultiLeg);
+
   const [marketSession, setMarketSession] = useState(() => getUsEquityOptionsSession());
   useEffect(() => {
     if (venue !== "ALPACA") return;
@@ -147,23 +157,29 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
           )}
           <button
             onClick={() => onExecute(signal)}
-            disabled={mlegBlocked || marketClosed}
+            disabled={mlegBlocked || marketClosed || unsupported}
             title={
               marketClosed
                 ? "Markets are currently closed"
                 : mlegBlocked
                 ? "Requires Level 3 options approval on Alpaca"
+                : unsupported
+                ? legCount === 1
+                  ? "Signal sells a contract to open — not supported. Use a spread instead."
+                  : "Multi-leg execution is Alpaca-only."
                 : isMultiLeg
                 ? `Place as ${legCount}-leg order`
                 : "Execute signal"
             }
             className={`w-full rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
-              mlegBlocked || marketClosed
+              mlegBlocked || marketClosed || unsupported
                 ? "cursor-not-allowed bg-white/[0.04] text-slate-500"
                 : "bg-[var(--primary)] text-white hover:bg-[var(--primary-light)]"
             }`}
           >
-            {mlegBlocked
+            {unsupported
+              ? "Informational only"
+              : mlegBlocked
               ? `Level 3 Required (${legCount} legs)`
               : isMultiLeg
               ? `Place as ${legCount}-leg Order`

@@ -13,3 +13,4 @@ export { PayoffDiagram } from "./PayoffDiagram";
 export { PortfolioGreeksDashboard } from "./PortfolioGreeksDashboard";
 export { OrderBookPanel } from "./OrderBookPanel";
 export { SellPositionModal } from "./SellPositionModal";
+export { MultiLegOrderModal } from "./MultiLegOrderModal";

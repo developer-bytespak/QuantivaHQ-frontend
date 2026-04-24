@@ -125,6 +125,10 @@ export interface AiSignalLeg {
   strike: number;
   expiry: string;
   ratio: number;
+  /** OCC (Alpaca) or dash (Binance) contract symbol — emitted by the
+   *  Python engine's `_build_signal`. Used by the multi-leg order modal
+   *  to fetch live quotes and POST the mleg to Alpaca. */
+  symbol?: string;
 }
 
 export interface AiOptionsSignal {
