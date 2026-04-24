@@ -14,11 +14,11 @@ import type {
   AdminSuperUpgradeSubscriptionResponse,
 } from "@/lib/api/vcpool-admin/types";
 
-const ALL_PLAN_OPTIONS: { value: PlanTier; label: string; description: string }[] = [
+const PLAN_OPTIONS: { value: PlanTier; label: string; description: string }[] = [
   { value: "FREE", label: "Free", description: "Basic access, limited features" },
   { value: "PRO", label: "Pro", description: "Advanced features for active traders" },
   { value: "ELITE", label: "Elite", description: "Full access to all features" },
-  { value: "ELITE_PLUS", label: "Elite Plus", description: "Premium tier — not available for US users" },
+  { value: "ELITE_PLUS", label: "Elite Plus", description: "Premium tier with exclusive benefits" },
 ];
 
 const BILLING_OPTIONS: { value: BillingPeriod; label: string }[] = [
@@ -27,7 +27,7 @@ const BILLING_OPTIONS: { value: BillingPeriod; label: string }[] = [
   { value: "YEARLY", label: "Yearly" },
 ];
 
-type LookupStatus = "idle" | "loading" | "found-us" | "found-non-us" | "not-found";
+type LookupStatus = "idle" | "loading" | "found" | "not-found";
 
 export default function SuperAdminUpgradePlanPage() {
   const router = useRouter();
@@ -44,14 +44,6 @@ export default function SuperAdminUpgradePlanPage() {
   const [lookupCurrentTier, setLookupCurrentTier] = useState<PlanTier | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Whether the detected user is a US user
-  const isUsUser = lookupStatus === "found-us";
-
-  // Visible plans — hide Elite Plus for US users
-  const visiblePlans = isUsUser
-    ? ALL_PLAN_OPTIONS.filter((o) => o.value !== "ELITE_PLUS")
-    : ALL_PLAN_OPTIONS;
-
   useEffect(() => {
     adminMe()
       .then((me) => {
@@ -65,13 +57,6 @@ export default function SuperAdminUpgradePlanPage() {
         router.replace("/super/admin/login");
       });
   }, [router]);
-
-  // Auto-switch away from Elite Plus if user turns out to be US
-  useEffect(() => {
-    if (isUsUser && tier === "ELITE_PLUS") {
-      setTier("ELITE");
-    }
-  }, [isUsUser, tier]);
 
   // Debounced email lookup
   useEffect(() => {
@@ -96,7 +81,7 @@ export default function SuperAdminUpgradePlanPage() {
           setLookupUsername(null);
           setLookupCurrentTier(null);
         } else {
-          setLookupStatus(res.is_us_user ? "found-us" : "found-non-us");
+          setLookupStatus("found");
           setLookupUsername(res.username ?? null);
           setLookupCurrentTier(res.current_tier ?? null);
         }
@@ -160,24 +145,6 @@ export default function SuperAdminUpgradePlanPage() {
           and create a new one with the selected plan and billing period.
         </p>
 
-        {/* US restriction warning - only show when US user detected */}
-        {isUsUser && (
-          <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
-            <div className="flex items-start gap-3">
-              <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-              <div>
-                <p className="text-sm font-medium text-amber-400">US User Restriction</p>
-                <p className="mt-0.5 text-sm text-amber-300/80">
-                  The <strong>Elite Plus</strong> plan is <strong>not available</strong> for US users.
-                  Do not assign this plan to users from the United States.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Email */}
           <div>
@@ -203,7 +170,7 @@ export default function SuperAdminUpgradePlanPage() {
             {lookupStatus === "not-found" && (
               <p className="mt-1.5 text-xs text-red-400">No user found with this email.</p>
             )}
-            {lookupStatus === "found-non-us" && (
+            {lookupStatus === "found" && (
               <div className="mt-2 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
                 <p className="text-xs text-green-400">
                   ✓ User found{lookupUsername ? ` — @${lookupUsername}` : ""}
@@ -213,20 +180,6 @@ export default function SuperAdminUpgradePlanPage() {
                     Current Plan: <span className="font-semibold text-white">{lookupCurrentTier}</span>
                   </p>
                 )}
-                <p className="mt-1 text-xs text-slate-400">All plans available.</p>
-              </div>
-            )}
-            {lookupStatus === "found-us" && (
-              <div className="mt-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                <p className="text-xs text-amber-400">
-                  ⚠ US user detected{lookupUsername ? ` — @${lookupUsername}` : ""}
-                </p>
-                {lookupCurrentTier && (
-                  <p className="mt-1 text-xs text-slate-300">
-                    Current Plan: <span className="font-semibold text-white">{lookupCurrentTier}</span>
-                  </p>
-                )}
-                <p className="mt-1 text-xs text-slate-400">Elite Plus is not available for this user.</p>
               </div>
             )}
           </div>
@@ -235,7 +188,7 @@ export default function SuperAdminUpgradePlanPage() {
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-300">Plan</label>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {visiblePlans.map((opt) => (
+              {PLAN_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
@@ -256,11 +209,6 @@ export default function SuperAdminUpgradePlanPage() {
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-slate-400">{opt.description}</p>
-                  {opt.value === "ELITE_PLUS" && (
-                    <span className="mt-1 inline-block rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-400">
-                      Not for US users
-                    </span>
-                  )}
                 </button>
               ))}
             </div>

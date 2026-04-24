@@ -174,18 +174,19 @@ axiosInstance.interceptors.response.use(
       return axiosInstance(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      // Refresh failed → session is dead, redirect to login
+      // Refresh failed → session is dead. Clear tokens and only redirect if
+      // the user is on a protected route. Public pages (/, /faq, /terms, …)
+      // must not force a redirect — a returning visitor with a stale
+      // "quantivahq_is_authenticated" flag would otherwise be bounced to the
+      // login page just for opening the homepage.
       if (typeof window !== "undefined") {
         localStorage.removeItem("quantivahq_access_token");
         localStorage.removeItem("quantivahq_refresh_token");
         localStorage.removeItem("quantivahq_is_authenticated");
-        // Only redirect if on a user-facing page (prevents redirect on admin/auth pages)
         const currentPath = window.location.pathname;
         if (
-          !currentPath.startsWith("/onboarding") &&
-          !currentPath.startsWith("/super/admin") &&
-          !currentPath.startsWith("/admin") &&
-          !currentPath.startsWith("/vc-pool/admin")
+          currentPath.startsWith("/dashboard") ||
+          currentPath.startsWith("/strategies")
         ) {
           window.location.href = "/onboarding/sign-up?tab=login";
         }
