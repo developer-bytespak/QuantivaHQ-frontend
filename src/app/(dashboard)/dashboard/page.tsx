@@ -37,7 +37,7 @@ export default function DashboardPage() {
   const router = useRouter();
   
   // Get connection from global context (fetched once on app start)
-  const { connectionType, connectionId, activeConnection, isLoading: isLoadingConnection, refetch: refetchConnection } = useExchange();
+  const { connectionType, connectionId, activeConnection, supportsMargin, isLoading: isLoadingConnection, refetch: refetchConnection } = useExchange();
   
   const [activeTab, setActiveTab] = useState<"holdings" | "market">("holdings");
   const [showNewsOverlay, setShowNewsOverlay] = useState(false);
@@ -703,8 +703,12 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-[10px] sm:text-xs text-slate-400 leading-tight">
                     Spot {formatCurrency(dashboardData.totals?.spot ?? dashboardData.portfolio.totalValue)}
-                    {" · "}
-                    Margin {formatCurrency(dashboardData.totals?.margin ?? 0)}
+                    {supportsMargin && (
+                      <>
+                        {" · "}
+                        Margin {formatCurrency(dashboardData.totals?.margin ?? 0)}
+                      </>
+                    )}
                   </p>
                 </div>
 

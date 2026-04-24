@@ -9,6 +9,10 @@ interface ExchangeContextType {
   connectionType: "crypto" | "stocks" | null;
   connectionId: string | null;
   activeConnection: Connection | null;
+  // True only for venues with an actual options/margin wallet. Mainnet Binance
+  // is the only one wired up today — Bybit, Binance.US and Alpaca return null
+  // optionsAccount + zero margin totals, so their UI should hide that row.
+  supportsMargin: boolean;
   allConnections: Connection[];
   isLoading: boolean;
   refetch: () => Promise<void>;
@@ -185,17 +189,21 @@ export function ExchangeProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchConnectionForType]);
 
+  const supportsMargin =
+    (activeConnection?.exchange?.name ?? "").trim().toLowerCase() === "binance";
+
   const value = useMemo<ExchangeContextType>(() => ({
     connectionType,
     connectionId,
     activeConnection,
+    supportsMargin,
     allConnections,
     isLoading,
     refetch: fetchConnectionInfo,
     selectedDashboardType,
     setSelectedDashboardType,
     hasBothConnections,
-  }), [connectionType, connectionId, activeConnection, allConnections,
+  }), [connectionType, connectionId, activeConnection, supportsMargin, allConnections,
        isLoading, fetchConnectionInfo, selectedDashboardType,
        setSelectedDashboardType, hasBothConnections]);
 
