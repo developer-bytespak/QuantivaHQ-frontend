@@ -111,14 +111,14 @@ function UserProfileSection() {
     setIsOpen(false);
     const email = localStorage.getItem("quantivahq_user_email") ?? "";
     const params = email ? `?email=${encodeURIComponent(email)}` : "";
-    window.location.href = `/admin/login${params}`;
+    window.open(`/admin/login${params}`, "_blank", "noopener,noreferrer");
   };
 
   const handleSwitchToSuperAdmin = () => {
     setIsOpen(false);
     const email = localStorage.getItem("quantivahq_user_email") ?? "";
     const params = email ? `?email=${encodeURIComponent(email)}` : "";
-    window.location.href = `/super/admin${params}`;
+    window.open(`/super/admin${params}`, "_blank", "noopener,noreferrer");
   };
 
   const loadProfileData = async () => {
