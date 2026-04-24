@@ -17,7 +17,7 @@ const formatCryptoAmount = (num: number): string => {
 
 export function ProfilePage() {
   const router = useRouter();
-  const { connectionId, connectionType, isLoading: isLoadingConnection } = useExchange();
+  const { connectionId, connectionType, supportsMargin, isLoading: isLoadingConnection } = useExchange();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,14 +79,18 @@ export function ProfilePage() {
                   <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Spot)</p>
                   <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(availableSpotUSD)}</p>
                 </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value (Margin)</p>
-                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedMarginUSD)}</p>
-                </div>
-                <div>
-                  <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Margin)</p>
-                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(availableMarginUSD)}</p>
-                </div>
+                {supportsMargin && (
+                  <>
+                    <div>
+                      <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value (Margin)</p>
+                      <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedMarginUSD)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Margin)</p>
+                      <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(availableMarginUSD)}</p>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
