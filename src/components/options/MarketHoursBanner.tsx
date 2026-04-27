@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { optionsService, type MarketClock } from "@/lib/api/options.service";
 
 /**
  * US equity options trade on a fixed schedule:
@@ -9,6 +10,11 @@ import { useEffect, useState } from "react";
  *
  * Shown only for the Alpaca (stock options) venue. Crypto options on Binance
  * trade 24/7, so the page does not render this banner for that venue.
+ *
+ * Source of truth is `GET /options/market-clock` (proxied from Alpaca and
+ * holiday-aware). The local computation below is a fallback for when the
+ * API errors or no connectionId is available — it does NOT know about
+ * holidays or early-close days.
  */
 
 type SessionState = "rth" | "closed" | "weekend";
@@ -47,13 +53,73 @@ export function getUsEquityOptionsSession(now: Date = new Date()): {
   return { state: "rth", label: `Market open — closes in ${h}h ${m}m (16:00 ET)` };
 }
 
-export function MarketHoursBanner({ className = "" }: { className?: string }) {
+/**
+ * Formats an Alpaca clock response into the same shape the local fallback
+ * produces. Uses the wall-clock delta to the next session boundary so the
+ * countdown text matches the local fallback's style.
+ */
+function formatFromClock(clock: MarketClock): { state: SessionState; label: string } {
+  const now = Date.now();
+  if (clock.isOpen && clock.nextClose) {
+    const deltaMin = Math.max(0, Math.floor((Date.parse(clock.nextClose) - now) / 60_000));
+    const h = Math.floor(deltaMin / 60);
+    const m = deltaMin % 60;
+    return { state: "rth", label: `Market open — closes in ${h}h ${m}m (16:00 ET)` };
+  }
+  if (!clock.isOpen && clock.nextOpen) {
+    const deltaMin = Math.max(0, Math.floor((Date.parse(clock.nextOpen) - now) / 60_000));
+    const h = Math.floor(deltaMin / 60);
+    const m = deltaMin % 60;
+    // > 24h means it's a weekend or holiday — use a clearer label.
+    if (deltaMin > 24 * 60) {
+      const nextOpenEt = new Date(clock.nextOpen).toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        weekday: "long",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      return { state: "closed", label: `Market closed — reopens ${nextOpenEt} ET` };
+    }
+    return { state: "closed", label: `Market opens in ${h}h ${m}m (09:30 ET)` };
+  }
+  return { state: "closed", label: "Market closed" };
+}
+
+export function MarketHoursBanner({
+  connectionId,
+  className = "",
+}: {
+  connectionId?: string | null;
+  className?: string;
+}) {
   const [session, setSession] = useState(() => getUsEquityOptionsSession());
 
   useEffect(() => {
-    const id = setInterval(() => setSession(getUsEquityOptionsSession()), 30_000);
-    return () => clearInterval(id);
-  }, []);
+    let cancelled = false;
+
+    const refresh = async () => {
+      // Try the authoritative API first; fall back to local computation
+      // on any error or when no Alpaca connection is available.
+      if (connectionId) {
+        try {
+          const clock = await optionsService.getMarketClock(connectionId);
+          if (!cancelled) setSession(formatFromClock(clock));
+          return;
+        } catch {
+          // fall through to local
+        }
+      }
+      if (!cancelled) setSession(getUsEquityOptionsSession());
+    };
+
+    refresh();
+    const id = setInterval(refresh, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [connectionId]);
 
   const isOpen = session.state === "rth";
   const base =

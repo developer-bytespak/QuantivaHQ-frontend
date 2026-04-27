@@ -87,6 +87,13 @@ export default function OptionsPage() {
   // Local tab state (simpler than store for page-only concern)
   const [activeTab, setActiveTab] = useState<OptionsTab>("chain");
 
+  // Errors live in the global options store and the banner sits above the
+  // tab content, so a chain-tab error would otherwise leak into Positions /
+  // Orders / AI Signals after the user switches tabs. Clear on tab change.
+  useEffect(() => {
+    store.setError(null);
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Education modal — only show once per user (persisted in localStorage)
   const [showEducation, setShowEducation] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -307,11 +314,11 @@ export default function OptionsPage() {
   useEffect(() => {
     if (!hasAccess || activeTab !== "positions") return;
     setIsLoadingPortfolioGreeks(true);
-    optionsService.getPortfolioGreeks()
+    optionsService.getPortfolioGreeks(store.venue)
       .then(setPortfolioGreeks)
       .catch(() => setPortfolioGreeks(null))
       .finally(() => setIsLoadingPortfolioGreeks(false));
-  }, [activeTab, hasAccess]);
+  }, [activeTab, hasAccess, store.venue]);
 
   // ── Position History ───────────────────────────────────────────────────
 
@@ -563,7 +570,7 @@ export default function OptionsPage() {
           these only render when the active venue is ALPACA. */}
       {store.venue === "ALPACA" && (
         <div className="space-y-2">
-          <MarketHoursBanner />
+          <MarketHoursBanner connectionId={connectionId} />
           <Level3GateBanner level={store.approvalLevel} />
         </div>
       )}
@@ -861,7 +868,9 @@ function CoinSelector({
               >
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{u.symbol}</span>
-                  <span className="text-[10px] text-slate-500">{u.contractCount} contracts</span>
+                  {u.contractCount > 0 && (
+                    <span className="text-[10px] text-slate-500">{u.contractCount} contracts</span>
+                  )}
                 </div>
                 {selected === u.symbol && (
                   <svg className="h-4 w-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
