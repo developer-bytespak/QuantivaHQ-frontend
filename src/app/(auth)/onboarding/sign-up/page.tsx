@@ -179,6 +179,14 @@ export default function SignUpPage() {
           credentials: "include",
         });
 
+        // Meta Pixel: account was just created on the backend. Fire here
+        // (before auto-login) so the conversion is captured even if login,
+        // 2FA, or navigation fails afterwards.
+        window.fbq?.("track", "CompleteRegistration", {
+          content_name: "Account Created",
+          status: true,
+        });
+
         // Store user info
         localStorage.setItem("quantivahq_user_email", email);
         localStorage.setItem("quantivahq_user_name", normalizedUsername || emailFallbackUsername);

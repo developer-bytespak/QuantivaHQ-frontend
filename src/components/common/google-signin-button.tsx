@@ -135,6 +135,11 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
         const isNewUser = data?.isNewUser === true || data?.user?.isNewUser === true;
         if (isNewUser) {
           localStorage.setItem("quantivahq_is_new_signup", "true");
+          // Meta Pixel: account was just created via Google OAuth.
+          window.fbq?.("track", "CompleteRegistration", {
+            content_name: "Account Created",
+            status: true,
+          });
         }
         // Google signup only: save userId so personal-info etc. have it (no verify-2fa step for Google signup)
         if (isSignup) {
