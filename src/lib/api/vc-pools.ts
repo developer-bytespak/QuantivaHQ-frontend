@@ -20,6 +20,8 @@ export interface JoinPoolResponse {
   coin: string;
   admin_binance_uid?: string;
   admin_wallet_address?: string;
+  /** "Binance" | "Binance.US" | null — which exchange the admin is connected to. */
+  admin_exchange_name?: string | null;
   payment_network?: string;
   deposit_coin?: string;
   deposit_method?: string;
@@ -428,6 +430,8 @@ export interface PaymentSubmissionDetail extends MyPaymentSubmission {
   reservation_expires_at: string;
   admin_binance_uid: string;
   admin_wallet_address: string | null;
+  /** "Binance" | "Binance.US" | null — which exchange the admin is connected to. */
+  admin_exchange_name: string | null;
   payment_network: string | null;
   deposit_coin: string | null;
   deposit_method: string | null;

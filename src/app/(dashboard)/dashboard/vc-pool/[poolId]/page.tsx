@@ -236,9 +236,18 @@ export default function VcPoolDetailPage() {
     joinResponse?.pool_fee_amount?.toString() ??
     null;
   const paymentNetwork =
-    networkName ?? joinResponse?.payment_network ?? "BSC";
+    networkName ?? joinResponse?.payment_network ?? "TRC20";
   const depositCoin =
     depositCoinName ?? joinResponse?.deposit_coin ?? "USDT";
+  /** Which Binance variant the admin is connected to ("Binance" | "Binance.US" | undefined). */
+  const adminExchangeName: string | null =
+    (joinResponse as { admin_exchange_name?: string | null } | null)
+      ?.admin_exchange_name ??
+    (pool as { admin_exchange_name?: string | null } | null)
+      ?.admin_exchange_name ??
+    null;
+  const adminPlatformLabel =
+    adminExchangeName === "Binance.US" ? "Binance.US" : "Binance";
   const currentStepIdx = stepIndex(joinStep);
 
   /* ──────── data loaders ──────── */
@@ -1774,8 +1783,8 @@ export default function VcPoolDetailPage() {
                         className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white font-mono placeholder:text-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                       />
                       <p className="mt-1 text-xs text-slate-500">
-                        This is your BSC wallet that will RECEIVE refunds or
-                        payouts.
+                        This is your wallet that will RECEIVE refunds or payouts —
+                        make sure it accepts USDT on the {paymentNetwork} network.
                       </p>
                     </div>
 
@@ -1784,7 +1793,7 @@ export default function VcPoolDetailPage() {
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
                         <p className="text-xs text-slate-400">Network</p>
                         <p className="text-sm font-semibold text-white">
-                          {networkName || "BSC"} (BEP-20)
+                          {paymentNetwork}
                         </p>
                       </div>
                       <div className="rounded-lg bg-[--color-surface-alt] p-3">
@@ -1942,7 +1951,7 @@ export default function VcPoolDetailPage() {
                       <div>
                         <p className="text-xs text-slate-400">Network</p>
                         <p className="text-sm font-semibold text-white">
-                          {paymentNetwork} (BEP-20)
+                          {paymentNetwork}
                         </p>
                       </div>
                       <div>
@@ -2009,18 +2018,13 @@ export default function VcPoolDetailPage() {
                     ) : (
                       <ol className="list-decimal list-inside text-sm text-slate-300 space-y-2">
                         <li>
-                          Open{" "}
-                          <span className="text-white font-medium">
-                            Binance
-                          </span>{" "}
-                          → Click{" "}
-                          <span className="text-white font-medium">
-                            Send
-                          </span>{" "}
-                          →{" "}
+                          Open your exchange (Binance / Binance.US / wallet)
+                          and click{" "}
                           <span className="text-white font-medium">
                             Withdraw Crypto
-                          </span>
+                          </span>{" "}
+                          — on-chain only. Binance Pay / UID transfers will NOT
+                          be detected.
                         </li>
                         <li>
                           Select{" "}
@@ -2030,7 +2034,7 @@ export default function VcPoolDetailPage() {
                           as the coin
                         </li>
                         <li>
-                          Paste the admin deposit address:{" "}
+                          Paste the admin&apos;s {adminPlatformLabel} deposit address:{" "}
                           <span className="font-mono text-[var(--primary)]">
                             {adminWalletAddr
                               ? truncAddr(adminWalletAddr)
@@ -2040,7 +2044,7 @@ export default function VcPoolDetailPage() {
                         <li>
                           Select Network:{" "}
                           <span className="font-semibold text-white">
-                            {paymentNetwork} (BEP-20)
+                            {paymentNetwork}
                           </span>
                         </li>
                         <li>
@@ -2088,19 +2092,19 @@ export default function VcPoolDetailPage() {
                     </svg>
                     <div>
                       <p className="text-sm font-semibold text-amber-200">
-                        Do NOT send anywhere else
+                        Use on-chain Withdraw only
                       </p>
                       <p className="text-xs text-amber-300/80 mt-0.5">
                         Amount must be exactly{" "}
                         <span className="font-mono font-bold text-amber-100">
                           {totalAmount} {depositCoin}
-                        </span>
-                        . Any variance (even 0.01) will result in rejection
-                        and refund. Make sure to select{" "}
-                        <span className="font-bold text-amber-100">
-                          {paymentNetwork} (BEP-20)
                         </span>{" "}
-                        network.
+                        on the{" "}
+                        <span className="font-bold text-amber-100">
+                          {paymentNetwork}
+                        </span>{" "}
+                        network. Binance Pay / UID transfers and any variance
+                        (even 0.01) will be rejected and refunded.
                       </p>
                     </div>
                   </div>
@@ -2468,8 +2472,12 @@ export default function VcPoolDetailPage() {
                 </div>
                 <div className="flex justify-between gap-4">
                   <dt className="text-slate-400">Network</dt>
+                  <dd className="font-medium text-white">{paymentNetwork}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate-400">Admin Platform</dt>
                   <dd className="font-medium text-white">
-                    {networkName || "BSC"} (BEP-20)
+                    {adminPlatformLabel}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-4">
