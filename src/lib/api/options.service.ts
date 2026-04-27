@@ -227,6 +227,42 @@ export interface MultiLegOrderResponse {
   status: string;
 }
 
+// ── Multi-leg preview (pricing) ──────────────────────────────────────────────
+
+export interface PreviewMultiLegOrderLeg {
+  contractSymbol: string;
+  side: "buy" | "sell";
+  ratio: number;
+}
+
+export interface PreviewMultiLegOrderRequest {
+  connectionId: string;
+  qty: number;
+  legs: PreviewMultiLegOrderLeg[];
+}
+
+export interface MultiLegPreviewLegQuote {
+  contractSymbol: string;
+  bid: number;
+  ask: number;
+  /** True when the per-leg ticker fetch failed; UI should show "—" / disable confirm. */
+  error: boolean;
+}
+
+export interface MultiLegPreviewResponse {
+  legs: MultiLegPreviewLegQuote[];
+  /** Signed: positive = debit (you pay), negative = credit (you receive). */
+  netPerUnit: number;
+  isDebit: boolean;
+  /** Absolute net per unit, ready to drop into the limit-price input. */
+  suggestedLimit: number;
+  /** abs(net) × contractMultiplier × qty. */
+  packageValueUsd: number;
+  contractMultiplier: number;
+  /** False when at least one leg failed to price; confirm should be disabled. */
+  allLegsPriced: boolean;
+}
+
 export interface MarketClock {
   isOpen: boolean;
   nextOpen: string | null;   // ISO timestamp
@@ -430,6 +466,22 @@ export const optionsService = {
   ): Promise<MultiLegOrderResponse> {
     return apiRequest<PlaceMultiLegOrderRequest, MultiLegOrderResponse>({
       path: "/options/orders/multi-leg",
+      method: "POST",
+      body: dto,
+    });
+  },
+
+  /**
+   * Pure-quote endpoint: backend fetches every leg's bid/ask in parallel
+   * and returns the worst-case net debit/credit + suggested limit + the
+   * package $ value. Replaces the modal's old N-call ticker fan-out so
+   * pricing arrives in a single round-trip and is always fresh on open.
+   */
+  async previewMultiLegOrder(
+    dto: PreviewMultiLegOrderRequest,
+  ): Promise<MultiLegPreviewResponse> {
+    return apiRequest<PreviewMultiLegOrderRequest, MultiLegPreviewResponse>({
+      path: "/options/orders/multi-leg/preview",
       method: "POST",
       body: dto,
     });

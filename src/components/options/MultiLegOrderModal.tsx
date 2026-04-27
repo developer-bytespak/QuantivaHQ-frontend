@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import {
   optionsService,
   type AiOptionsSignal,
-  type AiSignalLeg,
   type MultiLegPositionIntent,
+  type MultiLegPreviewResponse,
   type PlaceMultiLegOrderRequest,
 } from "@/lib/api/options.service";
 import { getUsEquityOptionsSession } from "./MarketHoursBanner";
@@ -20,15 +20,6 @@ interface MultiLegOrderModalProps {
   onClose: () => void;
   onSuccess: (message?: string) => void;
 }
-
-type LegQuote = {
-  bid: number;
-  ask: number;
-  last: number;
-  mid: number;
-  /** `null` while the fetch is in flight, `'error'` on failure. */
-  state: "loading" | "ok" | "error";
-};
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -45,25 +36,6 @@ function positionIntentFor(side: "BUY" | "SELL"): MultiLegPositionIntent {
   return side === "BUY" ? "buy_to_open" : "sell_to_open";
 }
 
-/**
- * Net debit (positive) or credit (negative) for the package, per 1 unit of
- * quantity (before multiplying by contract size × qty). BUY legs add to the
- * debit (you pay the ask), SELL legs subtract (you collect the bid).
- */
-function computeNetPerUnit(legs: AiSignalLeg[], quotes: Record<string, LegQuote>): number {
-  let net = 0;
-  for (const leg of legs) {
-    if (!leg.symbol) continue;
-    const q = quotes[leg.symbol];
-    if (!q || q.state !== "ok") continue;
-    // BUYing crosses the ask; SELLing gets hit at the bid.
-    const fill = leg.side === "BUY" ? q.ask : q.bid;
-    if (!(fill > 0)) continue;
-    net += (leg.side === "BUY" ? fill : -fill) * leg.ratio;
-  }
-  return net;
-}
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function MultiLegOrderModal({
@@ -74,7 +46,8 @@ export function MultiLegOrderModal({
   onClose,
   onSuccess,
 }: MultiLegOrderModalProps) {
-  const [quotes, setQuotes] = useState<Record<string, LegQuote>>({});
+  const [preview, setPreview] = useState<MultiLegPreviewResponse | null>(null);
+  const [previewState, setPreviewState] = useState<"idle" | "loading" | "ok" | "error">("idle");
   const [qty, setQty] = useState<string>("1");
   const [limitPrice, setLimitPrice] = useState<string>("");
   const [isPlacing, setIsPlacing] = useState(false);
@@ -93,76 +66,63 @@ export function MultiLegOrderModal({
     return () => clearInterval(id);
   }, [isOpen, isAlpaca]);
 
-  // Fetch live quotes for every leg on open.
+  // Fetch the package preview (live quotes + computed pricing) on open.
+  // Single backend call replaces the old N per-leg ticker fan-out.
   useEffect(() => {
-    if (!isOpen || !signal) return;
+    if (!isOpen || !signal || legsMissingSymbol) return;
     let cancelled = false;
-
-    const seed: Record<string, LegQuote> = {};
-    for (const leg of legs) {
-      if (leg.symbol) seed[leg.symbol] = { bid: 0, ask: 0, last: 0, mid: 0, state: "loading" };
-    }
-    setQuotes(seed);
+    setPreview(null);
+    setPreviewState("loading");
+    setLimitPrice("");
     setError(null);
     setIsPlacing(false);
 
     (async () => {
-      const results = await Promise.all(
-        legs.map(async (leg) => {
-          if (!leg.symbol) return null;
-          try {
-            const t = await optionsService.getTicker(leg.symbol, connectionId);
-            return {
-              symbol: leg.symbol,
-              quote: {
-                bid: Number(t.bidPrice) || 0,
-                ask: Number(t.askPrice) || 0,
-                last: Number(t.lastPrice) || 0,
-                mid: ((Number(t.bidPrice) || 0) + (Number(t.askPrice) || 0)) / 2,
-                state: "ok" as const,
-              },
-            };
-          } catch {
-            return {
-              symbol: leg.symbol,
-              quote: { bid: 0, ask: 0, last: 0, mid: 0, state: "error" as const },
-            };
-          }
-        }),
-      );
-      if (cancelled) return;
-      const next: Record<string, LegQuote> = {};
-      for (const r of results) if (r) next[r.symbol] = r.quote;
-      setQuotes(next);
+      try {
+        const result = await optionsService.previewMultiLegOrder({
+          connectionId,
+          qty: 1, // package value at qty=1; we re-scale client-side as user types
+          legs: legs.map((l) => ({
+            contractSymbol: l.symbol!,
+            side: l.side.toLowerCase() as "buy" | "sell",
+            ratio: Math.max(1, Math.floor(l.ratio)),
+          })),
+        });
+        if (cancelled) return;
+        setPreview(result);
+        setPreviewState("ok");
+        if (result.suggestedLimit > 0) setLimitPrice(result.suggestedLimit.toFixed(2));
+      } catch (e: any) {
+        if (cancelled) return;
+        setPreviewState("error");
+        setError(e?.message ?? "Failed to load live quotes for this strategy");
+      }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [isOpen, signal, connectionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, signal, connectionId, legsMissingSymbol]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const quotesReady = useMemo(
-    () => legs.every((l) => l.symbol && quotes[l.symbol]?.state === "ok"),
-    [legs, quotes],
-  );
+  // Map leg symbol → { bid, ask, error } for the table renderer.
+  const quotesBySymbol = useMemo(() => {
+    const m: Record<string, { bid: number; ask: number; error: boolean }> = {};
+    for (const l of preview?.legs ?? []) m[l.contractSymbol] = l;
+    return m;
+  }, [preview]);
 
-  const netPerUnit = useMemo(() => computeNetPerUnit(legs, quotes), [legs, quotes]);
-  const isDebit = netPerUnit >= 0;
-  const absNet = Math.abs(netPerUnit);
-
-  // Auto-populate limit price with the computed net (absolute) once quotes arrive.
-  useEffect(() => {
-    if (quotesReady && limitPrice === "") {
-      setLimitPrice(absNet > 0 ? absNet.toFixed(2) : "");
-    }
-  }, [quotesReady, absNet, limitPrice]);
+  const quotesReady = previewState === "ok" && preview?.allLegsPriced === true;
+  const isDebit = preview?.isDebit ?? true;
+  const absNet = preview ? Math.abs(preview.netPerUnit) : 0;
 
   const qtyNum = Math.max(1, Math.floor(Number(qty) || 0));
   const limitNum = Number(limitPrice);
   const limitValid = limitNum > 0 && Number.isFinite(limitNum);
 
-  // Package cost (debit) or credit, for 1 contract = 100 shares × qty.
-  const packageValueUsd = absNet * 100 * qtyNum;
+  // netPerUnit doesn't change with qty, so we re-scale package value client-side
+  // as the user adjusts qty rather than re-calling the preview endpoint.
+  const contractMultiplier = preview?.contractMultiplier ?? 100;
+  const packageValueUsd = absNet * contractMultiplier * qtyNum;
 
   const canSubmit =
     !!signal &&
@@ -246,8 +206,13 @@ export function MultiLegOrderModal({
             <span className="text-right">Ask</span>
           </div>
           {legs.map((leg, i) => {
-            const q = leg.symbol ? quotes[leg.symbol] : undefined;
+            const q = leg.symbol ? quotesBySymbol[leg.symbol] : undefined;
             const sideColor = leg.side === "BUY" ? "text-emerald-400" : "text-rose-400";
+            const quoteCell = (val: number | undefined) => {
+              if (previewState === "loading") return "…";
+              if (!q || q.error || val === undefined || val <= 0) return "—";
+              return val.toFixed(2);
+            };
             return (
               <div
                 key={`${leg.symbol ?? i}-${i}`}
@@ -264,12 +229,8 @@ export function MultiLegOrderModal({
                 <span className="truncate font-mono text-[11px] text-slate-200">
                   {leg.symbol ?? `${leg.type} @ ${leg.strike}`}
                 </span>
-                <span className="text-right font-mono text-slate-300">
-                  {q?.state === "ok" ? q.bid.toFixed(2) : q?.state === "loading" ? "…" : "—"}
-                </span>
-                <span className="text-right font-mono text-slate-300">
-                  {q?.state === "ok" ? q.ask.toFixed(2) : q?.state === "loading" ? "…" : "—"}
-                </span>
+                <span className="text-right font-mono text-slate-300">{quoteCell(q?.bid)}</span>
+                <span className="text-right font-mono text-slate-300">{quoteCell(q?.ask)}</span>
               </div>
             );
           })}
