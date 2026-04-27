@@ -227,6 +227,13 @@ export interface MultiLegOrderResponse {
   status: string;
 }
 
+export interface MarketClock {
+  isOpen: boolean;
+  nextOpen: string | null;   // ISO timestamp
+  nextClose: string | null;  // ISO timestamp
+  timestamp: string;         // ISO timestamp from server
+}
+
 export interface OptionTicker {
   symbol: string;
   lastPrice: number;
@@ -349,6 +356,18 @@ export const optionsService = {
   async getBalance(connectionId: string): Promise<OptionsAccount> {
     return apiRequest<never, OptionsAccount>({
       path: `/options/account?connectionId=${connectionId}`,
+      method: "GET",
+    });
+  },
+
+  /**
+   * Authoritative US market clock proxied from Alpaca. Honors holidays and
+   * early-close days. Returns null timestamps when already open/closed.
+   * Requires an Alpaca connectionId — Binance is 24/7 and has no clock.
+   */
+  async getMarketClock(connectionId: string): Promise<MarketClock> {
+    return apiRequest<never, MarketClock>({
+      path: `/options/market-clock?connectionId=${encodeURIComponent(connectionId)}`,
       method: "GET",
     });
   },
@@ -479,9 +498,10 @@ export const optionsService = {
 
   // ── Risk / Portfolio ────────────────────────────────
 
-  async getPortfolioGreeks(): Promise<PortfolioGreeks> {
+  async getPortfolioGreeks(venue?: string): Promise<PortfolioGreeks> {
+    const q = venue ? `?venue=${encodeURIComponent(venue)}` : "";
     return apiRequest<never, PortfolioGreeks>({
-      path: "/options/portfolio-greeks",
+      path: `/options/portfolio-greeks${q}`,
       method: "GET",
     });
   },
