@@ -144,7 +144,7 @@ export function TermsContent({
               {section.title === "16. Contact" && (
                 <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg">
                   <p className="text-sm sm:text-base text-white font-medium">Email: {contactEmail}</p>
-                  <p className="text-sm sm:text-base text-slate-400 mt-2">Company address: 24236 W. Stone Bend Ln, West Hills, CA 91304</p>
+                  <p className="text-sm sm:text-base text-slate-400 mt-2">Company address: 21825 Erwin St. #1020, Woodland Hills, CA 91367</p>
                 </div>
               )}
             </div>

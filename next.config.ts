@@ -37,8 +37,15 @@ const nextConfig: NextConfig = {
           { key: "X-XSS-Protection", value: "1; mode=block" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           {
+            // KYC verification embeds the Sumsub iframe which calls
+            // getUserMedia() to capture the selfie. With camera=() the iframe
+            // gets stuck on "Connecting your camera…" because the policy
+            // blocks access before the browser permission prompt even fires.
+            // The browser still asks the user for camera/mic consent on first
+            // use, so this is not a security regression — it just opts in to
+            // allowing the prompt to appear.
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value: "camera=*, microphone=*, geolocation=()",
           },
           {
             key: "Strict-Transport-Security",

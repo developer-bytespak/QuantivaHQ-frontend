@@ -111,7 +111,7 @@ export function PrivacyPolicyContent({
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <InfoBox label="Company legal name" value="QUANTIVA NEXUS LLC" />
-        <InfoBox label="Registered business address" value="24236 W. Stone Bend Ln, West Hills, CA 91304" />
+        <InfoBox label="Registered business address" value="21825 Erwin St. #1020, Woodland Hills, CA 91367" />
         <InfoBox label="Retention schedule" value="When you delete your account, all your data is permanently removed from our systems — including profile, billing, trading history, notifications, signals, and support records. KYC and verification data will be retained as required by applicable laws." />
         <InfoBox label="Jurisdiction-specific rights" value="California residents have rights under the CCPA, including the right to know, delete, and opt out of the sale of personal information. We do not sell personal data. To exercise your rights, contact privacy@quantivahq.com." />
       </div>
@@ -129,7 +129,7 @@ export function PrivacyPolicyContent({
               {section.title === "12. Contact" && (
                 <div className="mt-2 sm:mt-3 p-3 sm:p-4 bg-[--color-surface]/50 border border-[--color-border]/50 rounded-lg">
                   <p className="text-sm sm:text-base text-white font-medium">Email: {contactEmail}</p>
-                  <p className="text-sm sm:text-base text-slate-400 mt-2">QUANTIVA NEXUS LLC · 24236 W. Stone Bend Ln, West Hills, CA 91304</p>
+                  <p className="text-sm sm:text-base text-slate-400 mt-2">QUANTIVA NEXUS LLC · 21825 Erwin St. #1020, Woodland Hills, CA 91367</p>
                 </div>
               )}
             </div>

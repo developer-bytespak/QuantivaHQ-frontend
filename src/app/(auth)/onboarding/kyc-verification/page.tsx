@@ -169,11 +169,41 @@ export default function KycVerificationPage() {
   const handleError = useCallback(
     (error: any) => {
       console.error("SumSub SDK error:", error);
+      const errorCode = String(error?.code || error?.type || "").toLowerCase();
+      const errorMessage = String(error?.message || error?.reason || "").toLowerCase();
+
+      // Camera/mic permission denied or hardware unavailable. Without this,
+      // Sumsub's iframe shows an indefinite "Connecting your camera…" spinner
+      // with no recovery path — the user is stuck on Step 2/2 forever.
+      const isCameraDenied =
+        errorCode.includes("notallowed") ||
+        errorCode.includes("permissiondenied") ||
+        errorMessage.includes("notallowederror") ||
+        errorMessage.includes("permission denied") ||
+        errorMessage.includes("permission_denied");
+      const isCameraUnavailable =
+        errorCode.includes("notreadable") ||
+        errorCode.includes("notfound") ||
+        errorCode.includes("overconstrained") ||
+        errorMessage.includes("notreadableerror") ||
+        errorMessage.includes("notfounderror") ||
+        errorMessage.includes("device in use");
+      if (isCameraDenied) {
+        setError(
+          "Camera access was blocked. On iPhone: open Settings → Safari → Camera → Allow, then tap Try Again. On Chrome/Android: tap the lock icon in the address bar → Site settings → Camera → Allow."
+        );
+        return;
+      }
+      if (isCameraUnavailable) {
+        setError(
+          "We couldn't access your camera. Close any other app that may be using it (FaceTime, Zoom, Instagram) and tap Try Again."
+        );
+        return;
+      }
+
       // Duplicate applicant / document-already-submitted errors — Sumsub tries
       // to show its own hosted page. Intercept and send the user to our own
       // verification-status screen so the rejection UX stays in-app.
-      const errorCode = String(error?.code || error?.type || "").toLowerCase();
-      const errorMessage = String(error?.message || error?.reason || "").toLowerCase();
       const isDuplicate =
         errorCode.includes("duplicate") ||
         errorCode.includes("already") ||
