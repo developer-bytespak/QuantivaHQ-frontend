@@ -16,6 +16,8 @@ export interface AdminProfile {
   binance_uid: string | null;
   wallet_address: string | null;
   payment_network: string | null;
+  /** Name of the exchange the admin is currently connected to ("Binance" / "Binance.US" / null if no active connection). */
+  connected_exchange_name: string | null;
   default_pool_fee_percent: string;
   default_admin_profit_fee_percent: string;
   default_cancellation_fee_percent: string;

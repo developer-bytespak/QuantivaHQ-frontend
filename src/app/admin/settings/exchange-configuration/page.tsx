@@ -31,7 +31,9 @@ export default function AdminExchangeConfigurationPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
-  const [paymentNetwork, setPaymentNetwork] = useState("BSC");
+  const [paymentNetwork, setPaymentNetwork] = useState<"TRC20" | "ERC20" | "BEP20">(
+    "TRC20",
+  );
   const [selectedConnection, setSelectedConnection] =
     useState<ExchangeConnection | null>(null);
   const [showUpdateForm, setShowUpdateForm] = useState(false);
@@ -91,7 +93,10 @@ export default function AdminExchangeConfigurationPage() {
     adminGetSettings()
       .then((data) => {
         setWalletAddress(data.wallet_address ?? data.binance_uid ?? "");
-        setPaymentNetwork(data.payment_network ?? "BSC");
+        const stored = (data.payment_network ?? "TRC20").toUpperCase();
+        setPaymentNetwork(
+          stored === "ERC20" || stored === "BEP20" ? stored : "TRC20",
+        );
       })
       .catch(() => {});
   }, []);
@@ -763,10 +768,12 @@ export default function AdminExchangeConfigurationPage() {
                 d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            Deposit Wallet (VC Pool – BSC / BEP-20)
+            Deposit Wallet (VC Pool)
           </h2>
           <p className="text-sm text-slate-400 mb-5">
-            This wallet receives on-chain USDT from pool participants.
+            This wallet receives on-chain USDT from pool participants. Pick a
+            network supported on both Binance and Binance.US (TRC20 or ERC20
+            recommended).
           </p>
 
           <form onSubmit={handleSubmitWallet} className="space-y-4">
@@ -797,11 +804,17 @@ export default function AdminExchangeConfigurationPage() {
               <select
                 id="payment-network"
                 value={paymentNetwork}
-                onChange={(e) => setPaymentNetwork(e.target.value)}
+                onChange={(e) =>
+                  setPaymentNetwork(
+                    e.target.value as "TRC20" | "ERC20" | "BEP20",
+                  )
+                }
                 className="w-full rounded-xl border border-[--color-border] bg-[--color-surface-alt] px-4 py-2.5 text-white focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-60"
                 disabled={saving}
               >
-                <option value="BSC">BSC (BEP-20)</option>
+                <option value="TRC20">TRC20 (Tron)</option>
+                <option value="ERC20">ERC20 (Ethereum)</option>
+                <option value="BEP20">BEP20 (BSC)</option>
               </select>
             </div>
             <button
