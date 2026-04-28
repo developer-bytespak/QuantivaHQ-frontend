@@ -52,12 +52,12 @@ export interface SuperAdminUserRow {
   email: string;
   username: string;
   full_name: string | null;
-  current_tier: "FREE" | "PRO" | "ELITE";
+  current_tier: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
   kyc_status: "pending" | "approved" | "rejected" | "review";
   created_at: string;
   last_active_at: string | null;
   subscription_status: "active" | "cancelled" | "trial" | "expired" | null;
-  subscription_plan: "FREE" | "PRO" | "ELITE" | null;
+  subscription_plan: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS" | null;
   billing_period: "MONTHLY" | "QUARTERLY" | "YEARLY" | null;
   subscription_period_end: string | null;
   total_invested_usdt: number;
@@ -84,12 +84,13 @@ export interface SuperAdminUsersAnalyticsResponse {
     FREE: number;
     PRO: number;
     ELITE: number;
+    ELITE_PLUS: number;
   };
   recent_signups: Array<{
     user_id: string;
     email: string;
     full_name: string | null;
-    current_tier: "FREE" | "PRO" | "ELITE";
+    current_tier: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
     created_at: string;
   }>;
   exchange_connections: {
@@ -112,7 +113,7 @@ export interface SuperAdminUsersAnalyticsResponse {
 
 export interface SuperAdminUsersGrowthFilters {
   year?: number;
-  subscription_plan?: "FREE" | "PRO" | "ELITE";
+  subscription_plan?: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
   active_only?: boolean;
 }
 
@@ -126,7 +127,7 @@ export interface SuperAdminUsersGrowthPoint {
 export interface SuperAdminUsersGrowthResponse {
   year: number;
   filters: {
-    subscription_plan: "ALL" | "FREE" | "PRO" | "ELITE";
+    subscription_plan: "ALL" | "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
     active_only: boolean;
   };
   total_users: number;

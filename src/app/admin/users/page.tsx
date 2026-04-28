@@ -25,7 +25,7 @@ import {
 } from "@/lib/api/vcpool-admin";
 import { Notification, useNotification } from "@/components/common/notification";
 
-const GROWTH_PLAN_OPTIONS = ["ALL", "FREE", "PRO", "ELITE"] as const;
+const GROWTH_PLAN_OPTIONS = ["ALL", "FREE", "PRO", "ELITE", "ELITE_PLUS"] as const;
 
 export default function AdminUsersPage() {
   const router = useRouter();
@@ -120,7 +120,7 @@ export default function AdminUsersPage() {
 
   const planPercentages = useMemo(() => {
     if (!analytics?.summary.total_users) {
-      return { free: 0, pro: 0, elite: 0 };
+      return { free: 0, pro: 0, elite: 0, elite_plus: 0 };
     }
 
     const total = analytics.summary.total_users;
@@ -128,6 +128,7 @@ export default function AdminUsersPage() {
       free: Math.round((analytics.plan_distribution.FREE / total) * 100),
       pro: Math.round((analytics.plan_distribution.PRO / total) * 100),
       elite: Math.round((analytics.plan_distribution.ELITE / total) * 100),
+      elite_plus: Math.round((analytics.plan_distribution.ELITE_PLUS / total) * 100),
     };
   }, [analytics]);
 
@@ -150,6 +151,12 @@ export default function AdminUsersPage() {
         value: analytics?.plan_distribution.ELITE ?? 0,
         percent: planPercentages.elite,
         color: "#fc4f02",
+      },
+      {
+        name: "ELITE_PLUS",
+        value: analytics?.plan_distribution.ELITE_PLUS ?? 0,
+        percent: planPercentages.elite_plus,
+        color: "#facc15",
       },
     ],
     [analytics, planPercentages]
@@ -278,7 +285,7 @@ export default function AdminUsersPage() {
                 className="rounded-lg bg-[--color-surface-alt] p-2"
               >
                 <p className="truncate text-sm font-medium text-white">
-                  {user.full_name || user.email}
+                  {user.email}
                 </p>
                 <p className="text-xs text-slate-400">{user.current_tier}</p>
               </div>
@@ -394,7 +401,7 @@ export default function AdminUsersPage() {
                 className="rounded-lg bg-[--color-surface-alt] p-3"
               >
                 <p className="truncate text-sm font-medium text-white">
-                  {item.full_name || item.email}
+                  {item.email}
                 </p>
                 <p className="text-xs text-slate-400">
                   {item.exchange_name} • {item.exchange_type}
