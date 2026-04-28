@@ -10,8 +10,8 @@ import {
 } from "@/lib/api/vc-pools";
 import { getApiErrorMessage } from "@/lib/utils/errors";
 import useSubscriptionStore from "@/state/subscription-store";
-import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
-import { LockedFeatureOverlay } from "@/components/common/feature-guard";
+import { FeatureType } from "@/mock-data/subscription-dummy-data";
+import { UpgradeGate } from "@/components/common/upgrade-gate";
 
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
@@ -102,17 +102,22 @@ export default function MySubmissionsPage() {
     fetchSubmissions();
   }, [canAccessVCPool]);
 
+  if (!canAccessVCPool) {
+    return (
+      <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
+        <div className="max-w-5xl mx-auto">
+          <UpgradeGate
+            title="Payment Submissions is for ELITE and ELITE Plus"
+            description="Review your VC pool payment submissions and statuses. Upgrade to access submissions."
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-5xl mx-auto">
-        {!canAccessVCPool && (
-          <LockedFeatureOverlay
-            featureName="VC Pool Access"
-            requiredTier={PlanTier.ELITE}
-            message="Payment submissions are available only for ELITE members."
-          />
-        )}
-
         <Link
           href="/dashboard/vc-pool"
           className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"

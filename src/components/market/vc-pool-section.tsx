@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import useSubscriptionStore from "@/state/subscription-store";
-import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
-import { LockedFeatureOverlay } from "@/components/common/feature-guard";
+import { FeatureType } from "@/mock-data/subscription-dummy-data";
+import { UpgradeGate } from "@/components/common/upgrade-gate";
 import { getAvailableVcPools, type VcPoolSummary } from "@/lib/api/vc-pools";
 import { getApiErrorMessage } from "@/lib/utils/errors";
 
@@ -85,16 +85,17 @@ export function VCPoolSection() {
     };
   }, [pools, pagination?.total]);
 
+  if (!canAccessVCPool) {
+    return (
+      <UpgradeGate
+        title="VC Pool Access is for ELITE and ELITE Plus"
+        description="Browse curated trading pools created by Quantiva admins. Upgrade to access VC Pools."
+      />
+    );
+  }
+
   return (
     <div className="relative">
-      {!canAccessVCPool && (
-        <LockedFeatureOverlay
-          featureName="VC Pool Access"
-          requiredTier={PlanTier.ELITE}
-          message="VC pools are available only for ELITE members. Upgrade your plan to access curated pools."
-        />
-      )}
-
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

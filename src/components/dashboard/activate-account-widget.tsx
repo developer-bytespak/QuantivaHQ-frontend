@@ -47,11 +47,28 @@ function isStepComplete(p: OnboardingProgressShape, key: StepKey): boolean {
 }
 
 function isStepLocked(p: OnboardingProgressShape, key: StepKey): boolean {
-  // Exchange wiring is gated by KYC at the backend (KycVerifiedGuard on
-  // POST /exchanges/connections), so we lock the pill until KYC clears
-  // rather than letting users hit a 403.
-  if (key === "exchange" && p.kyc.status !== "approved") return true;
-  return false;
+  // Strictly sequential ordering: each step is locked until every preceding
+  // step is complete. Why this matters: the onboarding-emails funnel queues
+  // emails when advanceTo(stage) is called, and advanceTo's regression guard
+  // refuses to walk backwards. So if a user jumps from SIGNED_UP straight to
+  // KYC, the PERSONAL_INFO-stage emails are cancelled and can never be
+  // re-queued. Enforcing order in the UI keeps the funnel intact.
+  // Exchange is also enforced server-side by KycVerifiedGuard on
+  // POST /exchanges/connections — the lock here just prevents a 403.
+  switch (key) {
+    case "personal_info":
+      return false;
+    case "kyc":
+      return !p.personal_info.complete;
+    case "subscription":
+      return !p.personal_info.complete || p.kyc.status !== "approved";
+    case "exchange":
+      return (
+        !p.personal_info.complete ||
+        p.kyc.status !== "approved" ||
+        !(p.subscription.is_paid || p.subscription.acknowledged)
+      );
+  }
 }
 
 function kycPillState(
@@ -166,8 +183,7 @@ export function ActivateAccountWidget() {
       }
     };
     return (
-      <div className="px-6 pt-5">
-        <div className="relative overflow-hidden rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-950/60 via-red-950/30 to-transparent p-5 sm:p-6 backdrop-blur">
+      <div className="relative overflow-hidden rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-950/60 via-red-950/30 to-transparent p-5 sm:p-6 backdrop-blur">
           <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-red-500/10 blur-3xl" />
           <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
@@ -204,7 +220,6 @@ export function ActivateAccountWidget() {
                 </button>
               </div>
             )}
-          </div>
         </div>
       </div>
     );
@@ -309,10 +324,9 @@ export function ActivateAccountWidget() {
       };
 
   return (
-    <div className="px-6 pt-5">
-      <div
-        className={`relative overflow-hidden rounded-2xl border ${accent.cardBorder} bg-gradient-to-br ${accent.cardBg} to-transparent p-5 sm:p-6 backdrop-blur shadow-[0_8px_30px_-10px_rgba(0,0,0,0.5)]`}
-      >
+    <div
+      className={`relative overflow-hidden rounded-2xl border ${accent.cardBorder} bg-gradient-to-br ${accent.cardBg} to-transparent p-5 sm:p-6 backdrop-blur shadow-[0_8px_30px_-10px_rgba(0,0,0,0.5)]`}
+    >
         {/* Decorative accent glows */}
         <div className={`pointer-events-none absolute -top-32 -right-24 h-64 w-64 rounded-full ${accent.glow} blur-3xl`} />
         <div className={`pointer-events-none absolute -bottom-24 -left-24 h-48 w-48 rounded-full ${accent.glow} opacity-50 blur-3xl`} />
@@ -465,7 +479,6 @@ export function ActivateAccountWidget() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

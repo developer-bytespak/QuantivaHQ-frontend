@@ -12,7 +12,6 @@ import {
   CancelSubscriptionModal,
   PaymentModal,
 } from "@/components/common/subscription-modals";
-import { ActivateAccountWidget } from "@/components/dashboard/activate-account-widget";
 
 export default function DashboardLayout({
   children,
@@ -71,7 +70,6 @@ export default function DashboardLayout({
           <DashboardSidebar sections={DASHBOARD_NAV} />
           <div className="flex h-screen flex-1 flex-col overflow-hidden">
             <TopBar />
-            <ActivateAccountWidget />
             <main className="flex-1 overflow-y-auto bg-[--color-surface-alt]/60 px-6 pb-16 pt-10">
               <div className="mx-auto w-full max-w-7xl space-y-8">{children}</div>
             </main>

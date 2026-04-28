@@ -17,6 +17,7 @@ import SellConfirmModal from "@/components/trading/SellConfirmModal";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
+import { UpgradeGate } from "@/components/common/upgrade-gate";
 
 export interface TopTradesPageProps {
   /** When set, page runs in admin VC Pool mode: trades execute via adminCreateTrade(poolId, body) */
@@ -1285,20 +1286,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   }
   if (!canAccessTopTrades) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur p-8">
-        <div className="text-center max-w-md">
-          <h3 className="text-lg font-semibold text-white mb-2">Top Trades is for PRO, ELITE and ELITE Plus</h3>
-          <p className="text-sm text-slate-400 mb-6">
-            Generate stock signals and view trading opportunities. Upgrade to access Top Trades.
-          </p>
-          <Link
-            href="/dashboard/settings/subscription"
-            className="inline-block px-6 py-2.5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold"
-          >
-            Upgrade Now
-          </Link>
-        </div>
-      </div>
+      <UpgradeGate
+        title="Top Trades is for PRO, ELITE and ELITE Plus"
+        description="Generate stock signals and view trading opportunities. Upgrade to access Top Trades."
+      />
     );
   }
 

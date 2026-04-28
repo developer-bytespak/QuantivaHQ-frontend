@@ -17,8 +17,8 @@ import {
   type PaymentStatus,
 } from "@/lib/api/vc-pools";
 import useSubscriptionStore from "@/state/subscription-store";
-import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
-import { LockedFeatureOverlay } from "@/components/common/feature-guard";
+import { FeatureType } from "@/mock-data/subscription-dummy-data";
+import { UpgradeGate } from "@/components/common/upgrade-gate";
 import { useKycGuard } from "@/components/common/kyc-gate";
 import {
   useNotification,
@@ -728,16 +728,17 @@ export default function VcPoolDetailPage() {
     (Number(investmentAmount || 0) * cancellationFeePercent) / 100;
 
   /* ═══════════════════════ RENDER ═══════════════════════ */
+  if (!canAccessVCPool) {
+    return (
+      <UpgradeGate
+        title="VC Pool Access is for ELITE and ELITE Plus"
+        description="Pool details and joining are available to ELITE members. Upgrade your plan to view this pool."
+      />
+    );
+  }
+
   return (
     <div className="relative">
-      {!canAccessVCPool && (
-        <LockedFeatureOverlay
-          featureName="VC Pool Access"
-          requiredTier={PlanTier.ELITE}
-          message="VC pools are available only for ELITE members. Upgrade your plan to access pool details."
-        />
-      )}
-
       {notification && (
         <Notification
           message={notification.message}
