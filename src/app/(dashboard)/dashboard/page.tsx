@@ -711,6 +711,11 @@ export default function DashboardPage() {
             ) : (
               <div className="text-center py-6 sm:py-8 text-slate-400 text-xs sm:text-sm">
                 No portfolio data available
+                {!connectionId && (
+                  <p className="mt-1 text-[10px] sm:text-xs text-slate-500">
+                    Connect exchange to view
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -740,7 +745,9 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <p className="text-xs sm:text-sm text-slate-400">No open orders</p>
-                  <p className="text-[10px] text-slate-600 mt-1">Your active orders will appear here</p>
+                  <p className="text-[10px] text-slate-600 mt-1">
+                    {!connectionId ? "Connect exchange to view" : "Your active orders will appear here"}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -929,6 +936,11 @@ export default function DashboardPage() {
                     <tr>
                       <td colSpan={7} className="py-6 sm:py-8 text-center text-xs sm:text-sm text-slate-400">
                         No positions found
+                        {!connectionId && (
+                          <p className="mt-1 text-[10px] sm:text-xs text-slate-500">
+                            Connect exchange to view
+                          </p>
+                        )}
                       </td>
                     </tr>
                   )}
