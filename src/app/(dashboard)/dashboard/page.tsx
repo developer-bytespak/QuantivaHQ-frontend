@@ -627,33 +627,10 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
-      {/* Exchange Account Connection Required - Only show when connection check is done AND no connection exists */}
-      {!isLoadingConnection && !connectionId && (
-        <div className="rounded-lg border border-orange-500/50 bg-orange-500/10 p-4 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-orange-500/20 flex-shrink-0">
-              <svg className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm sm:text-base font-semibold text-white mb-1">Connect Your Exchange Account</h3>
-              <p className="text-xs sm:text-sm text-slate-300 mb-4">
-                To start trading and accessing your portfolio, please connect your Binance or Bybit exchange account. You'll need to provide your API keys.
-              </p>
-              <button
-                onClick={() => router.push("/onboarding/account-type?return=%2Fdashboard")}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium text-sm transition-colors duration-200"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Connect Exchange Account
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* The "Connect Your Exchange Account" banner that lived here was
+          replaced by the ActivateAccountWidget rendered in the dashboard
+          layout — it shows the Exchange step alongside the other onboarding
+          steps and avoids two redundant prompts on the same screen. */}
 
       {/* Generic Error Display */}
       {error && !error.includes("No active connection") && (
