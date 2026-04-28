@@ -13,6 +13,7 @@ import { apiRequest } from "@/lib/api/client";
 import { getTrendingAssetsWithInsights, type Strategy } from "@/lib/api/strategies";
 import { MarketTable } from "@/components/market/MarketTable";
 import SellConfirmModal from "@/components/trading/SellConfirmModal";
+import { ActivateAccountWidget } from "@/components/dashboard/activate-account-widget";
 import {
   formatMarketCap,
   formatPrice,
@@ -627,10 +628,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-6 sm:pb-8">
-      {/* The "Connect Your Exchange Account" banner that lived here was
-          replaced by the ActivateAccountWidget rendered in the dashboard
-          layout — it shows the Exchange step alongside the other onboarding
-          steps and avoids two redundant prompts on the same screen. */}
+      {/* Onboarding progress card. Lives on the dashboard page only (not in
+          the layout) so it doesn't follow the user into Top Trades, Options,
+          etc., and scrolls with the page rather than acting as a sticky
+          banner. The widget renders nothing once the user is fully onboarded. */}
+      <ActivateAccountWidget />
+
 
       {/* Generic Error Display */}
       {error && !error.includes("No active connection") && (

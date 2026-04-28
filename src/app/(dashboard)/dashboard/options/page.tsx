@@ -29,33 +29,7 @@ import {
 import { MarketHoursBanner } from "@/components/options/MarketHoursBanner";
 import { Level3GateBanner } from "@/components/options/Level3GateBanner";
 import type { AiOptionsSignal, IvHistoryPoint, PortfolioGreeks, OptionDepth, OptionsPosition } from "@/lib/api/options.service";
-
-// ── ELITE Gate Component ─────────────────────────────────────────────────────
-
-function EliteGate() {
-  const { setShowUpgradeModal } = useSubscriptionStore();
-  return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="max-w-md rounded-2xl border border-white/[0.06] bg-[#12121a] p-8 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--primary)]/10">
-          <svg className="h-8 w-8 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-        </div>
-        <h2 className="mb-2 text-xl font-bold text-slate-100">ELITE Plus Feature</h2>
-        <p className="mb-6 text-sm text-slate-400">
-          Options trading with AI-powered recommendations is exclusively available on the ELITE Plus plan.
-        </p>
-        <button
-          onClick={() => setShowUpgradeModal(true)}
-          className="rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.02]"
-        >
-          Upgrade to ELITE Plus
-        </button>
-      </div>
-    </div>
-  );
-}
+import { UpgradeGate } from "@/components/common/upgrade-gate";
 
 // ── Tab Types ────────────────────────────────────────────────────────────────
 
@@ -492,7 +466,12 @@ export default function OptionsPage() {
   // ── ELITE Gate ──────────────────────────────────────────────────────────
 
   if (!hasAccess) {
-    return <EliteGate />;
+    return (
+      <UpgradeGate
+        title="Options Trading is for ELITE Plus"
+        description="Trade options with AI-powered recommendations and Greeks analytics. Upgrade to ELITE Plus to access Options Trading."
+      />
+    );
   }
 
   // ── Render ──────────────────────────────────────────────────────────────

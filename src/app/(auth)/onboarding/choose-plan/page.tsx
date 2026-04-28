@@ -159,7 +159,7 @@ export default function ChoosePlanPage() {
   ];
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-black">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-black">
       <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/5 blur-3xl" />
 

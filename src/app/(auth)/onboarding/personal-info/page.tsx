@@ -416,20 +416,12 @@ export default function PersonalInfoPage() {
     }
 
     try {
-      // Get user ID from localStorage or session
-      // Note: In a real app, you'd get this from the authenticated session/token
-      const userId = localStorage.getItem("quantivahq_user_id");
-      
-      if (!userId) {
-        throw new Error("User not authenticated. Please sign in again.");
-      }
+      // Backend resolves the user from the JWT — no userId needed here.
+      await updatePersonalInfo(formData);
 
-      // Call backend API
-      await updatePersonalInfo(userId, formData);
-      
       // Store in localStorage for backup
       localStorage.setItem("quantivahq_personal_info", JSON.stringify(formData));
-      
+
       setIsLoading(false);
       // Return to dashboard (or whatever caller specified). The dashboard
       // widget will surface KYC as the next step automatically.

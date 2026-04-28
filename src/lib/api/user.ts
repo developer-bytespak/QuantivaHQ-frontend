@@ -102,7 +102,6 @@ export async function hasPersonalInfo(): Promise<boolean> {
  * @returns Updated user information
  */
 export async function updatePersonalInfo(
-  userId: string,
   data: PersonalInfoForm
 ): Promise<UpdatePersonalInfoResponse> {
   // Transform frontend form data to backend DTO format
@@ -114,8 +113,11 @@ export async function updatePersonalInfo(
     phoneNumber: data.phoneNumber,
   };
 
+  // Use the /me endpoint so the backend resolves the user from the JWT —
+  // no need to thread a userId through localStorage, which can be missing
+  // for Google-login users (only Google-signup sets it).
   return apiRequest<UpdatePersonalInfoRequest, UpdatePersonalInfoResponse>({
-    path: `/users/${userId}/personal-info`,
+    path: `/users/me/personal-info`,
     method: "PATCH",
     body: requestData,
   });

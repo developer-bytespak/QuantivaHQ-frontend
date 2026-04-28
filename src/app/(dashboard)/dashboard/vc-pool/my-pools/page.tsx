@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { getMyPools, type MyPoolMembership } from "@/lib/api/vc-pools";
 import { getApiErrorMessage } from "@/lib/utils/errors";
 import useSubscriptionStore from "@/state/subscription-store";
-import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
-import { LockedFeatureOverlay } from "@/components/common/feature-guard";
+import { FeatureType } from "@/mock-data/subscription-dummy-data";
+import { UpgradeGate } from "@/components/common/upgrade-gate";
 
 function formatUsd(n: number): string {
   return new Intl.NumberFormat(undefined, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
@@ -278,17 +278,22 @@ export default function MyPoolsPage() {
     fetchMyPools();
   }, [canAccessVCPool]);
 
+  if (!canAccessVCPool) {
+    return (
+      <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
+        <div className="max-w-5xl mx-auto">
+          <UpgradeGate
+            title="My Pools is for ELITE and ELITE Plus"
+            description="Track your VC pool memberships and contributions. Upgrade to access My Pools."
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-5xl mx-auto">
-        {!canAccessVCPool && (
-          <LockedFeatureOverlay
-            featureName="VC Pool Access"
-            requiredTier={PlanTier.ELITE}
-            message="My pools is available only for ELITE members."
-          />
-        )}
-
         <Link
           href="/dashboard/vc-pool"
           className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"

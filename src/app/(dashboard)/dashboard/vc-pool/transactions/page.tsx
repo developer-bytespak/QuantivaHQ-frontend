@@ -12,8 +12,8 @@ import {
 } from "@/lib/api/vc-pools";
 import { getApiErrorMessage } from "@/lib/utils/errors";
 import useSubscriptionStore from "@/state/subscription-store";
-import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
-import { LockedFeatureOverlay } from "@/components/common/feature-guard";
+import { FeatureType } from "@/mock-data/subscription-dummy-data";
+import { UpgradeGate } from "@/components/common/upgrade-gate";
 
 function TransactionTypeIcon({ type }: { type: string }) {
   if (type === "payment_submitted") {
@@ -145,17 +145,22 @@ export default function TransactionsPage() {
     fetchData();
   }, [fetchData, canAccessVCPool]);
 
+  if (!canAccessVCPool) {
+    return (
+      <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
+        <div className="max-w-5xl mx-auto">
+          <UpgradeGate
+            title="Transaction History is for ELITE and ELITE Plus"
+            description="Review your VC pool transaction history. Upgrade to access transaction details."
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-5xl mx-auto">
-        {!canAccessVCPool && (
-          <LockedFeatureOverlay
-            featureName="VC Pool Access"
-            requiredTier={PlanTier.ELITE}
-            message="Transaction history is available only for ELITE members."
-          />
-        )}
-
         <Link
           href="/dashboard/vc-pool"
           className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-[var(--primary-light)] transition-colors group"
