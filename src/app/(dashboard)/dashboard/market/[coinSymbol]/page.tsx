@@ -3,8 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { exchangesService, CoinDetailResponse, CandlesByInterval, EmbeddedMarketData, MarketDetailResponse, OrderBook, RecentTrade } from "@/lib/api/exchanges.service";
+import {
+  getPublicTicker,
+  getPublicKlines,
+  getPublicDepth,
+  getPublicTrades,
+} from "@/lib/api/public-market.service";
 import { useExchange } from "@/context/ExchangeContext";
 import { useRealtimePrice } from "@/hooks/useRealtimePrice";
+import { useBinancePublicPrice } from "@/hooks/useBinancePublicPrice";
 import CoinDetailHeader from "@/components/market/CoinDetailHeader";
 import dynamic from "next/dynamic";
 
@@ -20,6 +27,7 @@ import TradingPanel from "@/components/market/TradingPanel";
 import StockTradingPanel from "@/components/market/StockTradingPanel";
 import InfoTab from "@/components/market/InfoTab";
 import TradingDataTab from "@/components/market/TradingDataTab";
+import PublicTradingDataTab from "@/components/market/PublicTradingDataTab";
 import StockTradingDataTab from "@/components/market/StockTradingDataTab";
 import { getCoinDetails } from "@/lib/api/coingecko.service";
 
@@ -97,6 +105,14 @@ export default function MarketDetailPage() {
 
   // Get connection from global context (fetched once on app start)
   const { connectionId, connectionType, activeConnection } = useExchange();
+
+  // Public-data mode: when the user has no exchange connection we still want
+  // to show charts / order book / recent trades for crypto symbols, sourced
+  // from Binance's public REST + WS endpoints. Trading actions remain gated
+  // because placing orders requires the user's API keys. Stocks are NOT
+  // covered by public Binance data, so the no-connection empty state still
+  // applies for stock symbols.
+  const isPublicCryptoMode = !connectionId;
   
   const [coinData, setCoinData] = useState<CoinDetailData | null>(null);
   const [stockData, setStockData] = useState<StockDetailData | null>(null);
@@ -130,21 +146,35 @@ export default function MarketDetailPage() {
     initialPrice: coinData?.currentPrice,
   });
 
-  // Compute the live price — prefer real-time, fallback to REST data
+  // Public-mode realtime: direct Binance WS, no auth. Active only when there
+  // is no exchange connection AND we have crypto coinData to stream against.
+  const publicRealtimePrice = useBinancePublicPrice({
+    symbol: coinData?.tradingPair || `${symbol.toUpperCase()}${defaultQuote}`,
+    enabled: isPublicCryptoMode && !!coinData,
+    initialPrice: coinData?.currentPrice,
+  });
+
+  // Compute the live price — branch by mode so the right stream wins.
+  // We can't merge with `??` because each hook seeds its initial state with
+  // `initialPrice`, so a disabled hook would still report a non-null price
+  // and could mask the active stream's live updates.
   const livePrice = useMemo(() => {
     if (connectionType === 'stocks') return stockData?.price || 0;
+    if (isPublicCryptoMode) return publicRealtimePrice.price ?? coinData?.currentPrice ?? 0;
     return realtimePrice.price ?? coinData?.currentPrice ?? 0;
-  }, [connectionType, stockData?.price, realtimePrice.price, coinData?.currentPrice]);
+  }, [connectionType, isPublicCryptoMode, stockData?.price, publicRealtimePrice.price, realtimePrice.price, coinData?.currentPrice]);
 
   const liveChange24h = useMemo(() => {
     if (connectionType === 'stocks') return stockData?.change24h || 0;
+    if (isPublicCryptoMode) return publicRealtimePrice.change24h ?? coinData?.change24h ?? 0;
     return realtimePrice.change24h ?? coinData?.change24h ?? 0;
-  }, [connectionType, stockData?.change24h, realtimePrice.change24h, coinData?.change24h]);
+  }, [connectionType, isPublicCryptoMode, stockData?.change24h, publicRealtimePrice.change24h, realtimePrice.change24h, coinData?.change24h]);
 
   const liveChangePercent = useMemo(() => {
     if (connectionType === 'stocks') return stockData?.changePercent24h || 0;
+    if (isPublicCryptoMode) return publicRealtimePrice.changePercent24h ?? coinData?.changePercent24h ?? 0;
     return realtimePrice.changePercent24h ?? coinData?.changePercent24h ?? 0;
-  }, [connectionType, stockData?.changePercent24h, realtimePrice.changePercent24h, coinData?.changePercent24h]);
+  }, [connectionType, isPublicCryptoMode, stockData?.changePercent24h, publicRealtimePrice.changePercent24h, realtimePrice.changePercent24h, coinData?.changePercent24h]);
 
   // Map timeframe to interval
   const timeframeMap: Record<string, string> = {
@@ -157,6 +187,62 @@ export default function MarketDetailPage() {
   };
 
   useEffect(() => {
+    const fetchPublicCryptoData = async () => {
+      // Anonymous flow — Binance public REST endpoints only. We can't show
+      // an account balance, but everything else (price, candles, depth,
+      // trades, info from CoinGecko) is fully available.
+      const tradingPair = `${symbol.toUpperCase()}${defaultQuote}`;
+      try {
+        setIsLoading(true);
+        setError(null);
+        setCoinGeckoDataFallback(null);
+        setInitialStockBars(null);
+
+        const [ticker, candles, depth, trades] = await Promise.all([
+          getPublicTicker(tradingPair),
+          getPublicKlines(tradingPair, "1h", 200),
+          getPublicDepth(tradingPair, 20).catch(() => null),
+          getPublicTrades(tradingPair, 50).catch(() => []),
+        ]);
+
+        const baseCurrency = symbol.toUpperCase();
+        const change24h = (ticker.priceChangePercent / 100) * ticker.price;
+
+        setCoinData({
+          symbol: baseCurrency,
+          tradingPair,
+          currentPrice: ticker.price,
+          change24h,
+          changePercent24h: ticker.priceChangePercent,
+          high24h: ticker.high24h,
+          low24h: ticker.low24h,
+          volume24h: ticker.volume24h,
+          // Account-balance fields are zeroed in public mode — TradingPanel
+          // is hidden behind the isPublicCryptoMode gate so these are unused.
+          availableBalance: 0,
+          availableQuoteBalance: 0,
+          availableBaseBalance: 0,
+          lockedBaseBalance: 0,
+          baseCurrency,
+          quoteCurrency: defaultQuote,
+          candles,
+        } as CoinDetailData);
+
+        if (depth) setInitialOrderBook(depth);
+        if (trades) setInitialTrades(trades);
+
+        // Hydrate the Info tab with CoinGecko metadata in the background.
+        getCoinDetails(symbol).then(setCoinGeckoDataFallback).catch(() => {});
+      } catch (err: any) {
+        // Most likely an unsupported symbol on Binance (e.g. a small-cap
+        // token that's CoinGecko-listed but not Binance-listed).
+        console.error("Failed to fetch public market data:", err);
+        setError(err?.message || "This symbol isn't available on Binance public market data.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -268,8 +354,16 @@ export default function MarketDetailPage() {
 
     if (symbol && connectionId) {
       fetchData();
+    } else if (symbol && isPublicCryptoMode) {
+      // No exchange connected — render the public Binance preview for
+      // crypto symbols (charts / depth / trades). Stocks aren't covered
+      // because Binance is crypto-only; the connection check below the
+      // fetch handles that branch.
+      fetchPublicCryptoData();
+    } else {
+      setIsLoading(false);
     }
-  }, [symbol, connectionId]);
+  }, [symbol, connectionId, isPublicCryptoMode, defaultQuote]);
 
   const handleTimeframeChange = (timeframe: string) => {
     setSelectedTimeframe(timeframe);
@@ -281,6 +375,43 @@ export default function MarketDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
+      </div>
+    );
+  }
+
+  // No-exchange empty state — only reached when the public-crypto fallback
+  // didn't yield data (e.g. symbol not listed on Binance, or fetch failed).
+  // Crypto users with valid Binance symbols get the full public preview
+  // populated by fetchPublicCryptoData() above.
+  if (!connectionId && !coinData) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] rounded-2xl bg-gradient-to-br from-white/[0.03] to-transparent backdrop-blur p-8">
+        <div className="text-center max-w-md">
+          <h3 className="text-lg font-semibold text-white mb-2">
+            {error
+              ? `${symbol.toUpperCase()} isn't available without a connection`
+              : `Connect an exchange to view ${symbol.toUpperCase()}`}
+          </h3>
+          <p className="text-sm text-slate-400 mb-6">
+            {error
+              ? "This symbol isn't listed on Binance's public market data. Connect an exchange to see it via your account."
+              : "Connect Binance, Bybit, or Alpaca to view full market details and trade."}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => router.back()}
+              className="rounded-lg border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-medium text-slate-300 transition-colors hover:border-white/30 hover:bg-white/[0.06] hover:text-white"
+            >
+              Go back
+            </button>
+            <button
+              onClick={() => router.push("/onboarding/account-type?return=%2Fdashboard")}
+              className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary-hover)]"
+            >
+              Connect Exchange
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -688,6 +819,14 @@ export default function MarketDetailPage() {
         />
       )}
 
+      {activeTab === "Trading Data" && isPublicCryptoMode && coinData && (
+        <PublicTradingDataTab
+          symbol={coinData.tradingPair}
+          initialOrderBook={initialOrderBook}
+          initialTrades={initialTrades}
+        />
+      )}
+
       {activeTab === "Trading Data" && connectionType === "stocks" && stockData && (
         <StockTradingDataTab 
           symbol={stockData.symbol} 
@@ -711,6 +850,30 @@ export default function MarketDetailPage() {
           lockedBaseBalance={coinData.lockedBaseBalance}
           quoteCurrency={coinData.quoteCurrency || "USDT"}
         />
+      )}
+
+      {/* Public-mode trade CTA — replaces TradingPanel when the user hasn't
+          connected an exchange. Order placement requires API keys, so we
+          surface a "Connect to trade" prompt instead. */}
+      {activeTab === "Price" && isPublicCryptoMode && coinData && (
+        <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-br from-white/[0.03] to-transparent p-5 sm:p-6 backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-white">
+                Connect an exchange to trade {coinData.symbol}
+              </h3>
+              <p className="mt-1 text-sm text-slate-400">
+                You're viewing public Binance market data. Place orders, see your balance, and execute trades by connecting your account.
+              </p>
+            </div>
+            <button
+              onClick={() => router.push("/onboarding/account-type?return=%2Fdashboard")}
+              className="self-start rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--primary-hover)] sm:self-auto"
+            >
+              Connect Exchange
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Stock Trading Panel - Show on Price tab for stocks */}
