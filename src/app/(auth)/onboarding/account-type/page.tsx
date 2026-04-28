@@ -1,8 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect } from "react";
+import { safeReturnPath } from "@/lib/auth/flow-router.service";
+
+// localStorage key shared across the 5-page exchange-wiring chain
+// (account-type → crypto/stock-exchange → api-key-tutorial → api-keys
+// → connecting). Set here when we arrive with ?return=, cleared by the
+// final page after the connection succeeds. This avoids threading the
+// query param through every link in the chain.
+const ONBOARDING_RETURN_KEY = "quantivahq_onboarding_return";
 
 interface AccountTypeCardProps {
   icon: React.ReactNode;
@@ -65,16 +73,22 @@ function AccountTypeCard({ icon, title, description, value, gradient, delay, isS
 
 export default function AccountTypePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedType, setSelectedType] = useState<"crypto" | "stocks" | "both" | null>(null);
   const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
+    // Persist a return path the exchange-wiring chain can pick up at the end.
+    const safe = safeReturnPath(searchParams.get("return"));
+    if (safe) {
+      localStorage.setItem(ONBOARDING_RETURN_KEY, safe);
+    }
     // Load saved account type from localStorage if available
     const savedType = localStorage.getItem("quantivahq_account_type");
     if (savedType && (savedType === "crypto" || savedType === "stocks" || savedType === "both")) {
       setSelectedType(savedType as "crypto" | "stocks" | "both");
     }
-  }, []);
+  }, [searchParams]);
 
   const handleSelect = (value: "crypto" | "stocks" | "both") => {
     setSelectedType(value);

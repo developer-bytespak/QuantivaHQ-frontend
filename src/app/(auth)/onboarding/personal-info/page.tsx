@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
@@ -8,6 +8,7 @@ import { isValidPhoneNumber, parsePhoneNumber } from "react-phone-number-input";
 import { personalInfoSchema } from "@/lib/validation/onboarding";
 import { AUTH_STEPS } from "@/config/navigation";
 import { updatePersonalInfo, getCurrentUser, hasPersonalInfo } from "@/lib/api/user";
+import { safeReturnPath } from "@/lib/auth/flow-router.service";
 
 interface Country {
   code: string;
@@ -20,6 +21,11 @@ interface Country {
 
 export default function PersonalInfoPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnPath = useMemo(
+    () => safeReturnPath(searchParams.get("return")) ?? "/dashboard",
+    [searchParams],
+  );
   const [fullLegalName, setFullLegalName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [gender, setGender] = useState<"male" | "female" | "other" | "prefer-not-to-say" | "">("");
@@ -253,9 +259,9 @@ export default function PersonalInfoPage() {
       try {
         const hasInfo = await hasPersonalInfo();
         if (hasInfo) {
-          // Personal info already exists, use flow router to determine next step
-          const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
-          await navigateToNextRoute(router);
+          // Step already complete — bounce back to wherever the user came
+          // from (dashboard widget by default).
+          router.push(returnPath);
           return;
         }
 
@@ -300,7 +306,7 @@ export default function PersonalInfoPage() {
     };
 
     checkPersonalInfo();
-  }, [router]);
+  }, [router, returnPath]);
 
   // Calculate dropdown positions when they open
   useEffect(() => {
@@ -425,8 +431,9 @@ export default function PersonalInfoPage() {
       localStorage.setItem("quantivahq_personal_info", JSON.stringify(formData));
       
       setIsLoading(false);
-      // After personal info, go to KYC verification (SumSub SDK)
-      router.push("/onboarding/kyc-verification");
+      // Return to dashboard (or whatever caller specified). The dashboard
+      // widget will surface KYC as the next step automatically.
+      router.push(returnPath);
     } catch (error) {
       console.error("Failed to update personal info:", error);
       setErrors({

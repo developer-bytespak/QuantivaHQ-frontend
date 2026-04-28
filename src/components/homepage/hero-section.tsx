@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { TradingChartBackground } from "./trading-chart-background";
 import { PriceTicker } from "./price-ticker";
 import { getCurrentUser } from "@/lib/api/user";
-import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
+import { navigateToDashboard } from "@/lib/auth/flow-router.service";
 
 export function HeroSection() {
   const router = useRouter();
@@ -61,8 +61,8 @@ export function HeroSection() {
     try {
       // Check if user is already authenticated
       await getCurrentUser();
-      // User is authenticated, redirect to appropriate page using flow router
-      await navigateToNextRoute(router);
+      // User is authenticated, send straight to the dashboard.
+      await navigateToDashboard(router);
     } catch (error: any) {
       // User is not authenticated, redirect to sign-up page
       // Check if it's a 401/unauthorized error (expected for unauthenticated users)

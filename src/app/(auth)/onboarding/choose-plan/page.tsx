@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
 import {
@@ -13,15 +13,8 @@ import {
 import { PRICE_IDS } from "@/constant";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
-
-const PLAN_CHOSEN_KEY = "quantivahq_plan_chosen";
-
-const FREE_FEATURES = [
-  "Real-Time Data",
-  "Mobile Access",
-  "Web Access",
-  "Multi-Exchange Support",
-];
+import { acknowledgeFreeTier } from "@/lib/api/onboarding";
+import { safeReturnPath } from "@/lib/auth/flow-router.service";
 
 const PRO_FEATURES = [
   "Everything in FREE, PLUS:",
@@ -60,27 +53,37 @@ function getPriceLabel(period: BillingPeriod): string {
 
 export default function ChoosePlanPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(
-    BillingPeriod.MONTHLY
+    BillingPeriod.MONTHLY,
   );
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
-  const { createCheckout , createSubs } = useSubscription();
+  const [skipLoading, setSkipLoading] = useState(false);
+  const { createCheckout } = useSubscription();
 
-  const handleContinueWithFree = async () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(PLAN_CHOSEN_KEY, PlanTier.FREE);
-    }
-    const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
-    await navigateToNextRoute(router);
+  const returnPath = useMemo(
+    () => safeReturnPath(searchParams.get("return")),
+    [searchParams],
+  );
+
+  const goAfterSelection = () => {
+    router.push(returnPath ?? "/dashboard");
   };
 
-  const handleSelectFree = () => {
-    handleContinueWithFree();
+  const handleSkipFree = async () => {
+    setSkipLoading(true);
+    try {
+      await acknowledgeFreeTier();
+      goAfterSelection();
+    } catch {
+      toast.error("Could not save your choice. Please try again.");
+      setSkipLoading(false);
+    }
   };
 
   const handleSelectPaid = (tier: PlanTier) => {
     const plans = getPlansByTier(tier).filter(
-      (p) => p.billing_period === billingPeriod
+      (p) => p.billing_period === billingPeriod,
     );
     const plan = plans[0];
     if (!plan) return;
@@ -110,14 +113,18 @@ export default function ChoosePlanPage() {
     }
 
     setLoadingPlanId(plan.plan_id);
-    const baseUrl =
-      typeof window !== "undefined" ? window.location.origin : "";
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+    // After Stripe checkout we bring the user back to the dashboard (or to
+    // their chosen return path) — never to the legacy /onboarding/account-type
+    // page, which only exists as a deep-link target for the exchange step now.
+    const successPath = returnPath ?? "/dashboard";
+    const successQuerySep = successPath.includes("?") ? "&" : "?";
     createCheckout.mutate(
       {
         plan_id: plan.plan_id,
         price_id: priceId,
-        cancel_url: `${baseUrl}/onboarding/choose-plan`,
-        success_url: `${baseUrl}/onboarding/account-type`,
+        cancel_url: `${baseUrl}/onboarding/choose-plan${returnPath ? `?return=${encodeURIComponent(returnPath)}` : ""}`,
+        success_url: `${baseUrl}${successPath}${successQuerySep}onboarding=plan-selected`,
       },
       {
         onSuccess: (data: { url?: string }) => {
@@ -132,16 +139,14 @@ export default function ChoosePlanPage() {
           setLoadingPlanId(null);
           toast.error("Failed to start checkout. Please try again.");
         },
-      }
+      },
     );
   };
 
-  // Resolve display price per tier for current billing period
-  const freePrice = "$0";
   const proPriceInfo = calculatePrice(PlanTier.PRO, billingPeriod);
   const elitePriceInfo = calculatePrice(PlanTier.ELITE, billingPeriod);
   const elitePlusPlans = getPlansByTier(PlanTier.ELITE_PLUS).filter(
-    (p) => p.billing_period === billingPeriod
+    (p) => p.billing_period === billingPeriod,
   );
   const elitePlusPrice = elitePlusPlans[0]
     ? `$${elitePlusPlans[0].price}`
@@ -149,29 +154,9 @@ export default function ChoosePlanPage() {
 
   const periodOptions: { value: BillingPeriod; label: string }[] = [
     { value: BillingPeriod.MONTHLY, label: "Monthly" },
-    {
-      value: BillingPeriod.QUARTERLY,
-      label: "Quarterly -15%",
-    },
+    { value: BillingPeriod.QUARTERLY, label: "Quarterly -15%" },
     { value: BillingPeriod.YEARLY, label: "Yearly -20%" },
   ];
-
-  const handleSubscribe = async (tier: PlanTier) => {
-    await createSubs.mutate({
-      plan_id: tier,
-      price_id: "",
-      status: "active",
-      auto_renew: false,
-    }, {
-      onSuccess: () => {
-        toast.success("Subscription created successfully");
-        router.push("/onboarding/account-type");
-      },
-      onError: () => {
-        toast.error("Failed to create subscription");
-      },
-    });
-  }
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-hidden bg-black">
@@ -185,10 +170,10 @@ export default function ChoosePlanPage() {
           <QuantivaLogo className="h-9 w-9 sm:h-10 sm:w-10" />
         </div>
         <h1 className="mb-1 text-center text-xl font-bold tracking-tight text-white sm:text-2xl">
-          Choose your plan
+          Upgrade your plan
         </h1>
         <p className="mb-6 text-center text-sm text-slate-400">
-          Select a plan to get started with Quantiva
+          You&apos;re on the Free tier. Upgrade for AI trading, custom strategies, and more — or stay on Free.
         </p>
 
         <div className="mb-6 w-full max-w-6xl rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
@@ -214,35 +199,8 @@ export default function ChoosePlanPage() {
           ))}
         </div>
 
-        {/* Plan cards */}
-        <div className="grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Free */}
-          <div className="flex flex-col rounded-xl border-2 border-white/20 bg-[--color-surface-alt]/80 p-5 backdrop-blur">
-            <h3 className="text-lg font-semibold text-white">Free</h3>
-            <p className="mb-4 text-xs text-slate-400">
-              Perfect for getting started
-            </p>
-            <p className="mb-4 text-2xl font-bold text-white">
-              {freePrice}
-              <span className="text-sm font-normal text-slate-400">/month</span>
-            </p>
-            <ul className="mb-6 flex-1 space-y-2 text-sm text-slate-300">
-              {FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <span className="text-green-400">✓</span>
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={() => handleSubscribe(PlanTier.FREE)}
-              disabled={createSubs.isPending}
-              className="w-full rounded-lg border-2 border-white/30 bg-transparent py-2.5 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5"
-            >
-              Get Started
-            </button>
-          </div>
-
+        {/* Plan cards (FREE tier omitted — every user is already on FREE) */}
+        <div className="grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {/* PRO */}
           <div className="relative flex flex-col rounded-xl border-2 border-[var(--primary)]/50 bg-[var(--primary)]/5 p-5 backdrop-blur">
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-xs font-semibold text-white">
@@ -340,8 +298,18 @@ export default function ChoosePlanPage() {
           </div>
         </div>
 
-        {/* Continue with free tier */}
-       
+        {/* Skip — stay on Free */}
+        <div className="mt-8 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={handleSkipFree}
+            disabled={skipLoading}
+            className="rounded-lg border border-white/20 bg-transparent px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-white/40 hover:text-white disabled:opacity-60"
+          >
+            {skipLoading ? "Saving…" : "Skip — stay on Free"}
+          </button>
+          <p className="text-xs text-slate-500">You can upgrade any time from the dashboard.</p>
+        </div>
       </div>
     </div>
   );

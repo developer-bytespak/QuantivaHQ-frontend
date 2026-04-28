@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { getCurrentUser } from "@/lib/api/user";
-import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
+import { navigateToDashboard } from "@/lib/auth/flow-router.service";
 import useSubscriptionStore from "@/state/subscription-store";
 import {
   SUBSCRIPTION_PLANS,
@@ -59,8 +59,8 @@ function PricingCard({ tier, delay, index, isCurrentPlan }: { tier: PricingTier;
     try {
       // Check if user is already authenticated
       await getCurrentUser();
-      // User is authenticated, redirect to appropriate page using flow router
-      await navigateToNextRoute(router);
+      // User is authenticated, send straight to the dashboard.
+      await navigateToDashboard(router);
     } catch (error: any) {
       // User is not authenticated, redirect to sign-up page
       if (error?.status === 401 || error?.statusCode === 401 || 

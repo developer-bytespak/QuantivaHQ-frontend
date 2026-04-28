@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api/client";
-import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
+import { navigateToDashboard } from "@/lib/auth/flow-router.service";
 import { getCurrentUser } from "@/lib/api/user";
 import { logger } from "@/lib/utils/logger";
 
@@ -114,8 +114,9 @@ export default function Verify2FAPage() {
         // The flow router will handle redirects if needed
       }
 
-      // Use flow router to determine next step
-      await navigateToNextRoute(router);
+      // Land on the dashboard. The activation widget surfaces remaining
+      // onboarding steps incrementally.
+      await navigateToDashboard(router);
     } catch (error: any) {
       logger.error("[2FA] Verification error");
       setError(error.message || "Invalid verification code. Please try again.");

@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { safeReturnPath } from "@/lib/auth/flow-router.service";
+
+const ONBOARDING_RETURN_KEY = "quantivahq_onboarding_return";
 
 type ErrorType =
   | "invalid_api_key"
@@ -202,8 +205,17 @@ export default function ConnectingPage() {
   };
 
   const handleGoToDashboard = () => {
-    // Unified dashboard adapts based on connection type
-    router.push("/dashboard");
+    // Honor the dashboard-widget return path (set on account-type page) so
+    // users who started the chain from the widget land back where they came
+    // from. Falls back to /dashboard for direct entry.
+    let target = "/dashboard";
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(ONBOARDING_RETURN_KEY);
+      const safe = safeReturnPath(stored);
+      if (safe) target = safe;
+      localStorage.removeItem(ONBOARDING_RETURN_KEY);
+    }
+    router.push(target);
   };
 
   const handleConnectStocksAccount = () => {
