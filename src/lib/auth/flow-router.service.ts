@@ -1,13 +1,23 @@
 /**
  * Flow Router Service
- * Centralized logic for determining the next step in the onboarding/authentication flow
- * Single source of truth for post-authentication redirects
+ *
+ * Post-authentication routing helpers for the dashboard-first onboarding model.
+ *
+ * Old behavior (removed): march users through Personal Info → KYC →
+ * Choose Plan → Exchange before letting them see the dashboard.
+ *
+ * New behavior: every authenticated user lands on /dashboard. The dashboard
+ * widget reads /onboarding/progress and offers a CTA into the next incomplete
+ * step. The onboarding pages are still used, but as deep-links — they accept
+ * a ?return=/dashboard query so they jump back to the dashboard after
+ * completion instead of advancing to the next gated step.
+ *
+ * The single exception is FINAL-rejected KYC, which still routes to
+ * /onboarding/verification-status because the dashboard isn't usable without
+ * the delete-account UX surfaced.
  */
 
-import { getCurrentUser } from "../api/user";
 import { getKycStatus } from "../api/kyc";
-import { exchangesService } from "../api/exchanges.service";
-import { apiRequest } from "../api/client";
 
 export type FlowRoute =
   | "/onboarding/personal-info"
@@ -17,228 +27,134 @@ export type FlowRoute =
   | "/onboarding/account-type"
   | "/dashboard";
 
-export interface FlowCheckResult {
-  route: FlowRoute;
-  reason: string;
-}
-
 /**
- * Determines the next route after authentication based on user state
- * Flow logic:
- * 1. Check KYC status:
- *    - No KYC record → Check personal info, if missing go to /onboarding/personal-info
- *    - No KYC record + has personal info → /onboarding/kyc-verification (start KYC)
- *    - KYC pending/review → /onboarding/verification-status
- *    - KYC approved → Continue to step 2
- * 2. Check exchange connection:
- *    - No connection → /onboarding/account-type
- *    - Has connection → /dashboard
+ * Validates a `?return=` query value. Only same-origin paths under /dashboard
+ * are accepted, so a redirect can't be hijacked to point at an external host.
+ * Returns the safe pathname or null. Safe to call during SSR (returns null).
  */
-export async function determineNextRoute(): Promise<FlowCheckResult> {
+export function safeReturnPath(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  if (typeof window === "undefined") return null;
   try {
-    // Check if this is a new signup (isNewUser: true → personal-info)
-    const isNewSignup = typeof window !== "undefined" && 
-                        localStorage.getItem("quantivahq_is_new_signup") === "true";
-    
-    if (isNewSignup) {
-      // Clear the flag after checking
-      localStorage.removeItem("quantivahq_is_new_signup");
-      return {
-        route: "/onboarding/personal-info",
-        reason: "New signup - collecting personal info",
-      };
-    }
-
-    // Step 1: Check KYC status
-    const currentUser = await getCurrentUser();
-    
-    // Check if personal info is complete (required before KYC)
-    if (!currentUser.full_name || !currentUser.dob || !currentUser.nationality) {
-      return {
-        route: "/onboarding/personal-info",
-        reason: "Personal information not completed",
-      };
-    }
-
-    // Step 1: Check KYC status
-    // NOTE: users.kyc_status defaults to "pending" for brand-new users and
-    // after admin resets, so we can't trust it alone. Always call
-    // /kyc/status and use kyc_id + has_submission + review_reject_type.
-    let kycStatus: "pending" | "approved" | "rejected" | "review" | null = null;
-    let hasKycRecord = false;
-    let kycId: string | null = null;
-    let reviewRejectType: "RETRY" | "FINAL" | null = null;
-
-    try {
-      const kycResponse = await getKycStatus();
-      kycStatus = kycResponse.status;
-      kycId = kycResponse.kyc_id;
-      reviewRejectType =
-        (kycResponse.review_reject_type as "RETRY" | "FINAL" | null) ?? null;
-      // "Has a real KYC submission" means a row exists AND Sumsub has actually
-      // received docs. An empty applicant (SDK opened but not completed) has
-      // kyc_id set but has_submission === false — treat that as no record.
-      hasKycRecord = kycId !== null && kycResponse.has_submission !== false;
-    } catch (kycError: any) {
-      if (
-        kycError?.message?.includes("404") ||
-        kycError?.message?.includes("not found")
-      ) {
-        hasKycRecord = false;
-        kycStatus = null;
-      } else {
-        console.log("Error checking KYC status:", kycError);
-        kycStatus = currentUser.kyc_status || null;
-        hasKycRecord = false;
-      }
-    }
-
-    const isKycApproved = kycStatus === "approved";
-
-    // Strict KYC gating policy:
-    //   • approved → pass. Only fully verified users reach subscription /
-    //     dashboard / trading. Every other state must go back to the KYC SDK.
-    //   • FINAL-rejected → /verification-status (Delete Account UI — the
-    //     only state where the user can't move forward AND can't retry).
-    //   • pending / review (onHold) / RETRY rejection / no record →
-    //     /onboarding/kyc-verification (Sumsub SDK owns the UX for all of
-    //     these: waiting, retake prompts, retry submission).
-    if (!isKycApproved) {
-      if (
-        hasKycRecord &&
-        kycStatus === "rejected" &&
-        reviewRejectType === "FINAL"
-      ) {
-        return {
-          route: "/onboarding/verification-status",
-          reason: "KYC permanently rejected — show delete-account UI",
-        };
-      }
-
-      return {
-        route: "/onboarding/kyc-verification",
-        reason:
-          kycStatus === "rejected"
-            ? "KYC rejected (RETRY) — resubmit in SDK"
-            : kycStatus === "review"
-              ? "KYC under manual review — wait in SDK until approved"
-              : kycStatus === "pending"
-                ? "KYC in progress — SDK owns the waiting UI"
-                : "KYC not started — launch SDK",
-      };
-    }
-
-    // Step 2: Subscription GET API – use hasPlan: true = skip choose-plan, hasPlan false/missing = show choose-plan
-    let shouldShowChoosePlan = true;
-    try {
-      const subsData: any = await apiRequest({ path: "/subscriptions" });
-      if (subsData?.hasPlan === true) {
-        shouldShowChoosePlan = false;
-      }
-    } catch {
-      // API fail – show choose-plan
-    }
-    if (shouldShowChoosePlan) {
-      return {
-        route: "/onboarding/choose-plan",
-        reason: "KYC approved – hasPlan false, show choose-plan",
-      };
-    }
-
-    // Step 3: Check exchange connection (only if KYC approved and plan chosen)
-    let hasActiveConnection = false;
-    let exchangeType: "crypto" | "stocks" | null = null;
-    try {
-      const connectionResponse = await exchangesService.getActiveConnection();
-      hasActiveConnection =
-        connectionResponse.success &&
-        connectionResponse.data !== null &&
-        connectionResponse.data.status === "active";
-      
-      // Get exchange type from the active connection
-      if (hasActiveConnection && connectionResponse.data?.exchange) {
-        exchangeType = connectionResponse.data.exchange.type;
-      }
-    } catch (connectionError) {
-      // No active connection found
-      console.log("No active exchange connection found");
-    }
-
-    if (!hasActiveConnection) {
-      return {
-        route: "/onboarding/account-type",
-        reason: "Plan chosen but no exchange connection",
-      };
-    }
-
-    // All checks passed - user is fully onboarded
-    // Route to unified dashboard (adapts based on connection type)
-    return {
-      route: "/dashboard",
-      reason: `User is fully onboarded with ${exchangeType || 'crypto'} exchange connected`,
-    };
-  } catch (error: any) {
-    // If checks fail, provide detailed error info
-    console.error("[FlowRouter] Error determining next route:", error);
-    console.error("[FlowRouter] Error details:", {
-      message: error?.message,
-      status: error?.status || error?.statusCode,
-      stack: error?.stack,
-    });
-    
-    // If it's a 401/unauthorized error, user needs to re-authenticate
-    if (error?.status === 401 || error?.statusCode === 401 || 
-        error?.message?.includes("401") || error?.message?.includes("Unauthorized")) {
-      console.error("[FlowRouter] User not authenticated - cookies may not be set properly");
-      console.error("[FlowRouter] This may be due to:");
-      console.error("  - Cookies not being sent (check sameSite/secure settings)");
-      console.error("  - CORS credentials not enabled");
-      console.error("  - Backend cookie settings mismatch with frontend");
-      // Re-throw the error so calling code knows authentication failed
-      throw error;
-    }
-    
-    // For network errors or API failures, default to personal-info as safest starting point
-    // This won't cause issues for KYC-approved users since personal-info page will redirect them
-    console.warn("[FlowRouter] Defaulting to personal-info due to error checking user status");
-    return {
-      route: "/onboarding/personal-info",
-      reason: `Error checking user status: ${error?.message || 'Unknown error'}`,
-    };
+    const decoded = decodeURIComponent(raw);
+    const url = new URL(decoded, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    if (!url.pathname.startsWith("/dashboard")) return null;
+    return url.pathname + url.search + url.hash;
+  } catch {
+    return null;
   }
 }
 
 /**
- * Navigate to the next route in the flow
- * This is a convenience function that can be used with Next.js router
- * If a return path is stored (from AuthGuard redirect), it will be used instead
+ * After login / signup / 2FA, route to /dashboard unless the user is in
+ * FINAL-rejected KYC, where the only legitimate destination is the
+ * delete-account UX. Any other state (no KYC record, pending, RETRY) is
+ * fine for the dashboard — the widget will surface the next action.
+ *
+ * Returns null on hard auth errors (caller should treat as "not logged in").
  */
-export async function navigateToNextRoute(
-  router: { push: (path: string) => void }
-): Promise<void> {
-  // Check if there's a stored return path (from AuthGuard redirect)
-  // This happens when user was on a protected page, got redirected to login, and now is authenticated
-  if (typeof window !== "undefined") {
-    const returnTo = sessionStorage.getItem('quantivahq_return_to');
-    if (returnTo) {
-      try {
-        const decodedPath = decodeURIComponent(returnTo);
-        // Validate the path is same-origin and starts with /dashboard
-        const url = new URL(decodedPath, window.location.origin);
-        if (url.origin === window.location.origin && url.pathname.startsWith('/dashboard')) {
-          sessionStorage.removeItem('quantivahq_return_to'); // Clear after use
-          router.push(url.pathname);
-          return;
-        }
-      } catch (e) {
-        // Invalid path — ignore
-        sessionStorage.removeItem('quantivahq_return_to');
-      }
+export async function getDashboardEntryRoute(): Promise<FlowRoute> {
+  try {
+    const kyc = await getKycStatus().catch(() => null);
+    if (
+      kyc &&
+      kyc.status === "rejected" &&
+      ((kyc as any).review_reject_type === "FINAL")
+    ) {
+      return "/onboarding/verification-status";
     }
+  } catch {
+    // Any error reading KYC → assume the user can proceed to dashboard.
+    // The dashboard widget polls /onboarding/progress and will surface the
+    // FINAL-rejected state if it shows up later.
   }
-
-  // No stored return path, use normal flow logic
-  const result = await determineNextRoute();
-  router.push(result.route);
+  return "/dashboard";
 }
 
+/**
+ * Pure function used by the dashboard widget's "Continue setup" CTA.
+ * Given a progress payload, returns the route for the next incomplete step.
+ * If everything is complete, returns null (widget should hide itself).
+ *
+ * Subscription is "complete" when the user has either upgraded (is_paid) or
+ * explicitly clicked "Skip — stay on Free" (acknowledged).
+ *
+ * Important: this does NOT enforce ordering between steps — the user can
+ * jump into any step from the widget. The order here is just the default
+ * "Continue setup" target; individual step pills in the widget link
+ * directly to their own routes.
+ */
+export interface OnboardingProgressShape {
+  personal_info: { complete: boolean };
+  kyc: {
+    status: "pending" | "approved" | "rejected" | "review";
+    review_reject_type: "RETRY" | "FINAL" | null;
+    has_submission: boolean;
+    rejection_reasons?: string[];
+  };
+  subscription: {
+    tier: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+    is_paid: boolean;
+    acknowledged: boolean;
+  };
+  exchange: { connected: boolean; type: "crypto" | "stocks" | null };
+}
+
+export function getNextOnboardingStepRoute(
+  progress: OnboardingProgressShape,
+): FlowRoute | null {
+  if (!progress.personal_info.complete) {
+    return "/onboarding/personal-info";
+  }
+  if (progress.kyc.status === "rejected" && progress.kyc.review_reject_type === "FINAL") {
+    return "/onboarding/verification-status";
+  }
+  if (progress.kyc.status !== "approved") {
+    return "/onboarding/kyc-verification";
+  }
+  const subscriptionDone = progress.subscription.is_paid || progress.subscription.acknowledged;
+  if (!subscriptionDone) {
+    return "/onboarding/choose-plan";
+  }
+  if (!progress.exchange.connected) {
+    return "/onboarding/account-type";
+  }
+  return null;
+}
+
+/**
+ * Convenience for sign-up / login / 2FA / per-step pages: navigate to the
+ * dashboard (or the FINAL-rejection route). Honors, in priority order:
+ *   1. ?return=/dashboard query param on the current URL — used when a step
+ *      page was opened from the dashboard widget and should jump back to it
+ *      after completion.
+ *   2. sessionStorage `quantivahq_return_to` — set by AuthGuard when an
+ *      authenticated user gets bumped off a /dashboard route to login.
+ *   3. Default: /dashboard (or /onboarding/verification-status for FINAL KYC).
+ */
+export async function navigateToDashboard(
+  router: { push: (path: string) => void },
+): Promise<void> {
+  if (typeof window !== "undefined") {
+    const queryReturn = new URLSearchParams(window.location.search).get("return");
+    const queryPath = safeReturnPath(queryReturn);
+    if (queryPath) {
+      router.push(queryPath);
+      return;
+    }
+
+    const returnTo = sessionStorage.getItem("quantivahq_return_to");
+    if (returnTo) {
+      const safePath = safeReturnPath(returnTo);
+      if (safePath) {
+        sessionStorage.removeItem("quantivahq_return_to");
+        router.push(safePath);
+        return;
+      }
+      sessionStorage.removeItem("quantivahq_return_to");
+    }
+  }
+  const route = await getDashboardEntryRoute();
+  router.push(route);
+}

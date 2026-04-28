@@ -131,11 +131,13 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
           "quantivahq_is_authenticated",
           data?.accessToken ? "true" : "false"
         );
-        // Backend may send isNewUser at top level or as user.isNewUser. Only new users get redirect to personal-info; existing users go through normal flow (KYC, etc.)
+        // Backend may send isNewUser at top level or as user.isNewUser.
+        // In the dashboard-first model new users go straight to /dashboard
+        // like existing users — the activation widget surfaces onboarding
+        // steps incrementally. We still fire the Meta Pixel conversion for
+        // ad attribution.
         const isNewUser = data?.isNewUser === true || data?.user?.isNewUser === true;
         if (isNewUser) {
-          localStorage.setItem("quantivahq_is_new_signup", "true");
-          // Meta Pixel: account was just created via Google OAuth.
           window.fbq?.("track", "CompleteRegistration", {
             content_name: "Account Created",
             status: true,
@@ -150,13 +152,13 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
 
       onSuccess?.(data);
 
-      // Use flow router to determine next step in onboarding
-      const { navigateToNextRoute } = await import("@/lib/auth/flow-router.service");
+      // Land directly on the dashboard — onboarding is no longer gated.
+      const { navigateToDashboard } = await import("@/lib/auth/flow-router.service");
       try {
-        await navigateToNextRoute(router);
+        await navigateToDashboard(router);
       } catch (verifyErr: any) {
-        const msg = verifyErr?.message || "Failed to verify session after sign-in.";
-        console.warn("Verification after Google sign-in failed:", verifyErr);
+        const msg = verifyErr?.message || "Failed to reach the dashboard after sign-in.";
+        console.warn("Navigation after Google sign-in failed:", verifyErr);
         showNotification(msg, "error");
         isProcessingRef.current = false;
       }

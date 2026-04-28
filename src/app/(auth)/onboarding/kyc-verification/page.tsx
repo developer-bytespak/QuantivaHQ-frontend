@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getSdkToken, getKycStatus } from "@/lib/api/kyc";
 import { getCurrentUser } from "@/lib/api/user";
+import { safeReturnPath } from "@/lib/auth/flow-router.service";
 import dynamic from "next/dynamic";
 
 const SumsubWebSdk = dynamic(() => import("@sumsub/websdk-react"), {
@@ -13,6 +14,11 @@ const SumsubWebSdk = dynamic(() => import("@sumsub/websdk-react"), {
 
 export default function KycVerificationPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnPath = useMemo(
+    () => safeReturnPath(searchParams.get("return")) ?? "/dashboard",
+    [searchParams],
+  );
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,10 +49,9 @@ export default function KycVerificationPage() {
         }
 
         if (kycStatus === "approved" && isMounted) {
-          const { navigateToNextRoute } = await import(
-            "@/lib/auth/flow-router.service"
-          );
-          await navigateToNextRoute(router);
+          // Already approved — return to dashboard (or wherever the user
+          // came from). The widget will surface the next incomplete step.
+          router.push(returnPath);
           return;
         }
 
@@ -93,7 +98,7 @@ export default function KycVerificationPage() {
     return () => {
       isMounted = false;
     };
-  }, [router]);
+  }, [router, returnPath]);
 
   const handleAccessTokenExpiration = useCallback(async () => {
     try {
@@ -341,21 +346,14 @@ export default function KycVerificationPage() {
                 {showContinue && !error && (
                   <div className="mt-4 flex flex-col items-center gap-2">
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         setContinueLoading(true);
-                        try {
-                          const { navigateToNextRoute } = await import(
-                            "@/lib/auth/flow-router.service"
-                          );
-                          await navigateToNextRoute(router);
-                        } catch {
-                          router.push("/onboarding/choose-plan");
-                        }
+                        router.push(returnPath);
                       }}
                       disabled={continueLoading}
                       className="rounded-lg sm:rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                      {continueLoading ? "Continuing…" : "Continue to Subscription"}
+                      {continueLoading ? "Continuing…" : "Continue"}
                     </button>
                     <p className="text-[10px] text-slate-500 text-center max-w-md">
                       Your identity has been verified.

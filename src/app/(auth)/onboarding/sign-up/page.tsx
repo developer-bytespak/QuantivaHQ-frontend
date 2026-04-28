@@ -5,7 +5,7 @@ import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect } from "react";
 import GoogleSignInButton from "@/components/common/google-signin-button";
 import { apiRequest } from "@/lib/api/client";
-import { navigateToNextRoute } from "@/lib/auth/flow-router.service";
+import { navigateToDashboard } from "@/lib/auth/flow-router.service";
 import { getCurrentUser } from "@/lib/api/user";
 import { useNotification, Notification } from "@/components/common/notification";
 import { logger } from "@/lib/utils/logger";
@@ -54,7 +54,7 @@ export default function SignUpPage() {
         
         // User is authenticated, redirect immediately - don't show sign-up/login page
         if (isMounted) {
-          await navigateToNextRoute(router);
+          await navigateToDashboard(router);
           // Keep loading state to prevent showing page content
           return;
         }
@@ -192,7 +192,6 @@ export default function SignUpPage() {
         localStorage.setItem("quantivahq_user_name", normalizedUsername || emailFallbackUsername);
         localStorage.setItem("quantivahq_auth_method", "email");
         localStorage.setItem("quantivahq_is_authenticated", "true");
-        localStorage.setItem("quantivahq_is_new_signup", "true"); // Flag for new signup
 
         // Automatically log in after successful registration
         try {
@@ -243,13 +242,13 @@ export default function SignUpPage() {
             // Small delay to ensure cookies are set in browser
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Navigate to next step in onboarding flow
+            // Land directly on the dashboard. The activation widget will
+            // surface remaining onboarding steps incrementally.
             try {
-              await navigateToNextRoute(router);
+              await navigateToDashboard(router);
             } catch (navError: any) {
               logger.error("[Signup] Navigation error:", navError);
-              // If navigation fails, show error - don't assume they need proof upload
-              setError("Registration successful but couldn't determine next step. This may be a temporary issue. Please refresh the page.");
+              setError("Registration successful but couldn't reach the dashboard. Please refresh the page.");
               setIsLoading(false);
             }
           }
@@ -328,18 +327,16 @@ export default function SignUpPage() {
           // Small delay to ensure cookies are set in browser
           await new Promise(resolve => setTimeout(resolve, 100));
 
-          // Navigate to next step in onboarding flow
+          // Land directly on the dashboard.
           try {
-            await navigateToNextRoute(router);
+            await navigateToDashboard(router);
           } catch (navError: any) {
             logger.error("[Login] Navigation error:", navError);
-            // If authentication failed (401), show error to user
             if (navError.status === 401 || navError.statusCode === 401) {
               setError("Login succeeded but session couldn't be established. This may be a cookie/CORS issue. Please try again or contact support.");
               setIsLoading(false);
             } else {
-              // For other errors, show error and let user try again
-              setError("Login successful but couldn't determine next step. Please refresh the page or try again.");
+              setError("Login successful but couldn't reach the dashboard. Please refresh the page or try again.");
               setIsLoading(false);
             }
           }
@@ -361,16 +358,13 @@ export default function SignUpPage() {
     localStorage.setItem("quantivahq_auth_method", provider);
     
     // In a real app, this would trigger OAuth flow
-    // For now, simulate success and check user status
+    // For now, simulate success and head to the dashboard.
     try {
       localStorage.setItem("quantivahq_is_authenticated", "true");
-      
-      // Use flow router to determine next step
-      await navigateToNextRoute(router);
+      await navigateToDashboard(router);
     } catch (error) {
-      // If checks fail, go to KYC verification
-      logger.error("Error checking user status:", error);
-      router.push("/onboarding/kyc-verification");
+      logger.error("Error reaching dashboard:", error);
+      router.push("/dashboard");
     }
   };
 
