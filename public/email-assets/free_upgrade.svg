@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220" viewBox="0 0 320 220">
+  <ellipse cx="160" cy="205" rx="120" ry="8" fill="#fbd5b5" opacity="0.5"/>
+  <g opacity="0.55">
+    <rect x="14" y="32" width="100" height="160" rx="14" fill="#ffffff" stroke="#9ca3af" stroke-width="2"/>
+    <rect x="32" y="50" width="40" height="6" rx="3" fill="#d1d5db"/>
+    <rect x="26" y="68" width="76" height="44" rx="6" fill="#f3f4f6"/>
+    <g transform="translate(54, 80)">
+      <rect x="0" y="6" width="20" height="16" rx="2" fill="#9ca3af"/>
+      <path d="M3 6 L3 2 Q3 -4 10 -4 Q17 -4 17 2 L17 6" stroke="#9ca3af" stroke-width="2" fill="none"/>
+    </g>
+    <rect x="26" y="118" width="34" height="32" rx="6" fill="#f3f4f6"/>
+    <rect x="68" y="118" width="34" height="32" rx="6" fill="#f3f4f6"/>
+    <rect x="26" y="158" width="76" height="20" rx="6" fill="#f3f4f6"/>
+  </g>
+  <rect x="36" y="22" width="56" height="18" rx="9" fill="#9ca3af"/>
+  <text x="64" y="35" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#ffffff" text-anchor="middle">FREE</text>
+  <g transform="translate(124, 100)">
+    <path d="M0 12 L36 12 M28 4 L36 12 L28 20" stroke="#fc4f02" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <rect x="178" y="22" width="128" height="180" rx="20" fill="#ffe4cc" opacity="0.7"/>
+  <rect x="186" y="32" width="112" height="160" rx="14" fill="#ffffff" stroke="#fc4f02" stroke-width="2.5"/>
+  <rect x="218" y="42" width="48" height="18" rx="9" fill="#fc4f02"/>
+  <text x="242" y="55" font-family="Arial, sans-serif" font-size="11" font-weight="800" fill="#ffffff" text-anchor="middle">PRO</text>
+  <rect x="198" y="68" width="88" height="46" rx="6" fill="#fff7ed"/>
+  <rect x="206" y="92" width="6" height="14" fill="#fc4f02"/>
+  <rect x="218" y="84" width="6" height="22" fill="#fda300"/>
+  <rect x="230" y="76" width="6" height="30" fill="#fc4f02"/>
+  <rect x="242" y="80" width="6" height="26" fill="#fda300"/>
+  <rect x="254" y="72" width="6" height="34" fill="#16a34a"/>
+  <rect x="266" y="66" width="6" height="40" fill="#16a34a"/>
+  <path d="M204 102 L221 92 L233 82 L245 86 L257 76 L269 70" stroke="#fc4f02" stroke-width="1.6" fill="none" opacity="0.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="198" y="120" width="42" height="32" rx="6" fill="#fff7ed"/>
+  <text x="219" y="142" font-family="Arial, sans-serif" font-size="14" font-weight="800" fill="#fc4f02" text-anchor="middle">AI</text>
+  <rect x="244" y="120" width="42" height="32" rx="6" fill="#fff7ed"/>
+  <path d="M252 142 L260 130 L266 136 L280 122" stroke="#16a34a" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="280" cy="122" r="2.5" fill="#16a34a"/>
+  <rect x="198" y="158" width="88" height="20" rx="10" fill="#fc4f02"/>
+  <rect x="222" y="165" width="40" height="6" rx="3" fill="#ffffff" opacity="0.9"/>
+  <g transform="translate(286, 22)">
+    <circle cx="10" cy="10" r="12" fill="#16a34a"/>
+    <rect x="6" y="9" width="9" height="7" rx="1.5" fill="#ffffff"/>
+    <path d="M8 9 L8 6 Q8 3 10.5 3 Q13 3 13 6" stroke="#ffffff" stroke-width="1.4" fill="none"/>
+  </g>
+  <circle cx="180" cy="20" r="3" fill="#fda300"/>
+  <circle cx="305" cy="50" r="2.5" fill="#fda300"/>
+  <circle cx="178" cy="170" r="2" fill="#fda300"/>
+  <circle cx="304" cy="180" r="3" fill="#fda300"/>
+</svg>
