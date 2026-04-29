@@ -612,7 +612,9 @@ export default function MarketDetailPage() {
             ))}
           </div>
 
-          {/* Chart */}
+          {/* Chart — renders in both connected and public-crypto modes.
+              The chart component decides its data source based on whether
+              connectionId is provided. */}
           {connectionType === "stocks" ? (
             <StockPriceChart
               symbol={symbol.toUpperCase()}
@@ -621,13 +623,14 @@ export default function MarketDetailPage() {
               connectionId={connectionId}
             />
           ) : (
-            connectionId && coinData && (
+            coinData && (
               <CoinPriceChart
-                connectionId={connectionId}
+                connectionId={connectionId ?? undefined}
                 symbol={coinData.tradingPair}
                 interval={selectedInterval}
                 timeframe={selectedTimeframe}
                 candlesByInterval={coinData.candles_by_interval}
+                initialCandles={coinData.candles}
               />
             )
           )}

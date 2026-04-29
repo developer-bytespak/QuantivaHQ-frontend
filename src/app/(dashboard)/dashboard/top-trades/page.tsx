@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { apiRequest } from "@/lib/api/client";
 import { exchangesService } from "@/lib/api/exchanges.service";
+import { calculatePrices } from "@/lib/trading/paper-trading-utils";
 import type { Strategy, StockMarketData } from "@/lib/api/strategies";
 import { getPreBuiltStrategySignals, getTrendingAssetsWithInsights, generateAssetInsight, getStocksForTopTrades, seedPopularStocks, triggerStockSignals } from "@/lib/api/strategies";
 import { useExchange } from "@/context/ExchangeContext";
@@ -563,19 +564,11 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       const response = await getTrendingAssetsWithInsights(strategyId, 500);
       const assets = response.assets || [];
       console.log(`[TopTrades] Received ${assets.length} assets from API for strategy ${strategyId}`);
-      
-      // Store AI insights separately with timestamps
-      const insights: Record<string, { text: string; timestamp: number }> = {};
-      assets.forEach(asset => {
-        if (asset.hasAiInsight && asset.aiInsight) {
-          insights[asset.asset_id] = {
-            text: asset.aiInsight,
-            timestamp: Date.now()
-          };
-        }
-      });
-      setAiInsights((p) => ({ ...p, [strategyId]: insights }));
-      
+
+      // AI insights are populated entirely on-demand via handleGenerateInsight; the
+      // 20s auto-refresh must not touch aiInsights state, otherwise it would wipe
+      // out insights the user just generated.
+
       // Get strategy to access stop_loss_value and take_profit_value
       const strategy = preBuiltStrategies.find(s => s.strategy_id === strategyId);
       
@@ -696,28 +689,45 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     }
   }, [preBuiltStrategies, connectionType, activeTab, canAccessTopTrades]);
 
-  // --- Auto-refresh signals every 60 seconds (only for active strategy) ---
+  // --- Auto-refresh signals every 20s (active strategy only, paused when tab hidden) ---
+  // Tighter cadence keeps displayed Entry/SL/TP close to live market price.
   useEffect(() => {
     if (!canAccessTopTrades) return;
     if (connectionType !== "crypto" && connectionType !== "stocks") return;
     if (preBuiltStrategies.length === 0) return;
 
-    const interval = setInterval(() => {
-      // Only refresh the currently active strategy to reduce API load
+    const refresh = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       const activeStrategy = preBuiltStrategies[activeTab];
       if (activeStrategy) {
         fetchStrategySignals(activeStrategy.strategy_id);
       }
-    }, 60000); // 60 seconds
+    };
 
-    return () => clearInterval(interval);
+    const interval = setInterval(refresh, 20000);
+
+    const onVisible = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", onVisible);
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVisible);
+      }
+    };
   }, [preBuiltStrategies, connectionType, activeTab, canAccessTopTrades]);
 
   // --- Map signals to trades for display ---
   const mapSignalsToTrades = (signals: any[]): Trade[] => {
     if (!signals || signals.length === 0) return [];
-    
-    return signals.map((signal, idx) => {
+
+    return signals.map((signal, idx): Trade | null => {
       const asset = signal.asset || {};
       const rawSymbol = asset.symbol || asset.asset_id || 'Unknown';
       const isStockAsset = isStocksConnection || asset.asset_type === 'stock';
@@ -741,16 +751,28 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       const realtimePrice = signal.realtime_data?.price ?? null;
       const realtimeVolume = signal.realtime_data?.volume24h ?? null;
       const realtimePriceChange = signal.realtime_data?.priceChangePercent ?? null;
-      
-      // Get entry price from signal details or asset or realtime data
-      const entryPrice = signal.entry_price || signal.details?.[0]?.entry_price || realtimePrice || null;
-      const stopLossPrice = signal.stop_loss_price || signal.details?.[0]?.stop_loss || null;
-      const takeProfitPrice = signal.take_profit_price || signal.details?.[0]?.take_profit_1 || null;
-      
+
+      // Compliance: displayed Entry/SL/TP must reflect what executes.
+      // Orders fill at market and SL/TP are placed as % off fill price, so
+      // entry = current market price and SL/TP = currentPrice ± strategy %.
+      // Snapshot fields (signal.entry_price, details[0].*) stay in DB for audit.
+      const currentPrice = realtimePrice ?? Number(signal.price_usd ?? 0) ?? null;
+
       // Get stop loss and take profit percentages from signal (set from strategy in backend)
       // These are percentages like "5" or "10", format them with % sign
       const stopLossPct = signal.stop_loss_pct ?? signal.stop_loss ?? null;
       const takeProfitPct = signal.take_profit_pct ?? signal.take_profit ?? null;
+
+      const slPctNum = Number(stopLossPct ?? 0);
+      const tpPctNum = Number(takeProfitPct ?? 0);
+      const isSell = (signal.action ?? '').toUpperCase() === 'SELL';
+
+      const entryPrice = currentPrice && currentPrice > 0 ? currentPrice : null;
+      const derived = entryPrice && slPctNum && tpPctNum
+        ? calculatePrices(entryPrice, slPctNum, tpPctNum, isSell ? 'SELL' : 'BUY')
+        : null;
+      const stopLossPrice = derived?.stopLossPrice ?? null;
+      const takeProfitPrice = derived?.takeProfitPrice ?? null;
       
       // Debug log for first signal to see what data we have
       if (idx === 0) {
@@ -776,7 +798,11 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       
       // Get explanation text
       const explanationText = signal.explanations?.[0]?.text || signal.explanation?.text || 'No explanation available';
-      
+
+      // Hide cards without a live price — we cannot guarantee displayed Entry/SL/TP
+      // match what will execute, which is a compliance requirement.
+      if (!entryPrice) return null;
+
       return {
         id: idx + 1,
         assetId: asset.asset_id || signal.asset_id || null,
@@ -810,7 +836,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         volume_ratio: 1,
         volume_status: "NORMAL",
       } as Trade;
-    });
+    }).filter((t): t is Trade => t !== null);
   };
 
   // --- Get current strategy and its signals ---
@@ -1660,6 +1686,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                         <span className="text-slate-400">Take Profit</span>
                         <span className="font-medium text-white">{trade.takeProfit1 && trade.takeProfit1 !== '—' ? `${formatPercent(trade.takeProfit1)}${trade.takeProfitPrice && trade.takeProfitPrice !== '—' ? ` (${formatCurrency(trade.takeProfitPrice)})` : ''}` : '—'}</span>
                       </div>
+                      <div className="text-[10px] italic text-slate-500">
+                        Estimated &middot; final fill at market
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -1703,49 +1732,21 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                       const assetId = (trade as any).assetId || (trade as any).asset_id;
                       const strategyInsights = aiInsights[currentStrategy.strategy_id] || {};
                       const insightData = assetId ? strategyInsights[assetId] : null;
-                      const hasInsight = (trade as any).hasAiInsight || !!insightData;
+                      const hasInsight = !!insightData;
                       const key = `${currentStrategy.strategy_id}-${assetId}`;
                       const loading = loadingInsight[key];
-
-                      // Format timestamp
-                      const formatTimeAgo = (timestamp: number) => {
-                        const minutes = Math.floor((Date.now() - timestamp) / 60000);
-                        if (minutes < 1) return 'just now';
-                        if (minutes < 60) return `${minutes}m ago`;
-                        const hours = Math.floor(minutes / 60);
-                        if (hours < 24) return `${hours}h ago`;
-                        const days = Math.floor(hours / 24);
-                        return `${days}d ago`;
-                      };
 
                       return (
                         <div className="relative pt-3 space-y-2">
                           <div className="absolute top-0 left-0 right-0 h-[1px] bg-[var(--primary)]/30"></div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-[var(--primary)]" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M13 7H7v6h6V7z" />
-                                <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
-                              </svg>
-                              <span className="text-xs font-semibold text-[var(--primary)]">AI Insight</span>
-                            </div>
-                            {hasInsight && insightData && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-slate-500">{formatTimeAgo(insightData.timestamp)}</span>
-                                <button
-                                  onClick={() => handleGenerateInsight(currentStrategy.strategy_id, assetId)}
-                                  disabled={loading}
-                                  className="text-slate-400 hover:text-[var(--primary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Refresh insight"
-                                >
-                                  <svg className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                  </svg>
-                                </button>
-                              </div>
-                            )}
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-[var(--primary)]" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M13 7H7v6h6V7z" />
+                              <path fillRule="evenodd" d="M7 2a1 1 0 012 0v1h2V2a1 1 0 112 0v1h2a2 2 0 012 2v2h1a1 1 0 110 2h-1v2h1a1 1 0 110 2h-1v2a2 2 0 01-2 2h-2v1a1 1 0 11-2 0v-1H9v1a1 1 0 11-2 0v-1H5a2 2 0 01-2-2v-2H2a1 1 0 110-2h1V9H2a1 1 0 010-2h1V5a2 2 0 012-2h2V2zM5 5h10v10H5V5z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-xs font-semibold text-[var(--primary)]">AI Insight</span>
                           </div>
-                          
+
                           {hasInsight && insightData ? (
                             <div className="rounded-lg bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary-light)]/5 p-3 text-xs text-slate-300 leading-relaxed border border-[var(--primary)]/20">
                               {insightData.text}

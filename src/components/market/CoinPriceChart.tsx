@@ -14,14 +14,28 @@ import {
 } from "lightweight-charts";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import type { CandlesByInterval } from "@/lib/api/exchanges.service";
+import { getPublicKlines } from "@/lib/api/public-market.service";
 
 interface CoinPriceChartProps {
-  connectionId: string;
+  /** When omitted, the chart runs in public mode and pulls data from
+   *  Binance's anonymous market endpoints. */
+  connectionId?: string;
   symbol: string;
   interval: string;
   timeframe: string;
   /** Pre-fetched candle data from getCoinDetail (backend optimization Phase 2) */
   candlesByInterval?: CandlesByInterval;
+  /** Optional initial candles for public mode (avoids a second fetch on
+   *  first render when the page already pulled klines via getPublicKlines). */
+  initialCandles?: Array<{
+    openTime: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+    closeTime: number;
+  }>;
 }
 
 export default function CoinPriceChart({
@@ -30,6 +44,7 @@ export default function CoinPriceChart({
   interval,
   timeframe,
   candlesByInterval,
+  initialCandles,
 }: CoinPriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -203,11 +218,11 @@ export default function CoinPriceChart({
     let retryTimer: NodeJS.Timeout | null = null;
     
     const fetchData = async () => {
-      if (!connectionId || !symbol) {
+      if (!symbol) {
         setIsLoading(false);
         return;
       }
-      
+
       // Wait for chart to be ready
       if (!chartReady || !candlestickSeriesRef.current) {
         // Retry after a short delay if chart isn't ready yet
@@ -235,21 +250,37 @@ export default function CoinPriceChart({
         if (embeddedCandles && embeddedCandles.length > 0) {
           rawCandles = embeddedCandles;
         } else {
-          // Fallback: Fetch from API (for intervals not included in embedded data)
+          // Fallback: Fetch from API (for intervals not included in embedded data).
+          // Public mode (no connectionId) pulls from Binance's anonymous
+          // klines endpoint; connected mode goes through the exchange.
           let limit = 100;
           if (timeframe === "3M" || timeframe === "6M") {
             limit = 200;
           }
 
-          const response = await exchangesService.getCandlestickData(
-            connectionId,
-            symbol,
-            interval,
-            limit
-          );
-
-          if (response.success && response.data) {
-            rawCandles = response.data;
+          if (connectionId) {
+            const response = await exchangesService.getCandlestickData(
+              connectionId,
+              symbol,
+              interval,
+              limit,
+            );
+            if (response.success && response.data) {
+              rawCandles = response.data;
+            }
+          } else {
+            // Public mode — first try the initialCandles for the default
+            // interval, then fall back to fetching public klines for the
+            // selected timeframe.
+            if (interval === "1d" && initialCandles && initialCandles.length > 0) {
+              rawCandles = initialCandles;
+            } else {
+              try {
+                rawCandles = await getPublicKlines(symbol, interval, limit);
+              } catch (err) {
+                console.warn("[CoinPriceChart] public klines fetch failed", err);
+              }
+            }
           }
         }
 
@@ -323,7 +354,7 @@ export default function CoinPriceChart({
         clearTimeout(retryTimer);
       }
     };
-  }, [connectionId, symbol, interval, timeframe, chartReady, candlesByInterval]);
+  }, [connectionId, symbol, interval, timeframe, chartReady, candlesByInterval, initialCandles]);
 
   return (
     <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 relative">
