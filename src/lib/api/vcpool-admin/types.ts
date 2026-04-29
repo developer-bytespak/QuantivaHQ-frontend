@@ -40,7 +40,7 @@ export interface AdminLoginResponse {
 
 export interface SuperAdminUsersFilters {
   search?: string;
-  plan?: "FREE" | "PRO" | "ELITE";
+  plan?: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
   subscription_status?: "active" | "cancelled" | "trial" | "expired";
   kyc_status?: "pending" | "approved" | "rejected" | "review";
   page?: number;
