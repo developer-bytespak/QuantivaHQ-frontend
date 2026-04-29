@@ -1,13 +1,25 @@
-<svg width="512" height="512" viewBox="0 0 134 134" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="134" height="134" rx="40" fill="url(#paint0_linear)"/>
-<rect x="1.5" y="1.5" width="131" height="131" rx="38.5" stroke="#FC4F02" stroke-width="3"/>
-<path d="M63.267 80.987L41.9275 93.658L24 83.572V57.4727L39.9053 66.9951L40.6345 67.4324L63.267 80.987Z" fill="white"/>
-<path d="M107.532 80.434V107.845L86.62 95.31L85.998 94.941L86.62 95.31L65.591 107.32L64.395 108V80.657L85.531 68.1029" fill="white"/>
-<path d="M109 52.7892L85.998 66.451L85.735 66.6065L85.531 66.7231L62.606 52.9932H62.597L40.6345 65.5376V38.7776L63.005 26L86.202 39.5063L109 52.7892Z" fill="white"/>
-<defs>
-<linearGradient id="paint0_linear" x1="134" y1="67" x2="0" y2="67" gradientUnits="userSpaceOnUse">
-<stop stop-color="#FDA300"/>
-<stop offset="1" stop-color="#FC4F02"/>
-</linearGradient>
-</defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150">
+  <defs>
+    <linearGradient id="qIcG1" gradientUnits="userSpaceOnUse" x1="-50.8359" y1="25.8894" x2="244.7039" y2="288.9437">
+      <stop offset="0" stop-color="#FC4F02"/>
+      <stop offset="0.2222" stop-color="#FC6401"/>
+      <stop offset="0.7393" stop-color="#FD9200"/>
+      <stop offset="1" stop-color="#FDA300"/>
+    </linearGradient>
+    <linearGradient id="qIcG2" gradientUnits="userSpaceOnUse" x1="55.8321" y1="194.8492" x2="143.077" y2="77.8906">
+      <stop offset="0" stop-color="#FC4F02"/>
+      <stop offset="0.2222" stop-color="#FC6401"/>
+      <stop offset="0.7393" stop-color="#FD9200"/>
+      <stop offset="1" stop-color="#FDA300"/>
+    </linearGradient>
+    <linearGradient id="qIcG3" gradientUnits="userSpaceOnUse" x1="18.8577" y1="13.865" x2="192.0829" y2="129.5592">
+      <stop offset="0" stop-color="#FC4F02"/>
+      <stop offset="0.2222" stop-color="#FC6401"/>
+      <stop offset="0.7393" stop-color="#FD9200"/>
+      <stop offset="1" stop-color="#FDA300"/>
+    </linearGradient>
+  </defs>
+  <polygon fill="url(#qIcG1)" points="69.3,99.7 31.6,122.1 0,104.3 0,58.2 28.1,75 29.4,75.8"/>
+  <polyline fill="url(#qIcG2)" points="147.4,98.7 147.4,147.1 110.5,125 109.4,124.3 110.5,125 73.4,146.2 71.3,147.4 71.3,99.1 108.6,76.9"/>
+  <polygon fill="url(#qIcG3)" points="150,49.9 109.4,74 108.9,74.3 108.6,74.5 68.1,50.3 68.1,50.3 29.4,72.4 29.4,25.2 68.8,2.6 109.8,26.5"/>
 </svg>
