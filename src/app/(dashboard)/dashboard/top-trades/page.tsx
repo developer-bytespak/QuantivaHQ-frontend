@@ -1633,7 +1633,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           </div>
         )}
 
-        {currentStrategy && loadingSignals[currentStrategy.strategy_id] ? (
+        {currentStrategy && loadingSignals[currentStrategy.strategy_id] && !strategySignals[currentStrategy.strategy_id] ? (
           <div className="rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur">
             <p className="text-sm text-slate-400">Loading signals...</p>
           </div>
