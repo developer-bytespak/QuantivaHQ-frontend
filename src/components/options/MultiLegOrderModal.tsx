@@ -246,12 +246,18 @@ export function MultiLegOrderModal({
           </div>
           <div className="flex items-center justify-between">
             <span className="text-slate-400">
-              {isDebit ? "You pay" : "You receive"} (× 100 × {qtyNum})
+              {isDebit ? "You pay" : "You receive"} (× {contractMultiplier} × {qtyNum})
             </span>
             <span className={`font-mono font-semibold ${isDebit ? "text-amber-300" : "text-emerald-400"}`}>
               {quotesReady ? formatUSD(packageValueUsd) : "…"}
             </span>
           </div>
+          {contractMultiplier > 1 && quotesReady && (
+            <p className="border-t border-white/[0.06] pt-2 text-[10px] leading-relaxed text-slate-500">
+              Each contract represents <span className="text-slate-300">{contractMultiplier} shares</span> of underlying,
+              so the package total is the per-unit debit/credit × {contractMultiplier} × your package quantity.
+            </p>
+          )}
           {signal.max_profit && (
             <div className="flex items-center justify-between border-t border-white/[0.06] pt-2">
               <span className="text-slate-400">Max profit (per unit)</span>

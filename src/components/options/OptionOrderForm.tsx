@@ -49,7 +49,16 @@ export function OptionOrderForm({
 
   const marketClosed = venue === "ALPACA" && marketSession.state !== "rth";
 
-  const maxLoss = orderForm.price * orderForm.quantity;
+  // Per-contract multiplier. US equity options are universally 100 (1 contract
+  // = 100 shares of underlying); crypto options carry a per-coin `unit` that
+  // the backend surfaces as `contractSize`. The form previously ignored this
+  // entirely, so the displayed Max Loss was off by 100× on Alpaca — a $1.82
+  // ask was rendered as "$1.82 max loss" when the real risk was $182.
+  const multiplier =
+    selectedContract?.contractSize ?? (venue === "ALPACA" ? 100 : 1);
+  const currency = venue === "ALPACA" ? "USD" : "USDT";
+
+  const maxLoss = orderForm.price * orderForm.quantity * multiplier;
   const insufficientBalance = accountBalance !== undefined && maxLoss > accountBalance;
 
   const contractTypeLabel = selectedContract?.type === "CALL" ? "Call" : selectedContract?.type === "PUT" ? "Put" : "Option";
@@ -128,13 +137,19 @@ export function OptionOrderForm({
           }}
           className="w-full rounded-lg border border-[--color-border] bg-white/[0.03] px-3 py-2 text-sm text-slate-200 outline-none ring-[var(--primary)]/30 focus:ring-1"
         />
+        {multiplier > 1 && (
+          <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
+            1 contract = <span className="text-slate-300">{multiplier} shares</span> of underlying.
+            Total cost = price × {multiplier} × quantity.
+          </p>
+        )}
       </div>
 
       {/* Price */}
       <div className="mb-4">
         <label className="mb-1 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-slate-500">
-          Price (USDT)
-          <InfoTip content="The premium you'll pay per contract. Use Bid/Ask/Mark buttons below for quick market pricing." position="right" />
+          Price (per share, {currency})
+          <InfoTip content={`The per-share premium. One contract covers ${multiplier} shares of underlying, so your total cost is price × ${multiplier} × quantity. Use Bid/Ask/Mark buttons below for quick market pricing.`} position="right" />
         </label>
         <input
           type="number"
@@ -194,23 +209,23 @@ export function OptionOrderForm({
       {maxLoss > 0 && (
         <div className="mb-4 rounded-lg border border-yellow-500/30 bg-yellow-500/8 p-2.5">
           <p className="flex items-center gap-1.5 text-[10px] font-medium text-yellow-400">
-            Max Loss: {maxLoss.toFixed(2)} USDT
-            <InfoTip content="Maximum amount you could lose on this trade. Equals the total premium paid — the option can expire worthless." position="right" />
+            Max Loss: {maxLoss.toFixed(2)} {currency}
+            <InfoTip content={`Maximum you could lose. Equals total premium paid: ${orderForm.price} × ${multiplier} (contract size) × ${orderForm.quantity} = ${maxLoss.toFixed(2)} ${currency}.`} position="right" />
           </p>
           {insufficientBalance && (
             <p className="mt-1 text-[10px] text-red-400">
-              ⚠ Exceeds available balance ({accountBalance?.toFixed(2)} USDT)
+              ⚠ Exceeds available balance ({accountBalance?.toFixed(2)} {currency})
             </p>
           )}
         </div>
       )}
 
-      {/* Platform fee estimate */}
+      {/* Platform fee estimate — applied to notional, so multiplier matters. */}
       {selectedContract && orderForm.price > 0 && orderForm.quantity > 0 && (
         <div className="mb-3 flex items-center justify-between text-[10px] text-slate-500">
           <span>Platform Fee (0.03%)</span>
           <span className="font-mono text-slate-400">
-            ${(orderForm.price * orderForm.quantity * 0.0003).toFixed(4)} USDT
+            {(maxLoss * 0.0003).toFixed(4)} {currency}
           </span>
         </div>
       )}
@@ -261,12 +276,16 @@ export function OptionOrderForm({
                 <span className="text-slate-300">{orderForm.quantity}</span>
               </p>
               <p>
-                <span className="text-slate-500">Price:</span>{" "}
-                <span className="text-slate-300">{orderForm.price} USDT</span>
+                <span className="text-slate-500">Price (per share):</span>{" "}
+                <span className="text-slate-300">{orderForm.price} {currency}</span>
+              </p>
+              <p>
+                <span className="text-slate-500">Contract size:</span>{" "}
+                <span className="text-slate-300">{multiplier} shares / contract</span>
               </p>
               <p>
                 <span className="text-slate-500">Max Loss:</span>{" "}
-                <span className="text-yellow-400">{maxLoss.toFixed(2)} USDT</span>
+                <span className="text-yellow-400">{maxLoss.toFixed(2)} {currency}</span>
               </p>
             </div>
             <div className="flex gap-2">

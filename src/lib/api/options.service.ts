@@ -84,11 +84,19 @@ export interface OptionsOrder {
   side: string;
   quantity: number;
   price: number;
-  filledQuantity: number;
-  avgFillPrice: number;
-  fee: number;
+  /** Null when the order has not yet filled — distinct from a literal-zero fill. */
+  filledQuantity: number | null;
+  avgFillPrice: number | null;
+  fee: number | null;
   status: OptionOrderStatus;
+  /** Binance broker order id; empty string on Alpaca orders. */
   binanceOrderId: string;
+  /** Alpaca broker order id; null on Binance orders. */
+  brokerOrderId?: string | null;
+  /** Multi-leg group id — every leg of an mleg trade shares this. */
+  groupId?: string | null;
+  /** Per-leg intent for mleg orders (e.g. `buy_to_open`, `sell_to_close`). */
+  positionIntent?: string | null;
   maxLoss: number;
   createdAt: string;
   /** Present on `POST /options/order` responses; absent on list/history reads. */

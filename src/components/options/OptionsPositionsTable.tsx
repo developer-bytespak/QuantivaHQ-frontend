@@ -80,23 +80,23 @@ export function OptionsPositionsTable({
             </Tooltip>
           </div>
           <div className="text-right">
-            <Tooltip content="Average premium paid per contract when you entered this position" position="top">
-              <span>Avg Premium</span>
+            <Tooltip content="Average premium paid per share when you entered. Multiply by 100 (contract size) to get the per-contract dollar amount." position="top">
+              <span>Avg Premium <span className="normal-case text-slate-500">(/share)</span></span>
             </Tooltip>
           </div>
           <div className="text-right">
-            <Tooltip content="Current market premium for this contract" position="top">
-              <span>Current</span>
+            <Tooltip content="Current market premium per share. Multiply by 100 (contract size) to get the per-contract dollar amount." position="top">
+              <span>Current <span className="normal-case text-slate-500">(/share)</span></span>
             </Tooltip>
           </div>
           <div className="text-right">
-            <Tooltip content="Profit/loss if you were to close this position now. Not locked in until you sell." position="top">
-              <span>Unrealized PnL</span>
+            <Tooltip content="Total dollar profit/loss across the position if closed now. Already includes the contract-size multiplier — this is your real $ exposure." position="top">
+              <span>Unrealized PnL <span className="normal-case text-slate-500">($)</span></span>
             </Tooltip>
           </div>
           <div className="text-right">
-            <Tooltip content="Actual profit/loss from portions of this position already closed" position="top">
-              <span>Realized PnL</span>
+            <Tooltip content="Total dollar profit/loss already locked in from closed portions. Already includes the contract-size multiplier." position="top">
+              <span>Realized PnL <span className="normal-case text-slate-500">($)</span></span>
             </Tooltip>
           </div>
           {onClose && <div className="text-right">Action</div>}
