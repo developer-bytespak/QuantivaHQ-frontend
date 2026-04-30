@@ -87,6 +87,13 @@ export function MultiLegOrderModal({
             side: l.side.toLowerCase() as "buy" | "sell",
             ratio: Math.max(1, Math.floor(l.ratio)),
           })),
+          // Pass strategy so the backend recomputes max-profit/max-loss from
+          // the live net debit instead of using the signal's stale estimates.
+          strategy: signal?.strategy,
+          // Pass signalId so the backend can pull stored spot + IV to
+          // compute POP/EV — those inputs aren't available from the live
+          // ticker fetch alone.
+          signalId: signal?.id,
         });
         if (cancelled) return;
         setPreview(result);
@@ -123,6 +130,22 @@ export function MultiLegOrderModal({
   // as the user adjusts qty rather than re-calling the preview endpoint.
   const contractMultiplier = preview?.contractMultiplier ?? 100;
   const packageValueUsd = absNet * contractMultiplier * qtyNum;
+
+  // Prefer preview-derived max profit / max loss (recomputed from live net) over
+  // the signal's stored generation-time estimate. The signal stores them as
+  // pre-formatted strings ("$5.50") that were computed with a spot×percent
+  // heuristic; the preview values come from the live debit and the strategy
+  // template's true risk formula.
+  const liveMaxProfitTotal =
+    preview?.maxProfitTotal != null
+      ? preview.maxProfitTotal * qtyNum  // backend computed at qty=1; rescale
+      : null;
+  const liveMaxLossTotal =
+    preview?.maxLossTotal != null
+      ? preview.maxLossTotal * qtyNum
+      : null;
+  const liveMaxProfitPerUnit = preview?.maxProfitPerUnit ?? null;
+  const liveMaxLossPerUnit = preview?.maxLossPerUnit ?? null;
 
   const canSubmit =
     !!signal &&
@@ -258,22 +281,82 @@ export function MultiLegOrderModal({
               so the package total is the per-unit debit/credit × {contractMultiplier} × your package quantity.
             </p>
           )}
-          {signal.max_profit && (
+          {/* Max profit — prefer live preview value; fall back to signal stored. */}
+          {(liveMaxProfitPerUnit !== null || signal.max_profit) && (
             <div className="flex items-center justify-between border-t border-white/[0.06] pt-2">
               <span className="text-slate-400">Max profit (per unit)</span>
-              <span className="font-mono text-emerald-400">{signal.max_profit}</span>
+              {liveMaxProfitPerUnit !== null ? (
+                <span className="font-mono text-emerald-400">
+                  ${liveMaxProfitPerUnit.toFixed(2)}
+                  {liveMaxProfitTotal !== null && (
+                    <span className="ml-1 text-[10px] text-slate-500">
+                      ({formatUSD(liveMaxProfitTotal)} total)
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className="font-mono text-emerald-400">{signal.max_profit}</span>
+              )}
             </div>
           )}
-          {signal.max_loss && (
+          {/* Max loss — prefer live preview value over the signal's stored estimate. */}
+          {(liveMaxLossPerUnit !== null || signal.max_loss) && (
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Max loss (per unit)</span>
-              <span className="font-mono text-rose-400">{signal.max_loss}</span>
+              {liveMaxLossPerUnit !== null ? (
+                <span className="font-mono text-rose-400">
+                  ${liveMaxLossPerUnit.toFixed(2)}
+                  {liveMaxLossTotal !== null && (
+                    <span className="ml-1 text-[10px] text-slate-500">
+                      ({formatUSD(liveMaxLossTotal)} total)
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span className="font-mono text-rose-400">{signal.max_loss}</span>
+              )}
             </div>
           )}
-          {signal.risk_reward && (
+          {/* Risk/Reward — derived from live values when both are present;
+              falls back to the signal's stored ratio otherwise. */}
+          {(liveMaxProfitPerUnit !== null && liveMaxLossPerUnit !== null && liveMaxLossPerUnit > 0) ||
+          signal.risk_reward ? (
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Risk / Reward</span>
-              <span className="font-mono text-slate-200">{signal.risk_reward}</span>
+              <span className="font-mono text-slate-200">
+                {liveMaxProfitPerUnit !== null && liveMaxLossPerUnit !== null && liveMaxLossPerUnit > 0
+                  ? `${(liveMaxProfitPerUnit / liveMaxLossPerUnit).toFixed(2)}:1`
+                  : signal.risk_reward}
+              </span>
+            </div>
+          ) : null}
+
+          {/* Probability of Profit — comes from a lognormal model over the
+              underlying's price-at-expiry. R/R alone is misleading; POP
+              tells the user how often the trade wins. */}
+          {preview?.probabilityOfProfit != null && (
+            <div className="flex items-center justify-between border-t border-white/[0.06] pt-2">
+              <span className="text-slate-400">Probability of Profit</span>
+              <span className="font-mono text-slate-200">
+                {(preview.probabilityOfProfit * 100).toFixed(0)}%
+              </span>
+            </div>
+          )}
+
+          {/* Expected Value (per package) — collapses POP × max_profit −
+              (1−POP) × max_loss into one signed dollar number. Green when
+              the math says +EV, red when −EV. */}
+          {preview?.expectedValueTotal != null && (
+            <div className="flex items-center justify-between">
+              <span className="text-slate-400">Expected value (per pkg)</span>
+              <span
+                className={`font-mono ${
+                  preview.expectedValueTotal >= 0 ? "text-emerald-400" : "text-rose-400"
+                }`}
+              >
+                {preview.expectedValueTotal >= 0 ? "+" : ""}
+                {formatUSD(preview.expectedValueTotal * qtyNum)}
+              </span>
             </div>
           )}
         </div>
@@ -344,6 +427,14 @@ export function MultiLegOrderModal({
               <span className="flex items-center justify-center gap-2">
                 <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950" />
                 Placing…
+              </span>
+            ) : quotesReady && limitValid ? (
+              <span className="flex items-center justify-center gap-2">
+                <span>Confirm {legs.length}-leg Order</span>
+                <span className="text-slate-950/70">·</span>
+                <span className="font-mono">
+                  {isDebit ? "−" : "+"}{formatUSD(packageValueUsd)}
+                </span>
               </span>
             ) : (
               `Confirm ${legs.length}-leg Order`

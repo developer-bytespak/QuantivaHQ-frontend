@@ -183,6 +183,27 @@ export function OptionOrderForm({
         )}
       </div>
 
+      {/* Total cost — surfaced as its own line so users see the dollar
+          commitment alongside the per-share quote, instead of having to
+          mentally multiply by the contract size. The "Max Loss" panel
+          below uses the same number but framed as risk; this one frames
+          it as cash-out. */}
+      {selectedContract && orderForm.price > 0 && orderForm.quantity > 0 && (
+        <div className="mb-4 flex items-center justify-between rounded-lg border border-[--color-border] bg-white/[0.03] px-3 py-2.5">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+              Total Cost
+            </span>
+            <span className="mt-0.5 text-[10px] text-slate-500">
+              {orderForm.price} × {multiplier} × {orderForm.quantity}
+            </span>
+          </div>
+          <span className="font-mono text-base font-semibold text-amber-300">
+            ${maxLoss.toFixed(2)} {currency}
+          </span>
+        </div>
+      )}
+
       {/* Liquidity warning — no ask price means nothing is being offered
           for sale, so any limit buy will be rejected by the venue. */}
       {selectedContract && !hasAsk && (
@@ -251,6 +272,12 @@ export function OptionOrderForm({
           <span className="flex items-center justify-center gap-2">
             <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
             Placing…
+          </span>
+        ) : maxLoss > 0 ? (
+          <span className="flex items-center justify-center gap-2">
+            <span>Buy {contractTypeLabel}</span>
+            <span className="text-slate-950/70">·</span>
+            <span className="font-mono">${maxLoss.toFixed(2)}</span>
           </span>
         ) : (
           `Buy ${contractTypeLabel}`
