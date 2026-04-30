@@ -28,6 +28,18 @@ const STRATEGY_LABELS: Record<string, string> = {
   short_put: "Short Put",
 };
 
+// ── Risk filter ─────────────────────────────────────────────────────────────
+
+type RiskFilter = "all" | "defined" | "pop50" | "pop70" | "ev_pos";
+
+const RISK_FILTERS: { value: RiskFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "defined", label: "Defined risk" },
+  { value: "pop50", label: "POP ≥ 50%" },
+  { value: "pop70", label: "POP ≥ 70%" },
+  { value: "ev_pos", label: "+EV only" },
+];
+
 // ── Signal Card ─────────────────────────────────────────────────────────────
 
 function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?: (signal: AiOptionsSignal) => void }) {
@@ -130,6 +142,38 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
         </div>
       </div>
 
+      {/* POP + EV — surfaced when the engine could compute them. R:R alone
+          is misleading (a 1:3 condor at 75% POP is +EV; a 3:1 butterfly at
+          30% POP is too); these two lines fill that gap. */}
+      {(signal.probabilityOfProfit != null || signal.expectedValueTotal != null) && (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div>
+            <span className="text-[10px] uppercase tracking-wide text-slate-500">POP</span>
+            <p className="text-xs font-medium text-slate-300">
+              {signal.probabilityOfProfit != null
+                ? `${(signal.probabilityOfProfit * 100).toFixed(0)}%`
+                : "—"}
+            </p>
+          </div>
+          <div>
+            <span className="text-[10px] uppercase tracking-wide text-slate-500">Exp. Value</span>
+            <p
+              className={`text-xs font-medium ${
+                signal.expectedValueTotal == null
+                  ? "text-slate-300"
+                  : signal.expectedValueTotal >= 0
+                  ? "text-emerald-400"
+                  : "text-red-400"
+              }`}
+            >
+              {signal.expectedValueTotal != null
+                ? `${signal.expectedValueTotal >= 0 ? "+" : ""}$${signal.expectedValueTotal.toFixed(0)}`
+                : "—"}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* IV + Footer */}
       <div className="mt-3 flex items-center justify-between border-t border-[--color-border] pt-3 text-[10px] text-slate-500">
         <div className="flex gap-3">
@@ -209,6 +253,10 @@ export function OptionsAISignals({
   onExecute?: (signal: AiOptionsSignal) => void;
 }) {
   const [filter, setFilter] = useState<string>("all");
+  // Risk filter — composes with the coin filter via intersection. Default
+  // "all" preserves existing behaviour; stricter values exclude signals
+  // whose POP/EV the engine couldn't compute (legacy or partial data).
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
 
   // Derive unique underlyings from signal data
   const underlyings = useMemo(
@@ -216,10 +264,27 @@ export function OptionsAISignals({
     [signals],
   );
 
-  const filtered = useMemo(
-    () => (filter === "all" ? signals : signals.filter((s) => s.underlying === filter)),
-    [signals, filter],
-  );
+  const filtered = useMemo(() => {
+    return signals.filter((s) => {
+      // Coin filter
+      if (filter !== "all" && s.underlying !== filter) return false;
+      // Risk filter
+      switch (riskFilter) {
+        case "defined":
+          // Capped-loss strategies only — `short_put` is excluded because
+          // its loss is bounded only by the strike going to zero.
+          return s.strategy !== "short_put";
+        case "pop50":
+          return s.probabilityOfProfit != null && s.probabilityOfProfit >= 0.5;
+        case "pop70":
+          return s.probabilityOfProfit != null && s.probabilityOfProfit >= 0.7;
+        case "ev_pos":
+          return s.expectedValueTotal != null && s.expectedValueTotal > 0;
+        default:
+          return true;
+      }
+    });
+  }, [signals, filter, riskFilter]);
 
   if (isLoading) {
     return (
@@ -251,6 +316,25 @@ export function OptionsAISignals({
 
   return (
     <div className="space-y-4">
+      {/* Risk filter pills — POP / EV gated views. Default is `all` so
+          existing behaviour is preserved; the stricter pills intentionally
+          drop signals whose POP couldn't be computed (legacy rows). */}
+      <div className="flex flex-wrap items-center gap-2">
+        {RISK_FILTERS.map((r) => (
+          <button
+            key={r.value}
+            onClick={() => setRiskFilter(r.value)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              riskFilter === r.value
+                ? "bg-[var(--primary)] text-white"
+                : "border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+
       {/* Coin filter pills */}
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -280,7 +364,22 @@ export function OptionsAISignals({
 
       {/* Signal cards */}
       {filtered.length === 0 ? (
-        <p className="py-8 text-center text-sm text-slate-500">No signals for {filter}.</p>
+        <p className="py-8 text-center text-sm text-slate-500">
+          No signals match the current filters
+          {filter !== "all" ? ` for ${filter}` : ""}.
+          {riskFilter !== "all" && (
+            <>
+              {" "}Try clicking{" "}
+              <button
+                onClick={() => setRiskFilter("all")}
+                className="text-[var(--primary)] underline hover:opacity-80"
+              >
+                All
+              </button>{" "}
+              to widen the risk filter.
+            </>
+          )}
+        </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((sig) => (

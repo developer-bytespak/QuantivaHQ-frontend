@@ -156,6 +156,13 @@ export interface AiOptionsSignal {
   max_loss: string | null;
   expires_at: string;
   created_at: string;
+  /** Probability of finishing profitable at expiry (0-1). Null when the
+   *  engine couldn't compute it (legacy signals, missing IV/spot, etc.). */
+  probabilityOfProfit?: number | null;
+  /** EV per share = pop × maxProfit − (1−pop) × maxLoss. */
+  expectedValuePerUnit?: number | null;
+  /** EV total dollars per package = perUnit × contract multiplier. */
+  expectedValueTotal?: number | null;
 }
 
 export interface IvRankData {
@@ -247,6 +254,14 @@ export interface PreviewMultiLegOrderRequest {
   connectionId: string;
   qty: number;
   legs: PreviewMultiLegOrderLeg[];
+  /** Strategy template name (e.g. `iron_condor`). When supplied, the preview
+   *  returns max-profit / max-loss recomputed from the live net debit instead
+   *  of echoing the signal's stale generation-time estimate. */
+  strategy?: string;
+  /** Signal id the preview is being computed for. Lets the backend look up
+   *  stored spot + IV to compute POP/EV — those inputs aren't available
+   *  from the live ticker fetch alone. */
+  signalId?: string;
 }
 
 export interface MultiLegPreviewLegQuote {
@@ -269,6 +284,22 @@ export interface MultiLegPreviewResponse {
   contractMultiplier: number;
   /** False when at least one leg failed to price; confirm should be disabled. */
   allLegsPriced: boolean;
+  /** Per-share max profit, recomputed from live net. Null when strategy is
+   *  unknown or unrecognised — frontend should fall back to signal stored values. */
+  maxProfitPerUnit?: number | null;
+  /** Per-share max loss, recomputed from live net. Null on unknown strategy. */
+  maxLossPerUnit?: number | null;
+  /** Total $ max profit (per-unit × multiplier × qty). Null on unknown strategy. */
+  maxProfitTotal?: number | null;
+  /** Total $ max loss (per-unit × multiplier × qty). Null on unknown strategy. */
+  maxLossTotal?: number | null;
+  /** Probability of finishing profitable at expiry (0-1). Null when spot or
+   *  IV are unavailable, or when no `signalId` was passed in the request. */
+  probabilityOfProfit?: number | null;
+  /** Expected value per share = pop × maxProfit − (1−pop) × maxLoss. */
+  expectedValuePerUnit?: number | null;
+  /** Total $ expected value per package = perUnit × multiplier × qty. */
+  expectedValueTotal?: number | null;
 }
 
 export interface MarketClock {
