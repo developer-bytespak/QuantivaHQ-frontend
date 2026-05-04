@@ -69,6 +69,7 @@ import type {
   AdminSuperUpgradeSubscriptionRequest,
   AdminSuperUpgradeSubscriptionResponse,
   AdminSuperUserLookupResponse,
+  AdminSuperUserSearchResponse,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -1042,6 +1043,16 @@ export async function adminSuperLookupUser(
 ): Promise<AdminSuperUserLookupResponse> {
   const { data } = await adminAxios.get<AdminSuperUserLookupResponse>(
     `/admin/super-admin/users/lookup?email=${encodeURIComponent(email)}`
+  );
+  return data;
+}
+
+/** GET /admin/super-admin/users/search?q= */
+export async function adminSuperSearchUsers(
+  q: string
+): Promise<AdminSuperUserSearchResponse> {
+  const { data } = await adminAxios.get<AdminSuperUserSearchResponse>(
+    `/admin/super-admin/users/search?q=${encodeURIComponent(q)}`
   );
   return data;
 }
