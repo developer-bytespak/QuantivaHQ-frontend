@@ -860,15 +860,14 @@ export default function DashboardPage() {
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Holdings</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Value</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Price</th>
-                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">24h %</th>
-                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider hidden sm:table-cell">24h $</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">P/L</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
                   {isLoading && !dashboardData ? (
                     <tr>
-                      <td colSpan={7} className="py-6 sm:py-8 text-center">
+                      <td colSpan={6} className="py-6 sm:py-8 text-center">
                         <div className="flex items-center justify-center">
                           <div className="h-5 w-5 sm:h-6 sm:w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
                         </div>
@@ -913,11 +912,17 @@ export default function DashboardPage() {
                           <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300 text-right">{position.quantity.toFixed(4)}</td>
                           <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-right">{formatCurrency(position.currentPrice * position.quantity)}</td>
                           <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-400 text-right">{formatCurrency(position.currentPrice)}</td>
-                          <td className={`py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-semibold text-right ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {formatPercent(position.pnlPercent)}
-                          </td>
-                          <td className={`py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-right hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {formatCurrency(position.unrealizedPnl)}
+                          <td className="py-3 px-1 sm:px-2 text-right">
+                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs ${
+                              position.unrealizedPnl < 0 ? 'bg-red-500/15' : 'bg-green-500/15'
+                            }`}>
+                              <span className={`font-bold ${
+                                position.unrealizedPnl < 0 ? 'text-red-400' : 'text-green-400'
+                              }`}>{formatCurrency(Math.abs(position.unrealizedPnl))}</span>
+                              <span className={`text-[10px] ${
+                                position.unrealizedPnl < 0 ? 'text-red-400/70' : 'text-green-400/70'
+                              }`}>({Math.abs(position.pnlPercent).toFixed(2)}%)</span>
+                            </div>
                           </td>
                           <td className="py-3 px-1 sm:px-2 text-right">
                             <button
@@ -934,7 +939,7 @@ export default function DashboardPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={7} className="py-6 sm:py-8 text-center text-xs sm:text-sm text-slate-400">
+                      <td colSpan={6} className="py-6 sm:py-8 text-center text-xs sm:text-sm text-slate-400">
                         No positions found
                         {!connectionId && (
                           <p className="mt-1 text-[10px] sm:text-xs text-slate-500">
@@ -1440,15 +1445,14 @@ export default function DashboardPage() {
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Holdings</th>
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Value</th>
                     <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">Price</th>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">24h %</th>
-                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white hidden sm:table-cell">24h $</th>
+                    <th className="py-2 px-2 text-left text-xs sm:text-sm font-medium text-white">P/L</th>
                     <th className="py-2 px-2 text-right text-xs sm:text-sm font-medium text-white">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[--color-border]">
                   {(!dashboardData || dashboardData.positions.length === 0) ? (
                     <tr>
-                      <td colSpan={7} className="py-6 text-center text-slate-400">No positions found</td>
+                      <td colSpan={6} className="py-6 text-center text-slate-400">No positions found</td>
                     </tr>
                   ) : (
                     dashboardData.positions.map((position: any, idx: number) => {
@@ -1485,8 +1489,18 @@ export default function DashboardPage() {
                           <td className="py-2 px-2 text-slate-300">{position.quantity.toFixed(4)}</td>
                           <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
                           <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice)}</td>
-                          <td className={`py-2 px-2 font-medium ${position.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatPercent(position.pnlPercent)}</td>
-                          <td className={`py-2 px-2 text-slate-400 hidden sm:table-cell ${position.unrealizedPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrency(position.unrealizedPnl)}</td>
+                          <td className="py-2 px-2">
+                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs ${
+                              position.unrealizedPnl < 0 ? 'bg-red-500/15' : 'bg-green-500/15'
+                            }`}>
+                              <span className={`font-bold ${
+                                position.unrealizedPnl < 0 ? 'text-red-400' : 'text-green-400'
+                              }`}>{formatCurrency(Math.abs(position.unrealizedPnl))}</span>
+                              <span className={`text-[10px] ${
+                                position.unrealizedPnl < 0 ? 'text-red-400/70' : 'text-green-400/70'
+                              }`}>({Math.abs(position.pnlPercent).toFixed(2)}%)</span>
+                            </div>
+                          </td>
                           <td className="py-2 px-2 text-right">
                             <button
                               onClick={() => openSellModal(position, symbol)}
