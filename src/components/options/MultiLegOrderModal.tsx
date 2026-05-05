@@ -317,16 +317,13 @@ export function MultiLegOrderModal({
               )}
             </div>
           )}
-          {/* Risk/Reward — derived from live values when both are present;
-              falls back to the signal's stored ratio otherwise. */}
-          {(liveMaxProfitPerUnit !== null && liveMaxLossPerUnit !== null && liveMaxLossPerUnit > 0) ||
-          signal.risk_reward ? (
+          {/* Risk/Reward — prefer the server-computed value (consistent with
+              max profit/loss above); fall back to the signal's stored ratio. */}
+          {preview?.risk_reward || signal.risk_reward ? (
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Risk / Reward</span>
               <span className="font-mono text-slate-200">
-                {liveMaxProfitPerUnit !== null && liveMaxLossPerUnit !== null && liveMaxLossPerUnit > 0
-                  ? `${(liveMaxProfitPerUnit / liveMaxLossPerUnit).toFixed(2)}:1`
-                  : signal.risk_reward}
+                {preview?.risk_reward ?? signal.risk_reward}
               </span>
             </div>
           ) : null}
