@@ -293,6 +293,9 @@ export interface MultiLegPreviewResponse {
   maxProfitTotal?: number | null;
   /** Total $ max loss (per-unit × multiplier × qty). Null on unknown strategy. */
   maxLossTotal?: number | null;
+  /** Risk/reward ratio formatted as "X.XX:1" — same shape as AiOptionsSignal.risk_reward.
+   *  Null when either max profit/loss is null or max loss ≤ 0. */
+  risk_reward?: string | null;
   /** Probability of finishing profitable at expiry (0-1). Null when spot or
    *  IV are unavailable, or when no `signalId` was passed in the request. */
   probabilityOfProfit?: number | null;

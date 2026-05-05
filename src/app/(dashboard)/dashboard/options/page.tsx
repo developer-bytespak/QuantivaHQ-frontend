@@ -180,22 +180,30 @@ export default function OptionsPage() {
 
   // ── Fetch positions ─────────────────────────────────────────────────────
 
+  // Use store.connectionId (set inside useActiveOptionsVenue's resetForVenueChange)
+  // rather than context's connectionId so the fetch fires AFTER the venue reset.
+  // Otherwise resetForVenueChange races with fetchPositions and wipes the
+  // positions we just loaded — symptom: Alpaca positions tab silently empty.
+  const positionsConnectionId = useOptionsStore((s) => s.connectionId);
+
   const fetchPositions = useCallback(async () => {
-    if (!connectionId) return;
+    if (!positionsConnectionId) return;
     store.setIsLoadingPositions(true);
     try {
-      const positions = await optionsService.getPositions(connectionId);
+      const positions = await optionsService.getPositions(positionsConnectionId);
       store.setPositions(positions);
     } catch (err: any) {
       store.setError(err.message ?? "Failed to load positions");
     } finally {
       store.setIsLoadingPositions(false);
     }
-  }, [connectionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [positionsConnectionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Refetch on tab open (mirrors orders/portfolio-greeks). Also fires on initial
+  // mount once positionsConnectionId resolves.
   useEffect(() => {
-    if (hasAccess && connectionId) fetchPositions();
-  }, [hasAccess, connectionId, fetchPositions]);
+    if (hasAccess && positionsConnectionId && activeTab === "positions") fetchPositions();
+  }, [hasAccess, positionsConnectionId, activeTab, fetchPositions]);
 
   // ── Fetch orders ────────────────────────────────────────────────────────
 
