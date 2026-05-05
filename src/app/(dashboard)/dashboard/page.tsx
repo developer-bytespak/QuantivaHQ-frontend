@@ -860,7 +860,7 @@ export default function DashboardPage() {
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Holdings</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Value</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Price</th>
-                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">P/L</th>
+                    <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Profit/Loss</th>
                     <th className="py-2.5 px-1 sm:px-2 text-[10px] sm:text-xs font-medium text-slate-500 text-right uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
