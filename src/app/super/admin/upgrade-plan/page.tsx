@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   adminMe,
-  adminSuperLookupUser,
+  adminSuperSearchUsers,
   adminSuperUpgradeUserSubscription,
 } from "@/lib/api/vcpool-admin";
 import { useNotification, Notification } from "@/components/common/notification";
@@ -12,6 +12,7 @@ import type {
   PlanTier,
   BillingPeriod,
   AdminSuperUpgradeSubscriptionResponse,
+  AdminSuperUserSearchResult,
 } from "@/lib/api/vcpool-admin/types";
 
 const PLAN_OPTIONS: { value: PlanTier; label: string; description: string }[] = [
@@ -27,21 +28,24 @@ const BILLING_OPTIONS: { value: BillingPeriod; label: string }[] = [
   { value: "YEARLY", label: "Yearly" },
 ];
 
-type LookupStatus = "idle" | "loading" | "found" | "not-found";
+const MIN_SEARCH_LENGTH = 3;
+const SEARCH_DEBOUNCE_MS = 600;
+
+type SearchStatus = "idle" | "too-short" | "loading" | "results" | "no-results" | "error";
 
 export default function SuperAdminUpgradePlanPage() {
   const router = useRouter();
   const { notification, showNotification, hideNotification } = useNotification();
 
   const [authChecked, setAuthChecked] = useState(false);
-  const [email, setEmail] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchStatus, setSearchStatus] = useState<SearchStatus>("idle");
+  const [searchResults, setSearchResults] = useState<AdminSuperUserSearchResult[]>([]);
+  const [selectedUser, setSelectedUser] = useState<AdminSuperUserSearchResult | null>(null);
   const [tier, setTier] = useState<PlanTier>("PRO");
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("MONTHLY");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<AdminSuperUpgradeSubscriptionResponse | null>(null);
-  const [lookupStatus, setLookupStatus] = useState<LookupStatus>("idle");
-  const [lookupUsername, setLookupUsername] = useState<string | null>(null);
-  const [lookupCurrentTier, setLookupCurrentTier] = useState<PlanTier | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -58,60 +62,78 @@ export default function SuperAdminUpgradePlanPage() {
       });
   }, [router]);
 
-  // Debounced email lookup
+  // Debounced user search (email + username, min 4 chars)
   useEffect(() => {
-    const trimmed = email.trim();
-    if (!trimmed || !trimmed.includes("@")) {
-      setLookupStatus("idle");
-      setLookupUsername(null);
-      setLookupCurrentTier(null);
+    if (selectedUser) {
+      // A user is locked in; don't search until cleared
       return;
     }
 
-    setLookupStatus("loading");
-    setLookupUsername(null);
-    setLookupCurrentTier(null);
+    const trimmed = searchQuery.trim();
+
+    if (!trimmed) {
+      setSearchStatus("idle");
+      setSearchResults([]);
+      return;
+    }
+
+    if (trimmed.length < MIN_SEARCH_LENGTH) {
+      setSearchStatus("too-short");
+      setSearchResults([]);
+      return;
+    }
+
+    setSearchStatus("loading");
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const res = await adminSuperLookupUser(trimmed);
-        if (!res.found) {
-          setLookupStatus("not-found");
-          setLookupUsername(null);
-          setLookupCurrentTier(null);
+        const res = await adminSuperSearchUsers(trimmed);
+        if (res.results.length === 0) {
+          setSearchStatus("no-results");
+          setSearchResults([]);
         } else {
-          setLookupStatus("found");
-          setLookupUsername(res.username ?? null);
-          setLookupCurrentTier(res.current_tier ?? null);
+          setSearchStatus("results");
+          setSearchResults(res.results);
         }
       } catch {
-        setLookupStatus("idle");
-        setLookupUsername(null);
-        setLookupCurrentTier(null);
+        setSearchStatus("error");
+        setSearchResults([]);
       }
-    }, 600);
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [email]);
+  }, [searchQuery, selectedUser]);
+
+  const handleSelectUser = (user: AdminSuperUserSearchResult) => {
+    setSelectedUser(user);
+    setSearchQuery(user.email);
+    setSearchResults([]);
+    setSearchStatus("idle");
+    setResult(null);
+  };
+
+  const handleClearUser = () => {
+    setSelectedUser(null);
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchStatus("idle");
+    setResult(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) {
-      showNotification("Please enter a user email", "error");
-      return;
-    }
-    if (lookupStatus === "not-found") {
-      showNotification("No user found with this email", "error");
+    if (!selectedUser) {
+      showNotification("Please search and select a user", "error");
       return;
     }
     setResult(null);
     setSubmitting(true);
     try {
       const res = await adminSuperUpgradeUserSubscription({
-        email: email.trim().toLowerCase(),
+        email: selectedUser.email,
         tier,
         billing_period: billingPeriod,
       });
@@ -146,41 +168,83 @@ export default function SuperAdminUpgradePlanPage() {
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email */}
+          {/* Search */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-300">
-              User Email <span className="text-[#fc4f02]">*</span>
+              Find User <span className="text-[#fc4f02]">*</span>
             </label>
-            <input
-              type="email"
-              placeholder="user@example.com"
-              value={email}
-              onChange={(e) => { setEmail(e.target.value); setResult(null); }}
-              disabled={submitting}
-              className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50"
-            />
 
-            {/* Lookup feedback */}
-            {lookupStatus === "loading" && (
-              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
-                <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
-                Looking up user…
-              </p>
-            )}
-            {lookupStatus === "not-found" && (
-              <p className="mt-1.5 text-xs text-red-400">No user found with this email.</p>
-            )}
-            {lookupStatus === "found" && (
-              <div className="mt-2 rounded-lg border border-green-500/30 bg-green-500/10 p-3">
-                <p className="text-xs text-green-400">
-                  ✓ User found{lookupUsername ? ` — @${lookupUsername}` : ""}
-                </p>
-                {lookupCurrentTier && (
-                  <p className="mt-1 text-xs text-slate-300">
-                    Current Plan: <span className="font-semibold text-white">{lookupCurrentTier}</span>
+            {selectedUser ? (
+              <div className="flex items-center justify-between rounded-xl border border-green-500/30 bg-green-500/10 p-3">
+                <div>
+                  <p className="text-sm text-white">
+                    {selectedUser.email}
+                    <span className="ml-2 text-xs text-slate-400">@{selectedUser.username}</span>
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-300">
+                    Current Plan: <span className="font-semibold text-white">{selectedUser.current_tier}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearUser}
+                  disabled={submitting}
+                  className="rounded-lg border border-[--color-border] bg-[--color-background] px-3 py-1.5 text-xs text-slate-300 hover:border-slate-500 disabled:opacity-50"
+                >
+                  Change
+                </button>
+              </div>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  placeholder="Search by email or username (min 4 characters)…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  disabled={submitting}
+                  autoComplete="off"
+                  className="w-full rounded-xl border border-[--color-border] bg-[--color-background] px-4 py-2.5 text-white placeholder-slate-500 focus:border-[#fc4f02] focus:outline-none focus:ring-1 focus:ring-[#fc4f02] disabled:opacity-50"
+                />
+
+                {searchStatus === "too-short" && (
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Type at least {MIN_SEARCH_LENGTH} characters to search.
                   </p>
                 )}
-              </div>
+                {searchStatus === "loading" && (
+                  <p className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-400">
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-400 border-t-transparent" />
+                    Searching…
+                  </p>
+                )}
+                {searchStatus === "no-results" && (
+                  <p className="mt-1.5 text-xs text-red-400">No users match this search.</p>
+                )}
+                {searchStatus === "error" && (
+                  <p className="mt-1.5 text-xs text-red-400">Search failed. Try again.</p>
+                )}
+                {searchStatus === "results" && searchResults.length > 0 && (
+                  <ul className="mt-2 max-h-72 overflow-y-auto rounded-xl border border-[--color-border] bg-[--color-background] divide-y divide-[--color-border]">
+                    {searchResults.map((u) => (
+                      <li key={u.email}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectUser(u)}
+                          className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-[#fc4f02]/10"
+                        >
+                          <div>
+                            <p className="text-sm text-white">{u.email}</p>
+                            <p className="text-xs text-slate-400">@{u.username}</p>
+                          </div>
+                          <span className="rounded-md border border-[--color-border] bg-[--color-surface] px-2 py-0.5 text-xs text-slate-300">
+                            {u.current_tier}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
           </div>
 
@@ -238,7 +302,7 @@ export default function SuperAdminUpgradePlanPage() {
 
           <button
             type="submit"
-            disabled={submitting || !email.trim() || lookupStatus === "not-found" || lookupStatus === "loading"}
+            disabled={submitting || !selectedUser}
             className="w-full rounded-xl bg-[#fc4f02] px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? (

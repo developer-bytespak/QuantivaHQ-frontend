@@ -866,3 +866,14 @@ export interface AdminSuperUserLookupResponse {
   current_tier?: PlanTier;
 }
 
+export interface AdminSuperUserSearchResult {
+  email: string;
+  username: string;
+  current_tier: PlanTier;
+  is_us_user: boolean;
+}
+
+export interface AdminSuperUserSearchResponse {
+  results: AdminSuperUserSearchResult[];
+}
+
