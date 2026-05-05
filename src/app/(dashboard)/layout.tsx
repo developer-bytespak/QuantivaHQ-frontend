@@ -7,6 +7,7 @@ import { DASHBOARD_NAV } from "@/config/navigation";
 import { AuthGuard } from "@/components/common/auth-guard";
 import { useExchange } from "@/context/ExchangeContext";
 import useSubscriptionStore from "@/state/subscription-store";
+import useKycStore from "@/state/kyc-store";
 import {
   UpgradeModal,
   CancelSubscriptionModal,
@@ -29,6 +30,8 @@ export default function DashboardLayout({
     setShowPaymentModal,
     fetchSubscriptionData,
   } = useSubscriptionStore();
+  const startKycPolling = useKycStore((s) => s.startPolling);
+  const stopKycPolling = useKycStore((s) => s.stopPolling);
   const cancelledRef = useRef(false);
 
   useEffect(() => {
@@ -51,10 +54,17 @@ export default function DashboardLayout({
     };
 
     bootstrap();
+    // Hydrate the KYC store so KycGate / useKycGuard see real status. Without
+    // this, status stays null and every gated action ("trade", "deposit", …)
+    // shows "Identity verification required" even for approved users.
+    // startPolling auto-stops on terminal state, so approved users get a single
+    // fetch and pending users keep polling until decision.
+    startKycPolling();
     return () => {
       cancelledRef.current = true;
+      stopKycPolling();
     };
-  }, [refetchConnection, fetchSubscriptionData]);
+  }, [refetchConnection, fetchSubscriptionData, startKycPolling, stopKycPolling]);
 
   return (
     <AuthGuard>
