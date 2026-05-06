@@ -145,7 +145,7 @@ export function StockExchangeAutoTradeModal({
             r?.ocoError || r?.delayedProtection?.message || "",
           ).toLowerCase();
           const isPdtBlocked =
-            pdtSignal.includes("pattern day trading") || pdtSignal.includes("pdt");
+            pdtSignal.includes("pattern day") || pdtSignal.includes("pdt");
 
           if (r?.queued === true) {
             toastMsg =
