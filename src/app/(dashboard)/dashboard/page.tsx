@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { exchangesService, DashboardData, Connection } from "@/lib/api/exchanges.service";
@@ -47,6 +48,54 @@ export default function DashboardPage() {
   const [showTradeOverlay, setShowTradeOverlay] = useState(false);
   const [selectedNews, setSelectedNews] = useState<number>(0);
   const [selectedTrade, setSelectedTrade] = useState<number>(0);
+
+  // PDT explanation dropdown. The popover is rendered via React portal to
+  // document.body so it escapes the Portfolio card's `backdrop-blur` stacking
+  // context — otherwise sibling cards (Action Center) overlap it regardless of
+  // z-index. Position is computed from the trigger's bounding rect on open.
+  const [pdtInfoOpen, setPdtInfoOpen] = useState(false);
+  const [pdtInfoPos, setPdtInfoPos] = useState<{ top: number; left: number } | null>(null);
+  const pdtTriggerRef = useRef<HTMLDivElement | null>(null);
+  const pdtPanelRef = useRef<HTMLDivElement | null>(null);
+
+  const togglePdtInfo = useCallback(() => {
+    setPdtInfoOpen((prev) => {
+      const next = !prev;
+      if (next && pdtTriggerRef.current) {
+        const rect = pdtTriggerRef.current.getBoundingClientRect();
+        // 8px gap below the trigger pill, anchored to its left edge.
+        setPdtInfoPos({ top: rect.bottom + 8, left: rect.left });
+      }
+      return next;
+    });
+  }, []);
+
+  // Close PDT dropdown on outside click, Escape, or window resize/scroll
+  // (since the portal'd panel is fixed-positioned, scrolling would visually
+  // detach it from the trigger — closing is simpler than re-anchoring).
+  useEffect(() => {
+    if (!pdtInfoOpen) return;
+    const handlePointer = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const inTrigger = pdtTriggerRef.current?.contains(target);
+      const inPanel = pdtPanelRef.current?.contains(target);
+      if (!inTrigger && !inPanel) setPdtInfoOpen(false);
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPdtInfoOpen(false);
+    };
+    const handleReposition = () => setPdtInfoOpen(false);
+    document.addEventListener("mousedown", handlePointer);
+    document.addEventListener("keydown", handleKey);
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+    return () => {
+      document.removeEventListener("mousedown", handlePointer);
+      document.removeEventListener("keydown", handleKey);
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [pdtInfoOpen]);
   
   // Binance data state
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -706,30 +755,101 @@ export default function DashboardPage() {
                   {/* Inline PDT day-trade pill — Alpaca live stocks only, hidden
                       when account is ≥ $25K (daytradesRemaining=null). Sits
                       directly under the Spot/Margin line so users see their
-                      remaining day-trade headroom alongside their balance. */}
+                      remaining day-trade headroom alongside their balance.
+                      Clicking the pill toggles an explanatory dropdown below. */}
                   {dashboardData.dayTradeStatus && dashboardData.dayTradeStatus.daytradesRemaining !== null && (
-                    <div
-                      className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-medium ${
-                        dashboardData.dayTradeStatus.isPatternDayTrader || dashboardData.dayTradeStatus.daytradesRemaining === 0
-                          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
-                          : dashboardData.dayTradeStatus.daytradesRemaining === 1
-                            ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
-                            : 'bg-slate-500/10 text-slate-300 border border-slate-500/20'
-                      }`}
-                      title={
-                        dashboardData.dayTradeStatus.isPatternDayTrader
-                          ? 'Account flagged as Pattern Day Trader — day trades are blocked until equity ≥ $25K for 2 business days.'
-                          : `${dashboardData.dayTradeStatus.daytradeCount} day trade${dashboardData.dayTradeStatus.daytradeCount === 1 ? '' : 's'} used in the rolling 5 business-day window. PDT rule blocks the 4th.`
-                      }
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${
-                        dashboardData.dayTradeStatus.isPatternDayTrader || dashboardData.dayTradeStatus.daytradesRemaining === 0
-                          ? 'bg-red-400'
-                          : dashboardData.dayTradeStatus.daytradesRemaining === 1
-                            ? 'bg-yellow-400'
-                            : 'bg-slate-400'
-                      }`} />
-                      PDT: {dashboardData.dayTradeStatus.daytradesRemaining}/3 day trades left
+                    <div className="mt-2" ref={pdtTriggerRef}>
+                      <button
+                        type="button"
+                        onClick={togglePdtInfo}
+                        aria-expanded={pdtInfoOpen}
+                        aria-controls="pdt-info-panel"
+                        aria-label="What is PDT? Click for an explanation."
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-medium transition-colors hover:brightness-110 ${
+                          dashboardData.dayTradeStatus.isPatternDayTrader || dashboardData.dayTradeStatus.daytradesRemaining === 0
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                            : dashboardData.dayTradeStatus.daytradesRemaining === 1
+                              ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                              : 'bg-slate-500/10 text-slate-300 border border-slate-500/20'
+                        }`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${
+                          dashboardData.dayTradeStatus.isPatternDayTrader || dashboardData.dayTradeStatus.daytradesRemaining === 0
+                            ? 'bg-red-400'
+                            : dashboardData.dayTradeStatus.daytradesRemaining === 1
+                              ? 'bg-yellow-400'
+                              : 'bg-slate-400'
+                        }`} />
+                        PDT: {dashboardData.dayTradeStatus.daytradesRemaining}/3 day trades left
+                        {/* Help icon — "?" in a circle. Clearer signal that the
+                            pill opens an explanation than a chevron would be. */}
+                        <svg
+                          className="h-3 w-3 opacity-70"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5" />
+                          <circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" />
+                        </svg>
+                      </button>
+
+                      {pdtInfoOpen && pdtInfoPos && typeof document !== 'undefined' && createPortal(
+                        <div
+                          id="pdt-info-panel"
+                          role="dialog"
+                          aria-label="Pattern Day Trader rule explanation"
+                          ref={pdtPanelRef}
+                          style={{ top: pdtInfoPos.top, left: pdtInfoPos.left }}
+                          className="fixed z-[1000] w-[min(20rem,calc(100vw-2rem))] rounded-lg border border-white/[0.08] bg-slate-900/95 backdrop-blur p-3 text-[10px] sm:text-xs text-slate-300 leading-relaxed space-y-2 shadow-xl shadow-black/60"
+                        >
+                          <div>
+                            <p className="font-semibold text-white mb-0.5">What is PDT?</p>
+                            <p className="text-slate-400">
+                              Pattern Day Trader is an SEC rule. If you make 4 or more day trades in 5 business days
+                              and your account is under <span className="font-medium text-white">$25,000</span> equity,
+                              your account gets flagged and day trading is restricted.
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-white mb-0.5">What counts as a day trade?</p>
+                            <p className="text-slate-400">
+                              Buying and selling (or selling and buying back) the <span className="font-medium text-white">same stock on the same day</span>.
+                              Each round-trip = 1 day trade.
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-white mb-0.5">Your status</p>
+                            <ul className="text-slate-400 space-y-0.5">
+                              <li>
+                                <span className="text-white font-medium">{dashboardData.dayTradeStatus.daytradeCount}</span>
+                                {' '}used in the last 5 business days
+                              </li>
+                              <li>
+                                <span className="text-white font-medium">{dashboardData.dayTradeStatus.daytradesRemaining}</span>
+                                {' '}remaining before Alpaca blocks the next day trade
+                              </li>
+                              <li>
+                                Counter rolls: trades age off after 5 business days
+                              </li>
+                            </ul>
+                          </div>
+
+                          {(dashboardData.dayTradeStatus.isPatternDayTrader || dashboardData.dayTradeStatus.daytradesRemaining === 0) && (
+                            <div className="rounded-md border border-red-500/20 bg-red-500/5 px-2 py-1.5 text-red-300">
+                              {dashboardData.dayTradeStatus.isPatternDayTrader
+                                ? 'Your account is flagged as PDT. Day trading is blocked until equity stays ≥ $25K for 2 consecutive business days.'
+                                : 'Your next day trade will be rejected by Alpaca. Wait for the oldest trade to age off, or hold positions overnight.'}
+                            </div>
+                          )}
+                        </div>,
+                        document.body,
+                      )}
                     </div>
                   )}
                 </div>
