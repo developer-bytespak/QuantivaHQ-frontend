@@ -100,6 +100,22 @@ export interface TickerPrice {
   changePercent24h: number;
 }
 
+/**
+ * Pattern Day Trader status derived from Alpaca's /v2/account.
+ * `daytradesRemaining` is null when the account is not subject to PDT
+ * (equity ≥ $25K) — the UI hides the counter in that case.
+ * Equity isn't included here because the dashboard already exposes it via
+ * `totals.spot`; `isPdtRestricted` collapses to `isPatternDayTrader` when
+ * the caller has gated on `daytradesRemaining !== null`.
+ * Alpaca stocks only; other connections return null on the dashboard payload
+ * and 400 from the standalone endpoint.
+ */
+export interface DayTradeStatus {
+  daytradeCount: number;
+  daytradesRemaining: number | null;
+  isPatternDayTrader: boolean;
+}
+
 export interface DashboardOptionsAccount {
   totalBalance: number;
   availableBalance: number;
@@ -134,6 +150,8 @@ export interface DashboardData {
   optionsAccount?: DashboardOptionsAccount | null;
   /** Ready-to-render aggregates: portfolio = spot + margin. */
   totals?: DashboardTotals;
+  /** Alpaca PDT counter — null for non-Alpaca connections or on fetch failure. */
+  dayTradeStatus?: DayTradeStatus | null;
 }
 
 export interface ApiResponse<T> {
@@ -288,6 +306,19 @@ export const exchangesService = {
   async getBalance(connectionId: string): Promise<ApiResponse<AccountBalance>> {
     return apiRequest<never, ApiResponse<AccountBalance>>({
       path: `/exchanges/connections/${connectionId}/balance`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
+   * Pattern Day Trader status for an Alpaca stock connection. Returns 400 for
+   * non-Alpaca connections — caller should only invoke when the connection's
+   * exchange is Alpaca.
+   */
+  async getDayTradeStatus(connectionId: string): Promise<ApiResponse<DayTradeStatus>> {
+    return apiRequest<never, ApiResponse<DayTradeStatus>>({
+      path: `/exchanges/connections/${connectionId}/day-trade-status`,
       method: "GET",
       credentials: "include",
     });

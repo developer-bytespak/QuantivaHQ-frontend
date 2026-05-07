@@ -690,6 +690,35 @@ export default function DashboardPage() {
                       </>
                     )}
                   </p>
+                  {/* Inline PDT day-trade pill — Alpaca live stocks only, hidden
+                      when account is ≥ $25K (daytradesRemaining=null). Sits
+                      directly under the Spot/Margin line so users see their
+                      remaining day-trade headroom alongside their balance. */}
+                  {dashboardData.dayTradeStatus && dashboardData.dayTradeStatus.daytradesRemaining !== null && (
+                    <div
+                      className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-medium ${
+                        dashboardData.dayTradeStatus.isPatternDayTrader || dashboardData.dayTradeStatus.daytradesRemaining === 0
+                          ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                          : dashboardData.dayTradeStatus.daytradesRemaining === 1
+                            ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                            : 'bg-slate-500/10 text-slate-300 border border-slate-500/20'
+                      }`}
+                      title={
+                        dashboardData.dayTradeStatus.isPatternDayTrader
+                          ? 'Account flagged as Pattern Day Trader — day trades are blocked until equity ≥ $25K for 2 business days.'
+                          : `${dashboardData.dayTradeStatus.daytradeCount} day trade${dashboardData.dayTradeStatus.daytradeCount === 1 ? '' : 's'} used in the rolling 5 business-day window. PDT rule blocks the 4th.`
+                      }
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${
+                        dashboardData.dayTradeStatus.isPatternDayTrader || dashboardData.dayTradeStatus.daytradesRemaining === 0
+                          ? 'bg-red-400'
+                          : dashboardData.dayTradeStatus.daytradesRemaining === 1
+                            ? 'bg-yellow-400'
+                            : 'bg-slate-400'
+                      }`} />
+                      PDT: {dashboardData.dayTradeStatus.daytradesRemaining}/3 day trades left
+                    </div>
+                  )}
                 </div>
 
                 {/* Active Strategies Inner Box */}
@@ -707,6 +736,7 @@ export default function DashboardPage() {
                     {dashboardData.positions.length} {dashboardData.positions.length === 1 ? 'position' : 'positions'}
                   </p>
                 </div>
+
               </div>
             ) : (
               <div className="text-center py-6 sm:py-8 text-slate-400 text-xs sm:text-sm">
