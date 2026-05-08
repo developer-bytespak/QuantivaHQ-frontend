@@ -647,7 +647,12 @@ export default function DashboardPage() {
     [normalizeSellQty, isAlpacaStocks]
   );
 
-  const confirmSell = useCallback(async () => {
+  // confirmSell receives (qty, isFullClose) from the modal so the user can
+  // close part of a position. closePosition=true is reserved for the
+  // full-close path — on crypto it cancels TP/SL and uses the live free
+  // balance, which would be wrong for a partial sell (it would override the
+  // typed qty with the entire holding).
+  const confirmSell = useCallback(async (qty: number, isFullClose: boolean) => {
     if (!sellTarget || !connectionId) {
       throw new Error("Missing sale context");
     }
@@ -655,16 +660,18 @@ export default function DashboardPage() {
       symbol: sellTarget.rawSymbol,
       side: "SELL",
       type: "MARKET",
-      quantity: sellTarget.quantity,
+      quantity: qty,
       source: "dashboard_sell_button",
-      closePosition: true,
+      closePosition: isFullClose,
     });
     if (response && (response as any).success === false) {
       throw new Error((response as any).message || "Sell order rejected");
     }
     setSellToast({
       type: "success",
-      msg: `Sell order placed for ${sellTarget.symbol}`,
+      msg: isFullClose
+        ? `Sell order placed for ${sellTarget.symbol}`
+        : `Partial sell (${qty}) placed for ${sellTarget.symbol}`,
     });
     fetchDashboardData(connectionId, false);
   }, [sellTarget, connectionId, fetchDashboardData]);
@@ -1848,7 +1855,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Sell Confirmation Modal */}
+      {/* Sell Confirmation Modal — supports partial sells via quantity input. */}
       <SellConfirmModal
         isOpen={!!sellTarget}
         onClose={() => setSellTarget(null)}
@@ -1859,6 +1866,7 @@ export default function DashboardPage() {
         exchangeLabel={exchangeName || undefined}
         quantityLabel={connectionType === "stocks" ? "Shares" : "Quantity"}
         quantityPrecision={connectionType === "stocks" ? 0 : 6}
+        marketSymbol={sellTarget?.rawSymbol || sellTarget?.symbol}
       />
 
       {/* Sell result toast */}
