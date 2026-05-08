@@ -14,6 +14,8 @@ import { apiRequest } from "@/lib/api/client";
 import { getTrendingAssetsWithInsights, type Strategy } from "@/lib/api/strategies";
 import { MarketTable } from "@/components/market/MarketTable";
 import SellConfirmModal from "@/components/trading/SellConfirmModal";
+import { PositionInsightModal } from "@/components/trading/PositionInsightModal";
+import type { PositionAssetType } from "@/lib/api/position-insights.service";
 import { ActivateAccountWidget } from "@/components/dashboard/activate-account-widget";
 import {
   formatMarketCap,
@@ -607,6 +609,17 @@ export default function DashboardPage() {
   // Holdings modal
   const [showHoldingsModal, setShowHoldingsModal] = useState(false);
 
+  // Position insight modal target (symbol + assetType)
+  const [insightTarget, setInsightTarget] = useState<{
+    symbol: string;
+    assetType: PositionAssetType;
+  } | null>(null);
+
+  const insightAssetType: PositionAssetType =
+    connectionType === "stocks" ? "stock" : "crypto";
+
+  const isStableSymbol = (s: string) => /^(USDT|USDC|BUSD|DAI|TUSD|USD)$/i.test(s);
+
   // Sell confirmation modal state
   const [sellTarget, setSellTarget] = useState<{
     symbol: string;
@@ -1090,9 +1103,18 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="py-3 px-1 sm:px-2 text-right">
-                            {isStablecoinSymbol(position.symbol) ? (
-                              <span className="text-[10px] sm:text-xs text-slate-500">—</span>
-                            ) : (
+                            <div className="inline-flex items-center gap-1.5">
+                              {!isStableSymbol(symbol) && (
+                                <button
+                                  onClick={() =>
+                                    setInsightTarget({ symbol, assetType: insightAssetType })
+                                  }
+                                  className="rounded-md bg-sky-500/10 border border-sky-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-sky-300 transition-all hover:bg-sky-500/20 hover:text-sky-200"
+                                  title={`View news & sentiment for ${symbol}`}
+                                >
+                                  Insight
+                                </button>
+                              )}
                               <button
                                 onClick={() => openSellModal(position, symbol)}
                                 disabled={position.quantity <= 0}
@@ -1101,7 +1123,7 @@ export default function DashboardPage() {
                               >
                                 Sell
                               </button>
-                            )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1671,9 +1693,18 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="py-2 px-2 text-right">
-                            {isStablecoinSymbol(position.symbol) ? (
-                              <span className="text-xs text-slate-500">—</span>
-                            ) : (
+                            <div className="inline-flex items-center gap-1.5">
+                              {!isStableSymbol(symbol) && (
+                                <button
+                                  onClick={() =>
+                                    setInsightTarget({ symbol, assetType: insightAssetType })
+                                  }
+                                  className="rounded-md bg-sky-500/10 border border-sky-500/30 px-3 py-1 text-xs font-semibold text-sky-300 transition-all hover:bg-sky-500/20 hover:text-sky-200"
+                                  title={`View news & sentiment for ${symbol}`}
+                                >
+                                  Insight
+                                </button>
+                              )}
                               <button
                                 onClick={() => openSellModal(position, symbol)}
                                 disabled={position.quantity <= 0}
@@ -1682,7 +1713,7 @@ export default function DashboardPage() {
                               >
                                 Sell
                               </button>
-                            )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -1871,7 +1902,15 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Sell Confirmation Modal — supports partial sells via quantity input. */}
+      {/* Position Insight Modal (news + sentiment for held position) */}
+      <PositionInsightModal
+        isOpen={!!insightTarget}
+        onClose={() => setInsightTarget(null)}
+        symbol={insightTarget?.symbol ?? null}
+        assetType={insightTarget?.assetType ?? null}
+      />
+
+      {/* Sell Confirmation Modal */}
       <SellConfirmModal
         isOpen={!!sellTarget}
         onClose={() => setSellTarget(null)}

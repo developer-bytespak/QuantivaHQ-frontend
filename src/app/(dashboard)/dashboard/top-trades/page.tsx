@@ -15,6 +15,8 @@ import { ExchangeAutoTradeModal } from "./components/exchange-auto-trade-modal";
 import { StockExchangeAutoTradeModal } from "./components/stock-exchange-auto-trade-modal";
 import { TopTradeVcPoolContext } from "./context/top-trade-vc-pool-context";
 import SellConfirmModal from "@/components/trading/SellConfirmModal";
+import { PositionInsightModal } from "@/components/trading/PositionInsightModal";
+import type { PositionAssetType } from "@/lib/api/position-insights.service";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
@@ -309,6 +311,12 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     currentPrice: number;
   } | null>(null);
   const [sellToast, setSellToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // Position insight modal target (news + sentiment for held position)
+  const [insightTarget, setInsightTarget] = useState<{
+    symbol: string;
+    assetType: PositionAssetType;
+  } | null>(null);
 
   useEffect(() => {
     if (!sellToast) return;
@@ -2623,6 +2631,18 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                               )}
                               <span className="text-slate-500">Value <span className="text-white font-semibold">{formatCurrency(position.marketValue)}</span></span>
                               <button
+                                onClick={() =>
+                                  setInsightTarget({
+                                    symbol: position.symbol,
+                                    assetType: isStocksConnection ? "stock" : "crypto",
+                                  })
+                                }
+                                className="rounded-md bg-sky-500/10 border border-sky-500/30 px-2.5 py-1 text-[11px] font-semibold text-sky-300 transition-all hover:bg-sky-500/20 hover:text-sky-200"
+                                title={`View news & sentiment for ${position.symbol}`}
+                              >
+                                Insight
+                              </button>
+                              <button
                                 onClick={() => openSellPosition(position)}
                                 disabled={position.quantity <= 0}
                                 className="rounded-md bg-rose-500/10 border border-rose-500/30 px-2.5 py-1 text-[11px] font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
@@ -2672,8 +2692,15 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         </div>
       )}
 
-      {/* Sell Confirmation Modal (leaderboard open positions) — supports
-          partial sells via quantity input. */}
+      {/* Position Insight Modal (news + sentiment for held position) */}
+      <PositionInsightModal
+        isOpen={!!insightTarget}
+        onClose={() => setInsightTarget(null)}
+        symbol={insightTarget?.symbol ?? null}
+        assetType={insightTarget?.assetType ?? null}
+      />
+
+      {/* Sell Confirmation Modal (leaderboard open positions) */}
       <SellConfirmModal
         isOpen={!!sellTarget}
         onClose={() => setSellTarget(null)}
