@@ -625,6 +625,14 @@ export default function DashboardPage() {
     [isAlpacaStocks]
   );
 
+  // Stablecoins (USDT, USDC, etc.) are quote currencies on crypto exchanges,
+  // not tradeable positions — selling them via market order routes to a
+  // pair that doesn't exist (e.g. USDT/USDT). Hide the Sell button for them.
+  const isStablecoinSymbol = useCallback(
+    (sym: string) => /^(USDT|USDC|BUSD|FDUSD|TUSD|USDP|DAI|USD)$/i.test(sym || ""),
+    [],
+  );
+
   const openSellModal = useCallback(
     (position: { symbol: string; quantity: number; currentPrice: number }, displaySymbol: string) => {
       const qty = normalizeSellQty(position.quantity);
@@ -1082,14 +1090,18 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="py-3 px-1 sm:px-2 text-right">
-                            <button
-                              onClick={() => openSellModal(position, symbol)}
-                              disabled={position.quantity <= 0}
-                              className="rounded-md bg-rose-500/10 border border-rose-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                              title={`Sell ${symbol} at market`}
-                            >
-                              Sell
-                            </button>
+                            {isStablecoinSymbol(position.symbol) ? (
+                              <span className="text-[10px] sm:text-xs text-slate-500">—</span>
+                            ) : (
+                              <button
+                                onClick={() => openSellModal(position, symbol)}
+                                disabled={position.quantity <= 0}
+                                className="rounded-md bg-rose-500/10 border border-rose-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={`Sell ${symbol} at market`}
+                              >
+                                Sell
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1659,14 +1671,18 @@ export default function DashboardPage() {
                             </div>
                           </td>
                           <td className="py-2 px-2 text-right">
-                            <button
-                              onClick={() => openSellModal(position, symbol)}
-                              disabled={position.quantity <= 0}
-                              className="rounded-md bg-rose-500/10 border border-rose-500/30 px-3 py-1 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                              title={`Sell ${symbol} at market`}
-                            >
-                              Sell
-                            </button>
+                            {isStablecoinSymbol(position.symbol) ? (
+                              <span className="text-xs text-slate-500">—</span>
+                            ) : (
+                              <button
+                                onClick={() => openSellModal(position, symbol)}
+                                disabled={position.quantity <= 0}
+                                className="rounded-md bg-rose-500/10 border border-rose-500/30 px-3 py-1 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={`Sell ${symbol} at market`}
+                              >
+                                Sell
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
