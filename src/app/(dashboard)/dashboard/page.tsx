@@ -669,10 +669,14 @@ export default function DashboardPage() {
   );
 
   // confirmSell receives (qty, isFullClose) from the modal so the user can
-  // close part of a position. closePosition=true is reserved for the
-  // full-close path — on crypto it cancels TP/SL and uses the live free
-  // balance, which would be wrong for a partial sell (it would override the
-  // typed qty with the entire holding).
+  // close part of a position.
+  //   - Full close: closePosition=true (cancels TP/SL + overrides qty with
+  //     live free balance on crypto).
+  //   - Partial:    cancelOpenOrders=true (cancels TP/SL but uses exact qty).
+  // We always cancel any active TP/SL when selling from the dashboard — an
+  // old TP/SL sized for the full holding would otherwise trigger against the
+  // now-smaller position. The modal's `cancelsOpenOrdersNote` prop keeps the
+  // displayed copy in sync with this server-side behavior.
   const confirmSell = useCallback(async (qty: number, isFullClose: boolean) => {
     if (!sellTarget || !connectionId) {
       throw new Error("Missing sale context");
@@ -684,6 +688,7 @@ export default function DashboardPage() {
       quantity: qty,
       source: "dashboard_sell_button",
       closePosition: isFullClose,
+      cancelOpenOrders: !isFullClose,
     });
     if (response && (response as any).success === false) {
       throw new Error((response as any).message || "Sell order rejected");
@@ -1910,7 +1915,10 @@ export default function DashboardPage() {
         assetType={insightTarget?.assetType ?? null}
       />
 
-      {/* Sell Confirmation Modal */}
+      {/* Sell Confirmation Modal — supports partial sells via quantity input.
+          cancelsOpenOrdersNote=true because confirmSell above always sends
+          cancelOpenOrders/closePosition; the displayed copy must reflect that
+          server-side behavior so users aren't surprised by a TP/SL cancel. */}
       <SellConfirmModal
         isOpen={!!sellTarget}
         onClose={() => setSellTarget(null)}
@@ -1922,6 +1930,7 @@ export default function DashboardPage() {
         quantityLabel={connectionType === "stocks" ? "Shares" : "Quantity"}
         quantityPrecision={connectionType === "stocks" ? 0 : 6}
         marketSymbol={sellTarget?.rawSymbol || sellTarget?.symbol}
+        cancelsOpenOrdersNote
       />
 
       {/* Sell result toast */}

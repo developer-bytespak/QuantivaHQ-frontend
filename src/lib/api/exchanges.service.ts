@@ -508,11 +508,20 @@ export const exchangesService = {
       takeProfit?: number;
       stopLoss?: number;
       /**
-       * When true and side=SELL, backend cancels any open TP/SL on the symbol,
-       * then places the market sell, then (Binance only) converts residual
-       * dust to USDT. Used by Dashboard holdings + Top-trades leaderboard.
+       * When true and side=SELL, backend performs a full position close:
+       * cancels any open TP/SL, overrides the supplied qty with the live
+       * free balance (crypto only), and on Binance converts residual dust to
+       * USDT. Used by the Max button on Dashboard / Top-trades sells.
        */
       closePosition?: boolean;
+      /**
+       * When true and side=SELL, backend cancels any open TP/SL on the
+       * symbol but uses the supplied quantity exactly (no override). Used by
+       * partial sells from Dashboard / Top-trades — the leftover position is
+       * intentionally left without TP/SL because an old TP/SL sized for the
+       * full holding could trigger against the now-smaller position.
+       */
+      cancelOpenOrders?: boolean;
     }
   ): Promise<ApiResponse<Order>> {
     return apiRequest<{
@@ -526,6 +535,7 @@ export const exchangesService = {
       takeProfit?: number;
       stopLoss?: number;
       closePosition?: boolean;
+      cancelOpenOrders?: boolean;
     }, ApiResponse<Order>>({
       path: `/exchanges/connections/${connectionId}/orders/place`,
       method: "POST",
