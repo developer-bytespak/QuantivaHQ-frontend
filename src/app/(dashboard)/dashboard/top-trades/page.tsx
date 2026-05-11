@@ -1249,10 +1249,14 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     }
   };
 
-  // confirmSell receives (qty, isFullClose) from the modal so the user can
-  // close part of a position. closePosition=true is reserved for the
-  // full-close path — on crypto it cancels TP/SL and uses live free balance,
-  // which would be wrong for a partial sell.
+  // confirmSell receives (qty, isFullClose) from the modal.
+  //   - Full close: closePosition=true (cancels TP/SL + overrides qty with
+  //     live free balance on crypto).
+  //   - Partial:    cancelOpenOrders=true (cancels TP/SL but uses exact qty).
+  // We always cancel any active TP/SL when selling from the leaderboard — an
+  // old TP/SL sized for the full holding would otherwise trigger against the
+  // now-smaller position. Modal's `cancelsOpenOrdersNote` keeps the displayed
+  // copy in sync with this server-side behavior.
   const confirmSell = async (qty: number, isFullClose: boolean) => {
     if (!sellTarget || !connectionId) throw new Error("Missing sale context");
     const response = await exchangesService.placeOrder(connectionId, {
@@ -1262,6 +1266,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       quantity: qty,
       source: "top_trades_leaderboard_sell",
       closePosition: isFullClose,
+      cancelOpenOrders: !isFullClose,
     });
     if (response && (response as any).success === false) {
       throw new Error((response as any).message || "Sell order rejected");
@@ -2700,7 +2705,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         assetType={insightTarget?.assetType ?? null}
       />
 
-      {/* Sell Confirmation Modal (leaderboard open positions) */}
+      {/* Sell Confirmation Modal (leaderboard open positions) — supports
+          partial sells. cancelsOpenOrdersNote=true mirrors the server-side
+          behavior in confirmSell above (always cancels TP/SL on this surface). */}
       <SellConfirmModal
         isOpen={!!sellTarget}
         onClose={() => setSellTarget(null)}
@@ -2712,6 +2719,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         quantityLabel={connectionType === "stocks" ? "Shares" : "Quantity"}
         quantityPrecision={connectionType === "stocks" ? 0 : 6}
         marketSymbol={sellTarget?.symbol}
+        cancelsOpenOrdersNote
       />
 
       {sellToast && (
