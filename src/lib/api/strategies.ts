@@ -251,6 +251,32 @@ export async function updateStrategy(
 }
 
 /**
+ * Fetch a user-owned strategy by ID (with ownership check on backend).
+ * Use this to seed the edit form with current values.
+ */
+export async function getMyStrategy(strategyId: string): Promise<Strategy> {
+  return apiRequest<unknown, Strategy>({
+    path: `/strategies/my-strategies/${strategyId}`,
+  });
+}
+
+/**
+ * Update a user-owned custom strategy. Targets the user-scoped endpoint
+ * (PUT /strategies/my-strategies/:id) which enforces ownership and
+ * accepts engine_weights — unlike the generic updateStrategy above.
+ */
+export async function updateMyStrategy(
+  strategyId: string,
+  data: Partial<CreateStrategyDto> & { engine_weights?: EngineWeights }
+): Promise<{ success: boolean; message: string; strategy: Strategy }> {
+  return apiRequest<typeof data, { success: boolean; message: string; strategy: Strategy }>({
+    path: `/strategies/my-strategies/${strategyId}`,
+    method: 'PUT',
+    body: data,
+  });
+}
+
+/**
  * Delete a strategy
  */
 export async function deleteStrategy(strategyId: string): Promise<void> {

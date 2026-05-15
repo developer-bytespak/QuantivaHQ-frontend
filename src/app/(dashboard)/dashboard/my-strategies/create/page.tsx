@@ -1,96 +1,24 @@
 /*  */"use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { apiRequest } from "@/lib/api/client";
 import { useExchange } from "@/context/ExchangeContext";
-
-// Engine-based fields that actually work in the signal generation system
-// These match the pre-built strategies format exactly
-const RULE_FIELDS = [
-  { value: "final_score", label: "Final Score", description: "Combined weighted score from all engines (-1 to 1)" },
-  { value: "metadata.engine_details.sentiment.score", label: "Sentiment Score", description: "News & social sentiment analysis (-1 to 1)" },
-  { value: "metadata.engine_details.trend.score", label: "Trend Score", description: "Technical trend analysis (-1 to 1)" },
-  { value: "metadata.engine_details.fundamental.score", label: "Fundamental Score", description: "Earnings, financials, growth metrics (-1 to 1)" },
-  { value: "metadata.engine_details.event_risk.score", label: "Event Risk Score", description: "Earnings events, news risk (-1 to 1)" },
-  { value: "metadata.engine_details.liquidity.score", label: "Liquidity Score", description: "Volume & market depth (-1 to 1)" },
-];
-
-const OPERATORS = [
-  { value: ">", label: "Greater than (>)" },
-  { value: ">=", label: "Greater or equal (≥)" },
-];
-
-// Popular crypto symbols for quick add
-const POPULAR_CRYPTO = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "AVAX"];
-// Popular stock symbols for quick add
-const POPULAR_STOCKS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD"];
-
-interface Rule {
-  field: string;
-  operator: string;
-  value: number;
-}
-
-interface EngineWeights {
-  sentiment: number;
-  trend: number;
-  fundamental: number;
-  event_risk: number;
-  liquidity: number;
-}
-
-interface AssetOption {
-  symbol: string;
-  name: string;
-}
+import {
+  RULE_FIELDS,
+  OPERATORS,
+  DEFAULT_ENGINE_WEIGHTS,
+  ENGINE_WEIGHT_ROWS,
+  WEIGHT_PRESETS,
+  StepGuideTooltip,
+  useAssetSearch,
+  usePopularAssets,
+  type Rule,
+  type EngineWeights,
+} from "@/components/strategies/strategy-form-shared";
 
 type Step = "basics" | "assets" | "weights" | "rules" | "risk" | "review";
-
-function StepGuideTooltip({
-  title,
-  subtitle,
-  points,
-}: {
-  title: string;
-  subtitle: string;
-  points: string[];
-}) {
-  return (
-    <div className="relative group shrink-0">
-      <div className="w-7 h-7 rounded-full border border-white/15 bg-[#1a1a22] flex items-center justify-center cursor-help transition-all group-hover:border-[var(--primary-light)]/50 group-hover:bg-[var(--primary-light)]/10">
-        <svg
-          className="w-4 h-4 text-slate-400 group-hover:text-[var(--primary-light)]"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-          />
-        </svg>
-      </div>
-
-      <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-2rem)] opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-200 z-[400]">
-        <div className="rounded-xl border border-[var(--primary)]/20 bg-gradient-to-br from-[#12121c] via-[#0e0e18] to-[#0a0a14] shadow-[0_12px_40px_rgba(0,0,0,0.8)] p-4">
-          <p className="text-white font-semibold text-sm">{title}</p>
-          <p className="text-slate-400 text-xs mt-1">{subtitle}</p>
-          <div className="mt-3 space-y-1.5">
-            {points.map((point) => (
-              <p key={point} className="text-xs text-slate-300">
-                • {point}
-              </p>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function CreateStrategyPage() {
   const router = useRouter();
@@ -135,13 +63,7 @@ export default function CreateStrategyPage() {
   const [forAllAssets, setForAllAssets] = useState(false);
 
   // Engine weights (must sum to 1.0)
-  const [engineWeights, setEngineWeights] = useState<EngineWeights>({
-    sentiment: 0.35,
-    trend: 0.25,
-    fundamental: 0.15,
-    event_risk: 0.15,
-    liquidity: 0.10,
-  });
+  const [engineWeights, setEngineWeights] = useState<EngineWeights>({ ...DEFAULT_ENGINE_WEIGHTS });
 
   // Entry rules based on scores (matching pre-built strategy format)
   const [entryRules, setEntryRules] = useState<Rule[]>([
@@ -150,96 +72,18 @@ export default function CreateStrategyPage() {
 
   // Asset search
   const [assetSearch, setAssetSearch] = useState("");
-  const [assetResults, setAssetResults] = useState<AssetOption[]>([]);
-  const [searchingAssets, setSearchingAssets] = useState(false);
-
-  // Popular assets (can be replaced by API when real data is fetched)
-  const [popularCrypto, setPopularCrypto] = useState<string[]>(POPULAR_CRYPTO);
-  const [popularStocks, setPopularStocks] = useState<string[]>(POPULAR_STOCKS);
-
-  // Fetch real assets from your assets API
-  const fetchRealAssets = async (assetType: "stock" | "crypto") => {
-    try {
-      console.log(`🔍 Fetching real ${assetType} assets from API...`);
-      const response = await apiRequest<never, any[]>({
-        path: `/assets?asset_type=${assetType}&limit=1000`,
-        method: "GET",
-      });
-
-      if (Array.isArray(response) && response.length > 0) {
-        // Take first 8 symbols for popular list
-        const realSymbols = response.slice(0, 8).map((asset: any) => asset.symbol || asset.asset_id);
-        console.log(`✅ Real ${assetType} symbols:`, realSymbols);
-        console.log(`🔄 Old hardcoded ${assetType}:`, assetType === "stock" ? POPULAR_STOCKS : POPULAR_CRYPTO);
-
-        if (assetType === "stock") {
-          setPopularStocks(realSymbols);
-        } else {
-          setPopularCrypto(realSymbols);
-        }
-      } else {
-        console.log(`⚠️ No real ${assetType} assets found, keeping hardcoded symbols`);
-      }
-    } catch (error) {
-      console.error(`❌ Failed to fetch real ${assetType} assets:`, error);
-      console.log(`Using hardcoded ${assetType} symbols as fallback`);
-    }
-  };
-
-  // Fetch real assets based on connection type when it's loaded
-  useEffect(() => {
-    if (connectionType === "stocks") {
-      fetchRealAssets("stock");
-    } else if (connectionType === "crypto") {
-      fetchRealAssets("crypto");
-    }
-  }, [connectionType]);
 
   // Derived values
   const isStocksConnection = connectionType === "stocks";
   const assetTypeLabel = isStocksConnection ? "Stocks" : "Crypto Assets";
+  const { popularCrypto, popularStocks } = usePopularAssets(connectionType);
   const popularAssets = isStocksConnection ? popularStocks : popularCrypto;
+  const { results: assetResults, searching: searchingAssets, clear: clearAssetResults } = useAssetSearch(assetSearch, isStocksConnection);
   const hasNoAssetMatch = !searchingAssets && assetSearch.trim().length > 0 && assetResults.length === 0;
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
   const weightsValid = Math.abs(totalWeight - 1.0) < 0.01;
-
-  // Search assets from backend
-  useEffect(() => {
-    if (assetSearch.length < 1) {
-      setAssetResults([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      setSearchingAssets(true);
-      try {
-        // Use different endpoint based on connection type
-        const searchEndpoint = isStocksConnection
-          ? `/strategies/available-stocks?search=${encodeURIComponent(assetSearch)}`
-          : `/strategies/available-crypto?search=${encodeURIComponent(assetSearch)}`;
-
-        const results = await apiRequest<never, AssetOption[]>({
-          path: searchEndpoint,
-          method: "GET",
-        });
-        setAssetResults(results || []);
-      } catch (err) {
-        console.error("Asset search error:", err);
-        // For crypto, if endpoint doesn't exist, allow manual entry
-        if (!isStocksConnection) {
-          setAssetResults([{ symbol: assetSearch.toUpperCase(), name: assetSearch.toUpperCase() }]);
-        } else {
-          setAssetResults([]);
-        }
-      } finally {
-        setSearchingAssets(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [assetSearch, isStocksConnection]);
 
   const addAsset = (symbol: string) => {
     const upperSymbol = symbol.toUpperCase();
@@ -247,7 +91,7 @@ export default function CreateStrategyPage() {
       setTargetAssets([...targetAssets, upperSymbol]);
     }
     setAssetSearch("");
-    setAssetResults([]);
+    clearAssetResults();
   };
 
   const removeAsset = (symbol: string) => {
@@ -526,7 +370,7 @@ export default function CreateStrategyPage() {
                   if (!forAllAssets) {
                     setTargetAssets([]);
                     setAssetSearch("");
-                    setAssetResults([]);
+                    clearAssetResults();
                   }
                 }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 border ${

@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/api/client";
 import { useExchange } from "@/context/ExchangeContext";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { EditStrategyModal } from "@/components/strategies/edit-strategy-modal";
 
 interface StrategyMetrics {
   total_signals: number;
@@ -59,6 +60,7 @@ export default function MyStrategiesPage() {
   const [deletingStrategy, setDeletingStrategy] = useState<string | null>(null);
   const [modalSignals, setModalSignals] = useState<any[]>([]);
   const [loadingModalSignals, setLoadingModalSignals] = useState(false);
+  const [editingStrategyId, setEditingStrategyId] = useState<string | null>(null);
 
   const fetchStrategies = async () => {
     setLoading(true);
@@ -318,10 +320,20 @@ export default function MyStrategiesPage() {
                   View Signals
                 </Link>
                 <button
-                  className="rounded-xl px-4 py-2.5 text-xs bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-200"
+                  className="rounded-xl px-3 py-2.5 text-xs bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-200"
                   onClick={() => { setSelected(s); setShowModal(true); fetchStrategySignals(s.strategy_id); }}
                 >
                   View
+                </button>
+                <button
+                  className="rounded-xl px-3 py-2.5 text-xs bg-white/5 text-white font-medium hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all duration-200 inline-flex items-center gap-1.5"
+                  onClick={() => setEditingStrategyId(s.strategy_id)}
+                  aria-label="Edit strategy"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit
                 </button>
               </div>
             </div>
@@ -344,6 +356,12 @@ export default function MyStrategiesPage() {
           </Link>
         </div>
       )}
+
+      <EditStrategyModal
+        strategyId={editingStrategyId}
+        onClose={() => setEditingStrategyId(null)}
+        onSaved={fetchStrategies}
+      />
 
       {/* Modal: show strategy details */}
       {showModal && selected && (
