@@ -5,7 +5,7 @@ import "./globals.css";
 import Providers from "@/context/Provider";
 import { ExchangeProvider } from "@/context/ExchangeContext";
 
-const META_PIXEL_ID = "1272418311771034";
+const META_PIXEL_ID = "2043942056468227";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
