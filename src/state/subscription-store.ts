@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { logger } from '@/lib/utils/logger';
 import { apiRequest } from '@/lib/api/client';
-import { 
-  PlanTier, 
-  BillingPeriod, 
+import { getFreeSignalTradesQuota, type FreeSignalTradesQuota } from '@/lib/api/onboarding';
+import {
+  PlanTier,
+  BillingPeriod,
   FeatureType,
   CURRENT_USER_SUBSCRIPTION,
   USER_USAGE_STATS,
@@ -42,6 +43,7 @@ interface SubscriptionState {
   paymentHistory: PaymentRecord[];
   selectedBillingPeriod: BillingPeriod;
   selectedPlanId: string | null; // Track which plan user is viewing
+  freeSignalTrades: FreeSignalTradesQuota | null;
 
   // UI States
   isLoading: boolean;
@@ -50,7 +52,7 @@ interface SubscriptionState {
   showCancelModal: boolean;
   showPaymentModal: boolean;
 
-  
+
 
   // Actions
   setCurrentSubscription: (sub: CurrentSubscription | null) => void;
@@ -65,6 +67,7 @@ interface SubscriptionState {
   setShowPaymentModal: (show: boolean) => void;
   setError: (error: string | null) => void;
   setIsLoading: (loading: boolean) => void;
+  setFreeSignalTrades: (quota: FreeSignalTradesQuota | null) => void;
 
   // Helpers
   canAccessFeature: (feature: FeatureType) => boolean;
@@ -79,6 +82,7 @@ interface SubscriptionState {
   getPlansByPeriod: (period: BillingPeriod) => SubscriptionPlan[];
   getPlansGroupedByTier: () => Record<PlanTier, SubscriptionPlan[]>;
   fetchSubscriptionData: () => Promise<void>;
+  fetchFreeSignalTradesQuota: () => Promise<void>;
 }
 
 const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
@@ -91,6 +95,7 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   paymentHistory: PAYMENT_HISTORY,
   selectedBillingPeriod: BillingPeriod.MONTHLY,
   selectedPlanId: null,
+  freeSignalTrades: null,
 
   // UI States
   isLoading: false,
@@ -123,6 +128,8 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   setError: (error) => set({ error }),
 
   setIsLoading: (loading) => set({ isLoading: loading }),
+
+  setFreeSignalTrades: (quota) => set({ freeSignalTrades: quota }),
 
   // Helper Functions
   canAccessFeature: (feature: FeatureType) => {
@@ -327,12 +334,22 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch subscription data';
-      set({ 
+      set({
         error: errorMessage,
         isLoading: false,
       });
       // Keep using fallback data on error
       console.error('Subscription fetch error:', errorMessage);
+    }
+  },
+
+  fetchFreeSignalTradesQuota: async () => {
+    try {
+      const quota = await getFreeSignalTradesQuota();
+      set({ freeSignalTrades: quota });
+    } catch (err) {
+      logger.warn('Failed to fetch free signal-trades quota:', err);
+      set({ freeSignalTrades: null });
     }
   },
 }));

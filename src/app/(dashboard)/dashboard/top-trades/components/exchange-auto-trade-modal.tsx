@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import { adminCreateTrade } from "@/lib/api/vcpool-admin";
 import { useTopTradeVcPoolId } from "../context/top-trade-vc-pool-context";
+import useSubscriptionStore from "@/state/subscription-store";
+import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import {
   formatCurrency,
   formatPercent,
@@ -40,7 +43,14 @@ export function ExchangeAutoTradeModal({
   const [usdtAmount, setUsdtAmount] = useState("");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quotaExhausted, setQuotaExhausted] = useState(false);
   const isPoolTrade = !!vcPoolId;
+
+  const { currentSubscription, freeSignalTrades, fetchFreeSignalTradesQuota } = useSubscriptionStore();
+  const isFreeTier = !isPoolTrade && currentSubscription?.tier === PlanTier.FREE;
+  const freeTradesRemaining = freeSignalTrades?.remaining ?? 0;
+  const freeTradesGranted = freeSignalTrades?.granted ?? 5;
+  const showQuotaHint = isFreeTier && (freeSignalTrades?.has_grant ?? false);
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
@@ -163,6 +173,8 @@ export function ExchangeAutoTradeModal({
           source: "top_trade",  // 👈 Signal backend to auto-place OCO
         });
         if (response?.success) {
+          // Refresh FREE-tier quota so the badge / hint reflects the new remaining.
+          if (isFreeTier) void fetchFreeSignalTradesQuota();
           // Show a warning if the OCO (stop-loss / take-profit) order failed (Binance only)
           if (!isBybit && (response as any).ocoError) {
             setError(`✅ Order filled — but OCO protection failed: ${(response as any).ocoError}. Set a stop-loss manually.`);
@@ -179,6 +191,20 @@ export function ExchangeAutoTradeModal({
     } catch (err: any) {
       // Extract the message from the axios response body first, then fall back to err.message
       const data = err?.response?.data;
+      const errorCode: string | undefined =
+        data?.code ||
+        (data?.message && typeof data.message === "object" ? data.message?.code : undefined);
+
+      // FREE-tier signal-trade quota exhausted — switch the modal into upgrade
+      // mode instead of showing a generic error.
+      if (errorCode === "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED") {
+        setError(null);
+        setQuotaExhausted(true);
+        // Sync the store so the page badge updates too.
+        void fetchFreeSignalTradesQuota();
+        return;
+      }
+
       const raw: string = data?.message || data?.error || data?.detail || data?.msg || err?.message || "Failed to place order";
       const status: number = err?.response?.status ?? 0;
       // Whether the backend provided a specific, non-generic message
@@ -335,25 +361,56 @@ export function ExchangeAutoTradeModal({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={executing}
-            className="flex-1 rounded-lg bg-slate-700/50 px-4 py-3 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleExecute}
-            disabled={executing || loadingBalance || !amountNum}
-            className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {executing ? "Executing..." : "Confirm & Execute"}
-          </button>
-        </div>
+        {/* Free-tier quota hint */}
+        {showQuotaHint && !quotaExhausted && freeTradesRemaining > 0 && side === "BUY" && (
+          <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-300">
+            This uses 1 of your {freeTradesRemaining} remaining free signal trades.
+          </div>
+        )}
+
+        {/* Free-tier quota exhausted: upgrade CTA replaces Execute */}
+        {quotaExhausted ? (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+              <p className="font-semibold">You&apos;ve used all {freeTradesGranted} free signal trades.</p>
+              <p className="mt-1 text-amber-200/80">Upgrade to PRO for unlimited Top Trades executions.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 rounded-lg bg-slate-700/50 px-4 py-3 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700"
+              >
+                Close
+              </button>
+              <Link
+                href="/dashboard/settings/subscription"
+                className="flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-lg transition-all hover:scale-[1.02]"
+              >
+                Upgrade to PRO
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={executing}
+              className="flex-1 rounded-lg bg-slate-700/50 px-4 py-3 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleExecute}
+              disabled={executing || loadingBalance || !amountNum}
+              className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {executing ? "Executing..." : "Confirm & Execute"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
