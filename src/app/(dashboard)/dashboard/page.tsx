@@ -17,6 +17,7 @@ import SellConfirmModal from "@/components/trading/SellConfirmModal";
 import { PositionInsightModal } from "@/components/trading/PositionInsightModal";
 import type { PositionAssetType } from "@/lib/api/position-insights.service";
 import { ActivateAccountWidget } from "@/components/dashboard/activate-account-widget";
+import { FreeSignalTradesPromoModal } from "@/components/dashboard/free-signal-trades-promo-modal";
 import {
   formatMarketCap,
   formatPrice,
@@ -715,6 +716,7 @@ export default function DashboardPage() {
           etc., and scrolls with the page rather than acting as a sticky
           banner. The widget renders nothing once the user is fully onboarded. */}
       <ActivateAccountWidget />
+      <FreeSignalTradesPromoModal />
 
 
       {/* Generic Error Display */}
