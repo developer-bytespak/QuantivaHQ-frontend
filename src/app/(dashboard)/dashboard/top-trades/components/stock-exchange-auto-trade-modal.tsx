@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import { adminCreateTrade } from "@/lib/api/vcpool-admin";
 import { useTopTradeVcPoolId } from "../context/top-trade-vc-pool-context";
+import useSubscriptionStore from "@/state/subscription-store";
+import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import {
   formatCurrency,
   formatPercent,
@@ -42,6 +45,13 @@ export function StockExchangeAutoTradeModal({
   const [sharesAmount, setSharesAmount] = useState("");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quotaExhausted, setQuotaExhausted] = useState(false);
+
+  const { currentSubscription, freeSignalTrades, fetchFreeSignalTradesQuota } = useSubscriptionStore();
+  const isFreeTier = !isPoolTrade && currentSubscription?.tier === PlanTier.FREE;
+  const freeTradesRemaining = freeSignalTrades?.remaining ?? 0;
+  const freeTradesGranted = freeSignalTrades?.granted ?? 5;
+  const showQuotaHint = isFreeTier && (freeSignalTrades?.has_grant ?? false);
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
@@ -123,6 +133,7 @@ export function StockExchangeAutoTradeModal({
           stopLoss: stopLossPercent / 100,
         });
         if (response?.success) {
+          if (isFreeTier) void fetchFreeSignalTradesQuota();
           // The backend can respond in several shapes depending on market state:
           //   1. { queued: true }             — market fully closed (weekend/holiday).
           //                                     Trade stored in DB queue; cron submits
@@ -173,6 +184,16 @@ export function StockExchangeAutoTradeModal({
         }
       }
     } catch (err: any) {
+      const data = err?.response?.data;
+      const errorCode: string | undefined =
+        data?.code ||
+        (data?.message && typeof data.message === "object" ? data.message?.code : undefined);
+      if (errorCode === "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED") {
+        setError(null);
+        setQuotaExhausted(true);
+        void fetchFreeSignalTradesQuota();
+        return;
+      }
       let msg = err?.message ?? "Failed to place order";
       if (msg.includes("insufficient") || msg.includes("balance")) msg = "Insufficient balance.";
       setError(msg);
@@ -312,24 +333,54 @@ export function StockExchangeAutoTradeModal({
           </div>
         )}
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={executing}
-            className="flex-1 rounded-lg bg-slate-700/50 px-4 py-3 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleExecute}
-            disabled={executing || loadingBalance || !sharesNum}
-            className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {executing ? "Executing..." : "Confirm & Execute"}
-          </button>
-        </div>
+        {showQuotaHint && !quotaExhausted && freeTradesRemaining > 0 && side === "BUY" && (
+          <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-300">
+            This uses 1 of your {freeTradesRemaining} remaining free signal trades.
+          </div>
+        )}
+
+        {quotaExhausted ? (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+              <p className="font-semibold">You&apos;ve used all {freeTradesGranted} free signal trades.</p>
+              <p className="mt-1 text-amber-200/80">Upgrade to PRO for unlimited Top Trades executions.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 rounded-lg bg-slate-700/50 px-4 py-3 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700"
+              >
+                Close
+              </button>
+              <Link
+                href="/dashboard/settings/subscription"
+                className="flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-lg transition-all hover:scale-[1.02]"
+              >
+                Upgrade to PRO
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={executing}
+              className="flex-1 rounded-lg bg-slate-700/50 px-4 py-3 text-sm font-medium text-slate-300 transition-all hover:bg-slate-700 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleExecute}
+              disabled={executing || loadingBalance || !sharesNum}
+              className="flex-1 rounded-lg bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {executing ? "Executing..." : "Confirm & Execute"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

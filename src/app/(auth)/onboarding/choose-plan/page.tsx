@@ -73,7 +73,9 @@ export default function ChoosePlanPage() {
   const handleSkipFree = async () => {
     setSkipLoading(true);
     try {
-      await acknowledgeFreeTier();
+      const result = await acknowledgeFreeTier();
+      const granted = result?.free_signal_trades_granted ?? 5;
+      toast.success(`${granted} free signal trades unlocked. Find them on Top Trades.`);
       goAfterSelection();
     } catch {
       toast.error("Could not save your choice. Please try again.");
@@ -298,15 +300,27 @@ export default function ChoosePlanPage() {
           </div>
         </div>
 
-        {/* Skip — stay on Free */}
-        <div className="mt-8 flex flex-col items-center gap-2">
+        {/* Skip — stay on Free, with conversion promo */}
+        <div className="mt-8 flex w-full max-w-2xl flex-col items-center gap-3">
+          <div className="w-full rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4 text-center sm:p-5">
+            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Stay on Free? Claim 5 trading signals
+            </div>
+            <p className="text-sm text-slate-200">
+              Your first <span className="font-semibold text-white">5 Top Trades executions are on us</span>.
+              Unlocked the moment you finish onboarding.
+            </p>
+          </div>
           <button
             type="button"
             onClick={handleSkipFree}
             disabled={skipLoading}
             className="rounded-lg border border-white/20 bg-transparent px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-white/40 hover:text-white disabled:opacity-60"
           >
-            {skipLoading ? "Saving…" : "Skip — stay on Free"}
+            {skipLoading ? "Saving…" : "Continue with Free — claim 5 signals"}
           </button>
           <p className="text-xs text-slate-500">You can upgrade any time from the dashboard.</p>
         </div>

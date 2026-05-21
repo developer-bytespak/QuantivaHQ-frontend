@@ -20,7 +20,6 @@ import type { PositionAssetType } from "@/lib/api/position-insights.service";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
-import { UpgradeGate } from "@/components/common/upgrade-gate";
 
 export interface TopTradesPageProps {
   /** When set, page runs in admin VC Pool mode: trades execute via adminCreateTrade(poolId, body) */
@@ -192,8 +191,20 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const connectionId = propConnectionId ?? ctxConnectionId;
   const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
-  const { currentSubscription } = useSubscriptionStore();
-  const canAccessTopTrades = !!vcPoolId || (currentSubscription && (currentSubscription.tier === PlanTier.PRO || currentSubscription.tier === PlanTier.ELITE || currentSubscription.tier === PlanTier.ELITE_PLUS));
+  const { currentSubscription, freeSignalTrades, fetchFreeSignalTradesQuota } = useSubscriptionStore();
+  // Top Trades is now open to all tiers. FREE users get a metered 5-trade
+  // signal quota (granted on onboarding completion); PRO+ are unmetered.
+  const canAccessTopTrades = true;
+  const isFreeTier = !vcPoolId && currentSubscription?.tier === PlanTier.FREE;
+  const freeTradesRemaining = freeSignalTrades?.remaining ?? 0;
+  const freeTradesGranted = freeSignalTrades?.granted ?? 5;
+  const freeQuotaExhausted = isFreeTier && (freeSignalTrades?.has_grant ?? false) && freeTradesRemaining <= 0;
+
+  useEffect(() => {
+    if (isFreeTier && !freeSignalTrades) {
+      void fetchFreeSignalTradesQuota();
+    }
+  }, [isFreeTier, freeSignalTrades, fetchFreeSignalTradesQuota]);
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -1324,20 +1335,13 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     );
   }
 
-  // Top Trades is PRO and ELITE only (skip when admin VC Pool mode)
+  // Wait for the subscription store to hydrate before deciding the FREE-tier
+  // experience. (Admin VC-Pool mode bypasses this — there's no user sub there.)
   if (!vcPoolId && !currentSubscription) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
       </div>
-    );
-  }
-  if (!canAccessTopTrades) {
-    return (
-      <UpgradeGate
-        title="Top Trades is for PRO, ELITE and ELITE Plus"
-        description="Generate stock signals and view trading opportunities. Upgrade to access Top Trades."
-      />
     );
   }
 
@@ -1348,13 +1352,37 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="flex flex-col gap-2">
           <p className="text-xs sm:text-sm text-slate-400">
-            {isStocksConnection 
+            {isStocksConnection
               ? "AI-powered trading signals for your stock portfolio"
               : "Track your best performing trades and strategies"
             }
           </p>
+          {isFreeTier && freeSignalTrades?.has_grant && (
+            <div
+              className={`inline-flex items-center gap-2 self-start rounded-full border px-3 py-1 text-xs ${
+                freeQuotaExhausted
+                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+              }`}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span className="font-medium">
+                Free signal trades: {freeTradesRemaining} / {freeTradesGranted}
+              </span>
+              {freeQuotaExhausted && (
+                <Link
+                  href="/dashboard/settings/subscription"
+                  className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200 hover:bg-amber-500/30"
+                >
+                  Upgrade
+                </Link>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 items-center">
           <Link
