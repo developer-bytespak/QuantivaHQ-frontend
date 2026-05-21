@@ -18,6 +18,8 @@ import SellConfirmModal from "@/components/trading/SellConfirmModal";
 import { PositionInsightModal } from "@/components/trading/PositionInsightModal";
 import type { PositionAssetType } from "@/lib/api/position-insights.service";
 import useSubscriptionStore from "@/state/subscription-store";
+import useOnboardingProgressStore, { isFullyOnboarded } from "@/state/onboarding-progress-store";
+import { getNextOnboardingStepRoute } from "@/lib/auth/flow-router.service";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
 
@@ -192,19 +194,27 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
   const { currentSubscription, freeSignalTrades, fetchFreeSignalTradesQuota } = useSubscriptionStore();
-  // Top Trades is now open to all tiers. FREE users get a metered 5-trade
-  // signal quota (granted on onboarding completion); PRO+ are unmetered.
-  const canAccessTopTrades = true;
+  const { progress: onboardingProgress, fetchProgress: fetchOnboardingProgress } = useOnboardingProgressStore();
+  // Top Trades is open to all tiers but gated on full onboarding completion.
+  // Admin VC-Pool mode (vcPoolId) bypasses the gate.
+  const onboardingComplete = !!vcPoolId || (onboardingProgress ? isFullyOnboarded(onboardingProgress) : false);
+  const canAccessTopTrades = onboardingComplete;
   const isFreeTier = !vcPoolId && currentSubscription?.tier === PlanTier.FREE;
   const freeTradesRemaining = freeSignalTrades?.remaining ?? 0;
   const freeTradesGranted = freeSignalTrades?.granted ?? 5;
   const freeQuotaExhausted = isFreeTier && (freeSignalTrades?.has_grant ?? false) && freeTradesRemaining <= 0;
 
   useEffect(() => {
-    if (isFreeTier && !freeSignalTrades) {
+    if (!vcPoolId && !onboardingProgress) {
+      void fetchOnboardingProgress();
+    }
+  }, [vcPoolId, onboardingProgress, fetchOnboardingProgress]);
+
+  useEffect(() => {
+    if (isFreeTier && onboardingComplete && !freeSignalTrades) {
       void fetchFreeSignalTradesQuota();
     }
-  }, [isFreeTier, freeSignalTrades, fetchFreeSignalTradesQuota]);
+  }, [isFreeTier, onboardingComplete, freeSignalTrades, fetchFreeSignalTradesQuota]);
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -1335,12 +1345,43 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     );
   }
 
-  // Wait for the subscription store to hydrate before deciding the FREE-tier
-  // experience. (Admin VC-Pool mode bypasses this — there's no user sub there.)
-  if (!vcPoolId && !currentSubscription) {
+  // Wait for the subscription + onboarding stores to hydrate before deciding
+  // the FREE-tier experience. (Admin VC-Pool mode bypasses this entirely.)
+  if (!vcPoolId && (!currentSubscription || !onboardingProgress)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
+      </div>
+    );
+  }
+
+  // Onboarding-completion gate. Top Trades requires the full setup
+  // (Personal info + KYC + Subscription + Exchange) so a FREE user has the
+  // 5-trade grant AND an exchange to execute on. Renders an in-page CTA
+  // pointing to the next pending step instead of the page content.
+  if (!canAccessTopTrades && onboardingProgress) {
+    const nextStep = getNextOnboardingStepRoute(onboardingProgress) ?? "/dashboard";
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-slate-900 to-black p-6 text-center shadow-2xl shadow-emerald-500/10">
+          <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20">
+            <svg className="h-6 w-6 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h2 className="mb-2 text-xl font-bold text-white">Finish onboarding to unlock Top Trades</h2>
+          <p className="mb-5 text-sm text-slate-300">
+            Top Trades opens once you complete Personal info, Identity (KYC), Subscription, and Exchange connection.
+            Your first <span className="font-semibold text-emerald-300">5 signal trades</span> are on us when you finish.
+          </p>
+          <button
+            type="button"
+            onClick={() => router.push(nextStep)}
+            className="w-full rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-400 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
+          >
+            Continue setup
+          </button>
+        </div>
       </div>
     );
   }
