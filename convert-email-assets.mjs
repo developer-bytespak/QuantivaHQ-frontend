@@ -12,6 +12,7 @@ const files = [
   { name: 'kyc', width: 640, height: 440 },
   { name: 'paid', width: 640, height: 440 },
   { name: 'free_upgrade', width: 640, height: 440 },
+  { name: 'freemium_unlock', width: 640, height: 440 },
 ];
 
 for (const f of files) {
