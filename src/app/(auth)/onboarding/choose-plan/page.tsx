@@ -302,8 +302,8 @@ export default function ChoosePlanPage() {
 
         {/* Skip — stay on Free, with conversion promo */}
         <div className="mt-8 flex w-full max-w-2xl flex-col items-center gap-3">
-          <div className="w-full rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4 text-center sm:p-5">
-            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+          <div className="w-full rounded-xl border border-[var(--primary)]/40 bg-[var(--primary)]/5 p-4 text-center sm:p-5">
+            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--primary)]">
               <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>

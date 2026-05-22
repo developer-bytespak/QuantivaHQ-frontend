@@ -17,10 +17,24 @@ import {
   type Rule,
   type EngineWeights,
 } from "@/components/strategies/strategy-form-shared";
+import useSubscriptionStore from "@/state/subscription-store";
+import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { CustomStrategiesPaywall } from "@/components/common/custom-strategies-paywall";
 
 type Step = "basics" | "assets" | "weights" | "rules" | "risk" | "review";
 
+// Paywall wrapper: blocks direct navigation to the create form for FREE
+// users. The inner component (a multi-step wizard with many hooks) only
+// mounts for PRO+ tiers.
 export default function CreateStrategyPage() {
+  const { currentSubscription } = useSubscriptionStore();
+  if (currentSubscription && currentSubscription.tier === PlanTier.FREE) {
+    return <CustomStrategiesPaywall />;
+  }
+  return <CreateStrategyPageInner />;
+}
+
+function CreateStrategyPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "my-strategies"; // Original source (paper-trading, top-trades, or my-strategies)

@@ -8,6 +8,7 @@ import { useExchange } from "@/context/ExchangeContext";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { EditStrategyModal } from "@/components/strategies/edit-strategy-modal";
+import { CustomStrategiesPaywall } from "@/components/common/custom-strategies-paywall";
 
 interface StrategyMetrics {
   total_signals: number;
@@ -36,7 +37,18 @@ interface UserStrategy {
   metrics: StrategyMetrics;
 }
 
+// Paywall wrapper: Custom Strategies are PRO+ only. FREE users see the
+// upgrade card. Inner component mounts only for PRO+ so its hooks remain
+// consistent across re-renders.
 export default function MyStrategiesPage() {
+  const { currentSubscription } = useSubscriptionStore();
+  if (currentSubscription && currentSubscription.tier === PlanTier.FREE) {
+    return <CustomStrategiesPaywall />;
+  }
+  return <MyStrategiesPageInner />;
+}
+
+function MyStrategiesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const referrer = searchParams.get("from") || null; // null if no referrer

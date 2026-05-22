@@ -1363,21 +1363,21 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     const nextStep = getNextOnboardingStepRoute(onboardingProgress) ?? "/dashboard";
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 via-slate-900 to-black p-6 text-center shadow-2xl shadow-emerald-500/10">
-          <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20">
-            <svg className="h-6 w-6 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <div className="w-full max-w-md rounded-2xl border border-[var(--primary)]/40 bg-gradient-to-br from-[var(--primary)]/15 via-slate-900 to-black p-6 text-center shadow-2xl shadow-[rgba(var(--primary-rgb),0.15)]">
+          <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary)]/20">
+            <svg className="h-6 w-6 text-[var(--primary)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
           <h2 className="mb-2 text-xl font-bold text-white">Finish onboarding to unlock Top Trades</h2>
           <p className="mb-5 text-sm text-slate-300">
             Top Trades opens once you complete Personal info, Identity (KYC), Subscription, and Exchange connection.
-            Your first <span className="font-semibold text-emerald-300">5 signal trades</span> are on us when you finish.
+            Your first <span className="font-semibold text-[var(--primary)]">5 signal trades</span> are on us when you finish.
           </p>
           <button
             type="button"
             onClick={() => router.push(nextStep)}
-            className="w-full rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-400 px-4 py-3 text-sm font-semibold text-slate-900 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
+            className="w-full rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition hover:opacity-90 hover:scale-[1.02]"
           >
             Continue setup
           </button>
@@ -1404,8 +1404,8 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             <div
               className={`inline-flex items-center gap-2 self-start rounded-full border px-3 py-1 text-xs ${
                 freeQuotaExhausted
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                  : "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                  ? "border-red-500/40 bg-red-500/10 text-red-300"
+                  : "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)]"
               }`}
             >
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -1417,7 +1417,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               {freeQuotaExhausted && (
                 <Link
                   href="/dashboard/settings/subscription"
-                  className="ml-1 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200 hover:bg-amber-500/30"
+                  className="ml-1 rounded-full bg-[var(--primary)]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)] hover:bg-[var(--primary)]/30"
                 >
                   Upgrade
                 </Link>
