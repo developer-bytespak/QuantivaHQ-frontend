@@ -363,7 +363,7 @@ export function ExchangeAutoTradeModal({
 
         {/* Free-tier quota hint */}
         {showQuotaHint && !quotaExhausted && freeTradesRemaining > 0 && side === "BUY" && (
-          <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-300">
+          <div className="mb-4 rounded-lg border border-[var(--primary)]/40 bg-[var(--primary)]/10 p-3 text-xs text-[var(--primary)]">
             This uses 1 of your {freeTradesRemaining} remaining free signal trades.
           </div>
         )}

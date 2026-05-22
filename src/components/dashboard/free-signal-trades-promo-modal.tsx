@@ -52,7 +52,7 @@ export function FreeSignalTradesPromoModal() {
       aria-modal="true"
     >
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/40 via-slate-900 to-black p-6 shadow-2xl shadow-emerald-500/20"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--primary)]/40 bg-gradient-to-br from-[var(--primary)]/15 via-slate-900 to-black p-6 shadow-2xl shadow-[rgba(var(--primary-rgb),0.25)]"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -66,7 +66,7 @@ export function FreeSignalTradesPromoModal() {
           </svg>
         </button>
 
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-500/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[var(--primary)]/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--primary)]">
           <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
@@ -95,7 +95,7 @@ export function FreeSignalTradesPromoModal() {
           <button
             type="button"
             onClick={handleContinue}
-            className="flex-1 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-400 px-4 py-2.5 text-sm font-semibold text-slate-900 shadow-lg shadow-emerald-500/30 transition hover:scale-[1.02]"
+            className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition hover:opacity-90 hover:scale-[1.02]"
           >
             Continue setup
           </button>
