@@ -18,13 +18,36 @@ import {
 } from "recharts";
 import {
   adminMe,
+  adminSuperGenerateUsersSummaryPdf,
   adminSuperListUsers,
   adminSuperUsersAnalytics,
   adminSuperUsersGrowth,
   type SuperAdminUserRow,
   type SuperAdminUsersAnalyticsResponse,
   type SuperAdminUsersGrowthResponse,
+  type UserSummaryPdfFilters,
+  type UserSummarySectionKey,
 } from "@/lib/api/vcpool-admin";
+
+type SummaryWindowDays = 0 | 15 | 30 | 90;
+
+const SUMMARY_WINDOW_OPTIONS: { value: SummaryWindowDays; label: string }[] = [
+  { value: 0, label: "All time" },
+  { value: 15, label: "Last 15 days" },
+  { value: 30, label: "Last 1 month" },
+  { value: 90, label: "Last 3 months" },
+];
+
+const SUMMARY_SECTION_OPTIONS: { value: UserSummarySectionKey; label: string }[] = [
+  { value: "fully_completed", label: "3.1 Fully completed onboarding" },
+  { value: "kyc_approved", label: "3.2 KYC approved (post-KYC funnel)" },
+  { value: "kyc_rejected", label: "3.3 KYC rejected" },
+  { value: "kyc_pending_active", label: "3.4 KYC pending (attempt in progress)" },
+  { value: "signed_up_only", label: "3.5 Signed up only (no profile, no KYC)" },
+];
+
+const ALL_SUMMARY_SECTION_KEYS: UserSummarySectionKey[] =
+  SUMMARY_SECTION_OPTIONS.map((opt) => opt.value);
 import { Notification, useNotification } from "@/components/common/notification";
 
 const GROWTH_PLAN_OPTIONS = ["ALL", "FREE", "PRO", "ELITE", "ELITE_PLUS"] as const;
@@ -64,6 +87,70 @@ export default function AdminUsersPage() {
   const [growthPlan, setGrowthPlan] =
     useState<(typeof GROWTH_PLAN_OPTIONS)[number]>("ALL");
   const [growthActiveOnly, setGrowthActiveOnly] = useState(false);
+
+  const [summaryPdfLoading, setSummaryPdfLoading] = useState(false);
+  const [summaryModalOpen, setSummaryModalOpen] = useState(false);
+  const [summaryWindow, setSummaryWindow] = useState<SummaryWindowDays>(0);
+  const [summarySections, setSummarySections] = useState<
+    Set<UserSummarySectionKey>
+  >(() => new Set(ALL_SUMMARY_SECTION_KEYS));
+
+  const openSummaryModal = () => {
+    setSummaryWindow(0);
+    setSummarySections(new Set(ALL_SUMMARY_SECTION_KEYS));
+    setSummaryModalOpen(true);
+  };
+
+  const closeSummaryModal = () => {
+    if (summaryPdfLoading) return;
+    setSummaryModalOpen(false);
+  };
+
+  const toggleSummarySection = (key: UserSummarySectionKey) => {
+    setSummarySections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handleGenerateSummaryPdf = async () => {
+    if (summaryPdfLoading) return;
+    if (summarySections.size === 0) {
+      showNotification("Select at least one section to include", "error");
+      return;
+    }
+    setSummaryPdfLoading(true);
+    try {
+      const filters: UserSummaryPdfFilters = {
+        sections: Array.from(summarySections),
+      };
+      if (summaryWindow !== 0) filters.days = summaryWindow;
+
+      const blob = await adminSuperGenerateUsersSummaryPdf(filters);
+      const url = URL.createObjectURL(blob);
+      const today = new Date().toISOString().slice(0, 10);
+      const windowSuffix = summaryWindow === 0 ? "" : `-last-${summaryWindow}d`;
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `quantiva-users-summary${windowSuffix}-${today}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showNotification("User summary PDF downloaded", "success");
+      setSummaryModalOpen(false);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to generate user summary PDF";
+      showNotification(message, "error");
+    } finally {
+      setSummaryPdfLoading(false);
+    }
+  };
 
   const [expandedPlan, setExpandedPlan] = useState<PlanTier | null>(null);
   const [activePlanIndex, setActivePlanIndex] = useState<number | null>(null);
@@ -263,11 +350,195 @@ export default function AdminUsersPage() {
         />
       )}
 
+      {summaryModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+          onClick={closeSummaryModal}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-[--color-border] bg-[--color-surface] p-6 text-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold">Generate User Summary</h3>
+                <p className="mt-1 text-xs text-slate-400">
+                  Pick a time window and the sections to include in the PDF.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeSummaryModal}
+                disabled={summaryPdfLoading}
+                className="rounded-md p-1 text-slate-400 transition hover:bg-white/5 hover:text-white disabled:opacity-40"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mt-5">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Time window
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {SUMMARY_WINDOW_OPTIONS.map((opt) => {
+                  const active = summaryWindow === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setSummaryWindow(opt.value)}
+                      disabled={summaryPdfLoading}
+                      className={`rounded-md border px-3 py-2 text-sm transition disabled:cursor-not-allowed ${
+                        active
+                          ? "border-[#fc4f02] bg-[#fc4f02]/15 text-white"
+                          : "border-[--color-border] bg-transparent text-slate-300 hover:border-[#fc4f02]/60 hover:bg-[#fc4f02]/5"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Sections to include
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSummarySections((prev) =>
+                      prev.size === ALL_SUMMARY_SECTION_KEYS.length
+                        ? new Set()
+                        : new Set(ALL_SUMMARY_SECTION_KEYS),
+                    );
+                  }}
+                  disabled={summaryPdfLoading}
+                  className="text-[11px] font-medium text-[#fc4f02] hover:underline disabled:opacity-40"
+                >
+                  {summarySections.size === ALL_SUMMARY_SECTION_KEYS.length
+                    ? "Clear all"
+                    : "Select all"}
+                </button>
+              </div>
+              <div className="mt-2 space-y-1.5">
+                {SUMMARY_SECTION_OPTIONS.map((opt) => {
+                  const checked = summarySections.has(opt.value);
+                  return (
+                    <label
+                      key={opt.value}
+                      className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition ${
+                        checked
+                          ? "border-[#fc4f02]/60 bg-[#fc4f02]/10 text-white"
+                          : "border-[--color-border] text-slate-300 hover:border-white/20 hover:bg-white/5"
+                      } ${summaryPdfLoading ? "cursor-not-allowed opacity-60" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleSummarySection(opt.value)}
+                        disabled={summaryPdfLoading}
+                        className="h-4 w-4 cursor-pointer accent-[#fc4f02]"
+                      />
+                      <span>{opt.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeSummaryModal}
+                disabled={summaryPdfLoading}
+                className="rounded-md border border-[--color-border] px-3 py-2 text-sm text-slate-300 transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerateSummaryPdf}
+                disabled={summaryPdfLoading || summarySections.size === 0}
+                className="inline-flex items-center gap-2 rounded-md bg-[#fc4f02] px-3 py-2 text-sm font-semibold text-white shadow transition hover:bg-[#fd6a00] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {summaryPdfLoading ? (
+                  <>
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeOpacity="0.35"
+                        strokeWidth="3"
+                      />
+                      <path
+                        d="M22 12a10 10 0 0 1-10 10"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    Generating…
+                  </>
+                ) : (
+                  "Generate PDF"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-2xl bg-gradient-to-br from-[#fc4f02] via-[#fd6a00] to-[#fd8a00] p-6 text-white shadow-xl">
-        <h2 className="text-2xl font-bold">Users Overview</h2>
-        <p className="mt-1 text-sm text-white/90">
-          All platform users with plan, subscription, and activity insights.
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Users Overview</h2>
+            <p className="mt-1 text-sm text-white/90">
+              All platform users with plan, subscription, and activity insights.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={openSummaryModal}
+            className="inline-flex shrink-0 items-center gap-2 self-start rounded-md bg-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25"
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Generate User Summary
+          </button>
+        </div>
       </div>
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">

@@ -381,6 +381,37 @@ export async function adminSuperListPoolsOversight(params?: {
   return data;
 }
 
+export type UserSummarySectionKey =
+  | "fully_completed"
+  | "kyc_approved"
+  | "kyc_rejected"
+  | "kyc_pending_active"
+  | "signed_up_only";
+
+export interface UserSummaryPdfFilters {
+  /** 15, 30, or 90. Omit for all-time. */
+  days?: 15 | 30 | 90;
+  /** Sections to include. Omit (or pass all) to include everything. */
+  sections?: UserSummarySectionKey[];
+}
+
+/** GET /admin/super-admin/users/summary-pdf — returns a PDF blob */
+export async function adminSuperGenerateUsersSummaryPdf(
+  filters?: UserSummaryPdfFilters,
+): Promise<Blob> {
+  const search = new URLSearchParams();
+  if (filters?.days) search.set("days", String(filters.days));
+  if (filters?.sections && filters.sections.length > 0) {
+    search.set("sections", filters.sections.join(","));
+  }
+  const query = search.toString();
+  const { data } = await adminAxios.get<Blob>(
+    `/admin/super-admin/users/summary-pdf${query ? `?${query}` : ""}`,
+    { responseType: "blob" },
+  );
+  return data;
+}
+
 /** GET /admin/super-admin/finance/unified */
 export async function adminSuperUnifiedFinance(
   params?: SuperAdminUnifiedFinanceFilters
