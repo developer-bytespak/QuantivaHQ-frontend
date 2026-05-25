@@ -39,11 +39,11 @@ const SUMMARY_WINDOW_OPTIONS: { value: SummaryWindowDays; label: string }[] = [
 ];
 
 const SUMMARY_SECTION_OPTIONS: { value: UserSummarySectionKey; label: string }[] = [
-  { value: "fully_completed", label: "3.1 Fully completed onboarding" },
-  { value: "kyc_approved", label: "3.2 KYC approved (post-KYC funnel)" },
-  { value: "kyc_rejected", label: "3.3 KYC rejected" },
-  { value: "kyc_pending_active", label: "3.4 KYC pending (attempt in progress)" },
-  { value: "signed_up_only", label: "3.5 Signed up only (no profile, no KYC)" },
+  { value: "fully_completed", label: "4.1 Fully completed onboarding" },
+  { value: "kyc_approved", label: "4.2 KYC approved (post-KYC funnel)" },
+  { value: "kyc_rejected", label: "4.3 KYC rejected" },
+  { value: "kyc_pending_active", label: "4.4 KYC pending (attempt in progress)" },
+  { value: "signed_up_only", label: "4.5 Signed up only (no profile, no KYC)" },
 ];
 
 const ALL_SUMMARY_SECTION_KEYS: UserSummarySectionKey[] =
