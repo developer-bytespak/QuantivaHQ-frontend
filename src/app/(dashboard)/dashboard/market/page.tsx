@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { getCachedMarketData, CoinGeckoCoin } from "@/lib/api/coingecko.service";
 import { useExchange } from "@/context/ExchangeContext";
-import { useStocksMarket } from "@/hooks/useStocksMarket";
+import { useStocksPaginated } from "@/hooks/useStocksPaginated";
+import { useStockIndexes } from "@/hooks/useStockIndexes";
 import { formatPrice, formatPercent, formatVolume, formatMarketCap } from "@/lib/utils/format";
 
 export default function MarketPage() {
@@ -22,20 +23,40 @@ export default function MarketPage() {
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [timeSinceSync, setTimeSinceSync] = useState<string>("");
   
-  // Stocks state
+  // Stocks state — Option B: server-side pagination/search via new endpoint
+  const [stocksPage, setStocksPage] = useState(1);
+  const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
+  const [stocksSearchInput, setStocksSearchInput] = useState("");
+  const [debouncedStocksSearch, setDebouncedStocksSearch] = useState("");
+  const STOCKS_PER_PAGE = 50;
+
+  // Debounce search input by 300ms so typing doesn't fire a request per keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedStocksSearch(stocksSearchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [stocksSearchInput]);
+
+  // Reset to page 1 whenever the search query or selected index changes
+  useEffect(() => {
+    setStocksPage(1);
+  }, [debouncedStocksSearch, selectedIndex]);
+
   const {
-    data: stocks,
-    loading: stocksLoading,
+    data: stocksResult,
+    isLoading: stocksLoading,
     error: stocksError,
-    timestamp: stocksTimestamp,
-    refresh: refreshStocks,
-  } = useStocksMarket({
-    limit: 500,
-    autoRefresh: connectionType === "stocks",
-    refreshInterval: 5 * 60 * 1000,
-    enabled: connectionType === "stocks",
-  });
-  
+  } = useStocksPaginated(
+    {
+      page: stocksPage,
+      limit: STOCKS_PER_PAGE,
+      index: selectedIndex,
+      search: debouncedStocksSearch || undefined,
+    },
+    { enabled: connectionType === "stocks" },
+  );
+
+  const { data: stockIndexes } = useStockIndexes({ enabled: connectionType === "stocks" });
+
   // Common state
   const [searchQuery, setSearchQuery] = useState("");
   const [minPrice, setMinPrice] = useState("");
@@ -184,27 +205,28 @@ export default function MarketPage() {
 
   // Render stocks market if stocks connection
   if (connectionType === "stocks") {
-    const filteredStocks = stocks.filter((stock) =>
-      (stock.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        stock.sector.toLowerCase().includes(searchQuery.toLowerCase())) &&
-      (!hasMinPriceFilter || stock.price >= parsedMinPrice) &&
-      (!hasMaxPriceFilter || stock.price <= parsedMaxPrice)
-    );
-
-    const totalPages = Math.ceil(filteredStocks.length / coinsPerPage);
-    const startIndex = (currentPage - 1) * coinsPerPage;
-    const endIndex = startIndex + coinsPerPage;
-    const currentStocks = filteredStocks.slice(startIndex, endIndex);
+    const stocksItems = stocksResult?.items ?? [];
+    const stocksTotal = stocksResult?.total ?? 0;
+    const stocksTotalPages = Math.max(1, Math.ceil(stocksTotal / STOCKS_PER_PAGE));
+    const stocksStartIndex = (stocksPage - 1) * STOCKS_PER_PAGE;
+    const errorMessage = stocksError instanceof Error ? stocksError.message : null;
+    const showIndexDropdown = (stockIndexes?.length ?? 0) > 1;
+    const selectedIndexLabel = selectedIndex
+      ? stockIndexes?.find((i) => i.code === selectedIndex)?.display_name ?? "All Stocks"
+      : "All Stocks";
 
     return (
       <div className="space-y-3 sm:space-y-4 md:space-y-6 pb-8 p-4 sm:p-0">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div>
-            <h1 className="text-base sm:text-xl md:text-2xl font-bold text-white">S&P 500 Market</h1>
+            <h1 className="text-base sm:text-xl md:text-2xl font-bold text-white">
+              {showIndexDropdown ? "US Stocks Market" : "S&P 500 Market"}
+            </h1>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              {filteredStocks.length} stocks • Updated {stocksTimestamp ? new Date(stocksTimestamp).toLocaleTimeString() : "N/A"}
+              {stocksTotal.toLocaleString()} stocks
+              {selectedIndex && ` in ${selectedIndexLabel}`}
+              {stocksResult?.timestamp && ` • Updated ${new Date(stocksResult.timestamp).toLocaleTimeString()}`}
             </p>
           </div>
           <button
@@ -215,93 +237,52 @@ export default function MarketPage() {
           </button>
         </div>
 
-        {/* Search Bar */}
+        {/* Search + index filter bar */}
         <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4 space-y-3">
-          {/* Search + filter toggle row */}
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <svg className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
                 type="text"
-                placeholder="Search by symbol, name, or sector..."
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                placeholder="Search by symbol or name..."
+                value={stocksSearchInput}
+                onChange={(e) => setStocksSearchInput(e.target.value)}
                 className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
               />
             </div>
-            <button
-              type="button"
-              onClick={() => setShowPriceFilter((v) => !v)}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all whitespace-nowrap ${
-                showPriceFilter || minPrice || maxPrice
-                  ? "border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]"
-                  : "border-[--color-border] bg-[--color-surface] text-slate-400 hover:border-slate-500 hover:text-white"
-              }`}
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 010 2H4a1 1 0 01-1-1zm3 4a1 1 0 011-1h10a1 1 0 010 2H7a1 1 0 01-1-1zm4 4a1 1 0 011-1h4a1 1 0 010 2h-4a1 1 0 01-1-1z" />
-              </svg>
-              <span className="hidden sm:inline">Price Filter</span>
-              {(minPrice || maxPrice) && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--primary)] text-[9px] font-bold text-white">
-                  {[minPrice, maxPrice].filter(Boolean).length}
-                </span>
-              )}
-            </button>
+            {showIndexDropdown && (
+              <select
+                value={selectedIndex ?? ""}
+                onChange={(e) => setSelectedIndex(e.target.value || null)}
+                className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-white focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
+              >
+                <option value="">All Stocks</option>
+                {stockIndexes?.map((idx) => (
+                  <option key={idx.code} value={idx.code}>
+                    {idx.display_name} ({idx.stock_count.toLocaleString()})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-
-          {/* Collapsible price filter */}
-          {showPriceFilter && (
-            <div className="rounded-lg border border-[var(--primary)]/20 bg-[--color-surface] p-3">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Filter by Price (USD)</p>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-                  <input
-                    type="number" min="0" step="0.01" placeholder="Min Price"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
-                  />
-                </div>
-                <span className="hidden text-xs text-slate-500 sm:block">to</span>
-                <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">$</span>
-                  <input
-                    type="number" min="0" step="0.01" placeholder="Max Price"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setMinPrice(""); setMaxPrice(""); setShowPriceFilter(false); }}
-                  className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-red-500/50 hover:text-red-400 whitespace-nowrap"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Loading/Error */}
-        {stocksLoading && (
+        {/* Loading / error */}
+        {stocksLoading && !stocksResult && (
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
           </div>
         )}
-        {stocksError && (
+        {errorMessage && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
-            <p className="text-sm text-red-300">{stocksError}</p>
+            <p className="text-sm text-red-300">{errorMessage}</p>
           </div>
         )}
 
         {/* Stocks Table */}
-        {!stocksLoading && !stocksError && (
+        {stocksResult && !errorMessage && (
           <>
             <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 overflow-hidden">
               <div className="overflow-x-auto">
@@ -317,10 +298,10 @@ export default function MarketPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[--color-border]">
-                    {currentStocks.length > 0 ? (
-                      currentStocks.map((stock, index) => (
+                    {stocksItems.length > 0 ? (
+                      stocksItems.map((stock, index) => (
                         <tr key={stock.symbol} className="group cursor-pointer hover:bg-slate-800/40 transition-colors" onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}>
-                          <td className="py-4 px-4 text-sm font-medium text-slate-400">{startIndex + index + 1}</td>
+                          <td className="py-4 px-4 text-sm font-medium text-slate-400">{stocksStartIndex + index + 1}</td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-3">
                               <div>
@@ -340,7 +321,9 @@ export default function MarketPage() {
                     ) : (
                       <tr>
                         <td colSpan={6} className="py-10 text-center text-slate-400 text-sm">
-                          No stocks found for selected filters
+                          {debouncedStocksSearch
+                            ? `No stocks found matching "${debouncedStocksSearch}"`
+                            : "No stocks found"}
                         </td>
                       </tr>
                     )}
@@ -350,15 +333,23 @@ export default function MarketPage() {
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {stocksTotalPages > 1 && (
               <div className="flex items-center justify-between px-4">
-                <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50">
+                <button
+                  onClick={() => setStocksPage((p) => Math.max(1, p - 1))}
+                  disabled={stocksPage === 1 || stocksLoading}
+                  className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50"
+                >
                   Previous
                 </button>
                 <span className="text-sm text-slate-400">
-                  Page {currentPage} of {totalPages}
+                  Page {stocksPage} of {stocksTotalPages.toLocaleString()}
                 </span>
-                <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50">
+                <button
+                  onClick={() => setStocksPage((p) => Math.min(stocksTotalPages, p + 1))}
+                  disabled={stocksPage >= stocksTotalPages || stocksLoading}
+                  className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50"
+                >
                   Next
                 </button>
               </div>
