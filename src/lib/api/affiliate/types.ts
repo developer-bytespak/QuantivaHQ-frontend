@@ -50,7 +50,7 @@ export interface AffiliateProfile {
   tax_residency?: string | null;
   referral_code?: string | null;
   status: AffiliateStatus;
-  commission_tier?: string;
+  commission_pct?: number | null;
   payout_instructions?: string | null;
   tax_form_url?: string | null;
   pending_balance?: number;
@@ -197,7 +197,7 @@ export interface AffiliateSettings {
   tax_residency: string | null;
   payout_instructions: string | null;
   tax_form_url: string | null;
-  commission_tier: string;
+  commission_pct: number | null;
   status: AffiliateStatus;
 }
 

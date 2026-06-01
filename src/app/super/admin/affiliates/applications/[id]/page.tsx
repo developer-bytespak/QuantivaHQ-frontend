@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   superApproveAffiliateApplication,
   superGetAffiliateApplication,
+  superGetAffiliateProgramSettings,
   superRejectAffiliateApplication,
   superRequestInfoOnAffiliateApplication,
   type AffiliateApplicationDetail,
@@ -33,9 +34,7 @@ export default function SuperAffiliateApplicationDetailPage() {
 
   // Approve form
   const [approveCode, setApproveCode] = useState("");
-  const [approveTier, setApproveTier] = useState<
-    "DEFAULT" | "PREMIUM" | "CUSTOM"
-  >("DEFAULT");
+  const [approveRatePct, setApproveRatePct] = useState("20");
   const [approveNotes, setApproveNotes] = useState("");
 
   // Reject form
@@ -60,6 +59,16 @@ export default function SuperAffiliateApplicationDetailPage() {
         .replace(/[^A-Z0-9]+/g, "-")
         .slice(0, 40);
       setApproveCode(suggested);
+      // Pre-fill the rate from the current program default. Falls back to 20%
+      // if settings can't be loaded.
+      try {
+        const settings = await superGetAffiliateProgramSettings();
+        setApproveRatePct(
+          (Number(settings.subscription_commission_pct) * 100).toFixed(2),
+        );
+      } catch {
+        // keep 20% default
+      }
     } catch (err: unknown) {
       setError((err as { message?: string })?.message ?? "Failed to load");
     } finally {
@@ -79,7 +88,7 @@ export default function SuperAffiliateApplicationDetailPage() {
     try {
       await superApproveAffiliateApplication(id, {
         referral_code: approveCode,
-        commission_tier: approveTier,
+        commission_pct: Number(approveRatePct) / 100,
         notes: approveNotes || undefined,
       });
       setSuccess("Application approved. Affiliate notified (TODO Phase 3e).");
@@ -301,18 +310,24 @@ export default function SuperAffiliateApplicationDetailPage() {
                   placeholder="ALEX-QHQ"
                 />
               </Field>
-              <Field label="Commission tier">
-                <select
-                  value={approveTier}
-                  onChange={(e) =>
-                    setApproveTier(e.target.value as typeof approveTier)
-                  }
-                  className={inputCls}
-                >
-                  <option value="DEFAULT">DEFAULT</option>
-                  <option value="PREMIUM">PREMIUM</option>
-                  <option value="CUSTOM">CUSTOM</option>
-                </select>
+              <Field label="Commission rate">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={approveRatePct}
+                    onChange={(e) => setApproveRatePct(e.target.value)}
+                    className={inputCls}
+                    placeholder="20"
+                  />
+                  <span className="text-sm text-slate-400">%</span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Pre-filled with the program default. Change if you negotiated
+                  a custom rate with this affiliate.
+                </p>
               </Field>
               <Field label="Internal notes (optional)">
                 <textarea
@@ -325,7 +340,13 @@ export default function SuperAffiliateApplicationDetailPage() {
               <div className="flex gap-2">
                 <button
                   onClick={onApprove}
-                  disabled={submitting || !approveCode}
+                  disabled={
+                    submitting ||
+                    !approveCode ||
+                    !approveRatePct ||
+                    Number(approveRatePct) < 0 ||
+                    Number(approveRatePct) > 100
+                  }
                   className="rounded-md bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/30 disabled:opacity-50"
                 >
                   {submitting ? "Approving…" : "Confirm approval"}

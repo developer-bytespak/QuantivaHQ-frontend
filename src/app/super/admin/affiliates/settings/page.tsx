@@ -17,7 +17,6 @@ export default function SuperAffiliateSettingsPage() {
     refund_clawback_days: string;
     payout_threshold_usd: string;
     payout_cycle: "MONTHLY" | "QUARTERLY";
-    premium_tier_multiplier: string;
     affiliate_signup_velocity_24h: string;
   } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -36,7 +35,6 @@ export default function SuperAffiliateSettingsPage() {
         refund_clawback_days: String(s.refund_clawback_days),
         payout_threshold_usd: String(Number(s.payout_threshold_usd)),
         payout_cycle: s.payout_cycle as "MONTHLY" | "QUARTERLY",
-        premium_tier_multiplier: String(Number(s.premium_tier_multiplier)),
         affiliate_signup_velocity_24h: String(s.affiliate_signup_velocity_24h),
       });
     } catch (err: unknown) {
@@ -62,7 +60,6 @@ export default function SuperAffiliateSettingsPage() {
         refund_clawback_days: Number(form.refund_clawback_days),
         payout_threshold_usd: Number(form.payout_threshold_usd),
         payout_cycle: form.payout_cycle,
-        premium_tier_multiplier: Number(form.premium_tier_multiplier),
         affiliate_signup_velocity_24h: Number(form.affiliate_signup_velocity_24h),
       });
       setSuccess(`Saved as version ${next.version}.`);
@@ -111,8 +108,8 @@ export default function SuperAffiliateSettingsPage() {
         >
           <div className="grid gap-4 sm:grid-cols-2">
             <NumberField
-              label="Subscription commission %"
-              hint="Fraction (0.20 = 20%)"
+              label="Default commission rate for new approvals"
+              hint="Fraction (0.20 = 20%). Pre-fills the approve form; each affiliate's actual rate is set per-affiliate at approval."
               value={form.subscription_commission_pct}
               onChange={(v) =>
                 setForm((p) => p && { ...p, subscription_commission_pct: v })
@@ -178,17 +175,6 @@ export default function SuperAffiliateSettingsPage() {
                 <option value="QUARTERLY">QUARTERLY</option>
               </select>
             </Field>
-            <NumberField
-              label="Premium tier multiplier"
-              hint="e.g. 1.5×"
-              value={form.premium_tier_multiplier}
-              onChange={(v) =>
-                setForm((p) => p && { ...p, premium_tier_multiplier: v })
-              }
-              step="0.1"
-              min="0.1"
-              max="10"
-            />
             <NumberField
               label="Signup velocity flag (per 24h)"
               hint="Auto-flag if more than this many signups in 24h"

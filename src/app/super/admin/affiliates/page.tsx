@@ -18,8 +18,6 @@ const STATUS_OPTIONS = [
   "SUSPENDED",
   "PAUSED",
 ];
-const TIER_OPTIONS = ["", "DEFAULT", "PREMIUM", "CUSTOM"];
-
 function statusClass(s: string) {
   switch (s) {
     case "APPROVED":
@@ -113,19 +111,6 @@ export default function SuperAffiliatesPage() {
             ))}
           </select>
         </Field>
-        <Field label="Tier">
-          <select
-            value={filters.tier ?? ""}
-            onChange={(e) => updateFilter("tier", e.target.value)}
-            className={inputCls}
-          >
-            {TIER_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {t || "All"}
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Country">
           <input
             value={filters.country ?? ""}
@@ -164,7 +149,7 @@ export default function SuperAffiliatesPage() {
               <th className="px-3 py-2 font-medium">Code</th>
               <th className="px-3 py-2 font-medium">Channel</th>
               <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Tier</th>
+              <th className="px-3 py-2 font-medium text-right">Rate</th>
               <th className="px-3 py-2 font-medium text-right">Signups</th>
               <th className="px-3 py-2 font-medium text-right">Revenue</th>
               <th className="px-3 py-2 font-medium text-right">Pending</th>
@@ -207,7 +192,11 @@ export default function SuperAffiliatesPage() {
                       {a.status}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-xs">{a.commission_tier}</td>
+                  <td className="px-3 py-2 text-right text-xs">
+                    {a.commission_pct != null
+                      ? `${(Number(a.commission_pct) * 100).toFixed(2)}%`
+                      : "—"}
+                  </td>
                   <td className="px-3 py-2 text-right">{a.signup_count}</td>
                   <td className="px-3 py-2 text-right">
                     ${Number(a.revenue_generated).toFixed(2)}
