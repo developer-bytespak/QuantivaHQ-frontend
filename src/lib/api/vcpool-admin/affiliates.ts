@@ -19,8 +19,6 @@ export type AffiliateApplicationStatus =
   | "APPROVED"
   | "REJECTED"
   | "INFO_REQUESTED";
-export type AffiliateCommissionTier = "DEFAULT" | "PREMIUM" | "CUSTOM";
-
 export interface AffiliateListItem {
   affiliate_id: string;
   email: string;
@@ -29,7 +27,7 @@ export interface AffiliateListItem {
   country: string | null;
   referral_code: string | null;
   status: AffiliateAdminStatus;
-  commission_tier: AffiliateCommissionTier;
+  commission_pct: string | number | null;
   signup_count: number;
   conversion_count: number;
   revenue_generated: string | number;
@@ -111,7 +109,7 @@ export interface AffiliateDetail {
   tax_residency: string | null;
   referral_code: string | null;
   status: AffiliateAdminStatus;
-  commission_tier: AffiliateCommissionTier;
+  commission_pct: string | number | null;
   payout_instructions: string | null;
   pending_balance: string | number;
   paid_total: string | number;
@@ -159,7 +157,6 @@ export interface ProgramSettings {
   refund_clawback_days: number;
   payout_threshold_usd: string | number;
   payout_cycle: string;
-  premium_tier_multiplier: string | number;
   affiliate_signup_velocity_24h: number;
   updated_by_admin_id: string | null;
   created_at: string;
@@ -170,7 +167,6 @@ export interface ProgramSettings {
 export interface ListAffiliatesFilters {
   status?: string;
   country?: string;
-  tier?: string;
   channel?: string;
   search?: string;
   date_from?: string;
@@ -232,7 +228,7 @@ export async function superApproveAffiliateApplication(
   id: string,
   body: {
     referral_code: string;
-    commission_tier?: AffiliateCommissionTier;
+    commission_pct: number;
     notes?: string;
   }
 ): Promise<{ ok: true }> {
@@ -390,12 +386,12 @@ export async function superResetAffiliateCode(
   );
   return data;
 }
-export async function superChangeAffiliateTier(
+export async function superSetAffiliateCommissionRate(
   id: string,
-  body: { commission_tier: AffiliateCommissionTier; reason?: string }
+  body: { commission_pct: number; reason?: string }
 ) {
   const { data } = await adminAxios.post(
-    `/admin/super-admin/affiliates/${id}/change-tier`,
+    `/admin/super-admin/affiliates/${id}/commission-rate`,
     body
   );
   return data;
@@ -464,7 +460,6 @@ export async function superUpdateAffiliateProgramSettings(
     refund_clawback_days: number;
     payout_threshold_usd: number;
     payout_cycle: "MONTHLY" | "QUARTERLY";
-    premium_tier_multiplier: number;
     affiliate_signup_velocity_24h: number;
   }>
 ): Promise<ProgramSettings> {

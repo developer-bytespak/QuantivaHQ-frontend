@@ -81,7 +81,14 @@ export default function AffiliateSettingsPage() {
           <Row label="Email" value={settings?.email ?? "—"} />
           <Row label="Display name" value={settings?.display_name ?? "—"} />
           <Row label="Status" value={settings?.status ?? "—"} />
-          <Row label="Commission tier" value={settings?.commission_tier ?? "—"} />
+          <Row
+            label="Commission rate"
+            value={
+              settings?.commission_pct != null
+                ? `${(Number(settings.commission_pct) * 100).toFixed(2)}%`
+                : "—"
+            }
+          />
         </div>
         <p className="mt-3 text-xs text-slate-500">
           To change your email or display name, contact the QuantivaHQ team.

@@ -31,3 +31,21 @@ export function clearAffiliateRef(): void {
   if (typeof document === "undefined") return;
   document.cookie = `${AFFILIATE_REF_COOKIE}=; max-age=0; path=/; sameSite=lax`;
 }
+
+/**
+ * Write a referral code to the cookie. Used when the user types one into the
+ * signup form manually, so other entry points on the same form (Google signup
+ * button) pick it up via the existing cookie-read path. Empty string clears.
+ *
+ * Sanitizes to the same character set the FE middleware accepts so the value
+ * round-trips identically whether it was set by middleware or by this helper.
+ */
+export function setAffiliateRef(code: string): void {
+  if (typeof document === "undefined") return;
+  const clean = code.trim().slice(0, 60).replace(/[^A-Za-z0-9_\-]/g, "");
+  if (!clean) {
+    clearAffiliateRef();
+    return;
+  }
+  document.cookie = `${AFFILIATE_REF_COOKIE}=${encodeURIComponent(clean)}; max-age=${AFFILIATE_REF_MAX_AGE_SECONDS}; path=/; sameSite=lax`;
+}

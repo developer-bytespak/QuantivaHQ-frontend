@@ -14,7 +14,7 @@ import {
   verifyForgotPasswordOtp,
   resetPasswordForgot,
 } from "@/lib/api/auth";
-import { getAffiliateRef, clearAffiliateRef } from "@/lib/utils/affiliate-ref";
+import { getAffiliateRef, setAffiliateRef, clearAffiliateRef } from "@/lib/utils/affiliate-ref";
 
 type AuthTab = "signup" | "login";
 
@@ -109,6 +109,22 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [referralFromCookie, setReferralFromCookie] = useState(false);
+  const [showReferralField, setShowReferralField] = useState(false);
+
+  // Pre-fill referral code from the cookie set by middleware.ts when a visitor
+  // arrives at any marketing route with ?ref=CODE. Auto-expand the field so the
+  // user sees what's about to be attributed (rather than us submitting it
+  // silently).
+  useEffect(() => {
+    const fromCookie = getAffiliateRef();
+    if (fromCookie) {
+      setReferralCode(fromCookie);
+      setReferralFromCookie(true);
+      setShowReferralField(true);
+    }
+  }, []);
 
   const USERNAME_MAX_LENGTH = 20;
   const USERNAME_BLOCKED_CHARS = /[@#$%!]/;
@@ -164,7 +180,13 @@ export default function SignUpPage() {
       setIsLoading(true);
 
       try {
-        const referralCode = getAffiliateRef();
+        // Use whatever the user has in the field (which was pre-filled from
+        // the cookie if one existed, but may have been edited or typed in
+        // manually). Sanitize same way the FE middleware sanitizes.
+        const submittedRef = referralCode
+          .trim()
+          .slice(0, 60)
+          .replace(/[^A-Za-z0-9_\-]/g, "");
 
         // Call register API
         const response = await apiRequest<{
@@ -179,14 +201,14 @@ export default function SignUpPage() {
             email,
             username: normalizedUsername || emailFallbackUsername,
             password,
-            ...(referralCode ? { referralCode } : {}),
+            ...(submittedRef ? { referralCode: submittedRef } : {}),
           },
           credentials: "include",
         });
 
         // Clear the cookie so future signups from this browser are not
         // silently re-attributed to the same affiliate.
-        if (referralCode) {
+        if (referralFromCookie) {
           clearAffiliateRef();
         }
 
@@ -901,6 +923,53 @@ export default function SignUpPage() {
                           ))}
                         </div>
                       )}
+                      <div>
+                        {!showReferralField ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowReferralField(true)}
+                            className="text-xs text-slate-400 underline-offset-2 transition-colors hover:text-[var(--primary)] hover:underline"
+                          >
+                            Have a referral code?
+                          </button>
+                        ) : (
+                          <div>
+                            <label htmlFor="referralCode" className="mb-1.5 block text-xs font-medium text-white">
+                              Referral code
+                              {referralFromCookie && (
+                                <span className="ml-2 text-[10px] font-normal text-green-400">
+                                  · auto-detected from your invite link
+                                </span>
+                              )}
+                            </label>
+                            <input
+                              id="referralCode"
+                              type="text"
+                              value={referralCode}
+                              onChange={(e) => {
+                                const clean = e.target.value
+                                  .toUpperCase()
+                                  .replace(/[^A-Z0-9_\-]/g, "")
+                                  .slice(0, 60);
+                                setReferralCode(clean);
+                                setReferralFromCookie(false);
+                                // Keep the cookie in sync so the Google sign-up
+                                // button (which reads from the cookie, not this
+                                // state) sees the same value.
+                                setAffiliateRef(clean);
+                              }}
+                              className="w-full rounded-xl border-2 border-[--color-border] bg-[--color-surface] px-3 py-2.5 text-sm font-mono uppercase text-white placeholder-slate-500 transition-all duration-300 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
+                              placeholder="e.g. ALEX-QHQ"
+                              autoComplete="off"
+                              maxLength={60}
+                            />
+                            <p className="mt-1 text-[10px] text-slate-500">
+                              Optional. If a creator sent you a code, enter it
+                              here so they get credit.
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </>)}
 
                     {activeTab === "login" && (

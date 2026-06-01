@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   superAddAffiliateNote,
   superAdjustAffiliateBalance,
-  superChangeAffiliateTier,
+  superSetAffiliateCommissionRate,
   superGetAffiliateAuditLog,
   superGetAffiliateDetail,
   superGetAffiliatePayouts,
@@ -120,7 +120,9 @@ export default function SuperAffiliateDetailPage() {
               {detail.status}
             </span>
             <span className="rounded-full bg-slate-700/40 px-3 py-1 text-xs text-slate-200">
-              {detail.commission_tier}
+              {detail.commission_pct != null
+                ? `${(Number(detail.commission_pct) * 100).toFixed(2)}% commission`
+                : "Rate not set"}
             </span>
             {detail.referral_code && (
               <span className="rounded-full bg-[#fc4f02]/20 px-3 py-1 font-mono text-xs text-[#fc4f02]">
@@ -441,10 +443,12 @@ function ActionsTab({
 }) {
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
-  const [tier, setTier] = useState<"DEFAULT" | "PREMIUM" | "CUSTOM">(
-    detail.commission_tier,
+  const [ratePct, setRatePct] = useState(
+    detail.commission_pct != null
+      ? (Number(detail.commission_pct) * 100).toFixed(2)
+      : "20",
   );
-  const [tierReason, setTierReason] = useState("");
+  const [rateReason, setRateReason] = useState("");
   const [delta, setDelta] = useState("0");
   const [deltaReason, setDeltaReason] = useState("");
   const [note, setNote] = useState("");
@@ -523,35 +527,49 @@ function ActionsTab({
         </button>
       </ActionCard>
 
-      <ActionCard title="Change tier">
-        <select
-          value={tier}
-          onChange={(e) => setTier(e.target.value as typeof tier)}
-          className={inputCls}
-        >
-          <option value="DEFAULT">DEFAULT</option>
-          <option value="PREMIUM">PREMIUM</option>
-          <option value="CUSTOM">CUSTOM</option>
-        </select>
+      <ActionCard title="Commission rate">
+        <p className="mb-2 text-xs text-slate-500">
+          Current:{" "}
+          <span className="text-slate-200">
+            {detail.commission_pct != null
+              ? `${(Number(detail.commission_pct) * 100).toFixed(2)}%`
+              : "not set"}
+          </span>
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            max="100"
+            value={ratePct}
+            onChange={(e) => setRatePct(e.target.value)}
+            className={inputCls}
+            placeholder="20"
+          />
+          <span className="text-sm text-slate-400">%</span>
+        </div>
         <input
-          value={tierReason}
-          onChange={(e) => setTierReason(e.target.value)}
+          value={rateReason}
+          onChange={(e) => setRateReason(e.target.value)}
           placeholder="Optional reason"
           className={`${inputCls} mt-2`}
         />
         <button
-          disabled={busy}
+          disabled={
+            busy || !ratePct || Number(ratePct) < 0 || Number(ratePct) > 100
+          }
           onClick={() =>
             wrap(() =>
-              superChangeAffiliateTier(detail.affiliate_id, {
-                commission_tier: tier,
-                reason: tierReason || undefined,
+              superSetAffiliateCommissionRate(detail.affiliate_id, {
+                commission_pct: Number(ratePct) / 100,
+                reason: rateReason || undefined,
               }),
             )
           }
           className="mt-2 rounded-md bg-[#fc4f02]/20 px-3 py-1.5 text-xs font-semibold text-[#fc4f02] hover:bg-[#fc4f02]/30 disabled:opacity-50"
         >
-          Apply tier
+          Apply rate
         </button>
       </ActionCard>
 
