@@ -17,11 +17,15 @@ export type AffiliateChannel =
   | "X"
   | "INSTAGRAM"
   | "TIKTOK"
-  | "NEWSLETTER"
-  | "BLOG"
-  | "DISCORD_TELEGRAM"
-  | "PODCAST"
+  | "DISCORD"
+  | "TELEGRAM"
   | "OTHER";
+
+export interface AffiliateAdditionalChannelInput {
+  type: AffiliateChannel;
+  url?: string;
+  customName?: string;
+}
 
 export interface AffiliateAuthResponse {
   affiliate: AffiliateProfile;
@@ -59,7 +63,15 @@ export interface AffiliateProfile {
   created_at?: string;
   application?: {
     primary_channel: AffiliateChannel;
+    primary_channel_custom_name?: string | null;
     channel_url?: string | null;
+    additional_channels?:
+      | Array<{
+          type: AffiliateChannel;
+          url?: string | null;
+          customName?: string | null;
+        }>
+      | null;
     audience_size?: number | null;
     pitch: string;
     status: "PENDING" | "APPROVED" | "REJECTED" | "INFO_REQUESTED";
@@ -76,7 +88,9 @@ export interface AffiliateSignupRequest {
   country?: string;
   taxResidency?: string;
   primaryChannel: AffiliateChannel;
+  primaryChannelCustomName?: string;
   channelUrl?: string;
+  additionalChannels?: AffiliateAdditionalChannelInput[];
   audienceSize?: number;
   pitch: string;
 }

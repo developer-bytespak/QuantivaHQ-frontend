@@ -51,7 +51,11 @@ export interface AffiliateApplicationItem {
   application_id: string;
   affiliate_id: string;
   primary_channel: string;
+  primary_channel_custom_name: string | null;
   channel_url: string | null;
+  additional_channels:
+    | Array<{ type: string; url?: string | null; customName?: string | null }>
+    | null;
   audience_size: number | null;
   pitch: string;
   status: AffiliateApplicationStatus;

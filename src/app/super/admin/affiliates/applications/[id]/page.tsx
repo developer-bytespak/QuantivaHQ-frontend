@@ -181,12 +181,44 @@ export default function SuperAffiliateApplicationDetailPage() {
             value={app.affiliate.tax_residency ?? "—"}
           />
           <Stat label="Audience size" value={String(app.audience_size ?? "—")} />
+          <Stat
+            label="Primary channel"
+            value={
+              app.primary_channel === "OTHER" && app.primary_channel_custom_name
+                ? `Other — ${app.primary_channel_custom_name}`
+                : app.primary_channel
+            }
+          />
           <Stat label="Channel URL" value={app.channel_url ?? "—"} />
           <Stat
             label="Submission IP"
             value={app.ip_address ?? "—"}
           />
         </div>
+
+        {app.additional_channels && app.additional_channels.length > 0 && (
+          <div className="mt-5 border-t border-slate-800/80 pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Additional channels ({app.additional_channels.length})
+            </p>
+            <ul className="mt-2 space-y-1.5 text-sm text-slate-200">
+              {app.additional_channels.map((c, i) => (
+                <li key={i} className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-medium text-white">
+                    {c.type === "OTHER" && c.customName
+                      ? `Other — ${c.customName}`
+                      : c.type}
+                  </span>
+                  {c.url && (
+                    <span className="break-all text-xs text-slate-400">
+                      {c.url}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <div className="mt-5 border-t border-slate-800/80 pt-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
