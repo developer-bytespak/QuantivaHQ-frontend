@@ -5,10 +5,8 @@ export const AFFILIATE_CHANNELS = [
   "X",
   "INSTAGRAM",
   "TIKTOK",
-  "NEWSLETTER",
-  "BLOG",
-  "DISCORD_TELEGRAM",
-  "PODCAST",
+  "DISCORD",
+  "TELEGRAM",
   "OTHER",
 ] as const;
 
@@ -20,12 +18,25 @@ export const AFFILIATE_CHANNEL_LABELS: Record<
   X: "X / Twitter",
   INSTAGRAM: "Instagram",
   TIKTOK: "TikTok",
-  NEWSLETTER: "Newsletter",
-  BLOG: "Blog",
-  DISCORD_TELEGRAM: "Discord / Telegram",
-  PODCAST: "Podcast",
+  DISCORD: "Discord",
+  TELEGRAM: "Telegram",
   OTHER: "Other",
 };
+
+export const affiliateAdditionalChannelSchema = z.object({
+  type: z.enum(AFFILIATE_CHANNELS),
+  url: z
+    .string()
+    .url("Enter a valid URL")
+    .max(500)
+    .optional()
+    .or(z.literal("")),
+  customName: z.string().max(120).optional().or(z.literal("")),
+});
+
+export type AffiliateAdditionalChannel = z.infer<
+  typeof affiliateAdditionalChannelSchema
+>;
 
 export const affiliateSignupSchema = z
   .object({
@@ -46,12 +57,22 @@ export const affiliateSignupSchema = z
     country: z.string().max(100).optional().or(z.literal("")),
     taxResidency: z.string().max(100).optional().or(z.literal("")),
     primaryChannel: z.enum(AFFILIATE_CHANNELS),
+    primaryChannelCustomName: z
+      .string()
+      .max(120)
+      .optional()
+      .or(z.literal("")),
     channelUrl: z
       .string()
       .url("Enter a valid URL")
       .max(500)
       .optional()
       .or(z.literal("")),
+    additionalChannels: z
+      .array(affiliateAdditionalChannelSchema)
+      .max(10)
+      .optional()
+      .default([]),
     audienceSize: z
       .number()
       .int()
@@ -70,7 +91,28 @@ export const affiliateSignupSchema = z
   .refine((d) => d.password === d.confirmPassword, {
     path: ["confirmPassword"],
     message: "Passwords do not match",
-  });
+  })
+  .refine(
+    (d) =>
+      d.primaryChannel !== "OTHER" ||
+      (d.primaryChannelCustomName && d.primaryChannelCustomName.length >= 2),
+    {
+      path: ["primaryChannelCustomName"],
+      message: "Tell us what channel this is (when selecting Other)",
+    },
+  )
+  .refine(
+    (d) =>
+      d.additionalChannels.every(
+        (c) =>
+          c.type !== "OTHER" || (c.customName && c.customName.length >= 2),
+      ),
+    {
+      path: ["additionalChannels"],
+      message:
+        "Each 'Other' channel needs a custom name (at least 2 characters)",
+    },
+  );
 
 export type AffiliateSignupForm = z.infer<typeof affiliateSignupSchema>;
 
