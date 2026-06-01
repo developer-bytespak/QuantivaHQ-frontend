@@ -19,6 +19,7 @@ const SUPER_ADMIN_NAV = [
   { label: "VC Pool Admins", href: "/super/admin/vc-pool-admins", icon: "shield" },
   { label: "Pools Oversight", href: "/super/admin/pools-oversight", icon: "pools" },
   { label: "Finance", href: "/super/admin/finance", icon: "binance" },
+  { label: "Affiliates", href: "/super/admin/affiliates", icon: "affiliate" },
   { label: "Contact Submissions", href: "/super/admin/contact-submissions", icon: "contact" },
   { label: "Default Fees", href: "/super/admin/default-fees", icon: "settings" },
   { label: "Upgrade Plan", href: "/super/admin/upgrade-plan", icon: "upgrade" },
@@ -116,6 +117,13 @@ function NavIcon({ name, isActive }: { name: string; isActive: boolean }) {
     return (
       <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+      </svg>
+    );
+  }
+  if (name === "affiliate") {
+    return (
+      <svg className={`h-4 w-4 sm:h-5 sm:w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
       </svg>
     );
   }
