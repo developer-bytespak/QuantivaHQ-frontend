@@ -100,10 +100,30 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
     try {
       const isSignup = modeRef.current === "signup";
       const path = isSignup ? "/auth/signup/google" : "/auth/google";
-      const data = await apiRequest<{ idToken: string }, any>({
+
+      // Forward the affiliate ref cookie on signup so the backend can attribute
+      // the new user. Imported lazily to keep this component cheap to render.
+      let referralCode: string | undefined;
+      if (isSignup) {
+        const { getAffiliateRef, clearAffiliateRef } = await import(
+          "@/lib/utils/affiliate-ref"
+        );
+        referralCode = getAffiliateRef();
+        if (referralCode) {
+          clearAffiliateRef();
+        }
+      }
+
+      const data = await apiRequest<
+        { idToken: string; referralCode?: string },
+        any
+      >({
         path,
         method: "POST",
-        body: { idToken: response.credential },
+        body: {
+          idToken: response.credential,
+          ...(referralCode ? { referralCode } : {}),
+        },
         credentials: "include",
       });
 

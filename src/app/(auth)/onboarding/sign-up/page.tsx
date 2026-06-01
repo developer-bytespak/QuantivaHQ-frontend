@@ -14,6 +14,7 @@ import {
   verifyForgotPasswordOtp,
   resetPasswordForgot,
 } from "@/lib/api/auth";
+import { getAffiliateRef, clearAffiliateRef } from "@/lib/utils/affiliate-ref";
 
 type AuthTab = "signup" | "login";
 
@@ -163,11 +164,14 @@ export default function SignUpPage() {
       setIsLoading(true);
 
       try {
+        const referralCode = getAffiliateRef();
+
         // Call register API
         const response = await apiRequest<{
           email: string;
           username: string;
           password: string;
+          referralCode?: string;
         }>({
           path: "/auth/register",
           method: "POST",
@@ -175,9 +179,16 @@ export default function SignUpPage() {
             email,
             username: normalizedUsername || emailFallbackUsername,
             password,
+            ...(referralCode ? { referralCode } : {}),
           },
           credentials: "include",
         });
+
+        // Clear the cookie so future signups from this browser are not
+        // silently re-attributed to the same affiliate.
+        if (referralCode) {
+          clearAffiliateRef();
+        }
 
         // Meta Pixel: account was just created on the backend. Fire here
         // (before auto-login) so the conversion is captured even if login,
