@@ -562,6 +562,11 @@ function CreateStrategyPageInner() {
               )}
             </div>
 
+            {/* Weight bounds — keep one engine from drowning the others.
+                5% minimum guarantees each engine still contributes (sum=100%
+                math doesn't break with a zero-weight); 60% maximum prevents
+                single-engine strategies that defeat the fusion design. Warn
+                at 50% — above that we're past "balanced". */}
             <div className="space-y-4">
               {[
                 { key: "sentiment", label: "Sentiment", desc: "News & social media sentiment analysis", icon: "💭" },
@@ -569,8 +574,11 @@ function CreateStrategyPageInner() {
                 { key: "fundamental", label: "Fundamental", desc: "Earnings, revenue, financial health", icon: "📊" },
                 { key: "event_risk", label: "Event Risk", desc: "Earnings dates, news events, volatility", icon: "⚠️" },
                 { key: "liquidity", label: "Liquidity", desc: "Trading volume & market depth", icon: "💧" },
-              ].map(({ key, label, desc, icon }) => (
-                <div key={key} className="p-4 rounded-xl bg-black/20 border border-white/5">
+              ].map(({ key, label, desc, icon }) => {
+                const pct = engineWeights[key as keyof EngineWeights] * 100;
+                const isHigh = pct > 50;
+                return (
+                <div key={key} className={`p-4 rounded-xl bg-black/20 border ${isHigh ? "border-amber-500/40" : "border-white/5"}`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{icon}</span>
@@ -579,21 +587,27 @@ function CreateStrategyPageInner() {
                         <p className="text-xs text-slate-400">{desc}</p>
                       </div>
                     </div>
-                    <span className="text-lg font-bold text-[var(--primary-light)]">
-                      {(engineWeights[key as keyof EngineWeights] * 100).toFixed(0)}%
+                    <span className={`text-lg font-bold ${isHigh ? "text-amber-400" : "text-[var(--primary-light)]"}`}>
+                      {pct.toFixed(0)}%
                     </span>
                   </div>
                   <input
                     type="range"
-                    min={0}
-                    max={100}
+                    min={5}
+                    max={60}
                     step={5}
-                    value={engineWeights[key as keyof EngineWeights] * 100}
+                    value={pct}
                     onChange={(e) => updateEngineWeight(key as keyof EngineWeights, parseInt(e.target.value) / 100)}
                     className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--primary)]"
                   />
+                  {isHigh && (
+                    <p className="text-[11px] text-amber-400 mt-1.5 flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>{label} is dominating — fusion design works best with 2-3 engines leading, not one</span>
+                    </p>
+                  )}
                 </div>
-              ))}
+              );})}
             </div>
 
             {/* Presets */}
