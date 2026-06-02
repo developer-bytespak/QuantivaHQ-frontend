@@ -23,6 +23,35 @@ import { CustomStrategiesPaywall } from "@/components/common/custom-strategies-p
 
 type Step = "basics" | "assets" | "weights" | "rules" | "risk" | "review";
 
+// Threshold guidance per rule field.
+//
+// In production we saw users build "impossible" strategies like
+// `final_score > 0.5 AND fundamental > 0.4` that never fire — engine output
+// just doesn't reach those thresholds for typical stocks (median ~0.18,
+// 90th pct ~0.40). The form now hard-clamps inputs to a sane range and
+// surfaces a warning band for the upper end so the user sees, while typing,
+// when they've crossed into "signals will rarely fire" territory.
+//
+//   final_score:  allowed 0.10–0.50, warn above 0.30 (anything > 0.30 is
+//                 the "strict" zone; 0.40+ is "very rare")
+//   per-engine:   allowed 0.10–0.40, warn above 0.25 (engine outputs rarely
+//                 exceed ~0.40 for single-engine reads)
+const getThresholdLimits = (field: string) => {
+  if (field === "final_score") return { min: 0.1, max: 0.5, warnAbove: 0.3 };
+  return { min: 0.1, max: 0.4, warnAbove: 0.25 };
+};
+
+const getThresholdWarning = (field: string, value: number) => {
+  const { warnAbove } = getThresholdLimits(field);
+  if (value <= warnAbove) return null;
+  if (field === "final_score") {
+    if (value >= 0.4) return "Very strict — signals will be rare";
+    return "Strict — signals harder to generate";
+  }
+  if (value >= 0.35) return "Very strict — combine with other rules cautiously";
+  return "Strict — fewer signals";
+};
+
 // Paywall wrapper: blocks direct navigation to the create form for FREE
 // users. The inner component (a multi-step wizard with many hooks) only
 // mounts for PRO+ tiers.
@@ -533,6 +562,11 @@ function CreateStrategyPageInner() {
               )}
             </div>
 
+            {/* Weight bounds — keep one engine from drowning the others.
+                5% minimum guarantees each engine still contributes (sum=100%
+                math doesn't break with a zero-weight); 60% maximum prevents
+                single-engine strategies that defeat the fusion design. Warn
+                at 50% — above that we're past "balanced". */}
             <div className="space-y-4">
               {[
                 { key: "sentiment", label: "Sentiment", desc: "News & social media sentiment analysis", icon: "💭" },
@@ -540,8 +574,11 @@ function CreateStrategyPageInner() {
                 { key: "fundamental", label: "Fundamental", desc: "Earnings, revenue, financial health", icon: "📊" },
                 { key: "event_risk", label: "Event Risk", desc: "Earnings dates, news events, volatility", icon: "⚠️" },
                 { key: "liquidity", label: "Liquidity", desc: "Trading volume & market depth", icon: "💧" },
-              ].map(({ key, label, desc, icon }) => (
-                <div key={key} className="p-4 rounded-xl bg-black/20 border border-white/5">
+              ].map(({ key, label, desc, icon }) => {
+                const pct = engineWeights[key as keyof EngineWeights] * 100;
+                const isHigh = pct > 50;
+                return (
+                <div key={key} className={`p-4 rounded-xl bg-black/20 border ${isHigh ? "border-amber-500/40" : "border-white/5"}`}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{icon}</span>
@@ -550,21 +587,27 @@ function CreateStrategyPageInner() {
                         <p className="text-xs text-slate-400">{desc}</p>
                       </div>
                     </div>
-                    <span className="text-lg font-bold text-[var(--primary-light)]">
-                      {(engineWeights[key as keyof EngineWeights] * 100).toFixed(0)}%
+                    <span className={`text-lg font-bold ${isHigh ? "text-amber-400" : "text-[var(--primary-light)]"}`}>
+                      {pct.toFixed(0)}%
                     </span>
                   </div>
                   <input
                     type="range"
-                    min={0}
-                    max={100}
+                    min={5}
+                    max={60}
                     step={5}
-                    value={engineWeights[key as keyof EngineWeights] * 100}
+                    value={pct}
                     onChange={(e) => updateEngineWeight(key as keyof EngineWeights, parseInt(e.target.value) / 100)}
                     className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-[var(--primary)]"
                   />
+                  {isHigh && (
+                    <p className="text-[11px] text-amber-400 mt-1.5 flex items-center gap-1">
+                      <span>⚠️</span>
+                      <span>{label} is dominating — fusion design works best with 2-3 engines leading, not one</span>
+                    </p>
+                  )}
                 </div>
-              ))}
+              );})}
             </div>
 
             {/* Presets */}
@@ -693,44 +736,86 @@ function CreateStrategyPageInner() {
               </div>
 
               <div className="space-y-2">
-                {entryRules.map((rule, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
-                    <select
-                      value={rule.field}
-                      onChange={(e) => updateRule(idx, { field: e.target.value })}
-                      className="flex-1 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
-                    >
-                      {RULE_FIELDS.map((f) => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={rule.operator}
-                      onChange={(e) => updateRule(idx, { operator: e.target.value })}
-                      className="rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
-                    >
-                      {OPERATORS.map((op) => (
-                        <option key={op.value} value={op.value}>{op.label}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      step={0.1}
-                      min={0.1}
-                      max={1}
-                      value={rule.value}
-                      onChange={(e) => updateRule(idx, { value: parseFloat(e.target.value) || 0.1 })}
-                      className="w-20 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
-                    />
-                    {entryRules.length > 1 && (
-                      <button onClick={() => removeRule(idx)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+                {entryRules.map((rule, idx) => {
+                  const limits = getThresholdLimits(rule.field);
+                  const warning = getThresholdWarning(rule.field, rule.value);
+                  return (
+                  <div key={idx} className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={rule.field}
+                        onChange={(e) => {
+                          const newField = e.target.value;
+                          const newLimits = getThresholdLimits(newField);
+                          // Re-clamp the current value into the new field's allowed band
+                          // so switching from final_score (max 0.50) to a per-engine
+                          // field (max 0.40) doesn't leave a hidden out-of-range value
+                          // that the backend would reject on save.
+                          const clampedValue = Math.max(newLimits.min, Math.min(newLimits.max, rule.value));
+                          updateRule(idx, { field: newField, value: clampedValue });
+                        }}
+                        className="flex-1 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
+                      >
+                        {RULE_FIELDS.map((f) => (
+                          <option key={f.value} value={f.value}>{f.label}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={rule.operator}
+                        onChange={(e) => updateRule(idx, { operator: e.target.value })}
+                        className="rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-sm text-white"
+                      >
+                        {OPERATORS.map((op) => (
+                          <option key={op.value} value={op.value}>{op.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        step={0.05}
+                        min={limits.min}
+                        max={limits.max}
+                        value={rule.value}
+                        onChange={(e) => {
+                          const raw = parseFloat(e.target.value);
+                          const next = Number.isFinite(raw) ? raw : limits.min;
+                          // Hard clamp — frontend never lets a value outside the
+                          // allowed band leave this input. This is the actual
+                          // guardrail; the warning text is just the explanation.
+                          const clamped = Math.max(limits.min, Math.min(limits.max, next));
+                          updateRule(idx, { value: clamped });
+                        }}
+                        className={`w-20 rounded-lg bg-black/30 border px-3 py-2 text-sm text-white ${
+                          warning ? "border-amber-500/60" : "border-white/10"
+                        }`}
+                      />
+                      {entryRules.length > 1 && (
+                        <button onClick={() => removeRule(idx)} className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                    {warning && (
+                      <p className="text-[11px] text-amber-400 pl-1 flex items-center gap-1">
+                        <span>⚠️</span>
+                        <span>{warning}</span>
+                      </p>
                     )}
                   </div>
-                ))}
+                );})}
+              </div>
+
+              {/* Threshold cheatsheet — shown once above the rules list so the
+                  user understands the bounds before they hunt for a value that
+                  the field silently clamps. */}
+              <div className="mt-3 p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 text-[12px] text-slate-300 leading-relaxed">
+                <div className="font-medium text-blue-300 mb-1">Threshold guide</div>
+                <div className="space-y-0.5">
+                  <div><span className="text-slate-400">Final Score:</span> allowed 0.10 – 0.50 · recommended ≤ 0.30 for steady signals</div>
+                  <div><span className="text-slate-400">Per-engine (sentiment / trend / fundamental / event risk / liquidity):</span> allowed 0.10 – 0.40 · recommended ≤ 0.25</div>
+                  <div className="pt-1 text-amber-300/80">Values above the recommended line still save, but signals will fire rarely or not at all.</div>
+                </div>
               </div>
             </div>
           </div>
