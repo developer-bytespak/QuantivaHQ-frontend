@@ -414,6 +414,31 @@ export async function superAddAffiliateNote(id: string, note: string) {
   return data;
 }
 
+export interface DeleteAffiliateResult {
+  ok: true;
+  deleted: {
+    affiliate_id: string;
+    email: string;
+    display_name: string;
+    referrals: number;
+    commission_events: number;
+    payouts: number;
+    audit_log_rows: number;
+    users_unlinked: number;
+  };
+}
+
+export async function superDeleteAffiliate(
+  id: string,
+  body: { confirm_display_name?: string } = {}
+): Promise<DeleteAffiliateResult> {
+  const { data } = await adminAxios.delete<DeleteAffiliateResult>(
+    `/admin/super-admin/affiliates/${id}`,
+    { data: body }
+  );
+  return data;
+}
+
 // ─── Payouts ────────────────────────────────────────────────────────
 
 export async function superListAffiliatePayouts(
