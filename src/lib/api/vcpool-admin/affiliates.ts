@@ -439,6 +439,51 @@ export async function superDeleteAffiliate(
   return data;
 }
 
+export interface SimulateSubscriptionPaymentResult {
+  ok: true;
+  payment: {
+    payment_id: string;
+    subscription_id: string;
+    amount_usd: number;
+    external_payment_id: string;
+    paid_at: string | null;
+  };
+  subscription_tier: string;
+  user: {
+    user_id: string;
+    email: string;
+    referred_by_affiliate_id: string | null;
+  };
+  commission: {
+    event_id: string;
+    gross_amount_usd: number;
+    commission_rate: number;
+    commission_usd: number;
+    status: string;
+    created_at: string;
+  } | null;
+  affiliate: {
+    affiliate_id: string;
+    display_name: string;
+    email: string;
+    commission_pct: number | null;
+    pending_balance: number;
+    paid_total: number;
+    conversion_count: number;
+  } | null;
+}
+
+export async function superSimulateSubscriptionPayment(body: {
+  user_id: string;
+  amount_usd: number;
+}): Promise<SimulateSubscriptionPaymentResult> {
+  const { data } = await adminAxios.post<SimulateSubscriptionPaymentResult>(
+    `/admin/super-admin/affiliates/test/simulate-subscription-payment`,
+    body
+  );
+  return data;
+}
+
 // ─── Payouts ────────────────────────────────────────────────────────
 
 export async function superListAffiliatePayouts(

@@ -10,7 +10,6 @@ const NAV = [
   { label: "Dashboard", href: "/affiliate/dashboard", icon: "dashboard" },
   { label: "Analytics", href: "/affiliate/analytics", icon: "chart" },
   { label: "Payouts", href: "/affiliate/payouts", icon: "wallet" },
-  { label: "Assets", href: "/affiliate/assets", icon: "image" },
   { label: "Settings", href: "/affiliate/settings", icon: "settings" },
 ];
 
@@ -33,12 +32,6 @@ function NavIcon({ name, isActive }: { name: string; isActive: boolean }) {
       return (
         <svg className={`h-5 w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
-        </svg>
-      );
-    case "image":
-      return (
-        <svg className={`h-5 w-5 ${c}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4-4 4 4 4-4 4 4M4 6h16v12H4z" />
         </svg>
       );
     case "settings":
