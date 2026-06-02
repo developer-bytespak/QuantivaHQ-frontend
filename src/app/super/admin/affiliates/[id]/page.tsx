@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   superAddAffiliateNote,
   superAdjustAffiliateBalance,
+  superDeleteAffiliate,
   superSetAffiliateCommissionRate,
   superGetAffiliateAuditLog,
   superGetAffiliateDetail,
@@ -441,8 +442,13 @@ function ActionsTab({
   onChanged: () => Promise<void>;
   onError: (m: string) => void;
 }) {
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const canDelete =
+    !deleting && deleteConfirm.trim() === detail.display_name.trim();
   const [ratePct, setRatePct] = useState(
     detail.commission_pct != null
       ? (Number(detail.commission_pct) * 100).toFixed(2)
@@ -466,7 +472,30 @@ function ActionsTab({
     }
   };
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await superDeleteAffiliate(detail.affiliate_id, {
+        confirm_display_name: deleteConfirm.trim(),
+      });
+      const d = res.deleted;
+      // Use a transient alert before navigating away — onError is the only
+      // toast surface we have on this page and a success message there is fine.
+      onError(
+        `Deleted ${d.display_name}. Removed ${d.referrals} referrals, ` +
+          `${d.commission_events} commission events, ${d.payouts} payouts, ` +
+          `${d.audit_log_rows} audit rows. ${d.users_unlinked} user(s) unlinked.`,
+      );
+      router.replace("/super/admin/affiliates");
+    } catch (err: unknown) {
+      onError((err as { message?: string })?.message ?? "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
+    <div className="space-y-4">
     <div className="grid gap-4 sm:grid-cols-2">
       <ActionCard title="Status">
         <p className="mb-2 text-xs text-slate-500">
@@ -626,6 +655,55 @@ function ActionsTab({
           Save note
         </button>
       </ActionCard>
+    </div>
+
+    {/* Danger zone — permanent deletion */}
+    <div className="rounded-xl border border-rose-500/40 bg-rose-500/[0.04] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold text-rose-300">Danger zone</h3>
+          <p className="mt-1 text-xs text-slate-400">
+            Permanently delete this affiliate and every related record
+            (referrals, commission events, payouts, audit log). Only allowed
+            when every dollar is settled.
+          </p>
+        </div>
+      </div>
+
+      <ul className="mt-3 space-y-1 text-xs text-slate-400">
+        <li>· pending_balance must be $0.00</li>
+        <li>· no payouts in PENDING / PROCESSING / FAILED</li>
+        <li>· no ACCRUED / HELD commission events</li>
+        <li>
+          · referred users stay; their{" "}
+          <code className="text-slate-300">referred_by_affiliate_id</code>{" "}
+          is cleared
+        </li>
+      </ul>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+        <div>
+          <label className="block text-xs font-medium text-slate-300">
+            Type <span className="font-semibold text-white">{detail.display_name}</span>{" "}
+            to confirm
+          </label>
+          <input
+            value={deleteConfirm}
+            onChange={(e) => setDeleteConfirm(e.target.value)}
+            placeholder={detail.display_name}
+            className={`mt-1 ${inputCls}`}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={!canDelete}
+          className="rounded-lg bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {deleting ? "Deleting…" : "Delete permanently"}
+        </button>
+      </div>
+    </div>
     </div>
   );
 }
