@@ -91,7 +91,9 @@ export default function SuperAffiliateApplicationDetailPage() {
         commission_pct: Number(approveRatePct) / 100,
         notes: approveNotes || undefined,
       });
-      setSuccess("Application approved. Affiliate notified (TODO Phase 3e).");
+      setSuccess(
+        "Application approved. Approval email sent with their code and dashboard link.",
+      );
       setActiveAction("none");
       await load();
     } catch (err: unknown) {

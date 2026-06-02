@@ -243,13 +243,3 @@ export async function updateSettings(
   return data;
 }
 
-export async function getAssets(): Promise<{
-  logos: string[];
-  banners: string[];
-  copy_templates: string[];
-  videos: string[];
-  brand_guidelines_url: string | null;
-}> {
-  const { data } = await affiliateAxios.get("/affiliate/assets");
-  return data;
-}

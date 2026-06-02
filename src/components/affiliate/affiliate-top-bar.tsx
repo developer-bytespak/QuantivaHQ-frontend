@@ -9,7 +9,6 @@ const TITLES: Record<string, string> = {
   "/affiliate/dashboard": "Dashboard",
   "/affiliate/analytics": "Analytics",
   "/affiliate/payouts": "Payouts",
-  "/affiliate/assets": "Marketing Assets",
   "/affiliate/settings": "Settings",
   "/affiliate/pending": "Application Status",
 };
