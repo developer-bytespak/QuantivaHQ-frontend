@@ -121,77 +121,77 @@ export function OptionsChainTable({
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl">
+      <div className="max-h-[70vh] overflow-auto rounded-xl">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-white/[0.04]">
               {(filterType === "ALL" || filterType === "CALL") && (
                 <>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Bid: Highest price a buyer is willing to pay for this call option" position="top">
                       <span>C Bid</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Ask: Lowest price a seller is asking. You pay this price when buying." position="top">
                       <span>C Ask</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Last traded price for this call contract" position="top">
                       <span>C Last</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Volume: Number of contracts traded today. Higher = more liquid." position="top">
                       <span>C Vol</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Open Interest: Total outstanding contracts. High OI = established market." position="top">
                       <span>C OI</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-green-400/80">
                     <Tooltip content="Implied Volatility: Market's expected price swing. High IV = expensive premiums." position="top">
                       <span>C IV</span>
                     </Tooltip>
                   </th>
                 </>
               )}
-              <th className="px-2.5 py-2 text-center font-semibold text-slate-200 bg-[var(--primary)]/[0.06]">
+              <th className="sticky top-0 z-10 px-2.5 py-2 text-center font-semibold text-slate-200 bg-[linear-gradient(rgba(var(--primary-rgb),0.06),rgba(var(--primary-rgb),0.06)),#0f0f0f]">
                 <Tooltip content="Strike Price: The price at which you can buy (call) or sell (put) the underlying asset at expiry." position="top">
                   <span>Strike</span>
                 </Tooltip>
               </th>
               {(filterType === "ALL" || filterType === "PUT") && (
                 <>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Bid: Highest price a buyer is willing to pay for this put option" position="top">
                       <span>P Bid</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Ask: Lowest price a seller is asking. You pay this price when buying." position="top">
                       <span>P Ask</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Last traded price for this put contract" position="top">
                       <span>P Last</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Volume: Number of contracts traded today. Higher = more liquid." position="top">
                       <span>P Vol</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Open Interest: Total outstanding contracts. High OI = established market." position="top">
                       <span>P OI</span>
                     </Tooltip>
                   </th>
-                  <th className="px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
+                  <th className="sticky top-0 z-10 bg-[#0f0f0f] px-2.5 py-2 text-left font-medium uppercase text-red-400/80">
                     <Tooltip content="Implied Volatility: Market's expected price swing. High IV = expensive premiums." position="top">
                       <span>P IV</span>
                     </Tooltip>
