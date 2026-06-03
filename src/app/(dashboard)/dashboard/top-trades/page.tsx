@@ -1914,13 +1914,31 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           </div>
         ) : (
           <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
-            <p className="text-sm text-slate-400">
-              {(hasMinEntryFilter || hasMaxEntryFilter)
-                ? 'No signals found for selected entry range'
-                : currentStrategy 
-                ? `No signals available for ${currentStrategy.name}. ${isStocksConnection ? 'Stock signals are generated every 10 minutes during market hours.' : 'Signals are generated every 10 minutes.'}`
-                : 'No signals found for the selected time period'}
-            </p>
+            {(hasMinEntryFilter || hasMaxEntryFilter) ? (
+              <p className="text-sm text-slate-400">No signals found for selected entry range</p>
+            ) : currentStrategy ? (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-300">
+                  No signals yet for {currentStrategy.name}
+                </p>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  {isStocksConnection ? (
+                    <>
+                      The AI engine processes ~100 stocks every 10 minutes. A full universe scan
+                      takes ~3 hours during market hours.
+                      {(currentStrategy as any).target_index_code && (
+                        <> This strategy is selective — only stocks in its index that pass the entry rules generate signals.</>
+                      )}
+                      {' '}Check back later.
+                    </>
+                  ) : (
+                    <>Signals are generated every 10 minutes. Check back shortly.</>
+                  )}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">No signals found for the selected time period</p>
+            )}
           </div>
         )}
       </div>
