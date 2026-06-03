@@ -172,6 +172,35 @@ html {
   text-wrap: balance;
 }
 
+/* Minimal, dull-grey scrollbar for scroll containers (e.g. the options chain
+   table). Thin track-less bar that stays unobtrusive until hovered. */
+.scrollbar-minimal {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent; /* thumb track */
+}
+
+.scrollbar-minimal::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-minimal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-minimal::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+
+.scrollbar-minimal::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+.scrollbar-minimal::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Splash Screen Animations */
 @keyframes fade-in {
   from {
