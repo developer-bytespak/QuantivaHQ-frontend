@@ -20,6 +20,8 @@ import {
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { CustomStrategiesPaywall } from "@/components/common/custom-strategies-paywall";
+import { useStockIndexes } from "@/hooks/useStockIndexes";
+import { useStocksPaginated } from "@/hooks/useStocksPaginated";
 
 type Step = "basics" | "assets" | "weights" | "rules" | "risk" | "review";
 
@@ -104,6 +106,7 @@ function CreateStrategyPageInner() {
   const [takeProfit, setTakeProfit] = useState<number>(15);
   const [targetAssets, setTargetAssets] = useState<string[]>([]);
   const [forAllAssets, setForAllAssets] = useState(false);
+  const [targetIndexCode, setTargetIndexCode] = useState<string | null>(null);
 
   // Engine weights (must sum to 1.0)
   const [engineWeights, setEngineWeights] = useState<EngineWeights>({ ...DEFAULT_ENGINE_WEIGHTS });
@@ -123,6 +126,34 @@ function CreateStrategyPageInner() {
   const popularAssets = isStocksConnection ? popularStocks : popularCrypto;
   const { results: assetResults, searching: searchingAssets, clear: clearAssetResults } = useAssetSearch(assetSearch, isStocksConnection);
   const hasNoAssetMatch = !searchingAssets && assetSearch.trim().length > 0 && assetResults.length === 0;
+
+  // Option B: fetch available indexes (backend feature-flag-gates: non-Option-B users
+  // only get S&P 500, Option B users get all 8). If only 1 index returned, we keep
+  // legacy behavior; if multiple, we require the user to pick exactly one.
+  const { data: stockIndexes } = useStockIndexes({ enabled: isStocksConnection });
+  const optionBIndexesAvailable = (stockIndexes?.length ?? 0) > 1;
+
+  // Option B: once an index is picked, both asset search AND the "Popular"
+  // quick-add chips are restricted to stocks in that index. We use the same
+  // paginated endpoint built in Stage 1 (it accepts both index + search).
+  const useIndexScopedAssets = isStocksConnection && optionBIndexesAvailable && !!targetIndexCode;
+  const { data: indexedSearchResult } = useStocksPaginated(
+    {
+      index: targetIndexCode,
+      search: assetSearch.trim() || undefined,
+      limit: 20,
+    },
+    { enabled: useIndexScopedAssets },
+  );
+  const { data: indexedPopularResult } = useStocksPaginated(
+    {
+      index: targetIndexCode,
+      limit: 8,
+    },
+    { enabled: useIndexScopedAssets },
+  );
+  const indexedSearchResults = indexedSearchResult?.items ?? [];
+  const indexedPopularSymbols = (indexedPopularResult?.items ?? []).map((s) => s.symbol);
 
   // Calculate total weight
   const totalWeight = Object.values(engineWeights).reduce((a, b) => a + b, 0);
@@ -189,6 +220,7 @@ function CreateStrategyPageInner() {
           take_profit_type: "percentage",
           take_profit_value: takeProfit,
           target_assets: forAllAssets ? null : targetAssets,
+          target_index_code: targetIndexCode,
           engine_weights: engineWeights,
           entry_rules: entryRules.map((r) => ({
             field: r.field,
@@ -222,8 +254,10 @@ function CreateStrategyPageInner() {
     switch (currentStep) {
       case "basics":
         return name.trim().length > 0;
-      case "assets":
-        return forAllAssets || targetAssets.length > 0;
+      case "assets": {
+        const indexPicked = !isStocksConnection || !optionBIndexesAvailable || targetIndexCode !== null;
+        return (forAllAssets || targetAssets.length > 0) && indexPicked;
+      }
       case "weights":
         return weightsValid;
       case "rules":
@@ -405,6 +439,30 @@ function CreateStrategyPageInner() {
               />
             </div>
 
+            {/* Option B: required Target Index dropdown for stock strategies */}
+            {isStocksConnection && optionBIndexesAvailable && (
+              <div className="rounded-xl border border-[var(--primary)]/30 bg-[var(--primary)]/5 p-4 space-y-2">
+                <label className="block text-sm font-semibold text-white">
+                  Target Index <span className="text-red-400">*</span>
+                </label>
+                <p className="text-xs text-slate-400">
+                  This strategy will only generate signals on stocks in the selected index.
+                </p>
+                <select
+                  value={targetIndexCode ?? ""}
+                  onChange={(e) => setTargetIndexCode(e.target.value || null)}
+                  className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2.5 text-sm text-white focus:border-[var(--primary)]/50 focus:outline-none"
+                >
+                  <option value="">Select an index...</option>
+                  {stockIndexes?.map((idx) => (
+                    <option key={idx.code} value={idx.code}>
+                      {idx.display_name} ({idx.stock_count.toLocaleString()} stocks)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* For All Toggle Button */}
             <div className="flex items-center gap-3">
               <button
@@ -450,9 +508,9 @@ function CreateStrategyPageInner() {
                 )}
               </div>
 
-              {assetResults.length > 0 && (
+              {(useIndexScopedAssets ? indexedSearchResults : assetResults).length > 0 && (
                 <div className="mt-2 rounded-xl bg-black/40 border border-white/10 max-h-48 overflow-y-auto">
-                  {assetResults.map((asset) => (
+                  {(useIndexScopedAssets ? indexedSearchResults : assetResults).map((asset) => (
                     <button
                       key={asset.symbol}
                       onClick={() => addAsset(asset.symbol)}
@@ -507,9 +565,16 @@ function CreateStrategyPageInner() {
 
             {/* Quick Add */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">Quick Add Popular</label>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Quick Add Popular
+                {useIndexScopedAssets && (
+                  <span className="ml-2 text-xs text-slate-500">
+                    (top stocks in {stockIndexes?.find((i) => i.code === targetIndexCode)?.display_name})
+                  </span>
+                )}
+              </label>
               <div className="flex flex-wrap gap-2">
-                {popularAssets.map((symbol) => (
+                {(useIndexScopedAssets ? indexedPopularSymbols : popularAssets).map((symbol) => (
                   <button
                     key={symbol}
                     onClick={() => addAsset(symbol)}
