@@ -121,7 +121,7 @@ export function OptionsChainTable({
         ))}
       </div>
 
-      <div className="max-h-[70vh] overflow-auto rounded-xl">
+      <div className="scrollbar-minimal max-h-[70vh] overflow-auto rounded-xl">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-white/[0.04]">
@@ -159,7 +159,7 @@ export function OptionsChainTable({
                   </th>
                 </>
               )}
-              <th className="sticky top-0 z-10 px-2.5 py-2 text-center font-semibold text-slate-200 bg-[linear-gradient(rgba(var(--primary-rgb),0.06),rgba(var(--primary-rgb),0.06)),#0f0f0f]">
+              <th className="sticky top-0 z-10 px-2.5 py-2 text-center font-semibold text-slate-200 bg-[#1d130e]">
                 <Tooltip content="Strike Price: The price at which you can buy (call) or sell (put) the underlying asset at expiry." position="top">
                   <span>Strike</span>
                 </Tooltip>
