@@ -9,7 +9,6 @@ export interface AlpacaAccount {
   buying_power: string;
   cash: string;
   portfolio_value: string;
-  pattern_day_trader: boolean;
   trading_blocked: boolean;
   transfers_blocked: boolean;
   account_blocked: boolean;
@@ -22,8 +21,6 @@ export interface AlpacaAccount {
   last_equity: string;
   initial_margin: string;
   maintenance_margin: string;
-  daytrade_count: number;
-  daytrading_buying_power: string;
   regt_buying_power: string;
 }
 
