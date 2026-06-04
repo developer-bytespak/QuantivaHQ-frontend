@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 import Providers from "@/context/Provider";
 import { ExchangeProvider } from "@/context/ExchangeContext";
+import { SmartAppBanner } from "@/components/common/SmartAppBanner";
 
 const META_PIXEL_ID = "2043942056468227";
 
@@ -67,6 +68,7 @@ export default function RootLayout({
             </ExchangeProvider>
           </Providers>
         </div>
+        <SmartAppBanner />
       </body>
     </html>
   );
