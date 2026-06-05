@@ -110,6 +110,29 @@ affiliateAxios.interceptors.response.use(
 
 // ─── Auth ─────────────────────────────────────────────────────────────
 
+export async function affiliateSendCode(
+  email: string
+): Promise<{ message: string }> {
+  const { data } = await axios.post<{ message: string }>(
+    `${API_BASE_URL}/affiliate/auth/send-code`,
+    { email },
+    { withCredentials: true }
+  );
+  return data;
+}
+
+export async function affiliateVerifyCode(
+  email: string,
+  code: string
+): Promise<{ verified: true }> {
+  const { data } = await axios.post<{ verified: true }>(
+    `${API_BASE_URL}/affiliate/auth/verify-code`,
+    { email, code },
+    { withCredentials: true }
+  );
+  return data;
+}
+
 export async function affiliateSignup(
   body: AffiliateSignupRequest
 ): Promise<AffiliateAuthResponse> {

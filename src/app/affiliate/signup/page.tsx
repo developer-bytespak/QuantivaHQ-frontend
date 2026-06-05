@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  affiliateSendCode,
   affiliateSignup,
+  affiliateVerifyCode,
   setAffiliateTokens,
   type AffiliateChannel,
 } from "@/lib/api/affiliate";
@@ -42,12 +44,72 @@ export default function AffiliateSignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Email verification (required before submit) ──
+  const [code, setCode] = useState("");
+  const [codeSent, setCodeSent] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
+  const [codeNotice, setCodeNotice] = useState<string | null>(null);
+
+  const emailNormalized = form.email.trim().toLowerCase();
+  const emailVerified =
+    verifiedEmail !== null && verifiedEmail === emailNormalized;
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalized);
+
   useEffect(() => {
     getCountries().then(setCountries).catch(() => setCountries([]));
   }, []);
 
   const update = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) =>
     setForm((p) => ({ ...p, [key]: value }));
+
+  const onEmailChange = (value: string) => {
+    update("email", value);
+    // Any edit invalidates a previously-sent/verified code.
+    setCodeSent(false);
+    setCode("");
+    setVerifiedEmail(null);
+    setCodeNotice(null);
+  };
+
+  const handleSendCode = async () => {
+    setError(null);
+    setCodeNotice(null);
+    if (!emailLooksValid) {
+      setError("Enter a valid email before requesting a code");
+      return;
+    }
+    setSendingCode(true);
+    try {
+      await affiliateSendCode(emailNormalized);
+      setCodeSent(true);
+      setCodeNotice("We sent a 6-digit code to your email. It expires in 10 minutes.");
+    } catch (err: unknown) {
+      setError(extractMessage(err, "Could not send verification code"));
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    setError(null);
+    setCodeNotice(null);
+    if (code.trim().length !== 6) {
+      setError("Enter the 6-digit code");
+      return;
+    }
+    setVerifyingCode(true);
+    try {
+      await affiliateVerifyCode(emailNormalized, code.trim());
+      setVerifiedEmail(emailNormalized);
+      setCodeNotice("Email verified — you can finish your application.");
+    } catch (err: unknown) {
+      setError(extractMessage(err, "Invalid or expired code"));
+    } finally {
+      setVerifyingCode(false);
+    }
+  };
 
   const updateChannel = (
     i: number,
@@ -72,6 +134,11 @@ export default function AffiliateSignupPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!emailVerified) {
+      setError("Please verify your email before submitting");
+      return;
+    }
 
     if (channels.length === 0) {
       setError("Add at least one channel");
@@ -130,12 +197,7 @@ export default function AffiliateSignupPage() {
       setAffiliateTokens(res.accessToken, res.refreshToken);
       router.replace("/affiliate/pending");
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } }; message?: string })
-          ?.response?.data?.message ??
-        (err as { message?: string })?.message ??
-        "Signup failed";
-      setError(Array.isArray(message) ? message.join(", ") : String(message));
+      setError(extractMessage(err, "Signup failed"));
     } finally {
       setSubmitting(false);
     }
@@ -155,16 +217,66 @@ export default function AffiliateSignupPage() {
 
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Email">
-                <input
-                  type="email"
-                  autoComplete="email"
-                  value={form.email}
-                  onChange={(e) => update("email", e.target.value)}
-                  className={inputCls}
-                  placeholder="you@example.com"
-                />
-              </Field>
+              <div className="sm:col-span-2">
+                <Field label="Email">
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      value={form.email}
+                      onChange={(e) => onEmailChange(e.target.value)}
+                      className={inputCls}
+                      placeholder="you@example.com"
+                      disabled={emailVerified}
+                    />
+                    {emailVerified ? (
+                      <span className="flex shrink-0 items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 text-xs font-semibold text-emerald-300">
+                        ✓ Verified
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleSendCode}
+                        disabled={!emailLooksValid || sendingCode}
+                        className="shrink-0 rounded-lg border border-slate-700 px-3 text-xs font-semibold text-slate-200 hover:border-[#fc4f02] hover:text-[#fc4f02] disabled:opacity-40"
+                      >
+                        {sendingCode
+                          ? "Sending…"
+                          : codeSent
+                            ? "Resend code"
+                            : "Send code"}
+                      </button>
+                    )}
+                  </div>
+                </Field>
+
+                {codeSent && !emailVerified && (
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={code}
+                      onChange={(e) =>
+                        setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+                      }
+                      className={inputCls}
+                      placeholder="6-digit code"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={code.trim().length !== 6 || verifyingCode}
+                      className="shrink-0 rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                    >
+                      {verifyingCode ? "Verifying…" : "Verify"}
+                    </button>
+                  </div>
+                )}
+
+                {codeNotice && (
+                  <p className="mt-2 text-xs text-emerald-300/90">{codeNotice}</p>
+                )}
+              </div>
               <Field label="Display name">
                 <input
                   value={form.displayName}
@@ -377,10 +489,14 @@ export default function AffiliateSignupPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !emailVerified}
               className="w-full rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
             >
-              {submitting ? "Submitting..." : "Submit application"}
+              {submitting
+                ? "Submitting..."
+                : emailVerified
+                  ? "Submit application"
+                  : "Verify your email to submit"}
             </button>
           </form>
 
@@ -397,6 +513,15 @@ export default function AffiliateSignupPage() {
       </div>
     </div>
   );
+}
+
+function extractMessage(err: unknown, fallback: string): string {
+  const message =
+    (err as { response?: { data?: { message?: string } }; message?: string })
+      ?.response?.data?.message ??
+    (err as { message?: string })?.message ??
+    fallback;
+  return Array.isArray(message) ? message.join(", ") : String(message);
 }
 
 const inputCls =
