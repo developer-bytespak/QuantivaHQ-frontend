@@ -43,7 +43,7 @@ export default function MarketPage() {
 
   const {
     data: stocksResult,
-    isLoading: stocksLoading,
+    isFetching: stocksFetching,
     error: stocksError,
   } = useStocksPaginated(
     {
@@ -269,12 +269,7 @@ export default function MarketPage() {
           </div>
         </div>
 
-        {/* Loading / error */}
-        {stocksLoading && !stocksResult && (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
-          </div>
-        )}
+        {/* Error */}
         {errorMessage && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
             <p className="text-sm text-red-300">{errorMessage}</p>
@@ -282,7 +277,7 @@ export default function MarketPage() {
         )}
 
         {/* Stocks Table */}
-        {stocksResult && !errorMessage && (
+        {!errorMessage && (
           <>
             <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 overflow-hidden">
               <div className="overflow-x-auto">
@@ -298,7 +293,33 @@ export default function MarketPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[--color-border]">
-                    {stocksItems.length > 0 ? (
+                    {stocksFetching ? (
+                      Array.from({ length: STOCKS_PER_PAGE }).map((_, i) => (
+                        <tr key={`skeleton-${i}`} className="animate-pulse">
+                          <td className="py-4 px-4">
+                            <div className="h-3 w-6 rounded bg-slate-700/50" />
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="space-y-1.5">
+                              <div className="h-3 w-16 rounded bg-slate-700/60" />
+                              <div className="h-2 w-32 rounded bg-slate-700/40" />
+                            </div>
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="h-3 w-16 rounded bg-slate-700/50" />
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="h-3 w-14 rounded bg-slate-700/50" />
+                          </td>
+                          <td className="py-4 px-4 hidden md:table-cell">
+                            <div className="h-3 w-20 rounded bg-slate-700/50" />
+                          </td>
+                          <td className="py-4 px-4 hidden lg:table-cell">
+                            <div className="h-3 w-24 rounded bg-slate-700/50" />
+                          </td>
+                        </tr>
+                      ))
+                    ) : stocksItems.length > 0 ? (
                       stocksItems.map((stock, index) => (
                         <tr key={stock.symbol} className="group cursor-pointer hover:bg-slate-800/40 transition-colors" onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}>
                           <td className="py-4 px-4 text-sm font-medium text-slate-400">{stocksStartIndex + index + 1}</td>
@@ -336,8 +357,11 @@ export default function MarketPage() {
             {stocksTotalPages > 1 && (
               <div className="flex items-center justify-between px-4">
                 <button
-                  onClick={() => setStocksPage((p) => Math.max(1, p - 1))}
-                  disabled={stocksPage === 1 || stocksLoading}
+                  onClick={() => {
+                    setStocksPage((p) => Math.max(1, p - 1));
+                    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  disabled={stocksPage === 1 || stocksFetching}
                   className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50"
                 >
                   Previous
@@ -346,8 +370,11 @@ export default function MarketPage() {
                   Page {stocksPage} of {stocksTotalPages.toLocaleString()}
                 </span>
                 <button
-                  onClick={() => setStocksPage((p) => Math.min(stocksTotalPages, p + 1))}
-                  disabled={stocksPage >= stocksTotalPages || stocksLoading}
+                  onClick={() => {
+                    setStocksPage((p) => Math.min(stocksTotalPages, p + 1));
+                    tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  disabled={stocksPage >= stocksTotalPages || stocksFetching}
                   className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50"
                 >
                   Next
