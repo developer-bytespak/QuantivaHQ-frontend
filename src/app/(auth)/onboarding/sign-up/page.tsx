@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect } from "react";
 import GoogleSignInButton from "@/components/common/google-signin-button";
+import AppleSignInButton from "@/components/common/apple-signin-button";
 import { apiRequest } from "@/lib/api/client";
 import { navigateToDashboard } from "@/lib/auth/flow-router.service";
 import { getCurrentUser } from "@/lib/api/user";
@@ -696,6 +697,10 @@ export default function SignUpPage() {
                             {/* eslint-disable-next-line @next/next/no-before-interactive-script-load */}
                             {/* @ts-ignore */}
                             <GoogleSignInButton mode={activeTab === "signup" ? "signup" : "login"} />
+                          </div>
+                          {/* Apple Sign-In button (Sign in with Apple) */}
+                          <div>
+                            <AppleSignInButton mode={activeTab === "signup" ? "signup" : "login"} />
                           </div>
                         </div>
                       )}
