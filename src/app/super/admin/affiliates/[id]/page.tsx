@@ -7,7 +7,6 @@ import {
   superAddAffiliateNote,
   superDeleteAffiliate,
   superSetAffiliateCommissionRate,
-  superGetAffiliateAuditLog,
   superGetAffiliateDetail,
   superGetAffiliatePayouts,
   superGetAffiliateReferrals,
@@ -20,14 +19,13 @@ import {
   type PayoutListItem,
 } from "@/lib/api/vcpool-admin/affiliates";
 
-type Tab = "overview" | "referrals" | "transactions" | "payouts" | "audit" | "actions";
+type Tab = "overview" | "referrals" | "transactions" | "payouts" | "actions";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "overview", label: "Overview" },
   { id: "referrals", label: "Referred users" },
   { id: "transactions", label: "Transactions" },
   { id: "payouts", label: "Payouts" },
-  { id: "audit", label: "Audit log" },
   { id: "actions", label: "Actions" },
 ];
 
@@ -154,7 +152,6 @@ export default function SuperAffiliateDetailPage() {
       {tab === "referrals" && <ReferralsTab affiliateId={id} />}
       {tab === "transactions" && <TransactionsTab affiliateId={id} />}
       {tab === "payouts" && <PayoutsTab affiliateId={id} />}
-      {tab === "audit" && <AuditTab affiliateId={id} />}
       {tab === "actions" && (
         <ActionsTab
           detail={detail}
@@ -388,50 +385,6 @@ function PayoutsTab({ affiliateId }: { affiliateId: string }) {
   );
 }
 
-function AuditTab({ affiliateId }: { affiliateId: string }) {
-  const [rows, setRows] = useState<Awaited<
-    ReturnType<typeof superGetAffiliateAuditLog>
-  > | null>(null);
-  useEffect(() => {
-    superGetAffiliateAuditLog(affiliateId, 1, 200)
-      .then(setRows)
-      .catch(() => null);
-  }, [affiliateId]);
-  if (!rows)
-    return <div className="text-sm text-slate-500">Loading…</div>;
-  if (!rows.items.length) {
-    return (
-      <div className="rounded-xl border border-slate-800/80 bg-[#0b1220] p-6 text-sm text-slate-500">
-        No audit entries.
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-2">
-      {rows.items.map((row) => (
-        <div
-          key={row.log_id}
-          className="rounded-lg border border-slate-800/80 bg-[#0b1220] p-3 text-sm text-slate-200"
-        >
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="font-mono text-xs text-[#fc4f02]">
-              {row.action}
-            </span>
-            <span className="text-xs text-slate-500">
-              {row.created_at.replace("T", " ").slice(0, 16)}
-            </span>
-          </div>
-          {row.metadata && (
-            <pre className="mt-2 max-h-32 overflow-auto rounded bg-[#070d17] p-2 text-[11px] text-slate-400">
-              {JSON.stringify(row.metadata, null, 2)}
-            </pre>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function ActionsTab({
   detail,
   onChanged,
@@ -507,21 +460,21 @@ function ActionsTab({
         />
         <div className="mt-2 flex flex-wrap gap-2">
           <button
-            disabled={busy}
+            disabled={busy || detail.status === "PAUSED"}
             onClick={() => wrap(() => superPauseAffiliate(detail.affiliate_id, pauseReason || undefined))}
             className="rounded-md bg-slate-500/20 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:bg-slate-500/30 disabled:opacity-50"
           >
             Pause
           </button>
           <button
-            disabled={busy}
+            disabled={busy || detail.status === "SUSPENDED"}
             onClick={() => wrap(() => superSuspendAffiliate(detail.affiliate_id, pauseReason || undefined))}
             className="rounded-md bg-rose-500/20 px-3 py-1.5 text-xs font-semibold text-rose-200 hover:bg-rose-500/30 disabled:opacity-50"
           >
             Suspend
           </button>
           <button
-            disabled={busy}
+            disabled={busy || detail.status === "APPROVED"}
             onClick={() => wrap(() => superResumeAffiliate(detail.affiliate_id, pauseReason || undefined))}
             className="rounded-md bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/30 disabled:opacity-50"
           >

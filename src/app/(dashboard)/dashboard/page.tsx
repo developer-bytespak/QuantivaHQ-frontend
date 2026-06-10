@@ -17,6 +17,7 @@ import { PositionInsightModal } from "@/components/trading/PositionInsightModal"
 import type { PositionAssetType } from "@/lib/api/position-insights.service";
 import { ActivateAccountWidget } from "@/components/dashboard/activate-account-widget";
 import { FreeSignalTradesPromoModal } from "@/components/dashboard/free-signal-trades-promo-modal";
+import { ReferralBonusModal } from "@/components/dashboard/referral-bonus-modal";
 import {
   formatMarketCap,
   formatPrice,
@@ -668,6 +669,7 @@ export default function DashboardPage() {
           banner. The widget renders nothing once the user is fully onboarded. */}
       <ActivateAccountWidget />
       <FreeSignalTradesPromoModal />
+      <ReferralBonusModal />
 
 
       {/* Generic Error Display */}

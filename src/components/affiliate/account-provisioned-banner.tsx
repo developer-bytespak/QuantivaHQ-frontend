@@ -56,38 +56,59 @@ export function AccountProvisionedBanner() {
   };
 
   return (
-    <div className="relative rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5">
-      <button
-        type="button"
-        onClick={dismiss}
-        aria-label="Dismiss"
-        className="absolute right-3 top-3 text-emerald-300/70 transition hover:text-emerald-200"
-      >
-        ✕
-      </button>
-      <div className="flex items-start gap-3 pr-6">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
-          ✓
-        </div>
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-emerald-100">
-            Your QuantivaHQ trading account is ready
-          </p>
-          <p className="text-sm leading-relaxed text-emerald-200/90">
-            We&apos;ve created a platform account for you using the same email
-            {email ? ` (${email})` : ""} and password you signed up with, and
-            upgraded it to{" "}
-            <span className="font-semibold text-emerald-100">Elite Plus</span>.
-            Log in and complete the onboarding to start using it.
-          </p>
-          <div className="pt-1">
-            <Link
-              href={LOGIN_URL}
-              className="inline-block rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
-            >
-              Log in &amp; finish onboarding
-            </Link>
+    <div className="space-y-3">
+      <div className="relative rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 sm:p-5">
+        <button
+          type="button"
+          onClick={dismiss}
+          aria-label="Dismiss"
+          className="absolute right-3 top-3 text-emerald-300/70 transition hover:text-emerald-200"
+        >
+          ✕
+        </button>
+        <div className="flex items-start gap-3 pr-6">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-300">
+            ✓
           </div>
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-emerald-100">
+              Your QuantivaHQ trading account is ready
+            </p>
+            <p className="text-sm leading-relaxed text-emerald-200/90">
+              We&apos;ve created a platform account for you using the same email
+              {email ? ` (${email})` : ""} and password you signed up with, and
+              upgraded it to{" "}
+              <span className="font-semibold text-emerald-100">Elite Plus</span>{" "}
+              for 30 days. Log in and complete the onboarding to start using it.
+            </p>
+            <div className="pt-1">
+              <Link
+                href={LOGIN_URL}
+                className="inline-block rounded-lg bg-gradient-to-r from-[#fc4f02] to-[#fda300] px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+              >
+                Log in &amp; finish onboarding
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-amber-300">
+            !
+          </div>
+          <p className="text-sm leading-relaxed text-amber-200/90">
+            <span className="font-semibold text-amber-100">Note:</span>{" "}
+            Update your payment information in the{" "}
+            <Link
+              href="/affiliate/settings"
+              className="font-semibold text-amber-100 underline underline-offset-2 hover:text-white"
+            >
+              settings
+            </Link>{" "}
+            section.
+          </p>
         </div>
       </div>
     </div>

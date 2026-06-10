@@ -218,7 +218,7 @@ export default function AffiliateSignupPage() {
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <Field label="Email">
+                <Field label="Email" required>
                   <div className="flex gap-2">
                     <input
                       type="email"
@@ -277,7 +277,7 @@ export default function AffiliateSignupPage() {
                   <p className="mt-2 text-xs text-emerald-300/90">{codeNotice}</p>
                 )}
               </div>
-              <Field label="Display name">
+              <Field label="Display name" required>
                 <input
                   value={form.displayName}
                   onChange={(e) => update("displayName", e.target.value)}
@@ -285,7 +285,7 @@ export default function AffiliateSignupPage() {
                   placeholder="alexcrypto"
                 />
               </Field>
-              <Field label="Full legal name">
+              <Field label="Full legal name" required>
                 <input
                   value={form.fullName}
                   onChange={(e) => update("fullName", e.target.value)}
@@ -331,23 +331,17 @@ export default function AffiliateSignupPage() {
                   placeholder="50000"
                 />
               </Field>
-              <Field label="Password">
-                <input
-                  type="password"
-                  autoComplete="new-password"
+              <Field label="Password" required>
+                <PasswordInput
                   value={form.password}
-                  onChange={(e) => update("password", e.target.value)}
-                  className={inputCls}
+                  onChange={(v) => update("password", v)}
                   placeholder="At least 8 characters"
                 />
               </Field>
-              <Field label="Confirm password">
-                <input
-                  type="password"
-                  autoComplete="new-password"
+              <Field label="Confirm password" required>
+                <PasswordInput
                   value={form.confirmPassword}
-                  onChange={(e) => update("confirmPassword", e.target.value)}
-                  className={inputCls}
+                  onChange={(v) => update("confirmPassword", v)}
                 />
               </Field>
             </div>
@@ -394,7 +388,7 @@ export default function AffiliateSignupPage() {
                       )}
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <Field label="Type">
+                      <Field label="Type" required>
                         <select
                           value={c.type}
                           onChange={(e) =>
@@ -427,7 +421,7 @@ export default function AffiliateSignupPage() {
                       </Field>
                       {c.type === "OTHER" && (
                         <div className="sm:col-span-2">
-                          <Field label="Channel name">
+                          <Field label="Channel name" required>
                             <input
                               value={c.customName}
                               onChange={(e) =>
@@ -447,7 +441,7 @@ export default function AffiliateSignupPage() {
               </div>
             </div>
 
-            <Field label="How will you promote QuantivaHQ? (max 250 chars)">
+            <Field label="How will you promote QuantivaHQ? (max 250 chars)" required>
               <textarea
                 value={form.pitch}
                 onChange={(e) => update("pitch", e.target.value)}
@@ -478,6 +472,7 @@ export default function AffiliateSignupPage() {
                   Affiliate Terms
                 </Link>{" "}
                 and confirm the information above is accurate.
+                <span className="ml-0.5 text-rose-400">*</span>
               </span>
             </label>
 
@@ -529,17 +524,82 @@ const inputCls =
 
 function Field({
   label,
+  required = false,
   children,
 }: {
   label: string;
+  required?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div>
       <label className="block text-xs font-medium text-slate-300">
         {label}
+        {required && <span className="ml-0.5 text-rose-400">*</span>}
       </label>
       <div className="mt-1">{children}</div>
+    </div>
+  );
+}
+
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={visible ? "text" : "password"}
+        autoComplete="new-password"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${inputCls} pr-10`}
+        placeholder={placeholder}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? "Hide password" : "Show password"}
+        className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-200"
+      >
+        {visible ? (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+          >
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        ) : (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+          >
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )}
+      </button>
     </div>
   );
 }
