@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   superAddAffiliateNote,
-  superAdjustAffiliateBalance,
   superDeleteAffiliate,
   superSetAffiliateCommissionRate,
   superGetAffiliateAuditLog,
@@ -16,11 +15,9 @@ import {
   superPauseAffiliate,
   superResetAffiliateCode,
   superResumeAffiliate,
-  superSimulateSubscriptionPayment,
   superSuspendAffiliate,
   type AffiliateDetail,
   type PayoutListItem,
-  type SimulateSubscriptionPaymentResult,
 } from "@/lib/api/vcpool-admin/affiliates";
 
 type Tab = "overview" | "referrals" | "transactions" | "payouts" | "audit" | "actions";
@@ -452,39 +449,12 @@ function ActionsTab({
   const canDelete =
     !deleting && deleteConfirm.trim() === detail.display_name.trim();
 
-  // Commission-test state: pick a referred user + amount → fires a fake
-  // subscription payment via the super-admin test endpoint and shows the
-  // resulting commission inline.
-  const [referredUsers, setReferredUsers] = useState<
-    Array<{ user_id: string; email: string }>
-  >([]);
-  const [simUserId, setSimUserId] = useState("");
-  const [simAmount, setSimAmount] = useState("49.99");
-  const [simBusy, setSimBusy] = useState(false);
-  const [simResult, setSimResult] =
-    useState<SimulateSubscriptionPaymentResult | null>(null);
-
-  useEffect(() => {
-    superGetAffiliateReferrals(detail.affiliate_id, 1, 100)
-      .then((r) => {
-        const list = r.items.map((it) => ({
-          user_id: it.user_id,
-          email: it.email,
-        }));
-        setReferredUsers(list);
-        if (list.length > 0 && !simUserId) setSimUserId(list[0].user_id);
-      })
-      .catch(() => null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail.affiliate_id]);
   const [ratePct, setRatePct] = useState(
     detail.commission_pct != null
       ? (Number(detail.commission_pct) * 100).toFixed(2)
       : "20",
   );
   const [rateReason, setRateReason] = useState("");
-  const [delta, setDelta] = useState("0");
-  const [deltaReason, setDeltaReason] = useState("");
   const [note, setNote] = useState("");
   const [pauseReason, setPauseReason] = useState("");
 
@@ -497,32 +467,6 @@ function ActionsTab({
       onError((err as { message?: string })?.message ?? "Action failed");
     } finally {
       setBusy(false);
-    }
-  };
-
-  const handleSimulate = async () => {
-    setSimBusy(true);
-    setSimResult(null);
-    try {
-      const amount = Number(simAmount);
-      if (!simUserId) {
-        onError("Pick or paste a referred user id first");
-        return;
-      }
-      if (!Number.isFinite(amount) || amount <= 0) {
-        onError("Amount must be a positive number");
-        return;
-      }
-      const res = await superSimulateSubscriptionPayment({
-        user_id: simUserId,
-        amount_usd: amount,
-      });
-      setSimResult(res);
-      await onChanged();
-    } catch (err: unknown) {
-      onError((err as { message?: string })?.message ?? "Simulation failed");
-    } finally {
-      setSimBusy(false);
     }
   };
 
@@ -656,43 +600,6 @@ function ActionsTab({
         </button>
       </ActionCard>
 
-      <ActionCard title="Adjust pending balance">
-        <p className="mb-2 text-xs text-slate-500">
-          Current pending:{" "}
-          <span className="text-slate-200">
-            ${Number(detail.pending_balance).toFixed(2)}
-          </span>
-        </p>
-        <input
-          type="number"
-          step="0.01"
-          value={delta}
-          onChange={(e) => setDelta(e.target.value)}
-          className={inputCls}
-          placeholder="e.g. -25.00"
-        />
-        <input
-          value={deltaReason}
-          onChange={(e) => setDeltaReason(e.target.value)}
-          placeholder="Reason (required)"
-          className={`${inputCls} mt-2`}
-        />
-        <button
-          disabled={busy || !deltaReason || !Number(delta)}
-          onClick={() =>
-            wrap(() =>
-              superAdjustAffiliateBalance(detail.affiliate_id, {
-                delta_usd: Number(delta),
-                reason: deltaReason,
-              }),
-            )
-          }
-          className="mt-2 rounded-md bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-500/30 disabled:opacity-50"
-        >
-          Adjust balance
-        </button>
-      </ActionCard>
-
       <ActionCard title="Add internal note">
         <textarea
           value={note}
@@ -709,122 +616,6 @@ function ActionsTab({
           Save note
         </button>
       </ActionCard>
-    </div>
-
-    {/* Test commission accrual (super-admin test tool, no Stripe) */}
-    <div className="rounded-xl border border-sky-500/40 bg-sky-500/[0.04] p-5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-sky-300">
-            Test commission accrual
-          </h3>
-          <p className="mt-1 text-xs text-slate-400">
-            Fires a fabricated subscription payment for one of this affiliate&apos;s
-            referred users. Runs the exact same code path the live Stripe
-            <code className="mx-1 rounded bg-slate-700/40 px-1 text-[10px]">
-              checkout.session.completed
-            </code>
-            webhook hits — no Stripe call, no real money. Use this to verify
-            commission accrual end-to-end.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-[1.5fr_1fr_auto] sm:items-end">
-        <div>
-          <label className="block text-xs font-medium text-slate-300">
-            Referred user
-          </label>
-          {referredUsers.length > 0 ? (
-            <select
-              value={simUserId}
-              onChange={(e) => setSimUserId(e.target.value)}
-              className={`mt-1 ${inputCls}`}
-            >
-              {referredUsers.map((u) => (
-                <option key={u.user_id} value={u.user_id}>
-                  {u.email} — {u.user_id.slice(0, 8)}…
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={simUserId}
-              onChange={(e) => setSimUserId(e.target.value)}
-              placeholder="Paste a user_id (uuid)"
-              className={`mt-1 ${inputCls}`}
-            />
-          )}
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-slate-300">
-            Amount (USD)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="0.01"
-            value={simAmount}
-            onChange={(e) => setSimAmount(e.target.value)}
-            className={`mt-1 ${inputCls}`}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={handleSimulate}
-          disabled={simBusy || !simUserId}
-          className="h-[38px] rounded-lg bg-sky-500/30 px-4 text-sm font-semibold text-sky-100 transition hover:bg-sky-500/40 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {simBusy ? "Simulating…" : "Simulate payment"}
-        </button>
-      </div>
-
-      {simResult && (
-        <div className="mt-4 grid gap-3 rounded-lg border border-slate-700/50 bg-[#070d17] p-3 text-xs sm:grid-cols-2">
-          <SimResultStat
-            label="payment_id"
-            value={simResult.payment.payment_id.slice(0, 12) + "…"}
-            mono
-          />
-          <SimResultStat
-            label="amount paid"
-            value={`$${simResult.payment.amount_usd.toFixed(2)}`}
-          />
-          {simResult.commission ? (
-            <>
-              <SimResultStat
-                label="commission rate applied"
-                value={`${(simResult.commission.commission_rate * 100).toFixed(2)}%`}
-              />
-              <SimResultStat
-                label="commission accrued"
-                value={`+$${simResult.commission.commission_usd.toFixed(2)}`}
-                accent="emerald"
-              />
-              <SimResultStat
-                label="event status"
-                value={simResult.commission.status}
-              />
-              {simResult.affiliate && (
-                <SimResultStat
-                  label="new pending balance"
-                  value={`$${simResult.affiliate.pending_balance.toFixed(2)}`}
-                  accent="emerald"
-                />
-              )}
-            </>
-          ) : (
-            <div className="sm:col-span-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-amber-200">
-              No commission accrued — the user either has no referrer or
-              their referrer is not APPROVED. Check{" "}
-              <code className="rounded bg-slate-700/40 px-1">
-                users.referred_by_affiliate_id
-              </code>
-              .
-            </div>
-          )}
-        </div>
-      )}
     </div>
 
     {/* Danger zone — permanent deletion */}
@@ -889,31 +680,6 @@ function ActionCard({
     <div className="rounded-xl border border-slate-800/80 bg-[#0b1220] p-4">
       <h3 className="mb-3 text-sm font-semibold text-white">{title}</h3>
       {children}
-    </div>
-  );
-}
-
-function SimResultStat({
-  label,
-  value,
-  mono = false,
-  accent,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  accent?: "emerald";
-}) {
-  const valueCls =
-    accent === "emerald"
-      ? "text-emerald-300 font-semibold"
-      : "text-white font-medium";
-  return (
-    <div>
-      <p className="text-[10px] uppercase tracking-wider text-slate-500">
-        {label}
-      </p>
-      <p className={`mt-1 ${mono ? "font-mono" : ""} ${valueCls}`}>{value}</p>
     </div>
   );
 }
