@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   superAddAffiliateNote,
   superDeleteAffiliate,
+  superGrantAffiliateQhq,
   superSetAffiliateCommissionRate,
   superGetAffiliateDetail,
   superGetAffiliatePayouts,
@@ -410,6 +411,9 @@ function ActionsTab({
   const [rateReason, setRateReason] = useState("");
   const [note, setNote] = useState("");
   const [pauseReason, setPauseReason] = useState("");
+  const [qhqAmount, setQhqAmount] = useState("");
+  const [qhqReason, setQhqReason] = useState("");
+  const [qhqGrantedMsg, setQhqGrantedMsg] = useState<string | null>(null);
 
   const wrap = async (fn: () => Promise<unknown>) => {
     setBusy(true);
@@ -551,6 +555,76 @@ function ActionsTab({
         >
           Apply rate
         </button>
+      </ActionCard>
+
+      <ActionCard title="Grant QHQ tokens">
+        {detail.linked_user_id ? (
+          <>
+            <p className="mb-2 text-xs text-slate-500">
+              Credits the affiliate&apos;s platform account. They can spend
+              50 / 100 / 200 QHQ for 5% / 10% / 15% off a subscription.
+            </p>
+            <div className="mb-2 flex flex-wrap gap-2">
+              {[50, 100, 200].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setQhqAmount(String(preset))}
+                  className={`rounded-md border px-2.5 py-1 text-xs font-semibold transition ${
+                    qhqAmount === String(preset)
+                      ? "border-[#fc4f02] bg-[#fc4f02]/20 text-[#fc4f02]"
+                      : "border-slate-700 text-slate-300 hover:border-[#fc4f02]/50 hover:text-white"
+                  }`}
+                >
+                  {preset} QHQ
+                </button>
+              ))}
+            </div>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={qhqAmount}
+              onChange={(e) => setQhqAmount(e.target.value)}
+              className={inputCls}
+              placeholder="Custom amount"
+            />
+            <input
+              value={qhqReason}
+              onChange={(e) => setQhqReason(e.target.value)}
+              placeholder="Reason (required)"
+              className={`${inputCls} mt-2`}
+            />
+            <button
+              disabled={busy || !qhqReason.trim() || !(Number(qhqAmount) >= 1)}
+              onClick={() =>
+                wrap(async () => {
+                  const res = await superGrantAffiliateQhq(detail.affiliate_id, {
+                    amount: Number(qhqAmount),
+                    reason: qhqReason.trim(),
+                  });
+                  setQhqGrantedMsg(
+                    `Granted ${res.amount} QHQ${res.balance_after != null ? ` — new balance ${Number(res.balance_after).toFixed(2)} QHQ` : ""}.`,
+                  );
+                  setQhqAmount("");
+                  setQhqReason("");
+                })
+              }
+              className="mt-2 rounded-md bg-[#fc4f02]/20 px-3 py-1.5 text-xs font-semibold text-[#fc4f02] hover:bg-[#fc4f02]/30 disabled:opacity-50"
+            >
+              Grant tokens
+            </button>
+            {qhqGrantedMsg && (
+              <p className="mt-2 text-xs text-emerald-300/90">{qhqGrantedMsg}</p>
+            )}
+          </>
+        ) : (
+          <p className="text-xs text-slate-500">
+            This affiliate has no linked platform account yet — tokens can be
+            granted once their application is approved and the account is
+            provisioned.
+          </p>
+        )}
       </ActionCard>
 
       <ActionCard title="Add internal note">
