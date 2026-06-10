@@ -50,6 +50,8 @@ export interface AffiliateProfile {
   tax_residency?: string | null;
   referral_code?: string | null;
   status: AffiliateStatus;
+  /** Set once the approval flow has provisioned the affiliate's platform user account. */
+  linked_user_id?: string | null;
   commission_pct?: number | null;
   payout_instructions?: string | null;
   tax_form_url?: string | null;

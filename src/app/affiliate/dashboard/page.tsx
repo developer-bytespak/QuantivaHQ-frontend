@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { KpiTile } from "@/components/affiliate/kpi-tile";
 import { ReferralCodeCard } from "@/components/affiliate/referral-code-card";
 import { PerformanceChart } from "@/components/affiliate/performance-chart";
+import { AccountProvisionedBanner } from "@/components/affiliate/account-provisioned-banner";
 import {
   getDashboardSummary,
   getPerformance,
@@ -80,6 +81,8 @@ export default function AffiliateDashboardPage() {
           {error}
         </div>
       )}
+
+      <AccountProvisionedBanner />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiTile
