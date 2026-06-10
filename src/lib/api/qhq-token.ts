@@ -67,6 +67,22 @@ export interface QhqDiscountInfo {
   current_balance: string;
 }
 
+export interface QhqReferralBonusStatus {
+  referred: boolean;
+  claimed: boolean;
+  eligible: boolean;
+  amount: number;
+  discount_percent: number;
+}
+
+export interface QhqReferralBonusClaimResult {
+  claimed: boolean;
+  amount: number;
+  balance_after?: string;
+  discount_percent: number;
+  discount_expires_at: string;
+}
+
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
 export const qhqApi = {
@@ -102,4 +118,10 @@ export const qhqApi = {
 
   spendForSubscriptionDiscount: (qhqAmount: number): Promise<void> =>
     apiRequest({ path: '/qhq/spend/subscription-discount', method: 'POST', body: { qhq_amount: qhqAmount } }),
+
+  getReferralBonus: (): Promise<QhqReferralBonusStatus> =>
+    apiRequest({ path: '/qhq/referral-bonus', method: 'GET' }),
+
+  claimReferralBonus: (): Promise<QhqReferralBonusClaimResult> =>
+    apiRequest({ path: '/qhq/referral-bonus/claim', method: 'POST' }),
 };

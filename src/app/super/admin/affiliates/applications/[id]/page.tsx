@@ -200,7 +200,11 @@ export default function SuperAffiliateApplicationDetailPage() {
                 : app.primary_channel
             }
           />
-          <Stat label="Channel URL" value={app.channel_url ?? "—"} />
+          <Stat
+            label="Channel URL"
+            value={app.channel_url ?? "—"}
+            href={safeHttpUrl(app.channel_url)}
+          />
           <Stat
             label="Submission IP"
             value={app.ip_address ?? "—"}
@@ -220,11 +224,21 @@ export default function SuperAffiliateApplicationDetailPage() {
                       ? `Other — ${c.customName}`
                       : c.type}
                   </span>
-                  {c.url && (
-                    <span className="break-all text-xs text-slate-400">
-                      {c.url}
-                    </span>
-                  )}
+                  {c.url &&
+                    (safeHttpUrl(c.url) ? (
+                      <a
+                        href={safeHttpUrl(c.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="break-all text-xs text-[#fc4f02] hover:underline"
+                      >
+                        {c.url}
+                      </a>
+                    ) : (
+                      <span className="break-all text-xs text-slate-400">
+                        {c.url}
+                      </span>
+                    ))}
                 </li>
               ))}
             </ul>
@@ -478,13 +492,37 @@ function Field({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+}) {
   return (
     <div className="rounded-lg border border-slate-800/80 bg-[#070d17] p-3">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </p>
-      <p className="mt-1 break-words text-sm font-medium text-white">{value}</p>
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 block break-all text-sm font-medium text-[#fc4f02] hover:underline"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="mt-1 break-words text-sm font-medium text-white">{value}</p>
+      )}
     </div>
   );
+}
+
+// Only link out to real web URLs — anything else renders as plain text.
+function safeHttpUrl(url?: string | null): string | undefined {
+  return url && /^https?:\/\//i.test(url.trim()) ? url.trim() : undefined;
 }

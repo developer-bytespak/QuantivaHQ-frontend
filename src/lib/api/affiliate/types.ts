@@ -16,6 +16,7 @@ export type AffiliateChannel =
   | "YOUTUBE"
   | "X"
   | "INSTAGRAM"
+  | "FACEBOOK"
   | "TIKTOK"
   | "DISCORD"
   | "TELEGRAM"
