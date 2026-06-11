@@ -163,6 +163,15 @@ export interface AiOptionsSignal {
   expectedValuePerUnit?: number | null;
   /** EV total dollars per package = perUnit × contract multiplier. */
   expectedValueTotal?: number | null;
+  /** Lower/upper price levels at expiry where the trade crosses into
+   *  profit. Directional trades set one side; straddles/strangles profit
+   *  OUTSIDE the band; condors/butterflies profit INSIDE it. */
+  breakevenLow?: number | null;
+  breakevenHigh?: number | null;
+  /** Smallest % move of the underlying needed to reach breakeven, as a
+   *  fraction (0.028 = 2.8%). Null for range strategies, where staying
+   *  still is the winning outcome. */
+  requiredMovePct?: number | null;
 }
 
 export interface IvRankData {

@@ -28,6 +28,19 @@ const STRATEGY_LABELS: Record<string, string> = {
   short_put: "Short Put",
 };
 
+// Strategies whose theoretical upside is uncapped — the stored max_profit is
+// a profit TARGET (2× the debit paid), not a true maximum. Label it honestly
+// so users don't read a long strangle's upside as capped.
+const UNCAPPED_PROFIT_STRATEGIES = new Set([
+  "long_call",
+  "long_put",
+  "long_straddle",
+  "long_strangle",
+]);
+
+const fmtUsd = (n: number) =>
+  `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
 // ── Risk filter ─────────────────────────────────────────────────────────────
 
 type RiskFilter = "all" | "defined" | "pop50" | "pop70" | "ev_pos";
@@ -47,6 +60,20 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
   const expiresAt = new Date(signal.expires_at);
   const isExpired = expiresAt < new Date();
   const createdAt = new Date(signal.created_at);
+
+  // Contract expiry (earliest leg — the one that matters for calendars) and
+  // days-to-expiry. Distinct from `expires_at`, which is only the SIGNAL's
+  // validity window — without this line users have read the 2h countdown as
+  // a same-day option expiry.
+  const legExpiryMs = (signal.legs ?? [])
+    .map((l) => (l.expiry ? new Date(l.expiry).getTime() : NaN))
+    .filter((t) => Number.isFinite(t));
+  const contractExpiry = legExpiryMs.length
+    ? new Date(Math.min(...legExpiryMs))
+    : null;
+  const daysToExpiry = contractExpiry
+    ? Math.max(0, Math.round((contractExpiry.getTime() - Date.now()) / 86_400_000))
+    : null;
 
   // Alpaca users need Level 3 approval to place multi-leg orders. Single-leg
   // strategies (long_call, long_put) are placeable at Level 2+.
@@ -95,9 +122,15 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
         </div>
       </div>
 
-      {/* Strategy name */}
+      {/* Strategy name + contract expiry */}
       <p className="mt-2 text-sm font-medium text-[var(--primary)]">
         {STRATEGY_LABELS[signal.strategy] ?? signal.strategy}
+        {contractExpiry && (
+          <span className="ml-2 text-xs font-normal text-slate-400">
+            Exp {contractExpiry.toLocaleDateString([], { month: "short", day: "numeric" })}
+            {daysToExpiry != null && ` · ${daysToExpiry}d`}
+          </span>
+        )}
       </p>
 
       {/* Legs */}
@@ -133,7 +166,9 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
           <p className="text-xs font-medium text-slate-300">{signal.risk_reward ?? "—"}</p>
         </div>
         <div>
-          <span className="text-[10px] uppercase tracking-wide text-slate-500">Max Profit</span>
+          <span className="text-[10px] uppercase tracking-wide text-slate-500">
+            {UNCAPPED_PROFIT_STRATEGIES.has(signal.strategy) ? "Target Profit" : "Max Profit"}
+          </span>
           <p className="text-xs font-medium text-emerald-400">{signal.max_profit ?? "—"}</p>
         </div>
         <div>
@@ -141,6 +176,58 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
           <p className="text-xs font-medium text-red-400">{signal.max_loss ?? "—"}</p>
         </div>
       </div>
+
+      {/* Required move / breakeven — trade feasibility at a glance */}
+      {(() => {
+        const mv = signal.requiredMovePct;
+        const lo = signal.breakevenLow;
+        const hi = signal.breakevenHigh;
+        // Range strategies (condor/butterfly): profit INSIDE the band.
+        if (mv == null && lo != null && hi != null) {
+          return (
+            <p className="mt-2 text-xs text-slate-300">
+              Profit range {fmtUsd(lo)} – {fmtUsd(hi)} at expiry
+            </p>
+          );
+        }
+        // Straddle/strangle: needs a move OUTSIDE the band, either way.
+        if (mv != null && lo != null && hi != null) {
+          return (
+            <p
+              className={`mt-2 text-xs ${
+                mv > 0.05 ? "font-medium text-amber-400" : "text-slate-300"
+              }`}
+            >
+              Needs ±{(mv * 100).toFixed(1)}% by expiry
+              <span className="text-slate-500">
+                {" "}(profit below {fmtUsd(lo)} or above {fmtUsd(hi)})
+              </span>
+            </p>
+          );
+        }
+        // Directional: a single breakeven, one-sided move.
+        if (mv != null && (lo != null || hi != null)) {
+          const be = hi ?? lo!;
+          if (mv === 0) {
+            return (
+              <p className="mt-2 text-xs text-slate-300">
+                Breakeven {fmtUsd(be)} — spot already in the profit zone
+              </p>
+            );
+          }
+          return (
+            <p
+              className={`mt-2 text-xs ${
+                mv > 0.05 ? "font-medium text-amber-400" : "text-slate-300"
+              }`}
+            >
+              Needs {hi != null ? "+" : "−"}{(mv * 100).toFixed(1)}% by expiry
+              <span className="text-slate-500"> (breakeven {fmtUsd(be)})</span>
+            </p>
+          );
+        }
+        return null;
+      })()}
 
       {/* POP + EV — surfaced when the engine could compute them. R:R alone
           is misleading (a 1:3 condor at 75% POP is +EV; a 3:1 butterfly at
@@ -185,7 +272,9 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
           )}
         </div>
         <span className={isExpired ? "text-red-400" : ""}>
-          {isExpired ? "Expired" : `Expires ${expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
+          {isExpired
+            ? "Signal expired"
+            : `Signal valid until ${expiresAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
           {" · "}
           {createdAt.toLocaleDateString([], { month: "short", day: "numeric" })}
         </span>
