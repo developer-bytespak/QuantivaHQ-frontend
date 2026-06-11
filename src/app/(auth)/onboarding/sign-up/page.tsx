@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { useState, useEffect } from "react";
 import GoogleSignInButton from "@/components/common/google-signin-button";
@@ -1051,6 +1052,24 @@ export default function SignUpPage() {
               </div>
             </div>
           </div>
+
+          {/* Affiliate dashboard link */}
+          {activeTab === "login" && (
+            <div className="mt-8 flex flex-col items-center gap-2 text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
+              <p className="text-xs text-slate-400">
+                Are you an affiliate partner or want to become one?
+              </p>
+              <Link
+                href="/affiliate/login"
+                className="inline-flex items-center gap-2 rounded-xl border border-[--color-border] bg-[--color-surface]/60 px-4 py-2 text-sm font-semibold text-slate-200 transition-all duration-200 hover:border-[var(--primary)]/50 hover:text-[var(--primary)]"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Go to Affiliate Dashboard
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
