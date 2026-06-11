@@ -109,6 +109,7 @@ export interface AffiliateDetail {
   tax_residency: string | null;
   referral_code: string | null;
   status: AffiliateAdminStatus;
+  linked_user_id: string | null;
   commission_pct: string | number | null;
   payout_instructions: string | null;
   pending_balance: string | number;
@@ -402,6 +403,21 @@ export async function superAdjustAffiliateBalance(
 ) {
   const { data } = await adminAxios.post(
     `/admin/super-admin/affiliates/${id}/adjust-balance`,
+    body
+  );
+  return data;
+}
+export async function superGrantAffiliateQhq(
+  id: string,
+  body: { amount: number; reason: string }
+): Promise<{
+  ok: true;
+  amount: number;
+  user_id: string;
+  balance_after: string | null;
+}> {
+  const { data } = await adminAxios.post(
+    `/admin/super-admin/affiliates/${id}/grant-qhq`,
     body
   );
   return data;
