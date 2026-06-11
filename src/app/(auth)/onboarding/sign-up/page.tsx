@@ -486,7 +486,7 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="relative flex h-full w-full overflow-hidden">
+    <div className="relative flex min-h-full w-full overflow-x-hidden">
       {notification && (
         <Notification
           message={notification.message}
@@ -609,7 +609,7 @@ export default function SignUpPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-start overflow-hidden px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
+      <div className="relative z-10 flex min-h-full w-full flex-col items-center justify-start px-4 pt-6 pb-6 sm:px-6 sm:pt-8 sm:pb-8 lg:px-8">
         {/* Back Button */}
         <div className="w-full max-w-6xl mb-4">
           <button
@@ -646,8 +646,8 @@ export default function SignUpPage() {
           </div>
 
           {/* Two Column Layout */}
-          <div className="flex flex-col-reverse lg:flex-row lg:items-center lg:gap-8 animate-text-enter" style={{ animationDelay: "0.6s" }}>
-            {/* Left Side: Tabs and OAuth (shows second on mobile, first on desktop) */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:gap-8 animate-text-enter" style={{ animationDelay: "0.6s" }}>
+            {/* Left Side: Tabs and OAuth (shows first on mobile, first on desktop) */}
             <div className="flex-1 flex items-center justify-center">
               <div className="group relative w-full rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 p-4 backdrop-blur shadow-2xl shadow-blue-900/10 transition-all duration-300 hover:border-[var(--primary)]/30 hover:shadow-[rgba(var(--primary-rgb),0.1)]">
                 <div className="absolute inset-0 bg-gradient-to-br from-[var(--primary)]/5 via-transparent to-[var(--primary-light)]/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
