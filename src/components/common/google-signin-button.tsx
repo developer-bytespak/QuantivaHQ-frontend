@@ -66,6 +66,7 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
         window.google.accounts.id.renderButton(container, {
           theme: "filled_white",
           size: "large",
+          shape: "rectangular", // 40px tall, ~4px radius — kept in sync with the Apple button
           width,
         });
       } catch (err) {
