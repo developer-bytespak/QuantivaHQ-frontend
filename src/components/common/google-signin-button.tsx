@@ -56,11 +56,18 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
 
         // Without an explicit width, GSI sizes the button to its own content —
         // the personalized "Sign in as …" variant renders as a narrow pill that
-        // looks "half-width" next to the full-width Apple button (more visible
-        // in production where layout/timing differs). Measure the container and
-        // pass an explicit pixel width (GSI caps at 400) so it fills the card.
-        const measured = Math.round(container.getBoundingClientRect().width);
-        const width = Math.min(measured || 320, 400);
+        // looks "half-width" next to the full-width Apple button. We measure the
+        // container and pass an explicit pixel width (GSI caps at 400) so it
+        // fills the card. Crucially, if the container isn't laid out yet we must
+        // NOT guess a fallback width — a hard-coded value overflows narrow
+        // mobile cards. Retry instead until we have a real measurement, then
+        // clamp to the container so the button can never exceed it.
+        const measured = Math.floor(container.getBoundingClientRect().width);
+        if (!measured) {
+          setTimeout(initializeGSI, 150);
+          return;
+        }
+        const width = Math.min(measured, 400);
 
         // @ts-ignore
         window.google.accounts.id.renderButton(container, {
@@ -210,7 +217,7 @@ export default function GoogleSignInButton({ onSuccess, mode = "login" }: Props)
           Google sign-in unavailable
         </button>
       ) : (
-        <div id="g_id_signin" className="flex justify-center" />
+        <div id="g_id_signin" className="flex w-full max-w-full justify-center overflow-hidden" />
       )}
       {notification ? (
         <Notification
