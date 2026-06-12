@@ -139,6 +139,14 @@ export function HomepageFooter() {
                   Contact Us
                 </button>
               </li>
+              <li>
+                <Link
+                  href="/affiliate/login"
+                  className="text-xs sm:text-sm text-slate-400 font-bold hover:text-[var(--primary)] transition-colors cursor-pointer"
+                >
+                  Affiliate Dashboard
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

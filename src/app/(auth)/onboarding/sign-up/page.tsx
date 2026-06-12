@@ -1054,7 +1054,7 @@ export default function SignUpPage() {
           </div>
 
           {/* Affiliate dashboard link */}
-          {activeTab === "login" && (
+          {(activeTab === "login" || activeTab === "signup") && (
             <div className="mt-8 flex flex-col items-center gap-2 text-center animate-text-enter" style={{ animationDelay: "0.8s" }}>
               <p className="text-xs text-slate-400">
                 Are you an affiliate partner or want to become one?
