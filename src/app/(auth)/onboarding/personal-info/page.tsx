@@ -77,6 +77,13 @@ export default function PersonalInfoPage() {
     return trimmedFullPhone.replace(/\D/g, "");
   };
 
+  // International phone format used when no nationality is selected (nationality
+  // is optional, so we can't bind the number to a country's dial code).
+  const isGenericInternationalPhone = (phone: string): boolean => {
+    const digits = phone.replace(/\D/g, "");
+    return /^[1-9]\d{6,14}$/.test(digits);
+  };
+
   const validatePhoneForCountry = (phone: string, countryName: string): string => {
     const trimmedPhone = phone.trim();
     if (!trimmedPhone) {
@@ -85,7 +92,10 @@ export default function PersonalInfoPage() {
 
     const selectedCountry = countries.find((c) => c.name === countryName);
     if (!selectedCountry) {
-      return "Please select your nationality first";
+      // No nationality selected — validate as a generic international number.
+      return isGenericInternationalPhone(trimmedPhone)
+        ? ""
+        : "Enter a valid international phone number (including country code)";
     }
 
     const selectedDialCode = `${getDialRoot(selectedCountry)}${getDialSuffix(selectedCountry)}`;
@@ -153,8 +163,7 @@ export default function PersonalInfoPage() {
   const calculateProgress = () => {
     const requiredFields = [
       fullLegalName,
-      dateOfBirth,
-      nationality,
+      phoneNumber,
     ];
     
     const filledFields = requiredFields.filter(field => field && field.trim() !== "").length;
@@ -268,7 +277,7 @@ export default function PersonalInfoPage() {
         // If not in DB, try to load from API
         try {
           const user = await getCurrentUser();
-          if (user.full_name && user.dob && user.nationality) {
+          if (user.full_name) {
             // User has personal info, populate form but allow editing
             setFullLegalName(user.full_name || "");
             setDateOfBirth(user.dob ? new Date(user.dob).toISOString().split('T')[0] : "");
@@ -375,9 +384,9 @@ export default function PersonalInfoPage() {
     // Prepare form data
     const formData = {
       fullLegalName,
-      dateOfBirth,
+      dateOfBirth: dateOfBirth || undefined,
       gender: gender || undefined,
-      nationality,
+      nationality: nationality || undefined,
       phoneNumber: phoneNumber || undefined,
     };
 
@@ -439,12 +448,12 @@ export default function PersonalInfoPage() {
   const selectedDialRoot = nationalityData ? getDialRoot(nationalityData) : "";
   const localPhoneNumber = extractLocalPhoneNumber(phoneNumber, selectedDialRoot);
   const phoneValidationError = validatePhoneForCountry(phoneNumber, nationality);
-  const isPhoneValidForSubmit = isPhoneValidForCountry(phoneNumber, nationality);
+  const isPhoneValidForSubmit = nationality.trim()
+    ? isPhoneValidForCountry(phoneNumber, nationality)
+    : isGenericInternationalPhone(phoneNumber);
   const isNextDisabled =
     isLoading ||
     !fullLegalName.trim() ||
-    !dateOfBirth.trim() ||
-    !nationality.trim() ||
     !isPhoneValidForSubmit;
 
   const nextDisabledReason = (() => {
@@ -452,13 +461,8 @@ export default function PersonalInfoPage() {
       return "";
     }
 
-    const missing: string[] = [];
-    if (!fullLegalName.trim()) missing.push("full legal name");
-    if (!dateOfBirth.trim()) missing.push("date of birth");
-    if (!nationality.trim()) missing.push("nationality");
-
-    if (missing.length > 0) {
-      return `Please fill: ${missing.join(", ")}`;
+    if (!fullLegalName.trim()) {
+      return "Please fill: full legal name";
     }
 
     if (!phoneNumber.trim()) {
@@ -468,7 +472,7 @@ export default function PersonalInfoPage() {
     if (!isPhoneValidForSubmit) {
       return nationality
         ? `Enter a complete valid phone number for ${nationality}`
-        : "Enter a complete valid phone number";
+        : "Enter a complete valid international phone number (including country code)";
     }
 
     return "";
@@ -576,9 +580,8 @@ export default function PersonalInfoPage() {
 
                 {/* Date of Birth */}
                 <div>
-                  <label htmlFor="dateOfBirth" className="mb-1 block text-xs font-semibold text-white flex items-center gap-2">
-                    <span>Date of Birth</span>
-                    <span className="text-red-400">*</span>
+                  <label htmlFor="dateOfBirth" className="mb-1 block text-xs font-semibold text-white">
+                    Date of Birth <span className="text-slate-500 text-xs font-normal">(Optional)</span>
                   </label>
                   <style>{`
                     #dateOfBirth {
@@ -631,7 +634,6 @@ export default function PersonalInfoPage() {
                         : "border-[--color-border]"
                     }`}
                     placeholder="dd----yyyy"
-                    required
                   />
                   {errors.dateOfBirth && (
                     <p className="mt-1.5 text-xs text-red-400">{errors.dateOfBirth}</p>
@@ -662,9 +664,8 @@ export default function PersonalInfoPage() {
                 <div className="space-y-2 sm:space-y-3 relative z-0">
                 {/* Nationality / Country of Citizenship */}
                 <div>
-                  <label htmlFor="nationality" className="mb-1 block text-xs font-semibold text-white flex items-center gap-2">
-                    <span>Nationality / Country of Citizenship</span>
-                    <span className="text-red-400">*</span>
+                  <label htmlFor="nationality" className="mb-1 block text-xs font-semibold text-white">
+                    Nationality / Country of Citizenship <span className="text-slate-500 text-xs font-normal">(Optional)</span>
                   </label>
                   <div className="relative z-[100]" ref={nationalityDropdownRef}>
                     <button
