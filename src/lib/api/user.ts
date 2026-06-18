@@ -3,8 +3,8 @@ import { PersonalInfoForm } from "../validation/onboarding";
 
 export interface UpdatePersonalInfoRequest {
   fullName: string;
-  dob: string;
-  nationality: string;
+  dob?: string;
+  nationality?: string;
   gender?: "male" | "female" | "other" | "prefer-not-to-say";
   phoneNumber?: string;
 }
@@ -80,14 +80,14 @@ export async function hasPersonalInfo(): Promise<boolean> {
   try {
     // Use getUserProfile which calls /users/me and returns full user data including personal info
     const user = await getUserProfile();
-    // Check if required fields are filled
-    return !!(user.full_name && user.dob && user.nationality);
+    // full_name is the only required identity field — dob and nationality are optional.
+    return !!user.full_name;
   } catch (error) {
     console.error("Failed to check personal info:", error);
     // If getUserProfile fails, fallback to getCurrentUser
     try {
       const user = await getCurrentUser();
-      return !!(user.full_name && user.dob && user.nationality);
+      return !!user.full_name;
     } catch (fallbackError) {
       console.error("Failed to check personal info (fallback):", fallbackError);
       return false;
