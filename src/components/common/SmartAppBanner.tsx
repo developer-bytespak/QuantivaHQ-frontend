@@ -109,39 +109,54 @@ export function SmartAppBanner() {
         visible ? "translate-y-0" : "translate-y-[120%]"
       }`}
     >
-      <div className="mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900 to-black p-3 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.6)]">
-        {/* App icon */}
-        <img
-          src="/icon.svg"
-          alt="Quantiva"
-          className="h-11 w-11 shrink-0 rounded-xl border border-white/10 bg-white/[0.04] p-1.5"
-        />
+      <div className="relative mx-auto max-w-md overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900 to-black p-4 shadow-[0_-8px_30px_-12px_rgba(0,0,0,0.6)]">
+        {/* Soft brand glow */}
+        <div className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[rgba(var(--primary-rgb),0.18)] blur-2xl" />
 
-        {/* Copy */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white">
-            Quantiva is better in the app
-          </p>
-          <p className="truncate text-[11px] text-slate-400">
-            Faster trading, alerts &amp; a smoother experience.
-          </p>
+        {/* Close */}
+        <button
+          onClick={dismiss}
+          aria-label="Dismiss"
+          className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-white/[0.06] hover:text-slate-200"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+
+        {/* Header: icon + copy */}
+        <div className="flex items-center gap-3.5 pr-7">
+          <img
+            src="/icon.svg"
+            alt="Quantiva"
+            className="h-12 w-12 shrink-0 rounded-xl border border-white/10 bg-white/[0.04] p-1.5"
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-tight text-white">
+              Quantiva is better in the app
+            </p>
+            <p className="mt-1 text-xs leading-snug text-slate-400">
+              Faster trading, instant alerts &amp; a smoother experience.
+            </p>
+          </div>
         </div>
 
         {/* Actions */}
-        <div className="flex shrink-0 flex-col gap-1.5">
-          <button
-            onClick={openApp}
-            className="rounded-lg bg-gradient-to-r from-orange-500 via-orange-400 to-amber-300 px-3 py-1.5 text-xs font-bold text-slate-950 shadow-lg shadow-orange-500/30 transition-all hover:shadow-orange-500/50"
-          >
-            Go to Quantiva app
-          </button>
-          <button
-            onClick={dismiss}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-slate-200"
-          >
-            Continue on browser
-          </button>
-        </div>
+        <button
+          onClick={openApp}
+          className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-[rgba(var(--primary-rgb),0.35)] transition-all active:scale-[0.99]"
+        >
+          Open in the app
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </button>
+        <button
+          onClick={dismiss}
+          className="mt-2 w-full py-1 text-center text-xs font-medium text-slate-500 transition-colors hover:text-slate-300"
+        >
+          Continue on browser
+        </button>
       </div>
     </div>
   );
