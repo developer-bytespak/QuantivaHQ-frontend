@@ -125,53 +125,149 @@ export function ContactSection() {
     }
   };
 
+  // Shared field styling
+  const fieldBase =
+    "w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/70 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border]";
+  const fieldState = (hasError?: string) =>
+    hasError
+      ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
+      : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60";
+
+  const contactMethods = [
+    {
+      title: "Email Support",
+      value: "support@quantivahq.com",
+      hint: "We respond within 24 hours",
+      icon: (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      ),
+    },
+    {
+      title: "Phone Support",
+      value: "+1 (747) 800-7952",
+      hint: "Available during business hours",
+      icon: (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+      ),
+    },
+    {
+      title: "Business Hours",
+      value: "Monday – Friday",
+      hint: "9:00 AM – 6:00 PM EST",
+      icon: (
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      ),
+    },
+  ];
+
   return (
     <section
       id="contact"
       ref={sectionRef}
-      className="relative pb-16 sm:pb-20 md:pb-24 lg:pb-32 overflow-hidden"
+      className="relative pb-16 sm:pb-20 md:pb-24 lg:pb-32 pt-8 sm:pt-12 overflow-hidden"
     >
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-10 sm:mb-12 md:mb-16">
-          <h2
-            className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
-            Get in{" "}
-            <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
-              Touch
-            </span>
-          </h2>
-          <p
-            className={`mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 transition-all duration-700 px-4 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-            style={{ transitionDelay: "100ms" }}
-          >
-            Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
-          </p>
-        </div>
+      {/* Decorative "rising moon" background */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* The moon: a large sphere rising into the section. Its top edge sits
+            ~30% below the section top; it's far wider than the viewport so only
+            the top of the dome shows, arcing cleanly across — the rest stays
+            black to match the sections above. */}
+        <div
+          className="absolute left-1/2 top-[30%] -translate-x-1/2 aspect-square w-[220%] sm:w-[170%] lg:w-[135%] max-w-[1700px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle at 50% 0%, rgba(var(--primary-rgb),0.10) 0%, transparent 32%)",
+            boxShadow: "inset 0 70px 110px -60px rgba(var(--primary-light-rgb),0.40)",
+            borderTop: "1px solid rgba(var(--primary-light-rgb),0.30)",
+          }}
+        />
 
-        {/* Contact Form */}
-        <div className="max-w-4xl mx-auto">
+        {/* Soft bloom along the moon's crest */}
+        <div className="absolute left-1/2 top-[30%] -translate-x-1/2 -translate-y-1/2 h-44 w-[85%] max-w-[1000px] rounded-[100%] bg-[radial-gradient(ellipse,rgba(var(--primary-light-rgb),0.16),transparent_70%)] blur-2xl" />
+
+        {/* Fine grid texture, faded toward the edges */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+            maskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(ellipse 70% 60% at 50% 40%, black, transparent 75%)",
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-start">
+          {/* ── Left: value + contact methods ─────────────────────────── */}
+          <div
+            className={`lg:col-span-2 lg:sticky lg:top-28 transition-all duration-700 ${
+              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            }`}
+          >
+            <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(var(--primary-rgb),0.4)] bg-[rgba(var(--primary-rgb),0.1)] px-4 py-1.5 text-xs sm:text-sm font-medium text-[var(--primary-light)] mb-5">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--primary)] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--primary)]" />
+              </span>
+              We're here to help
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+              Get in{" "}
+              <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
+                Touch
+              </span>
+            </h2>
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-md mb-8">
+              Have questions about Quantiva HQ? Our team is ready to help with
+              sales, support, and partnership inquiries. Reach out and we'll get
+              back to you as soon as possible.
+            </p>
+
+            {/* Contact methods */}
+            <div className="space-y-3">
+              {contactMethods.map((m) => (
+                <div
+                  key={m.title}
+                  className="group flex items-center gap-4 rounded-2xl border border-[--color-border]/50 bg-[--color-surface-alt]/40 backdrop-blur-sm p-4 transition-all duration-300 hover:border-[var(--primary)]/40 hover:bg-[--color-surface-alt]/60"
+                >
+                  <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 transition-transform duration-300 group-hover:scale-110">
+                    <svg className="h-6 w-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      {m.icon}
+                    </svg>
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-white">{m.title}</h3>
+                    <p className="text-sm text-slate-300 font-medium truncate">{m.value}</p>
+                    <p className="text-xs text-slate-500">{m.hint}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Right: glassmorphic form ──────────────────────────────── */}
           <form
             onSubmit={handleSubmit}
-            className={`bg-gradient-to-br from-[--color-surface-alt]/95 via-[--color-surface-alt]/85 to-[--color-surface-alt]/95 backdrop-blur-xl border border-[--color-border]/50 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/20 p-6 sm:p-8 md:p-10 lg:p-12 transition-all duration-700 ${
+            className={`lg:col-span-3 relative overflow-hidden bg-[--color-surface-alt]/60 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/30 p-6 sm:p-8 md:p-10 transition-all duration-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
-            style={{ transitionDelay: "200ms" }}
+            style={{ transitionDelay: "150ms" }}
           >
+            {/* Glass highlight along the top edge */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+
             {/* Form Header */}
-            <div className="mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-[--color-border]/30">
-              <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Contact Information</h3>
-              <p className="text-xs sm:text-sm text-slate-400">Please fill out the form below and we'll get back to you promptly.</p>
+            <div className="mb-6 sm:mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-1.5">Send us a message</h3>
+              <p className="text-xs sm:text-sm text-slate-400">Fill out the form and we'll get back to you promptly.</p>
             </div>
 
             {/* Success/Error Messages */}
             {submitStatus === "success" && (
-              <div className="mb-6 sm:mb-8 p-3 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs sm:text-sm flex items-center gap-3">
+              <div className="mb-6 p-3 sm:p-4 rounded-xl bg-green-500/10 border border-green-500/30 text-green-400 text-xs sm:text-sm flex items-center gap-3">
                 <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -179,8 +275,8 @@ export function ContactSection() {
               </div>
             )}
             {submitStatus === "error" && Object.keys(errors).length > 0 && (
-              <div className="mb-8 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                <div className="flex items-start gap-3 mb-2">
+              <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                <div className="flex items-start gap-3">
                   <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -196,13 +292,11 @@ export function ContactSection() {
               </div>
             )}
 
-            {/* Personal Information Section */}
-            <div className="mb-8">
-              <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Personal Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Name Field */}
+            <div className="space-y-5">
+              {/* Name + Email */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-white mb-2.5">
+                  <label htmlFor="name" className="block text-sm font-medium text-white mb-2">
                     Full Name <span className="text-[var(--primary)] ml-1">*</span>
                   </label>
                   <input
@@ -212,19 +306,14 @@ export function ContactSection() {
                     value={formData.name}
                     onChange={handleChange}
                     required
-                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
-                      errors.name
-                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
-                    }`}
+                    className={`${fieldBase} ${fieldState(errors.name)}`}
                     placeholder="Enter your full name"
                   />
                   {errors.name && <p className="text-red-400 text-xs mt-1.5">{errors.name}</p>}
                 </div>
 
-                {/* Email Field */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-white mb-2.5">
+                  <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
                     Email Address <span className="text-[var(--primary)] ml-1">*</span>
                   </label>
                   <input
@@ -234,19 +323,17 @@ export function ContactSection() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
-                      errors.email
-                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
-                    }`}
+                    className={`${fieldBase} ${fieldState(errors.email)}`}
                     placeholder="your.email@company.com"
                   />
                   {errors.email && <p className="text-red-400 text-xs mt-1.5">{errors.email}</p>}
                 </div>
+              </div>
 
-                {/* Company Field */}
+              {/* Company + Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label htmlFor="company" className="block text-sm font-medium text-white mb-2.5">
+                  <label htmlFor="company" className="block text-sm font-medium text-white mb-2">
                     Company Name
                   </label>
                   <input
@@ -255,19 +342,14 @@ export function ContactSection() {
                     name="company"
                     value={formData.company}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
-                      errors.company
-                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
-                    }`}
+                    className={`${fieldBase} ${fieldState(errors.company)}`}
                     placeholder="Your company name"
                   />
                   {errors.company && <p className="text-red-400 text-xs mt-1.5">{errors.company}</p>}
                 </div>
 
-                {/* Phone Field */}
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-white mb-2.5">
+                  <label htmlFor="phone" className="block text-sm font-medium text-white mb-2">
                     Phone Number
                   </label>
                   <input
@@ -276,25 +358,16 @@ export function ContactSection() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] ${
-                      errors.phone
-                        ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                        : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
-                    }`}
+                    className={`${fieldBase} ${fieldState(errors.phone)}`}
                     placeholder="+1 (747) 800-7952"
                   />
                   {errors.phone && <p className="text-red-400 text-xs mt-1.5">{errors.phone}</p>}
                 </div>
               </div>
-            </div>
 
-            {/* Inquiry Details Section */}
-            <div className="mb-8">
-              <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4">Inquiry Details</h4>
-              
-              {/* Subject Field */}
-              <div className="mb-5">
-                <label htmlFor="subject" className="block text-sm font-medium text-white mb-2.5">
+              {/* Subject */}
+              <div>
+                <label htmlFor="subject" className="block text-sm font-medium text-white mb-2">
                   Subject <span className="text-[var(--primary)] ml-1">*</span>
                 </label>
                 <select
@@ -303,11 +376,7 @@ export function ContactSection() {
                   value={formData.subject}
                   onChange={handleChange}
                   required
-                  className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border] appearance-none cursor-pointer ${
-                    errors.subject
-                      ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                      : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
-                  }`}
+                  className={`${fieldBase} ${fieldState(errors.subject)} appearance-none cursor-pointer`}
                   style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999999'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
@@ -326,9 +395,9 @@ export function ContactSection() {
                 {errors.subject && <p className="text-red-400 text-xs mt-1.5">{errors.subject}</p>}
               </div>
 
-              {/* Message Field */}
+              {/* Message */}
               <div>
-                <label htmlFor="message" className="block text-sm font-medium text-white mb-2.5">
+                <label htmlFor="message" className="block text-sm font-medium text-white mb-2">
                   Message <span className="text-[var(--primary)] ml-1">*</span>
                 </label>
                 <textarea
@@ -337,12 +406,8 @@ export function ContactSection() {
                   value={formData.message}
                   onChange={handleChange}
                   required
-                  rows={6}
-                  className={`w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/80 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 resize-none hover:border-[--color-border] ${
-                    errors.message
-                      ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-                      : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60"
-                  }`}
+                  rows={5}
+                  className={`${fieldBase} ${fieldState(errors.message)} resize-none`}
                   placeholder="Please provide a detailed description of your inquiry. Include any relevant information that will help us assist you better."
                 />
                 <div className="flex justify-between items-start mt-2">
@@ -352,19 +417,16 @@ export function ContactSection() {
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="border-t border-[--color-border]/30 my-8"></div>
-
             {/* Submit Section */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="text-xs text-slate-400">
+            <div className="mt-7 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="text-xs text-slate-400 sm:max-w-[55%]">
                 <span className="text-[var(--primary)] mr-1">*</span>
                 <span>Required fields. Your information will be kept confidential.</span>
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-10 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/20 transition-all duration-300 hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg min-w-[160px]"
+                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/20 transition-all duration-300 hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg sm:min-w-[180px]"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2.5">
                   {isSubmitting ? (
@@ -381,7 +443,7 @@ export function ContactSection() {
                     </>
                   ) : (
                     <>
-                      Submit Inquiry
+                      Send Message
                       <svg
                         className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
                         fill="none"
@@ -397,59 +459,6 @@ export function ContactSection() {
               </button>
             </div>
           </form>
-
-          {/* Contact Information */}
-          <div
-            className={`mt-16 grid grid-cols-1 md:grid-cols-3 gap-6 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-            style={{ transitionDelay: "300ms" }}
-          >
-            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[var(--primary)]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/10">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
-                <svg className="h-7 w-7 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-base font-semibold text-white mb-2.5">Email Support</h3>
-              <p className="text-sm text-slate-400 font-medium">support@quantivahq.com</p>
-              <p className="text-xs text-slate-500 mt-1">We respond within 24 hours</p>
-            </div>
-
-            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[var(--primary)]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/10">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
-                <svg className="h-7 w-7 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-base font-semibold text-white mb-2.5">Phone Support</h3>
-              <p className="text-sm text-slate-400 font-medium">+1 (747) 800-7952</p>
-              <p className="text-xs text-slate-500 mt-1">Available during business hours</p>
-            </div>
-
-            <div className="group text-center p-8 rounded-2xl bg-gradient-to-br from-[--color-surface-alt]/60 to-[--color-surface-alt]/40 border border-[--color-border]/50 backdrop-blur-sm hover:border-[var(--primary)]/30 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.3)]/10">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 mb-5 group-hover:scale-110 transition-transform duration-300">
-                <svg className="h-7 w-7 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-base font-semibold text-white mb-2.5">Business Hours</h3>
-              <p className="text-sm text-slate-400 font-medium">Monday - Friday</p>
-              <p className="text-xs text-slate-500 mt-1">9:00 AM - 6:00 PM EST</p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
