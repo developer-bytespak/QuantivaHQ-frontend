@@ -8,6 +8,7 @@ import { FeaturesSection } from "./features-section";
 import { HowItWorksSection } from "./how-it-works-section";
 import { TestimonialsSection } from "./testimonials-section";
 import { PricingSection } from "./pricing-section";
+import { AppDownloadSection } from "./app-download-section";
 import { ContactSection } from "./contact-section";
 import { HomepageFooter } from "./homepage-footer";
 import { useEffect } from "react";
@@ -95,6 +96,7 @@ export function Homepage() {
       <HowItWorksSection />
       <TestimonialsSection />
       <PricingSection />
+      <AppDownloadSection />
       <ContactSection />
       <HomepageFooter />
     </HomepageLayout>
