@@ -599,6 +599,14 @@ export default function DashboardPage() {
     [],
   );
 
+  // Binance.US is the venue where our close-position flow sweeps leftover dust
+  // into USDT, and where USDT can only be sold back to USD in whole $1 units.
+  // The USDT helper note in the holdings rows is scoped to it so it isn't shown
+  // (inaccurately) on other exchanges.
+  const isBinanceUsConnection = /binance.?us/i.test(
+    activeConnection?.exchange_name || "",
+  );
+
   const openSellModal = useCallback(
     (position: { symbol: string; quantity: number; currentPrice: number }, displaySymbol: string) => {
       const qty = normalizeSellQty(position.quantity);
@@ -946,6 +954,14 @@ export default function DashboardPage() {
                                 </span>
                               )}
                             </div>
+                            {isBinanceUsConnection && symbol.toUpperCase() === "USDT" && (
+                              <p
+                                className="mt-1 text-[9px] leading-tight text-slate-500"
+                                title="Leftover dust from closed positions is converted into USDT. Binance.US only sells USDT back to USD in whole units, so it can only be sold once the balance reaches $1 or more."
+                              >
+                                Collects dust · sells only at $1 or more
+                              </p>
+                            )}
                           </td>
                           <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm text-slate-300 text-right">{position.quantity.toFixed(4)}</td>
                           <td className="py-3 px-1 sm:px-2 text-[10px] sm:text-sm font-medium text-white text-right">{formatCurrency(position.currentPrice * position.quantity)}</td>
@@ -1536,6 +1552,14 @@ export default function DashboardPage() {
                                 </span>
                               )}
                             </span>
+                            {isBinanceUsConnection && symbol.toUpperCase() === "USDT" && (
+                              <p
+                                className="mt-1 text-[9px] leading-tight text-slate-500"
+                                title="Leftover dust from closed positions is converted into USDT. Binance.US only sells USDT back to USD in whole units, so it can only be sold once the balance reaches $1 or more."
+                              >
+                                Collects dust · sells only at $1 or more
+                              </p>
+                            )}
                           </td>
                           <td className="py-2 px-2 text-slate-300">{position.quantity.toFixed(4)}</td>
                           <td className="py-2 px-2 text-slate-300">{formatCurrency(position.currentPrice * position.quantity)}</td>
