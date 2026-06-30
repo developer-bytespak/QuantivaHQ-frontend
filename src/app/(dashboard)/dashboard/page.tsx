@@ -603,8 +603,12 @@ export default function DashboardPage() {
   // into USDT, and where USDT can only be sold back to USD in whole $1 units.
   // The USDT helper note in the holdings rows is scoped to it so it isn't shown
   // (inaccurately) on other exchanges.
+  // Read the NESTED exchange name (the rest of the app uses `exchange?.name`,
+  // e.g. supportsMargin in ExchangeContext); the flat `exchange_name` isn't
+  // populated on the active connection, so relying on it left this always false
+  // and the USDT note never rendered.
   const isBinanceUsConnection = /binance.?us/i.test(
-    activeConnection?.exchange_name || "",
+    activeConnection?.exchange?.name || activeConnection?.exchange_name || "",
   );
 
   const openSellModal = useCallback(
@@ -991,14 +995,19 @@ export default function DashboardPage() {
                                   Insight
                                 </button>
                               )}
-                              <button
-                                onClick={() => openSellModal(position, symbol)}
-                                disabled={position.quantity <= 0}
-                                className="rounded-md bg-rose-500/10 border border-rose-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                                title={`Sell ${symbol} at market`}
-                              >
-                                Sell
-                              </button>
+                              {/* USD is the fiat quote currency — there's no
+                                  USD/USD market, so it can't be sold. Hide the
+                                  Sell button for it (USDT keeps its Sell). */}
+                              {symbol.toUpperCase() !== "USD" && (
+                                <button
+                                  onClick={() => openSellModal(position, symbol)}
+                                  disabled={position.quantity <= 0}
+                                  className="rounded-md bg-rose-500/10 border border-rose-500/30 px-2 sm:px-3 py-1 text-[10px] sm:text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  title={`Sell ${symbol} at market`}
+                                >
+                                  Sell
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1589,14 +1598,19 @@ export default function DashboardPage() {
                                   Insight
                                 </button>
                               )}
-                              <button
-                                onClick={() => openSellModal(position, symbol)}
-                                disabled={position.quantity <= 0}
-                                className="rounded-md bg-rose-500/10 border border-rose-500/30 px-3 py-1 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                                title={`Sell ${symbol} at market`}
-                              >
-                                Sell
-                              </button>
+                              {/* USD is the fiat quote currency — there's no
+                                  USD/USD market, so it can't be sold. Hide the
+                                  Sell button for it (USDT keeps its Sell). */}
+                              {symbol.toUpperCase() !== "USD" && (
+                                <button
+                                  onClick={() => openSellModal(position, symbol)}
+                                  disabled={position.quantity <= 0}
+                                  className="rounded-md bg-rose-500/10 border border-rose-500/30 px-3 py-1 text-xs font-semibold text-rose-300 transition-all hover:bg-rose-500/20 hover:text-rose-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  title={`Sell ${symbol} at market`}
+                                >
+                                  Sell
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
