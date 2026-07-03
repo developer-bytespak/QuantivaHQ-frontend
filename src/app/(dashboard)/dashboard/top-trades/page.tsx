@@ -99,6 +99,7 @@ interface Trade {
   hoursAgo: number;
   // NEW: Tier-1 Trend Ranking fields
   trend_score?: number;
+  finalScore?: number; // normalized 0..1 engine final_score (risk-level filter + sort)
   trend_direction?: "TRENDING_UP" | "TRENDING_DOWN" | "STABLE";
   score_change?: number;
   volume_ratio?: number;
@@ -252,7 +253,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
   // UI filters / pagination / overlay
   const [timeFilter, setTimeFilter] = useState<"24h" | "7d" | "30d" | "all">("all");
-  const [sortBy, setSortBy] = useState<"profit" | "volume" | "winrate">("profit");
+  // Risk level = signal conviction by final_score. Low = high-conviction (>=0.4),
+  // High = marginal/speculative (0.3-0.4). "both" shows everything.
+  const [riskLevel, setRiskLevel] = useState<"both" | "low" | "high">("both");
   const [minEntryFilter, setMinEntryFilter] = useState("");
   const [maxEntryFilter, setMaxEntryFilter] = useState("");
   const [showEntryFilter, setShowEntryFilter] = useState(false);
@@ -860,6 +863,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         winRateValue: Number(winRate ?? 0) || 0,
         hoursAgo: signal.timestamp ? Math.floor((Date.now() - new Date(signal.timestamp).getTime()) / (1000 * 60 * 60)) : 0,
         trend_score: trendScore !== null && trendScore !== undefined ? Number(trendScore) : 0, // Show 0 if no signal/trend_score available
+        finalScore: normalizedScore, // 0..1 conviction, drives risk-level filter + sort
         trend_direction: "STABLE",
         score_change: 0,
         volume_ratio: 1,
@@ -967,22 +971,21 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       const hoursLimit = timeFilter === "24h" ? 24 : timeFilter === "7d" ? 168 : 720;
       filtered = filtered.filter((trade) => trade.hoursAgo <= hoursLimit);
     }
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "profit":
-          return b.profitValue - a.profitValue;
-        case "volume":
-          return b.volumeValue - a.volumeValue;
-        case "winrate":
-          return b.winRateValue - a.winRateValue;
-        default:
-          return 0;
-      }
-    });
+    // Risk-level filter by signal conviction (final_score):
+    //   low  = final_score >= 0.4  (high-conviction, engines aligned)
+    //   high = final_score <  0.4  (0.3-0.4 marginal / speculative)
+    if (riskLevel !== "both") {
+      filtered = filtered.filter((trade) => {
+        const fs = Number(trade.finalScore ?? 0);
+        return riskLevel === "low" ? fs >= 0.4 : fs < 0.4;
+      });
+    }
+    // Always show highest-conviction (final_score) first.
+    filtered.sort((a, b) => Number(b.finalScore ?? 0) - Number(a.finalScore ?? 0));
     return filtered;
   }, [
     timeFilter,
-    sortBy,
+    riskLevel,
     currentTrades,
     hasMinEntryFilter,
     hasMaxEntryFilter,
@@ -1217,7 +1220,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
     if (leaderboardPositionsPage > maxPositionsPage) setLeaderboardPositionsPage(maxPositionsPage);
   }, [modalPositions.length, leaderboardPositionsPage]);
 
-  useEffect(() => { setCurrentPage(1); }, [timeFilter, sortBy, minEntryFilter, maxEntryFilter, currentTrades.length, activeTab]);
+  useEffect(() => { setCurrentPage(1); }, [timeFilter, riskLevel, minEntryFilter, maxEntryFilter, currentTrades.length, activeTab]);
 
   // --- Sell handlers (leaderboard open positions) ---
   const exchangeName = activeConnection?.exchange?.name || "";
@@ -1636,14 +1639,15 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             {currentStrategy ? `${currentStrategy.name} Signals` : 'Trading Signals'}
           </h2>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400">Sort by:</span>
+            <span className="text-xs text-slate-400">Risk level:</span>
             <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "profit" | "volume" | "winrate")}
+              value={riskLevel}
+              onChange={(e) => setRiskLevel(e.target.value as "both" | "low" | "high")}
               className="rounded-lg  bg-[--color-surface] px-3 py-1.5 text-xs font-medium text-white focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             >
-              <option value="profit">24h Change</option>
-              <option value="volume">Volume</option>
+              <option value="both">Both</option>
+              <option value="low">Low risk</option>
+              <option value="high">High risk</option>
             </select>
           </div>
         </div>
