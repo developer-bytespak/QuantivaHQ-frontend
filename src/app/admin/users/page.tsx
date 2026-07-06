@@ -18,8 +18,8 @@ import {
 } from "recharts";
 import {
   adminMe,
-  adminSuperGenerateUsersEmailsPdf,
   adminSuperGenerateUsersSummaryPdf,
+  adminSuperGetAllUserEmails,
   adminSuperListUsers,
   adminSuperUsersAnalytics,
   adminSuperUsersGrowth,
@@ -90,7 +90,7 @@ export default function AdminUsersPage() {
   const [growthActiveOnly, setGrowthActiveOnly] = useState(false);
 
   const [summaryPdfLoading, setSummaryPdfLoading] = useState(false);
-  const [emailsPdfLoading, setEmailsPdfLoading] = useState(false);
+  const [emailAllLoading, setEmailAllLoading] = useState(false);
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
   const [summaryWindow, setSummaryWindow] = useState<SummaryWindowDays>(0);
   const [summarySections, setSummarySections] = useState<
@@ -154,29 +154,50 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleGenerateEmailsPdf = async () => {
-    if (emailsPdfLoading) return;
-    setEmailsPdfLoading(true);
+  const handleEmailAllUsers = async () => {
+    if (emailAllLoading) return;
+    setEmailAllLoading(true);
     try {
-      const blob = await adminSuperGenerateUsersEmailsPdf();
-      const url = URL.createObjectURL(blob);
-      const today = new Date().toISOString().slice(0, 10);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `quantiva-user-emails-${today}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      showNotification("User emails PDF downloaded", "success");
+      const { emails } = await adminSuperGetAllUserEmails();
+      if (emails.length === 0) {
+        showNotification("No user emails found", "error");
+        return;
+      }
+
+      const bcc = emails.join(",");
+      const mailto = `mailto:?bcc=${encodeURIComponent(bcc)}`;
+
+      // mailto: URLs that are too long get silently truncated by the OS/mail
+      // handler, dropping recipients. Above a safe threshold, copy the list to
+      // the clipboard and open an empty compose window instead.
+      const SAFE_MAILTO_LENGTH = 1900;
+      if (mailto.length <= SAFE_MAILTO_LENGTH) {
+        window.location.href = mailto;
+        showNotification(
+          `Opening your mail app with ${emails.length} recipients`,
+          "success",
+        );
+      } else {
+        try {
+          await navigator.clipboard.writeText(bcc);
+          window.location.href = "mailto:";
+          showNotification(
+            `${emails.length} recipients copied to clipboard — paste them into the BCC field`,
+            "success",
+          );
+        } catch {
+          showNotification(
+            "Too many recipients for your mail app to open automatically, and clipboard copy failed. Use “Generate User Summary” to export the list instead.",
+            "error",
+          );
+        }
+      }
     } catch (err: unknown) {
       const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to generate user emails PDF";
+        err instanceof Error ? err.message : "Failed to load user emails";
       showNotification(message, "error");
     } finally {
-      setEmailsPdfLoading(false);
+      setEmailAllLoading(false);
     }
   };
 
@@ -569,11 +590,11 @@ export default function AdminUsersPage() {
             </button>
             <button
               type="button"
-              onClick={handleGenerateEmailsPdf}
-              disabled={emailsPdfLoading}
+              onClick={handleEmailAllUsers}
+              disabled={emailAllLoading}
               className="inline-flex items-center justify-center gap-2 rounded-md bg-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {emailsPdfLoading ? (
+              {emailAllLoading ? (
                 <svg
                   className="h-3.5 w-3.5 animate-spin"
                   viewBox="0 0 24 24"
@@ -608,7 +629,7 @@ export default function AdminUsersPage() {
                   <path d="m4 7 8 6 8-6" />
                 </svg>
               )}
-              {emailsPdfLoading ? "Generating…" : "Get all User Emails"}
+              {emailAllLoading ? "Preparing…" : "Email all users"}
             </button>
           </div>
         </div>
