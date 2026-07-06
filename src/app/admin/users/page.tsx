@@ -18,6 +18,7 @@ import {
 } from "recharts";
 import {
   adminMe,
+  adminSuperGenerateUsersEmailsPdf,
   adminSuperGenerateUsersSummaryPdf,
   adminSuperListUsers,
   adminSuperUsersAnalytics,
@@ -89,6 +90,7 @@ export default function AdminUsersPage() {
   const [growthActiveOnly, setGrowthActiveOnly] = useState(false);
 
   const [summaryPdfLoading, setSummaryPdfLoading] = useState(false);
+  const [emailsPdfLoading, setEmailsPdfLoading] = useState(false);
   const [summaryModalOpen, setSummaryModalOpen] = useState(false);
   const [summaryWindow, setSummaryWindow] = useState<SummaryWindowDays>(0);
   const [summarySections, setSummarySections] = useState<
@@ -149,6 +151,32 @@ export default function AdminUsersPage() {
       showNotification(message, "error");
     } finally {
       setSummaryPdfLoading(false);
+    }
+  };
+
+  const handleGenerateEmailsPdf = async () => {
+    if (emailsPdfLoading) return;
+    setEmailsPdfLoading(true);
+    try {
+      const blob = await adminSuperGenerateUsersEmailsPdf();
+      const url = URL.createObjectURL(blob);
+      const today = new Date().toISOString().slice(0, 10);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `quantiva-user-emails-${today}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showNotification("User emails PDF downloaded", "success");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to generate user emails PDF";
+      showNotification(message, "error");
+    } finally {
+      setEmailsPdfLoading(false);
     }
   };
 
@@ -518,26 +546,71 @@ export default function AdminUsersPage() {
               All platform users with plan, subscription, and activity insights.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={openSummaryModal}
-            className="inline-flex shrink-0 items-center gap-2 self-start rounded-md bg-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25"
-          >
-            <svg
-              className="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          <div className="flex shrink-0 flex-col items-stretch gap-2 self-start sm:items-end">
+            <button
+              type="button"
+              onClick={openSummaryModal}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25"
             >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Generate User Summary
-          </button>
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Generate User Summary
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerateEmailsPdf}
+              disabled={emailsPdfLoading}
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white shadow-sm ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {emailsPdfLoading ? (
+                <svg
+                  className="h-3.5 w-3.5 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeOpacity="0.35"
+                    strokeWidth="3"
+                  />
+                  <path
+                    d="M22 12a10 10 0 0 1-10 10"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 4h16v16H4z" />
+                  <path d="m4 7 8 6 8-6" />
+                </svg>
+              )}
+              {emailsPdfLoading ? "Generating…" : "Get all User Emails"}
+            </button>
+          </div>
         </div>
       </div>
 
