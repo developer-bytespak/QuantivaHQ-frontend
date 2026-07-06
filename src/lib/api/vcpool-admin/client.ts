@@ -412,6 +412,15 @@ export async function adminSuperGenerateUsersSummaryPdf(
   return data;
 }
 
+/** GET /admin/super-admin/users/emails-pdf — returns a PDF blob of all user names + emails */
+export async function adminSuperGenerateUsersEmailsPdf(): Promise<Blob> {
+  const { data } = await adminAxios.get<Blob>(
+    "/admin/super-admin/users/emails-pdf",
+    { responseType: "blob" },
+  );
+  return data;
+}
+
 /** GET /admin/super-admin/finance/unified */
 export async function adminSuperUnifiedFinance(
   params?: SuperAdminUnifiedFinanceFilters
