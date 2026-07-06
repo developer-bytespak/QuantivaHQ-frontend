@@ -412,11 +412,13 @@ export async function adminSuperGenerateUsersSummaryPdf(
   return data;
 }
 
-/** GET /admin/super-admin/users/emails-pdf — returns a PDF blob of all user names + emails */
-export async function adminSuperGenerateUsersEmailsPdf(): Promise<Blob> {
-  const { data } = await adminAxios.get<Blob>(
-    "/admin/super-admin/users/emails-pdf",
-    { responseType: "blob" },
+/** GET /admin/super-admin/users/emails — returns every user's email address */
+export async function adminSuperGetAllUserEmails(): Promise<{
+  emails: string[];
+  total: number;
+}> {
+  const { data } = await adminAxios.get<{ emails: string[]; total: number }>(
+    "/admin/super-admin/users/emails",
   );
   return data;
 }
