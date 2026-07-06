@@ -165,29 +165,45 @@ export default function AdminUsersPage() {
       }
 
       const bcc = emails.join(",");
-      // Open Gmail's web compose directly in a new tab. This is more reliable
-      // than a mailto: link, which Windows routes through the OS default-app
-      // picker (and can land on the Chrome profile chooser instead of email).
-      const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(bcc)}`;
 
-      // Browsers cap URL length (~8k). With a very large list the recipients
-      // would be truncated, so copy them to the clipboard and open an empty
-      // compose window instead.
-      const SAFE_URL_LENGTH = 7000;
-      if (composeUrl.length <= SAFE_URL_LENGTH) {
-        window.open(composeUrl, "_blank", "noopener,noreferrer");
+      // Platform-aware compose target:
+      // - Mobile: a mailto: link opens the native mail app cleanly. Gmail's web
+      //   compose deep-link gets swallowed on phones (it redirects to the app's
+      //   inbox and drops the BCC prefill).
+      // - Desktop: the reverse — mailto: routes through the OS default-app
+      //   picker (e.g. the Chrome profile chooser on Windows), so open Gmail's
+      //   web compose directly instead.
+      const isMobile = /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(
+        navigator.userAgent,
+      );
+      const openCompose = (bccList: string) => {
+        if (isMobile) {
+          window.location.href = bccList
+            ? `mailto:?bcc=${encodeURIComponent(bccList)}`
+            : "mailto:";
+        } else {
+          const url = bccList
+            ? `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(bccList)}`
+            : "https://mail.google.com/mail/?view=cm&fs=1";
+          window.open(url, "_blank", "noopener,noreferrer");
+        }
+      };
+
+      // URLs / mailto: targets get truncated when very long, dropping
+      // recipients. Above a safe threshold, copy the list to the clipboard and
+      // open an empty compose instead. mailto: has a tighter practical cap.
+      const encodedLength = encodeURIComponent(bcc).length;
+      const SAFE_LENGTH = isMobile ? 1500 : 7000;
+      if (encodedLength <= SAFE_LENGTH) {
+        openCompose(bcc);
         showNotification(
-          `Opening Gmail with ${emails.length} recipients in BCC`,
+          `Opening your mail app with ${emails.length} recipients in BCC`,
           "success",
         );
       } else {
         try {
           await navigator.clipboard.writeText(bcc);
-          window.open(
-            "https://mail.google.com/mail/?view=cm&fs=1",
-            "_blank",
-            "noopener,noreferrer",
-          );
+          openCompose("");
           showNotification(
             `${emails.length} recipients copied to clipboard — paste them into the BCC field`,
             "success",
