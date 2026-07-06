@@ -156,36 +156,53 @@ export default function AdminUsersPage() {
 
   const handleEmailAllUsers = async () => {
     if (emailAllLoading) return;
+
+    // Platform-aware compose target:
+    // - Mobile: a mailto: link opens the native mail app cleanly. Gmail's web
+    //   compose deep-link gets swallowed on phones (it redirects to the app's
+    //   inbox and drops the BCC prefill).
+    // - Desktop: the reverse — mailto: routes through the OS default-app picker
+    //   (e.g. the Chrome profile chooser on Windows), so open Gmail's web
+    //   compose directly instead.
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(
+      navigator.userAgent,
+    );
+
+    // Safari only allows window.open inside the click gesture. The await below
+    // drops the user-activation flag, so on desktop we must open the tab
+    // synchronously *now* and point it at Gmail once the emails have loaded.
+    // (No "noopener" — that would make window.open return null and we'd lose
+    // the handle. We clear opener manually instead.)
+    const composeWindow = isMobile
+      ? null
+      : window.open("about:blank", "_blank");
+    if (composeWindow) composeWindow.opener = null;
+
     setEmailAllLoading(true);
     try {
       const { emails } = await adminSuperGetAllUserEmails();
       if (emails.length === 0) {
+        composeWindow?.close();
         showNotification("No user emails found", "error");
         return;
       }
 
       const bcc = emails.join(",");
+      const gmailComposeUrl = (bccList: string) =>
+        bccList
+          ? `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(bccList)}`
+          : "https://mail.google.com/mail/?view=cm&fs=1";
 
-      // Platform-aware compose target:
-      // - Mobile: a mailto: link opens the native mail app cleanly. Gmail's web
-      //   compose deep-link gets swallowed on phones (it redirects to the app's
-      //   inbox and drops the BCC prefill).
-      // - Desktop: the reverse — mailto: routes through the OS default-app
-      //   picker (e.g. the Chrome profile chooser on Windows), so open Gmail's
-      //   web compose directly instead.
-      const isMobile = /Android|iPhone|iPad|iPod|Mobile|Silk/i.test(
-        navigator.userAgent,
-      );
       const openCompose = (bccList: string) => {
         if (isMobile) {
           window.location.href = bccList
             ? `mailto:?bcc=${encodeURIComponent(bccList)}`
             : "mailto:";
+        } else if (composeWindow) {
+          composeWindow.location.href = gmailComposeUrl(bccList);
         } else {
-          const url = bccList
-            ? `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(bccList)}`
-            : "https://mail.google.com/mail/?view=cm&fs=1";
-          window.open(url, "_blank", "noopener,noreferrer");
+          // Popup was blocked despite the synchronous open — last-resort tab.
+          window.open(gmailComposeUrl(bccList), "_blank", "noopener,noreferrer");
         }
       };
 
@@ -209,6 +226,7 @@ export default function AdminUsersPage() {
             "success",
           );
         } catch {
+          composeWindow?.close();
           showNotification(
             "Too many recipients to open automatically, and clipboard copy failed. Use “Generate User Summary” to export the list instead.",
             "error",
@@ -216,6 +234,7 @@ export default function AdminUsersPage() {
         }
       }
     } catch (err: unknown) {
+      composeWindow?.close();
       const message =
         err instanceof Error ? err.message : "Failed to load user emails";
       showNotification(message, "error");
