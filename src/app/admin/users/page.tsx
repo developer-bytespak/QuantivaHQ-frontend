@@ -165,29 +165,36 @@ export default function AdminUsersPage() {
       }
 
       const bcc = emails.join(",");
-      const mailto = `mailto:?bcc=${encodeURIComponent(bcc)}`;
+      // Open Gmail's web compose directly in a new tab. This is more reliable
+      // than a mailto: link, which Windows routes through the OS default-app
+      // picker (and can land on the Chrome profile chooser instead of email).
+      const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&bcc=${encodeURIComponent(bcc)}`;
 
-      // mailto: URLs that are too long get silently truncated by the OS/mail
-      // handler, dropping recipients. Above a safe threshold, copy the list to
-      // the clipboard and open an empty compose window instead.
-      const SAFE_MAILTO_LENGTH = 1900;
-      if (mailto.length <= SAFE_MAILTO_LENGTH) {
-        window.location.href = mailto;
+      // Browsers cap URL length (~8k). With a very large list the recipients
+      // would be truncated, so copy them to the clipboard and open an empty
+      // compose window instead.
+      const SAFE_URL_LENGTH = 7000;
+      if (composeUrl.length <= SAFE_URL_LENGTH) {
+        window.open(composeUrl, "_blank", "noopener,noreferrer");
         showNotification(
-          `Opening your mail app with ${emails.length} recipients`,
+          `Opening Gmail with ${emails.length} recipients in BCC`,
           "success",
         );
       } else {
         try {
           await navigator.clipboard.writeText(bcc);
-          window.location.href = "mailto:";
+          window.open(
+            "https://mail.google.com/mail/?view=cm&fs=1",
+            "_blank",
+            "noopener,noreferrer",
+          );
           showNotification(
             `${emails.length} recipients copied to clipboard — paste them into the BCC field`,
             "success",
           );
         } catch {
           showNotification(
-            "Too many recipients for your mail app to open automatically, and clipboard copy failed. Use “Generate User Summary” to export the list instead.",
+            "Too many recipients to open automatically, and clipboard copy failed. Use “Generate User Summary” to export the list instead.",
             "error",
           );
         }
