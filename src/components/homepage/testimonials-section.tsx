@@ -1,6 +1,7 @@
 "use client";
 
-import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import { Marquee } from "./motion/marquee";
+import { Reveal } from "./motion/reveal";
 
 interface Testimonial {
   name: string;
@@ -10,35 +11,48 @@ interface Testimonial {
   metric: string;
 }
 
-function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; index: number }) {
-  const { ref: cardRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
+const TESTIMONIALS: Testimonial[] = [
+  {
+    name: "Alex Chen",
+    role: "Professional Trader",
+    quote:
+      "QuantivaHQ's AI strategies have completely transformed my trading. The sentiment analysis is incredibly accurate, and I've seen a 35% increase in my portfolio returns since switching.",
+    rating: 5,
+    metric: "+35%",
+  },
+  {
+    name: "Sarah Martinez",
+    role: "Crypto Investor",
+    quote:
+      "The multi-exchange connectivity is a game-changer. Managing Binance and Bybit from one platform saves me hours every week. The automated strategies are exactly what I needed.",
+    rating: 5,
+    metric: "+28%",
+  },
+  {
+    name: "Emily Rodriguez",
+    role: "Day Trader",
+    quote:
+      "Real-time sentiment analysis from news and social media gives me an edge I never had before. The AI recommendations are spot-on, and execution is seamless.",
+    rating: 5,
+    metric: "+31%",
+  },
+];
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("");
+}
+
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
   return (
-    <div
-      ref={cardRef}
-      className={`relative rounded-3xl border-2 border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/90 via-[--color-surface-alt]/70 to-[--color-surface-alt]/90 p-6 sm:p-8 backdrop-blur-xl transition-all duration-700 ${
-        isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-8 scale-95"
-      }`}
-      style={{ transitionDelay: isVisible ? `${index * 100}ms` : "0ms" }}
-    >
-      {/* Quote Icon */}
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/20">
-        <svg className="h-6 w-6 text-[var(--primary)]" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.984zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-        </svg>
-      </div>
-
-      {/* Quote */}
-      <p className="mb-6 text-base sm:text-lg leading-relaxed text-slate-300 italic">
-        "{testimonial.quote}"
-      </p>
-
-      {/* Rating */}
-      <div className="mb-4 flex items-center gap-1">
+    <div className="flex h-full w-[340px] max-w-[88vw] flex-col rounded-2xl border border-white/10 bg-[#0d0d0d] p-6 sm:w-[400px]">
+      <div className="flex items-center gap-1">
         {[...Array(5)].map((_, i) => (
           <svg
             key={i}
-            className={`h-5 w-5 ${i < testimonial.rating ? "text-[var(--primary-light)]" : "text-slate-600"}`}
+            className={`h-4 w-4 ${i < testimonial.rating ? "text-[var(--primary-light)]" : "text-slate-600"}`}
             fill="currentColor"
             viewBox="0 0 20 20"
           >
@@ -46,97 +60,67 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
           </svg>
         ))}
       </div>
-
-      {/* Author */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-semibold text-white">{testimonial.name}</div>
-          <div className="text-sm text-slate-400">{testimonial.role}</div>
+      <p className="mt-4 flex-1 text-sm leading-relaxed text-slate-300">&ldquo;{testimonial.quote}&rdquo;</p>
+      <div className="mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] text-xs font-bold text-white">
+            {initials(testimonial.name)}
+          </span>
+          <div>
+            <div className="text-sm font-semibold text-white">{testimonial.name}</div>
+            <div className="text-xs text-slate-500">{testimonial.role}</div>
+          </div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-bold text-[var(--primary)]">{testimonial.metric}</div>
-          <div className="text-xs text-slate-500">Performance</div>
+          <div className="text-base font-bold text-[var(--primary-light)]">{testimonial.metric}</div>
+          <div className="text-[10px] uppercase tracking-wide text-slate-500">Performance</div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function ScrollAnimatedHeader({ title, titleHighlight, description }: { title: string; titleHighlight: string; description: string }) {
-  const { ref: headerRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
-
-  return (
-    <div
-      ref={headerRef}
-      className="text-center mb-10 sm:mb-12 md:mb-16"
-    >
-      <h2 className={`text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 transition-all duration-700 ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}>
-        {title}
-        <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent"> {titleHighlight}</span>
-      </h2>
-      <p className="mx-auto max-w-2xl text-sm sm:text-base md:text-lg lg:text-xl text-slate-300 px-4">
-        {description}
-      </p>
     </div>
   );
 }
 
 export function TestimonialsSection() {
-  const testimonials: Testimonial[] = [
-    {
-      name: "Alex Chen",
-      role: "Professional Trader",
-      quote: "QuantivaHQ's AI strategies have completely transformed my trading. The sentiment analysis is incredibly accurate, and I've seen a 35% increase in my portfolio returns since switching.",
-      rating: 5,
-      metric: "+35%",
-    },
-    {
-      name: "Sarah Martinez",
-      role: "Crypto Investor",
-      quote: "The multi-exchange connectivity is a game-changer. Managing Binance and Bybit from one platform saves me hours every week. The automated strategies are exactly what I needed.",
-      rating: 5,
-      metric: "+28%",
-    },
-    {
-      name: "Michael Thompson",
-      role: "Stock Trader",
-      quote: "The portfolio optimization feature is outstanding. It automatically rebalances my positions and I've reduced my risk exposure by 40% while maintaining strong returns.",
-      rating: 5,
-      metric: "+42%",
-    },
-    {
-      name: "Emily Rodriguez",
-      role: "Day Trader",
-      quote: "Real-time sentiment analysis from news and social media gives me an edge I never had before. The AI recommendations are spot-on, and execution is seamless.",
-      rating: 5,
-      metric: "+31%",
-    },
-  ];
-
   return (
-    <section id="testimonials" className="relative pt-16 sm:pt-20 md:pt-24 lg:pt-32 pb-16 sm:pb-20 md:pb-24 lg:pb-32">
-      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <ScrollAnimatedHeader
-          title="Trusted by"
-          titleHighlight="Traders"
-          description="See what our users are saying about QuantivaHQ"
-        />
-
-        {/* Testimonials Grid - Mobile responsive */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-          {testimonials.map((testimonial, index) => (
-            <TestimonialCard
-              key={index}
-              testimonial={testimonial}
-              index={index}
-            />
-          ))}
-        </div>
+    <section id="testimonials" className="relative py-24 sm:py-32">
+      <div className="mx-auto mb-16 max-w-3xl px-4 text-center sm:px-6">
+        <Reveal>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-slate-300 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />
+            Testimonials
+          </span>
+        </Reveal>
+        <Reveal delay={0.08}>
+          <h2 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl">
+            Trusted by{" "}
+            <span
+              className="animate-gradient bg-gradient-to-r from-[var(--primary)] via-[var(--primary-light)] to-[var(--primary)] bg-clip-text text-transparent"
+              style={{ backgroundSize: "200% 200%" }}
+            >
+              Traders
+            </span>
+          </h2>
+        </Reveal>
+        <Reveal delay={0.16}>
+          <p className="mt-5 text-lg text-slate-400">See what our users are saying about QuantivaHQ</p>
+        </Reveal>
       </div>
+
+      {/* Full-bleed dual marquee */}
+      <Reveal amount={0.1}>
+        <div className="space-y-5">
+          <Marquee duration={45}>
+            {TESTIMONIALS.map((t) => (
+              <TestimonialCard key={t.name} testimonial={t} />
+            ))}
+          </Marquee>
+          <Marquee duration={45} reverse>
+            {TESTIMONIALS.map((t) => (
+              <TestimonialCard key={t.name} testimonial={t} />
+            ))}
+          </Marquee>
+        </div>
+      </Reveal>
     </section>
   );
 }
-

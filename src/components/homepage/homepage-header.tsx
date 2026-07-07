@@ -1,20 +1,30 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AnimatePresence, m, useMotionValueEvent, useScroll } from "framer-motion";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { authService } from "@/lib/auth/auth.service";
+import { scrollToId } from "./motion/smooth-scroll";
+
+const NAV_LINKS = [
+  { id: "about", label: "About" },
+  { id: "features", label: "Features" },
+  { id: "how-it-works", label: "How It Works" },
+  { id: "pricing", label: "Pricing" },
+  { id: "contact", label: "Contact" },
+];
 
 export function HomepageHeader() {
   const router = useRouter();
-  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isScrollingDown, setIsScrollingDown] = useState(true);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [accountType, setAccountType] = useState<"crypto" | "stocks" | "both" | null>(null);
-  const lastScrollY = useRef(0);
+
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (y) => setIsScrolled(y > 20));
 
   // Check auth status on mount and when returning to homepage
   const checkAuthStatus = async () => {
@@ -27,18 +37,13 @@ export function HomepageHeader() {
           try {
             await authService.getCurrentUser();
             setIsAuthenticated(true);
-          } catch (err) {
+          } catch {
             // Server says not authenticated, clear localStorage
             localStorage.removeItem("quantivahq_is_authenticated");
             setIsAuthenticated(false);
           }
         } else {
           setIsAuthenticated(false);
-        }
-        
-        const savedAccountType = localStorage.getItem("quantivahq_account_type");
-        if (savedAccountType === "crypto" || savedAccountType === "stocks" || savedAccountType === "both") {
-          setAccountType(savedAccountType);
         }
       } catch (err) {
         console.warn("Error checking auth status:", err);
@@ -49,24 +54,6 @@ export function HomepageHeader() {
 
   useEffect(() => {
     checkAuthStatus();
-    lastScrollY.current = window.scrollY;
-
-    // Handle scroll effect
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Determine scroll direction
-      if (currentScrollY > lastScrollY.current) {
-        // Scrolling down
-        setIsScrollingDown(true);
-      } else if (currentScrollY < lastScrollY.current) {
-        // Scrolling up
-        setIsScrollingDown(false);
-      }
-      
-      setIsScrolled(currentScrollY > 20);
-      lastScrollY.current = currentScrollY;
-    };
 
     // Refresh auth status periodically (localStorage-only, no server call)
     const authCheckInterval = setInterval(() => {
@@ -76,11 +63,24 @@ export function HomepageHeader() {
       }
     }, 30000);
 
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      clearInterval(authCheckInterval);
-    };
+    return () => clearInterval(authCheckInterval);
+  }, []);
+
+  // Track which section is in the middle band of the viewport
+  useEffect(() => {
+    const sections = NAV_LINKS.map((l) => document.getElementById(l.id)).filter(Boolean) as HTMLElement[];
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
+        }
+      },
+      { rootMargin: "-40% 0px -55% 0px" },
+    );
+    sections.forEach((s) => observer.observe(s));
+    return () => observer.disconnect();
   }, []);
 
   const handleGoToDashboard = async () => {
@@ -90,82 +90,72 @@ export function HomepageHeader() {
       await authService.getCurrentUser();
       const { navigateToDashboard } = await import("@/lib/auth/flow-router.service");
       await navigateToDashboard(router);
-    } catch (error: any) {
+    } catch {
       router.push("/onboarding/sign-up?tab=login");
     }
   };
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-      setIsMobileMenuOpen(false);
-    }
+    scrollToId(sectionId, -88);
+    setIsMobileMenuOpen(false);
   };
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
-        isScrolled
-          ? "bg-black/80 backdrop-blur-md border-b border-[--color-border] shadow-lg"
-          : "bg-black/40 backdrop-blur-sm"
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ${
+        isScrolled ? "bg-black/60 backdrop-blur-xl" : "bg-transparent"
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-20 items-center justify-between">
+        <div
+          className={`flex items-center justify-between transition-all duration-500 ${
+            isScrolled ? "h-16" : "h-20"
+          }`}
+        >
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <QuantivaLogo className="h-10 w-10 sm:h-12 sm:w-12 transition-transform duration-300 group-hover:scale-[1.02]" />
+          <Link href="/" className="group flex items-center gap-3">
+            <QuantivaLogo
+              className={`transition-all duration-500 group-hover:scale-[1.04] ${
+                isScrolled ? "h-9 w-9" : "h-10 w-10 sm:h-12 sm:w-12"
+              }`}
+            />
             <div className="flex flex-col leading-tight">
-              <span className="text-base sm:text-lg font-bold uppercase tracking-[0.15em] text-white">
+              <span className="text-base font-bold uppercase tracking-[0.15em] text-white sm:text-lg">
                 QuantivaHQ
               </span>
-              <span className="text-[10px] sm:text-xs text-slate-400 group-hover:text-slate-300 transition-colors">
+              <span className="text-[10px] text-slate-400 transition-colors group-hover:text-slate-300 sm:text-xs">
                 Trade with Intelligence
               </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <button
-              onClick={() => scrollToSection("about")}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
-            >
-              About
-            </button>
-            <button
-              onClick={() => scrollToSection("features")}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
-            >
-              Features
-            </button>
-            <button
-              onClick={() => scrollToSection("how-it-works")}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
-            >
-              How It Works
-            </button>
-            <button
-              onClick={() => scrollToSection("pricing")}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
-            >
-              Pricing
-            </button>
-            <button
-              onClick={() => scrollToSection("contact")}
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
-            >
-              Contact
-            </button>
+          {/* Desktop Navigation — floating pill */}
+          <nav
+            className={`hidden items-center gap-1 rounded-full p-1 transition-all duration-500 md:flex ${
+              isScrolled ? "border border-white/10 bg-white/[0.04] backdrop-blur-xl" : "border border-transparent"
+            }`}
+          >
+            {NAV_LINKS.map((link) => (
+              <button
+                key={link.id}
+                onClick={() => scrollToSection(link.id)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-300 cursor-pointer ${
+                  activeSection === link.id
+                    ? "bg-white/10 text-white"
+                    : "text-slate-300 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                {link.label}
+              </button>
+            ))}
           </nav>
 
           {/* Auth Buttons */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden items-center gap-3 md:flex">
             {isAuthenticated ? (
               <button
                 onClick={handleGoToDashboard}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40 cursor-pointer"
+                className="group relative cursor-pointer overflow-hidden rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.25)] transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.35)]"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Go to Dashboard
@@ -179,13 +169,13 @@ export function HomepageHeader() {
               <>
                 <Link
                   href="/onboarding/sign-up?tab=login"
-                  className="group rounded-xl border-2 border-white bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all duration-300 hover:bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] hover:border-none hover:scale-[1.02] cursor-pointer"
+                  className="rounded-full px-5 py-2.5 text-sm font-semibold text-slate-200 transition-colors duration-300 hover:bg-white/5 hover:text-white"
                 >
-                  <span className="text-white group-hover:text-black">Login</span>
+                  Login
                 </Link>
                 <Link
                   href="/onboarding/sign-up?tab=signup"
-                  className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40 cursor-pointer"
+                  className="group relative overflow-hidden rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.25)] transition-all duration-300 hover:scale-[1.03] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.35)]"
                 >
                   <span className="relative z-10">Sign Up</span>
                   <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
@@ -197,7 +187,7 @@ export function HomepageHeader() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-slate-300 hover:text-white hover:bg-[--color-surface] transition-colors cursor-pointer"
+            className="cursor-pointer rounded-lg p-2 text-slate-300 transition-colors hover:bg-white/5 hover:text-white md:hidden"
             aria-label="Toggle menu"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -211,77 +201,70 @@ export function HomepageHeader() {
         </div>
       </div>
 
-      {/* Yellowish-orange horizontal line at the bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-[var(--primary)] via-[var(--primary-light)] to-[var(--primary)]"></div>
+      {/* Gradient hairline, only once scrolled */}
+      <div
+        className={`absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent transition-opacity duration-500 ${
+          isScrolled ? "opacity-60" : "opacity-0"
+        }`}
+      />
 
       {/* Mobile Menu */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-[--color-border] bg-black/95 backdrop-blur-md">
-          <nav className="px-4 py-4 space-y-3">
-            <button
-              onClick={() => scrollToSection("about")}
-              className="block w-full text-left text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"
-            >
-              About
-            </button>
-            <button
-              onClick={() => scrollToSection("features")}
-              className="block w-full text-left text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"
-            >
-              Features
-            </button>
-            <button
-              onClick={() => scrollToSection("how-it-works")}
-              className="block w-full text-left text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"
-            >
-              How It Works
-            </button>
-            <button
-              onClick={() => scrollToSection("pricing")}
-              className="block w-full text-left text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"
-            >
-              Pricing
-            </button>
-            <button
-              onClick={() => scrollToSection("contact")}
-              className="block w-full text-left text-sm font-medium text-slate-300 hover:text-white transition-colors py-2 cursor-pointer"
-            >
-              Contact
-            </button>
-            <div className="pt-4 border-t border-[--color-border] space-y-3">
-              {isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    handleGoToDashboard();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <m.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="border-t border-white/10 bg-black/95 backdrop-blur-xl md:hidden"
+          >
+            <nav className="space-y-1 px-4 py-4">
+              {NAV_LINKS.map((link, i) => (
+                <m.button
+                  key={link.id}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: 0.05 + i * 0.05, ease: "easeOut" }}
+                  onClick={() => scrollToSection(link.id)}
+                  className="block w-full cursor-pointer rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
                 >
-                  Go to Dashboard
-                </button>
-              ) : (
-                <>
-                  <Link
-                    href="/onboarding/sign-up?tab=login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
+                  {link.label}
+                </m.button>
+              ))}
+              <div className="space-y-3 border-t border-white/10 pt-4">
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => {
+                      handleGoToDashboard();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full cursor-pointer rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-center text-sm font-semibold text-white"
                   >
-                    Login
-                  </Link>
-                  <Link
-                    href="/onboarding/sign-up?tab=signup"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="block w-full rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-sm font-semibold text-white text-center cursor-pointer"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
-            </div>
-          </nav>
-        </div>
-      )}
+                    Go to Dashboard
+                  </button>
+                ) : (
+                  <>
+                    <Link
+                      href="/onboarding/sign-up?tab=login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full rounded-full border border-white/15 px-6 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-white/5"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/onboarding/sign-up?tab=signup"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-6 py-2.5 text-center text-sm font-semibold text-white"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </div>
+            </nav>
+          </m.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
-
