@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import { submitContactForm } from "@/lib/api/contact";
+import { Reveal } from "./motion/reveal";
 
 export function ContactSection() {
   const [formData, setFormData] = useState({
@@ -16,7 +16,6 @@ export function ContactSection() {
   const [errors, setErrors] = useState<Partial<typeof formData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
-  const { ref: sectionRef, isVisible } = useScrollAnimation({ threshold: 0.1 });
 
   const validateForm = () => {
     const newErrors: Partial<typeof formData> = {};
@@ -127,11 +126,11 @@ export function ContactSection() {
 
   // Shared field styling
   const fieldBase =
-    "w-full px-4 py-3.5 rounded-xl bg-[--color-surface]/70 border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-[--color-border]";
+    "w-full px-4 py-3.5 rounded-xl bg-white/[0.04] border text-white placeholder-slate-500/60 text-sm focus:outline-none focus:ring-2 transition-all duration-200 hover:border-white/20";
   const fieldState = (hasError?: string) =>
     hasError
       ? "border-red-500/50 focus:ring-red-500/40 focus:border-red-500/60"
-      : "border-[--color-border]/60 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60";
+      : "border-white/10 focus:ring-[var(--primary)]/40 focus:border-[var(--primary)]/60 focus:shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)]";
 
   const contactMethods = [
     {
@@ -163,8 +162,7 @@ export function ContactSection() {
   return (
     <section
       id="contact"
-      ref={sectionRef}
-      className="relative pb-16 sm:pb-20 md:pb-24 lg:pb-32 pt-8 sm:pt-12 overflow-hidden"
+      className="relative overflow-hidden py-24 sm:py-32"
     >
       {/* Decorative "rising moon" background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -201,17 +199,13 @@ export function ContactSection() {
       <div className="relative z-10 mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 items-start">
           {/* ── Left: value + contact methods ─────────────────────────── */}
-          <div
-            className={`lg:col-span-2 lg:sticky lg:top-28 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-          >
+          <Reveal className="lg:col-span-2 lg:sticky lg:top-28">
             <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(var(--primary-rgb),0.4)] bg-[rgba(var(--primary-rgb),0.1)] px-4 py-1.5 text-xs sm:text-sm font-medium text-[var(--primary-light)] mb-5">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--primary)] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--primary)]" />
               </span>
-              We're here to help
+              We&apos;re here to help
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
@@ -222,7 +216,7 @@ export function ContactSection() {
             </h2>
             <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-md mb-8">
               Have questions about Quantiva HQ? Our team is ready to help with
-              sales, support, and partnership inquiries. Reach out and we'll get
+              sales, support, and partnership inquiries. Reach out and we&apos;ll get
               back to you as soon as possible.
             </p>
 
@@ -231,7 +225,7 @@ export function ContactSection() {
               {contactMethods.map((m) => (
                 <div
                   key={m.title}
-                  className="group flex items-center gap-4 rounded-2xl border border-[--color-border]/50 bg-[--color-surface-alt]/40 backdrop-blur-sm p-4 transition-all duration-300 hover:border-[var(--primary)]/40 hover:bg-[--color-surface-alt]/60"
+                  className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-4 transition-all duration-300 hover:border-[var(--primary)]/40 hover:bg-white/[0.06]"
                 >
                   <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 transition-transform duration-300 group-hover:scale-110">
                     <svg className="h-6 w-6 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -246,15 +240,13 @@ export function ContactSection() {
                 </div>
               ))}
             </div>
-          </div>
+          </Reveal>
 
           {/* ── Right: glassmorphic form ──────────────────────────────── */}
+          <Reveal delay={0.12} className="lg:col-span-3">
           <form
             onSubmit={handleSubmit}
-            className={`lg:col-span-3 relative overflow-hidden bg-[--color-surface-alt]/60 backdrop-blur-2xl border border-white/10 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/30 p-6 sm:p-8 md:p-10 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-            }`}
-            style={{ transitionDelay: "150ms" }}
+            className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-2xl shadow-black/30 backdrop-blur-2xl sm:rounded-3xl sm:p-8 md:p-10"
           >
             {/* Glass highlight along the top edge */}
             <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
@@ -262,7 +254,7 @@ export function ContactSection() {
             {/* Form Header */}
             <div className="mb-6 sm:mb-8">
               <h3 className="text-xl sm:text-2xl font-bold text-white mb-1.5">Send us a message</h3>
-              <p className="text-xs sm:text-sm text-slate-400">Fill out the form and we'll get back to you promptly.</p>
+              <p className="text-xs sm:text-sm text-slate-400">Fill out the form and we&apos;ll get back to you promptly.</p>
             </div>
 
             {/* Success/Error Messages */}
@@ -271,7 +263,7 @@ export function ContactSection() {
                 <svg className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Thank you for your message! We'll get back to you within 24 hours.</span>
+                <span>Thank you for your message! We&apos;ll get back to you within 24 hours.</span>
               </div>
             )}
             {submitStatus === "error" && Object.keys(errors).length > 0 && (
@@ -426,7 +418,7 @@ export function ContactSection() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/20 transition-all duration-300 hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg sm:min-w-[180px]"
+                className="group relative overflow-hidden rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.25)] transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.35)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 sm:min-w-[180px]"
               >
                 <span className="relative z-10 flex items-center justify-center gap-2.5">
                   {isSubmitting ? (
@@ -459,6 +451,7 @@ export function ContactSection() {
               </button>
             </div>
           </form>
+          </Reveal>
         </div>
       </div>
     </section>

@@ -696,3 +696,136 @@ input[type="date"]:hover {
 .scrollbar-show::-webkit-scrollbar-thumb:hover {
   background: rgba(252, 79, 2, 0.7);
 }
+
+/* ============================================================
+   Homepage v2 — marketing homepage only. Additive block:
+   Lenis scoping, ambient drift, marquee, conic borders, float.
+   ============================================================ */
+
+/* Lenis recommended styles — self-scoping (Lenis adds .lenis to <html>) */
+html.lenis,
+html.lenis body {
+  height: auto;
+  /* The base styles set overflow-x: hidden on BOTH html and body; because
+     html's overflow is non-visible, body's is not propagated to the viewport
+     and body becomes a clip/scroll container — which breaks position:sticky
+     pinning and scroll tracking. `clip` prevents horizontal overflow WITHOUT
+     creating a scroll container. */
+  overflow-x: clip;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Slow ambient background drift (transform-only, compositor-friendly) */
+@keyframes hp-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6rem, -3rem, 0) scale(1.15);
+  }
+}
+
+@keyframes hp-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate3d(-5rem, -4rem, 0) scale(0.95);
+  }
+}
+
+.hp-drift-a {
+  animation: hp-drift-a 34s ease-in-out infinite;
+}
+
+.hp-drift-b {
+  animation: hp-drift-b 42s ease-in-out infinite;
+}
+
+/* Pure-CSS marquee (track contains children duplicated once → -50%) */
+@keyframes hp-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.hp-marquee-track {
+  animation: hp-marquee var(--hp-marquee-duration, 40s) linear infinite;
+  will-change: transform;
+}
+
+.hp-marquee-reverse .hp-marquee-track {
+  animation-direction: reverse;
+}
+
+.hp-marquee-paused:hover .hp-marquee-track {
+  animation-play-state: paused;
+}
+
+/* Rotating conic-gradient border (popular pricing card) */
+@property --hp-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes hp-border-spin {
+  to {
+    --hp-angle: 360deg;
+  }
+}
+
+.hp-conic-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--hp-angle),
+    transparent 0%,
+    var(--primary) 12%,
+    var(--primary-light) 22%,
+    transparent 36%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: hp-border-spin 5s linear infinite;
+  pointer-events: none;
+}
+
+/* Gentle levitation (About logo panel, phone mockup) */
+@keyframes hp-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+.hp-float {
+  animation: hp-float 7s ease-in-out infinite;
+}
