@@ -233,13 +233,15 @@ export function PricingSection() {
             <button
               key={option.value}
               onClick={() => setBillingPeriod(option.value)}
-              className={`relative z-10 cursor-pointer rounded-full px-2 py-2.5 text-sm font-medium transition-colors duration-300 ${
+              className={`relative z-10 cursor-pointer rounded-full px-1.5 py-2.5 text-xs font-medium transition-colors duration-300 sm:px-2 sm:text-sm ${
                 billingPeriod === option.value ? "text-white" : "text-slate-400 hover:text-slate-200"
               }`}
             >
               {option.label}
               {option.discount && (
-                <span className={`ml-1 text-xs ${billingPeriod === option.value ? "text-white/80" : "text-green-400"}`}>
+                <span
+                  className={`ml-1 text-[10px] sm:text-xs ${billingPeriod === option.value ? "text-white/80" : "text-green-400"}`}
+                >
                   {option.discount}
                 </span>
               )}
@@ -251,7 +253,8 @@ export function PricingSection() {
       {/* Plans */}
       <Stagger className="mx-auto grid max-w-6xl grid-cols-1 gap-5 pt-3 md:grid-cols-2 lg:grid-cols-4">
         {tiers.map((tier) => (
-          <StaggerItem key={tier.name} className="h-full">
+          // The popular plan leads on mobile where only one card is visible at a time
+          <StaggerItem key={tier.name} className={`h-full ${tier.popular ? "max-lg:order-first" : ""}`}>
             <PricingCard
               tier={tier}
               isCurrentPlan={currentTier ? tier.name.toUpperCase().replace(/\s+/g, "_") === currentTier : false}

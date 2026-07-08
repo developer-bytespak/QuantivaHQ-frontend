@@ -82,8 +82,8 @@ function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
 
 export function TestimonialsSection() {
   return (
-    <section id="testimonials" className="relative py-24 sm:py-32">
-      <div className="mx-auto mb-16 max-w-3xl px-4 text-center sm:px-6">
+    <section id="testimonials" className="relative py-16 sm:py-24 lg:py-32">
+      <div className="mx-auto mb-10 max-w-3xl px-4 text-center sm:mb-16 sm:px-6">
         <Reveal>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-slate-300 backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />
@@ -114,11 +114,14 @@ export function TestimonialsSection() {
               <TestimonialCard key={t.name} testimonial={t} />
             ))}
           </Marquee>
-          <Marquee duration={45} reverse>
-            {TESTIMONIALS.map((t) => (
-              <TestimonialCard key={t.name} testimonial={t} />
-            ))}
-          </Marquee>
+          {/* Second row adds little on a phone — desktop/tablet only */}
+          <div className="hidden sm:block">
+            <Marquee duration={45} reverse>
+              {TESTIMONIALS.map((t) => (
+                <TestimonialCard key={t.name} testimonial={t} />
+              ))}
+            </Marquee>
+          </div>
         </div>
       </Reveal>
     </section>

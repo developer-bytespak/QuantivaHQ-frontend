@@ -162,7 +162,7 @@ export function ContactSection() {
   return (
     <section
       id="contact"
-      className="relative overflow-hidden py-24 sm:py-32"
+      className="relative overflow-hidden py-16 sm:py-24 lg:py-32"
     >
       {/* Decorative "rising moon" background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">

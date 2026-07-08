@@ -17,10 +17,10 @@ interface HomeSectionProps {
 /** Standard section shell: consistent width, vertical rhythm and revealed header. */
 export function HomeSection({ id, eyebrow, title, highlight, description, children, className = "" }: HomeSectionProps) {
   return (
-    <section id={id} className={`relative py-24 sm:py-32 ${className}`}>
+    <section id={id} className={`relative py-16 sm:py-24 lg:py-32 ${className}`}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {(eyebrow || title) && (
-          <div className="mx-auto mb-16 max-w-3xl text-center">
+          <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-16">
             {eyebrow && (
               <Reveal>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-slate-300 backdrop-blur">

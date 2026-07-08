@@ -400,8 +400,8 @@ function PinnedSteps({ containerRef }: { containerRef: RefObject<HTMLDivElement 
 /** Stacked cards — mobile and reduced-motion fallback. */
 function StackedSteps() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 sm:py-32">
-      <div className="mx-auto mb-16 max-w-3xl text-center">
+    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto mb-10 max-w-3xl text-center sm:mb-16">
         <Reveal>
           <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-slate-300">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />
@@ -418,9 +418,13 @@ function StackedSteps() {
         </Reveal>
       </div>
 
-      <div className="space-y-5">
+      {/* Stacking deck: each card pins near the top and the next slides up over it,
+          so the long scroll reads as one continuous animation */}
+      <div>
         {STEPS.map((step, i) => (
-          <StackedStepCard key={step.number} step={step} index={i} />
+          <div key={step.number} className="sticky mb-6" style={{ top: 84 + i * 16 }}>
+            <StackedStepCard step={step} index={i} />
+          </div>
         ))}
       </div>
     </div>
@@ -438,7 +442,8 @@ function StackedStepCard({ step, index }: { step: Step; index: number }) {
         ref={ref}
         initial="inactive"
         animate={active ? "active" : "inactive"}
-        className="relative rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-md sm:p-8"
+        // Opaque bg + top shadow so stacked cards cover each other cleanly
+        className="relative rounded-3xl border border-white/10 bg-[#0c0c0c] p-6 shadow-[0_-14px_36px_rgba(0,0,0,0.55)] sm:p-8"
       >
               <m.div
                 aria-hidden

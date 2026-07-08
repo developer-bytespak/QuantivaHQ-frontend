@@ -113,7 +113,7 @@ export function DashboardSidebar({ sections }: DashboardSidebarProps) {
     <aside
       onMouseEnter={() => setCollapsed(false)}
       onMouseLeave={() => setCollapsed(true)}
-      className={`group/dashboard relative hidden sm:flex h-screen flex-col border-r border-white/[0.08] bg-[--color-surface] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
+      className={`group/dashboard relative hidden sm:flex h-screen flex-col border-r border-white/[0.08] bg-[#0c0c0c] text-slate-100 transition-[width] duration-300 ease-out ${collapsed ? "w-[80px]" : "w-[280px]"}`}
       style={{ fontFamily: "var(--font-outfit), var(--font-geist-sans), sans-serif" }}
     >
       {/* Header */}

@@ -179,9 +179,9 @@ const FEATURES = [
 export function FeaturesSection() {
   return (
     // Single-viewport section: content vertically centered, 60/40 split with the robot on the right
-    <section id="features" className="relative flex min-h-svh items-center py-20">
+    <section id="features" className="relative flex min-h-svh items-center py-16 sm:py-20">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid items-center gap-10 lg:grid-cols-[3fr_2fr]">
+        <div className="grid items-center gap-8 lg:grid-cols-[3fr_2fr] lg:gap-10">
           <div>
             {/* Left-aligned header */}
             <Reveal>
@@ -214,7 +214,7 @@ export function FeaturesSection() {
                 >
                   <TiltCard maxTilt={6} className="rounded-2xl">
                     <div
-                      className={`group relative flex items-center gap-5 rounded-2xl border border-white/10 bg-[#0d0d0d] p-5 transition-colors duration-300 sm:p-6 ${feature.accent}`}
+                      className={`group relative flex items-start gap-4 rounded-2xl border border-white/10 bg-[#0d0d0d] p-5 transition-colors duration-300 sm:items-center sm:gap-5 sm:p-6 ${feature.accent}`}
                       style={{ transformStyle: "preserve-3d" }}
                     >
                       <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -245,8 +245,8 @@ export function FeaturesSection() {
         </div>
 
         {/* Mobile: robot below the cards */}
-        <div className="mt-2 flex justify-center lg:hidden">
-          <RobotVideo className="w-64" />
+        <div className="mt-4 flex justify-center lg:hidden">
+          <RobotVideo className="w-72" />
         </div>
       </div>
     </section>
