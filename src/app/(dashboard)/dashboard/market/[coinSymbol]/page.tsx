@@ -451,7 +451,7 @@ export default function MarketDetailPage() {
       {activeTab === "Price" && (
         <>
           {/* Enhanced Price Display */}
-          <div className="relative overflow-hidden rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6 sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-6 sm:p-8">
             {/* Decorative gradient overlay */}
             <div className="absolute top-0 right-0 h-32 w-32 bg-gradient-to-br from-[var(--primary)]/20 to-transparent rounded-full blur-2xl"></div>
             <div className="absolute bottom-0 left-0 h-24 w-24 bg-gradient-to-tr from-[var(--primary-light)]/20 to-transparent rounded-full blur-xl"></div>
@@ -524,7 +524,7 @@ export default function MarketDetailPage() {
 
                 {/* Price Stats Section */}
                 <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-                  <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
+                  <div className="border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
                     <div className="flex items-center gap-2 mb-2">
                       <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
@@ -545,7 +545,7 @@ export default function MarketDetailPage() {
                     </p>
                   </div>
                   
-                  <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
+                  <div className="border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur-sm rounded-xl p-4 min-w-[140px]">
                     <div className="flex items-center gap-2 mb-2">
                       <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
@@ -604,7 +604,7 @@ export default function MarketDetailPage() {
                 className={`whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
                   selectedTimeframe === tf
                     ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.4)] scale-105"
-                    : "bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur text-slate-300 hover:text-white hover:scale-[1.02]"
+                    : "border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur text-slate-300 hover:text-white hover:scale-[1.02]"
                 }`}
               >
                 {tf}
@@ -637,7 +637,7 @@ export default function MarketDetailPage() {
 
           {/* Enhanced Market Data Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="group relative overflow-hidden rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
+            <div className="group relative overflow-hidden rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
               <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-br from-blue-500/10 to-transparent rounded-full blur-xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-3">
@@ -681,7 +681,7 @@ export default function MarketDetailPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
+            <div className="group relative overflow-hidden rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
               <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-3">
@@ -725,7 +725,7 @@ export default function MarketDetailPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
+            <div className="group relative overflow-hidden rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
               <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-br from-amber-500/10 to-transparent rounded-full blur-xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-3">
@@ -747,7 +747,7 @@ export default function MarketDetailPage() {
               </div>
             </div>
 
-            <div className="group relative overflow-hidden rounded-xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
+            <div className="group relative overflow-hidden rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-5 transition-all duration-300 hover:shadow-lg hover:shadow-[rgba(var(--primary-rgb),0.1)]">
               <div className="absolute top-0 right-0 h-16 w-16 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-full blur-xl"></div>
               <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-3">

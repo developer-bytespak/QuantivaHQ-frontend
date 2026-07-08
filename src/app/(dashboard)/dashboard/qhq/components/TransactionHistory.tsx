@@ -65,16 +65,19 @@ export function TransactionHistory() {
   const totalPages = Math.ceil(transactionTotal / limit);
 
   return (
-    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-rgb),0.06)]">
+    <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14]">
       <div className="flex items-center gap-3 mb-4 sm:mb-5">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+          <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
+        </span>
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-white">Transaction History</h3>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">Recent QHQ activity</p>
         </div>
-        <h3 className="text-lg font-bold text-white">Transaction History</h3>
         {transactionTotal > 0 && (
-          <span className="text-xs text-slate-400 bg-white/[0.07] px-2.5 py-0.5 rounded-full">
+          <span className="rounded-md border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-slate-300 [font-variant-numeric:tabular-nums]">
             {transactionTotal}
           </span>
         )}
@@ -83,17 +86,21 @@ export function TransactionHistory() {
       {isLoadingTransactions ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-16 bg-white/[0.07] animate-pulse rounded-xl" />
+            <div key={i} className="h-16 bg-white/[0.05] animate-pulse rounded-xl" />
           ))}
         </div>
       ) : transactions.length === 0 ? (
         <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[var(--primary)]/10 to-[var(--primary)]/5 border border-[var(--primary)]/10 flex items-center justify-center">
-            <svg className="w-8 h-8 text-[var(--primary)]/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="relative mx-auto mb-4 h-14 w-14">
+            <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+              <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
           </div>
-          <p className="text-slate-400 text-sm">No transactions yet. Start earning QHQ!</p>
+          <p className="text-sm font-medium text-slate-300">No transactions yet. Start earning QHQ!</p>
+          <p className="mt-1 text-[11px] text-slate-500">Your QHQ activity will appear here</p>
         </div>
       ) : (
         <>
@@ -101,7 +108,7 @@ export function TransactionHistory() {
             {transactions.map((tx) => (
               <div
                 key={tx.id}
-                className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200"
+                className="flex items-center gap-3 p-3 sm:p-4 rounded-xl border border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.03] transition-colors duration-200"
               >
                 <div className={`w-9 h-9 rounded-full bg-gradient-to-br border flex items-center justify-center shrink-0 ${iconBg(tx.type)}`}>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -120,7 +127,7 @@ export function TransactionHistory() {
                   </p>
                 </div>
                 <div className="text-right ml-2 shrink-0">
-                  <p className={`text-sm font-semibold ${amountColor(tx.type)}`}>
+                  <p className={`text-sm font-semibold [font-variant-numeric:tabular-nums] ${amountColor(tx.type)}`}>
                     {amountPrefix(tx.type)}{parseFloat(tx.amount).toFixed(2)} QHQ
                   </p>
                   {tx.tx_hash && (
@@ -143,17 +150,17 @@ export function TransactionHistory() {
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-1.5 text-sm bg-gradient-to-br from-white/[0.07] to-transparent text-slate-400 rounded-lg border border-[--color-border] disabled:opacity-50 hover:text-white hover:border-[var(--primary)]/50 transition-all duration-200"
+                className="px-4 py-1.5 text-sm rounded-full border border-white/[0.1] bg-white/[0.04] text-slate-300 disabled:opacity-50 hover:text-white hover:border-white/[0.2] hover:bg-white/[0.08] transition-all duration-200"
               >
                 Prev
               </button>
-              <span className="text-sm text-slate-400">
+              <span className="text-sm text-slate-400 [font-variant-numeric:tabular-nums]">
                 {page} / {totalPages}
               </span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-4 py-1.5 text-sm bg-gradient-to-br from-white/[0.07] to-transparent text-slate-400 rounded-lg border border-[--color-border] disabled:opacity-50 hover:text-white hover:border-[var(--primary)]/50 transition-all duration-200"
+                className="px-4 py-1.5 text-sm rounded-full border border-white/[0.1] bg-white/[0.04] text-slate-300 disabled:opacity-50 hover:text-white hover:border-white/[0.2] hover:bg-white/[0.08] transition-all duration-200"
               >
                 Next
               </button>

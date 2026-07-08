@@ -102,7 +102,7 @@ function SignalCard({ signal, onExecute }: { signal: AiOptionsSignal; onExecute?
   const marketClosed = venue === "ALPACA" && marketSession.state !== "rth";
 
   return (
-    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 transition-all hover:scale-[1.01] hover:border-[--color-border] hover:shadow-lg">
+    <div className="rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4 transition-all hover:scale-[1.01] hover:border-[--color-border] hover:shadow-lg">
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export function OptionsAISignals({
     return (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-64 animate-pulse rounded-xl border border-[--color-border] bg-[--color-surface]/60" />
+          <div key={i} className="h-64 animate-pulse rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02]" />
         ))}
       </div>
     );

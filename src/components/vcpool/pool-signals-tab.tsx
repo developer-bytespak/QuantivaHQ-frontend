@@ -467,7 +467,7 @@ export function PoolSignalsTab({ poolId, pool, onTradePlaced }: PoolSignalsTabPr
             {paginatedRows.map((row) => (
               <div
                 key={row.asset_id}
-                className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur border border-white/[0.06]"
+                className="rounded-lg sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-4 sm:p-6 backdrop-blur border border-white/[0.06]"
               >
                 <div className="space-y-3 sm:space-y-4">
                   <div className="flex items-center gap-1 sm:gap-2 flex-wrap">

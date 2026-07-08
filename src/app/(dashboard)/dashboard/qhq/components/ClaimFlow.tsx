@@ -83,22 +83,24 @@ export function ClaimFlow() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-rgb),0.06)] animate-fade-in">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+    <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] animate-fade-in">
+      <div className="flex items-center gap-3 mb-4 sm:mb-5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+          <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
           </svg>
+        </span>
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-white">Claim QHQ On-Chain</h3>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">
+            Transfer your earned QHQ tokens to your Base wallet. Tokens are verified via Merkle proof.
+          </p>
         </div>
-        <h3 className="text-lg font-bold text-white">Claim QHQ On-Chain</h3>
       </div>
-      <p className="text-sm text-slate-400 mb-6">
-        Transfer your earned QHQ tokens to your Base wallet. Tokens are verified via Merkle proof.
-      </p>
 
-      <div className="flex items-center justify-between p-4 bg-gradient-to-br from-white/[0.07] to-transparent rounded-xl border border-[--color-border] mb-4">
-        <span className="text-sm text-slate-400">Available to claim</span>
-        <span className="text-xl font-bold text-white">
+      <div className="flex items-center justify-between p-4 rounded-lg sm:rounded-xl border border-white/[0.07] bg-gradient-to-b from-white/[0.06] to-white/[0.02] transition-colors duration-300 hover:border-[var(--primary)]/25 mb-4">
+        <span className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Available to claim</span>
+        <span className="text-xl font-bold tracking-tight text-white [font-variant-numeric:tabular-nums]">
           {pendingBalance.toFixed(2)} <span className="text-[var(--primary-light)] text-base">QHQ</span>
         </span>
       </div>
@@ -106,10 +108,10 @@ export function ClaimFlow() {
       <button
         onClick={handleClaim}
         disabled={!canClaim || isConfirming}
-        className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
+        className={`w-full py-3 px-4 rounded-full font-semibold transition-all ${
           canClaim && !isConfirming
-            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white hover:from-[#fd6a00] hover:to-[#fdb800] hover:scale-[1.02] active:scale-[0.98]'
-            : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] hover:scale-[1.03] active:scale-[0.98]'
+            : 'border border-white/[0.08] bg-white/[0.04] text-slate-500 cursor-not-allowed'
         }`}
       >
         {isClaiming || isConfirming
@@ -122,7 +124,7 @@ export function ClaimFlow() {
       </button>
 
       {pendingTxHash && isConfirmed && (
-        <div className="mt-3 text-xs text-green-400 text-center bg-green-400/10 border border-green-400/20 rounded-lg p-2">
+        <div className="mt-3 text-xs text-green-400 text-center bg-green-400/10 border border-green-400/20 rounded-xl p-2">
           Confirmed!{' '}
           <a
             href={`https://basescan.org/tx/${pendingTxHash}`}

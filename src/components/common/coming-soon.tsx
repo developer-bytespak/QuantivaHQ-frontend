@@ -48,7 +48,7 @@ export function ComingSoon({
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-4">
-      <div className="max-w-2xl w-full rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-12 backdrop-blur text-center">
+      <div className="max-w-2xl w-full rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-12 backdrop-blur text-center">
         <div className="flex flex-col items-center gap-6">
           <div className="rounded-full bg-slate-800/50 p-6">
             {getIcon()}

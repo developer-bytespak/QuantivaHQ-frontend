@@ -67,27 +67,27 @@ export function ProfilePage() {
             <h1 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6">Portfolio</h1>
             <div className="space-y-3 sm:space-y-4">
               <div>
-                <p className="text-xs sm:text-sm text-white/80 mb-1">Holding value</p>
-                <p className="text-3xl sm:text-4xl font-bold text-white">${formatNumber(holdingValue)}</p>
+                <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Holding value</p>
+                <p className="text-3xl sm:text-4xl font-bold leading-tight tracking-tight text-white [font-variant-numeric:tabular-nums]">${formatNumber(holdingValue)}</p>
               </div>
               <div className="grid grid-cols-2 gap-3 sm:gap-6 mt-4 sm:mt-6">
                 <div>
-                  <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value (Spot)</p>
-                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedSpotUSD)}</p>
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Invested value (Spot)</p>
+                  <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(investedSpotUSD)}</p>
                 </div>
                 <div>
-                  <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Spot)</p>
-                  <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(availableSpotUSD)}</p>
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Available USD (Spot)</p>
+                  <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(availableSpotUSD)}</p>
                 </div>
                 {supportsMargin && (
                   <>
                     <div>
-                      <p className="text-xs sm:text-sm text-white/80 mb-1">Invested value (Margin)</p>
-                      <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(investedMarginUSD)}</p>
+                      <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Invested value (Margin)</p>
+                      <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(investedMarginUSD)}</p>
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm text-white/80 mb-1">Available USD (Margin)</p>
-                      <p className="text-base sm:text-xl font-semibold text-white">${formatNumber(availableMarginUSD)}</p>
+                      <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Available USD (Margin)</p>
+                      <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(availableMarginUSD)}</p>
                     </div>
                   </>
                 )}
@@ -110,7 +110,7 @@ export function ProfilePage() {
 
       {/* Portfolio loading / error / no connection */}
       {isLoadingConnection || (connectionId && isLoading) ? (
-        <div className="rounded-lg sm:rounded-2xl bg-white/[0.07] backdrop-blur-xl p-6 sm:p-8 flex items-center justify-center min-h-[120px]">
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] p-6 sm:p-8 flex items-center justify-center min-h-[120px]">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]" />
         </div>
       ) : error ? (
@@ -118,16 +118,46 @@ export function ProfilePage() {
           {error}
         </div>
       ) : !connectionId ? (
-        <div className="rounded-lg sm:rounded-2xl bg-white/[0.07] backdrop-blur-xl p-6 sm:p-8 text-center text-slate-400 text-sm">
-          Connect an exchange to see your portfolio here.
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] p-6 sm:p-8 text-center">
+          <div className="relative mx-auto mb-4 h-14 w-14">
+            <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+              <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-slate-300">Connect an exchange to see your portfolio here.</p>
+          <p className="mt-1 text-[11px] text-slate-500">Your holdings will appear here</p>
         </div>
       ) : (
         /* Single section: Crypto or Stocks based on connection type */
-        <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-lg sm:rounded-2xl p-4 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
-          <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">{sectionTitle}</h2>
+        <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] p-4 sm:p-6">
+          <div className="mb-4 sm:mb-6 flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+              <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+              </svg>
+            </span>
+            <div>
+              <h2 className="text-base sm:text-lg font-semibold text-white">{sectionTitle}</h2>
+              <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">Your assets</p>
+            </div>
+          </div>
           <div className="space-y-3 sm:space-y-4">
             {positions.length === 0 ? (
-              <p className="text-sm text-slate-400 py-4">No {sectionTitle.toLowerCase()} holdings</p>
+              <div className="py-10 text-center">
+                <div className="relative mx-auto mb-4 h-14 w-14">
+                  <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+                  <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                    <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-300">No {sectionTitle.toLowerCase()} holdings</p>
+                <p className="mt-1 text-[11px] text-slate-500">Your positions will appear here</p>
+              </div>
             ) : (
               positions.map((pos, index) => {
                 const symbol = pos.symbol.replace(/USDT|BUSD/i, "").trim() || pos.symbol;
@@ -139,7 +169,7 @@ export function ProfilePage() {
                 return (
                   <div
                     key={`${pos.symbol}-${index}`}
-                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                       <div
@@ -149,7 +179,7 @@ export function ProfilePage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm sm:text-base font-semibold text-white truncate">{symbol}</p>
-                        <p className="text-xs sm:text-sm text-slate-400">
+                        <p className="text-xs sm:text-sm text-slate-400 [font-variant-numeric:tabular-nums]">
                           {isCrypto
                             ? `${formatCryptoAmount(pos.quantity)} ${pos.symbol}`
                             : `${formatCryptoAmount(pos.quantity)} shares (${pos.symbol})`}
@@ -168,9 +198,9 @@ export function ProfilePage() {
                         />
                       </div>
                       <div className="text-right">
-                        <p className="text-sm sm:text-base font-semibold text-white">${formatNumber(value)}</p>
+                        <p className="text-sm sm:text-base font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(value)}</p>
                         <p
-                          className={`text-xs sm:text-sm font-medium ${pos.pnlPercent >= 0 ? "text-green-400" : "text-red-400"}`}
+                          className={`text-xs sm:text-sm font-medium [font-variant-numeric:tabular-nums] ${pos.pnlPercent >= 0 ? "text-green-400" : "text-red-400"}`}
                         >
                           {pos.pnlPercent >= 0 ? "+" : ""}
                           {pos.pnlPercent.toFixed(2)}%

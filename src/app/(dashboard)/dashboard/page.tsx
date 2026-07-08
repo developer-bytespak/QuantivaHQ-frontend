@@ -713,9 +713,26 @@ export default function DashboardPage() {
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
-          <div className="rounded-xl sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
-            <div className="mb-3 sm:mb-4">
-              <h2 className="text-base sm:text-lg font-semibold text-white">Portfolio</h2>
+          <div className="rounded-xl sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-4 sm:p-6 backdrop-blur">
+            <div className="mb-4 sm:mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-light)] shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]">
+                  <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold text-white">Portfolio</h2>
+                  <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">Live account overview</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                </span>
+                <span className="text-[10px] sm:text-xs font-medium text-emerald-300">Live</span>
+              </div>
             </div>
 
             {isLoading && !dashboardData ? (
@@ -724,37 +741,51 @@ export default function DashboardPage() {
               </div>
             ) : dashboardData ? (
               <div className="grid grid-cols-1 gap-2 sm:gap-4 sm:grid-cols-2">
-                {/* Total Profit Value Inner Box */}
-                <div className="rounded-lg sm:rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 sm:p-4">
-                  <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs text-slate-400">Total Portfolio Value</p>
-                  <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
+                {/* Total Portfolio Value — hero stat */}
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl border border-[var(--primary)]/15 bg-gradient-to-b from-[rgba(var(--primary-rgb),0.09)] via-white/[0.03] to-white/[0.015] p-4 sm:p-5 transition-colors duration-300 hover:border-[var(--primary)]/35">
+                  <div aria-hidden className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.22),transparent_70%)] blur-xl" />
+                  <svg aria-hidden viewBox="0 0 120 36" className="pointer-events-none absolute bottom-2.5 right-3 h-9 w-28 opacity-30">
+                    <path d="M2,30 C18,27 26,20 40,22 C54,24 62,12 78,13 C94,14 104,7 118,4" fill="none" stroke="var(--primary-light)" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Total Portfolio Value</p>
+                  <p className="mt-1.5 text-2xl sm:text-[2rem] font-bold leading-tight tracking-tight text-white [font-variant-numeric:tabular-nums]">
                     {formatCurrency(dashboardData.totals?.portfolio ?? dashboardData.portfolio.totalValue)}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-slate-400 leading-tight">
-                    Spot {formatCurrency(dashboardData.totals?.spot ?? dashboardData.portfolio.totalValue)}
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-md border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-slate-300">
+                      Spot {formatCurrency(dashboardData.totals?.spot ?? dashboardData.portfolio.totalValue)}
+                    </span>
                     {supportsMargin && (
-                      <>
-                        {" · "}
+                      <span className="rounded-md border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-slate-300">
                         Margin {formatCurrency(dashboardData.totals?.margin ?? 0)}
-                      </>
+                      </span>
                     )}
-                  </p>
+                  </div>
                 </div>
 
-                {/* Active Strategies Inner Box */}
-                <div className="rounded-lg sm:rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 sm:p-4">
-                  <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs text-slate-400">Active Positions</p>
-                  <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
-                    {dashboardData.positions.length}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-medium text-slate-400">
-                      {dashboardData.orders.filter(o => o.status === 'NEW' || o.status === 'PARTIALLY_FILLED').length} open orders
+                {/* Active Positions */}
+                <div className="relative overflow-hidden rounded-lg sm:rounded-xl border border-white/[0.07] bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-4 sm:p-5 transition-colors duration-300 hover:border-[var(--primary)]/25">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Active Positions</p>
+                      <p className="mt-1.5 text-2xl sm:text-[2rem] font-bold leading-tight tracking-tight text-white [font-variant-numeric:tabular-nums]">
+                        {dashboardData.positions.length}
+                      </p>
+                    </div>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                      <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                      </svg>
                     </span>
                   </div>
-                  <p className="mt-1 text-[10px] sm:text-xs text-slate-400">
-                    {dashboardData.positions.length} {dashboardData.positions.length === 1 ? 'position' : 'positions'}
-                  </p>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-md border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-slate-300">
+                      {dashboardData.orders.filter(o => o.status === 'NEW' || o.status === 'PARTIALLY_FILLED').length} open orders
+                    </span>
+                    <span className="rounded-md border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-slate-300">
+                      {dashboardData.positions.length} {dashboardData.positions.length === 1 ? 'position' : 'positions'}
+                    </span>
+                  </div>
                 </div>
 
               </div>
@@ -771,13 +802,20 @@ export default function DashboardPage() {
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="rounded-xl sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
+          <div className="rounded-xl sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-4 sm:p-6 backdrop-blur">
             <div className="mb-4 sm:mb-5 flex items-center justify-between">
-              <div>
-                <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
-                <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
-                  {openOrders.length > 0 ? "Open limit & market orders" : "All exchange orders"}
-                </p>
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+                  <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
+                  <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
+                    {openOrders.length > 0 ? "Open limit & market orders" : "All exchange orders"}
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-1.5 rounded-full bg-[var(--primary)]/10 border border-[var(--primary)]/20 px-3 py-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] animate-pulse"></span>
@@ -789,13 +827,16 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {(!dashboardData || (actionOrders || []).length === 0) ? (
                 <div className="py-10 text-center">
-                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/5">
-                    <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
+                  <div className="relative mx-auto mb-4 h-14 w-14">
+                    <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+                    <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                      <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-400">No open orders</p>
-                  <p className="text-[10px] text-slate-600 mt-1">
+                  <p className="text-sm font-medium text-slate-300">No open orders</p>
+                  <p className="mt-1 text-[11px] text-slate-500">
                     {!connectionId ? "Connect exchange to view" : "Your active orders will appear here"}
                   </p>
                 </div>
@@ -873,11 +914,18 @@ export default function DashboardPage() {
           </div>
 
           {/* Holdings & Market */}
-          <div className="rounded-xl sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] backdrop-blur">
+          <div className="rounded-xl sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent backdrop-blur">
             <div className="relative p-4 sm:p-6 pb-3 sm:pb-4">
               <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[var(--primary)]/30"></div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-                <h2 className="text-base sm:text-lg font-semibold text-white">Holdings & Market</h2>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+                    <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 5.625c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                    </svg>
+                  </span>
+                  <h2 className="text-base sm:text-lg font-semibold text-white">Holdings & Market</h2>
+                </div>
                 <div className="flex gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1">
                   <button
                     onClick={() => setActiveTab("holdings")}
@@ -1233,7 +1281,14 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {/* Trade Header - Outside Box */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-              <h2 className="text-base sm:text-lg font-semibold text-white">Trade</h2>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+                  <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.281m5.94 2.28l-2.28 5.941" />
+                  </svg>
+                </span>
+                <h2 className="text-base sm:text-lg font-semibold text-white">Trade</h2>
+              </div>
               {(connectionType === "crypto" || connectionType === "stocks") && (
                 <button
                   onClick={() => router.push("/dashboard/top-trades")}
@@ -1247,7 +1302,7 @@ export default function DashboardPage() {
             {/* Trade Cards - For both Crypto and Stocks (1 actual trade each) */}
             {connectionType === "stocks" ? (
               isLoadingStockSignals ? (
-                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-8 w-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-sm text-slate-400">Loading stock signals...</p>
@@ -1256,7 +1311,7 @@ export default function DashboardPage() {
               ) : stockSignals.length > 0 ? (
                 <div className="space-y-2 sm:space-y-3">
                   {stockSignals.map((trade) => (
-                    <div key={trade.id} className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
+                    <div key={trade.id} className="rounded-lg sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-4 sm:p-6 backdrop-blur">
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span className={`rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
@@ -1303,7 +1358,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1321,7 +1376,7 @@ export default function DashboardPage() {
               )
             ) : (
               isLoadingCryptoSignals ? (
-                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-8 w-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-sm text-slate-400">Loading crypto signal...</p>
@@ -1330,7 +1385,7 @@ export default function DashboardPage() {
               ) : cryptoSignals.length > 0 ? (
                 <div className="space-y-2 sm:space-y-3">
                   {cryptoSignals.map((trade) => (
-                    <div key={trade.id} className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
+                    <div key={trade.id} className="rounded-lg sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-4 sm:p-6 backdrop-blur">
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <span className={`rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
@@ -1388,7 +1443,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1411,7 +1466,14 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {/* AI Insights Header - Outside Box */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-              <h2 className="text-base sm:text-lg font-semibold text-white">AI Insights</h2>
+              <div className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+                  <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+                  </svg>
+                </span>
+                <h2 className="text-base sm:text-lg font-semibold text-white">AI Insights</h2>
+              </div>
               {connectionType === "crypto" && (
                 <button
                   onClick={() => router.push("/dashboard/ai-insights")}
@@ -1440,7 +1502,7 @@ export default function DashboardPage() {
                       setSelectedNews(index);
                       setShowNewsOverlay(true);
                     }}
-                     className="cursor-pointer rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur"
+                     className="cursor-pointer rounded-lg sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-4 sm:p-6 backdrop-blur"
                   >
                     <div className="mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
                       <div className="flex flex-wrap items-center gap-1 sm:gap-2">
@@ -1670,7 +1732,7 @@ export default function DashboardPage() {
                   <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{overlayTrade.confidence}</span>
                 </div>
 
-                <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 sm:p-4">
+                <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl border border-white/[0.07] bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-3 sm:p-4 transition-colors duration-300 hover:border-[var(--primary)]/25">
                   <div className="flex items-center justify-between">
                     <span className="text-xs sm:text-sm text-slate-400">Entry</span>
                     <span className="text-sm sm:text-base font-medium text-white">{"entry" in overlayTrade ? overlayTrade.entry : `$${(overlayTrade as { entryShort: string }).entryShort}`}</span>

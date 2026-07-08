@@ -159,7 +159,7 @@ export function AutoTradeModal({ signal, balance, onClose, onSuccess, strategy }
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
+        className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-white/[0.12] bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-6 shadow-2xl shadow-black/50 backdrop-blur"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

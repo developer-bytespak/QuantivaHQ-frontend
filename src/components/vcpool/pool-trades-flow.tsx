@@ -193,25 +193,25 @@ export function PoolTradesFlow({
 
       {/* Summary cards (Top Trades style) */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4">
           <p className="text-xs text-slate-400">Open trades</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {tradesSummary !== null ? tradesSummary.open_trades : "—"}
           </p>
         </div>
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4">
           <p className="text-xs text-slate-400">Closed trades</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {tradesSummary !== null ? tradesSummary.closed_trades : "—"}
           </p>
         </div>
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4">
           <p className="text-xs text-slate-400">Realized PnL</p>
           <p className={`mt-1 text-xl font-semibold ${tradesSummary && tradesSummary.realized_pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
             {tradesSummary !== null ? `${formatUsdt(tradesSummary.realized_pnl)} USDT` : "—"}
           </p>
         </div>
-        <div className="rounded-xl border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent p-4">
+        <div className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4">
           <p className="text-xs text-slate-400">Pool value</p>
           <p className="mt-1 text-xl font-semibold text-white">
             {pool ? `${formatUsdt(pool.current_pool_value_usdt)} USDT` : "—"}
@@ -264,19 +264,19 @@ export function PoolTradesFlow({
 
       {/* Trades table (desktop) / cards (mobile) */}
       {tradesLoading ? (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-[--color-border] bg-[--color-surface]/50 py-16">
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
           <span className="text-sm text-slate-400">Loading trades…</span>
         </div>
       ) : trades.length === 0 ? (
-        <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/50 py-16 text-center">
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] py-16 text-center">
           <p className="text-sm text-slate-400">No trades yet.</p>
           <p className="mt-1 text-xs text-slate-500">Use the Top Trade screen to execute trades for this pool.</p>
         </div>
       ) : (
         <>
           {/* Desktop table */}
-          <div className="hidden overflow-x-auto rounded-xl border border-[--color-border] bg-[--color-surface]/50 md:block">
+          <div className="hidden overflow-x-auto rounded-xl border border-white/[0.08] bg-white/[0.02] md:block">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[--color-border] text-slate-400">
@@ -341,7 +341,7 @@ export function PoolTradesFlow({
             {trades.map((t) => (
               <div
                 key={t.trade_id}
-                className="rounded-xl border border-[--color-border] bg-[--color-surface]/50 p-4"
+                className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>

@@ -30,7 +30,7 @@ export function BalanceOverview({
   const isPositiveChange = dailyChange >= 0;
   
   return (
-    <div className={`rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_${isStockMode ? 'rgba(59,130,246,0.08)' : 'rgba(252,79,2,0.08)'}]`}>
+    <div className={`rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-4 sm:p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_${isStockMode ? 'rgba(59,130,246,0.08)' : 'rgba(252,79,2,0.08)'}]`}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
         <div>
           <p className="text-xs sm:text-sm text-slate-400 mb-1">

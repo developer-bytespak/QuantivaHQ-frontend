@@ -31,7 +31,7 @@ function normalizeEntries(raw: any[]): BookEntry[] {
 export function OrderBookPanel({ depth, isLoading }: OrderBookPanelProps) {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-[--color-border] bg-[--color-surface]/60 py-8">
+      <div className="flex items-center justify-center rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] py-8">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--primary)] border-t-transparent" />
       </div>
     );

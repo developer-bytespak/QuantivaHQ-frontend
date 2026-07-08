@@ -45,7 +45,7 @@ export function StrategyCard({
   onViewChart,
 }: StrategyCardProps) {
   return (
-    <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+    <div className="rounded-lg sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-4 sm:p-6 backdrop-blur">
       <div className="space-y-3 sm:space-y-4">
         <div className="flex items-center gap-3">
           <AssetAvatar
@@ -247,10 +247,10 @@ export function StrategyCard({
                 Auto Trade
               </button>
             )}
-            <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-700/40 bg-slate-900/40 p-1">
+            <div className="grid grid-cols-2 gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1">
               <button
                 onClick={onViewChart}
-                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800/60 px-3 text-sm font-medium text-slate-200 transition-all duration-300 hover:bg-slate-700/70 hover:text-white"
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-white/[0.05] px-3 text-sm font-medium text-slate-200 transition-all duration-300 hover:bg-white/[0.1] hover:text-white"
               >
                 <svg className="h-4 w-4 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 5.656m1.414-7.07l4.95-4.95a4 4 0 115.657 5.657l-4.95 4.95m-7.07 1.414l-4.95 4.95a4 4 0 01-5.657-5.657l4.95-4.95" />
@@ -259,7 +259,7 @@ export function StrategyCard({
               </button>
               <button
                 onClick={onViewDetails}
-                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800/60 px-3 text-sm font-medium text-slate-200 transition-all duration-300 hover:bg-slate-700/70 hover:text-white"
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-full bg-white/[0.05] px-3 text-sm font-medium text-slate-200 transition-all duration-300 hover:bg-white/[0.1] hover:text-white"
               >
                 <svg className="h-4 w-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
