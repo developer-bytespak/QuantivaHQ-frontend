@@ -541,7 +541,7 @@ export function TopBar() {
       : getPageTitle(pathname);
 
   return (
-    <header className="sticky top-0 z-[100] flex h-16 sm:h-20 lg:h-24 items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-b border-[var(--primary)]/30 bg-[--color-surface-alt] px-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-[100] flex h-16 sm:h-20 lg:h-24 items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-b border-white/[0.08] bg-black/60 backdrop-blur-xl px-3 sm:px-6 lg:px-8">
       <div className="flex items-center gap-2 sm:gap-3 relative min-w-0">
         <h1 ref={headingRef} className="text-lg sm:text-xl lg:text-2xl font-bold text-white truncate">{pageTitle}</h1>
         <DashboardSwitcher headingRef={headingRef} />

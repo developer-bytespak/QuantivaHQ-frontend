@@ -154,7 +154,7 @@ export function HomepageFooter() {
       <div aria-hidden className="pointer-events-none w-full select-none overflow-hidden pb-2">
         <Parallax speed={-0.06}>
           <p
-            className="animate-gradient whitespace-nowrap bg-gradient-to-r from-[var(--primary)] via-[var(--primary-light)] to-[var(--primary)] bg-clip-text text-center text-[12.5vw] font-bold leading-[0.85] tracking-tight text-transparent opacity-[0.07]"
+            className="animate-gradient whitespace-nowrap bg-gradient-to-r from-[var(--primary)] via-[var(--primary-light)] to-[var(--primary)] bg-clip-text text-center text-[16vw] font-bold leading-[0.85] tracking-tight text-transparent opacity-[0.07] sm:text-[12.5vw]"
             style={{ backgroundSize: "200% 200%", fontFamily: "var(--font-outfit), sans-serif" }}
           >
             QUANTIVAHQ

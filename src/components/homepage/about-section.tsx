@@ -8,7 +8,7 @@ import { TiltCard } from "./motion/tilt-card";
 
 export function AboutSection() {
   return (
-    <section id="about" className="relative overflow-hidden py-24 sm:py-32">
+    <section id="about" className="relative overflow-hidden py-16 sm:py-24 lg:py-32">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(var(--primary-rgb),0.08),transparent_50%)]" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -16,7 +16,7 @@ export function AboutSection() {
           {/* Left — About copy: swings in from the left in 3D, tilts with the cursor */}
           <TiltIn fromRotateY={-16} fromX={-48} until={0.3} className="h-full">
             <TiltCard maxTilt={4} className="rounded-3xl">
-            <div className="relative h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-md sm:p-10">
+            <div className="relative h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-md sm:p-8 lg:p-10">
               <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--primary)]/60 to-transparent" />
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-slate-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />

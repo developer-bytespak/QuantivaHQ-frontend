@@ -80,7 +80,7 @@ export function AppDownloadSection() {
     <section className="relative py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Inset panel */}
-        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-[#111] to-black px-6 py-16 sm:px-12 sm:py-20 lg:px-16">
+        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-[#111] to-black px-5 py-12 sm:rounded-[2.5rem] sm:px-12 sm:py-20 lg:px-16">
           {/* Panel ambience */}
           <div className="pointer-events-none absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-[var(--primary)]/15 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-40 right-0 h-96 w-96 rounded-full bg-[var(--primary-light)]/10 blur-3xl" />
@@ -92,7 +92,7 @@ export function AppDownloadSection() {
             }}
           />
 
-          <div className="relative grid items-center gap-14 lg:grid-cols-2">
+          <div className="relative grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
             {/* Copy + buttons */}
             <div className="text-center lg:text-left">
               <Reveal>

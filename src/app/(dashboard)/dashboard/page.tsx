@@ -713,7 +713,7 @@ export default function DashboardPage() {
         {/* Left Column - Main Dashboard Content */}
         <div className="lg:col-span-2 space-y-3 sm:space-y-4 md:space-y-6">
           {/* Portfolio - Main Box with Two Inner Boxes */}
-          <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+          <div className="rounded-xl sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
             <div className="mb-3 sm:mb-4">
               <h2 className="text-base sm:text-lg font-semibold text-white">Portfolio</h2>
             </div>
@@ -725,7 +725,7 @@ export default function DashboardPage() {
             ) : dashboardData ? (
               <div className="grid grid-cols-1 gap-2 sm:gap-4 sm:grid-cols-2">
                 {/* Total Profit Value Inner Box */}
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
+                <div className="rounded-lg sm:rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 sm:p-4">
                   <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs text-slate-400">Total Portfolio Value</p>
                   <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
                     {formatCurrency(dashboardData.totals?.portfolio ?? dashboardData.portfolio.totalValue)}
@@ -742,7 +742,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Active Strategies Inner Box */}
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
+                <div className="rounded-lg sm:rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 sm:p-4">
                   <p className="mb-1 sm:mb-2 text-[10px] sm:text-xs text-slate-400">Active Positions</p>
                   <p className="mb-1 sm:mb-2 text-lg sm:text-2xl font-bold text-white">
                     {dashboardData.positions.length}
@@ -771,7 +771,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Action Center - Recent Activities */}
-          <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+          <div className="rounded-xl sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
             <div className="mb-4 sm:mb-5 flex items-center justify-between">
               <div>
                 <h2 className="text-base sm:text-lg font-semibold text-white">Action Center</h2>
@@ -873,15 +873,15 @@ export default function DashboardPage() {
           </div>
 
           {/* Holdings & Market */}
-          <div className="rounded-xl sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur">
+          <div className="rounded-xl sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] backdrop-blur">
             <div className="relative p-4 sm:p-6 pb-3 sm:pb-4">
               <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-[var(--primary)]/30"></div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                 <h2 className="text-base sm:text-lg font-semibold text-white">Holdings & Market</h2>
-                <div className="flex gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1">
+                <div className="flex gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1">
                   <button
                     onClick={() => setActiveTab("holdings")}
-                    className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all ${activeTab === "holdings"
+                    className={`rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all duration-300 ${activeTab === "holdings"
                       ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                       : "text-slate-400 hover:text-white"
                       }`}
@@ -890,7 +890,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => setActiveTab("market")}
-                    className={`rounded-md px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all ${activeTab === "market"
+                    className={`rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-medium transition-all duration-300 ${activeTab === "market"
                       ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
                       : "text-slate-400 hover:text-white"
                       }`}
@@ -1237,7 +1237,7 @@ export default function DashboardPage() {
               {(connectionType === "crypto" || connectionType === "stocks") && (
                 <button
                   onClick={() => router.push("/dashboard/top-trades")}
-                  className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-[1.02] shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] w-fit"
+                  className="rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-xl shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] w-fit"
                 >
                   View All Trades
                 </button>
@@ -1247,7 +1247,7 @@ export default function DashboardPage() {
             {/* Trade Cards - For both Crypto and Stocks (1 actual trade each) */}
             {connectionType === "stocks" ? (
               isLoadingStockSignals ? (
-                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-8 w-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-sm text-slate-400">Loading stock signals...</p>
@@ -1256,17 +1256,17 @@ export default function DashboardPage() {
               ) : stockSignals.length > 0 ? (
                 <div className="space-y-2 sm:space-y-3">
                   {stockSignals.map((trade) => (
-                    <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+                    <div key={trade.id} className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
+                          <span className={`rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
                             ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                             : "bg-gradient-to-r from-red-500 to-red-600"
                             }`}>
                             {trade.type}
                           </span>
                           <span className="text-xs sm:text-sm font-medium text-white">{trade.pair}</span>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "border border-white/15 bg-white/10" : "border border-white/10 bg-white/[0.06]"
                             }`}>{trade.confidence}</span>
                         </div>
 
@@ -1288,7 +1288,7 @@ export default function DashboardPage() {
                             <span>{trade.progressMin}</span>
                             <span>{trade.progressMax}</span>
                           </div>
-                          <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                          <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-white/10">
                             <div
                               className={`h-full bg-gradient-to-r ${trade.type === "BUY"
                                 ? "from-green-500 to-emerald-500"
@@ -1303,7 +1303,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1321,7 +1321,7 @@ export default function DashboardPage() {
               )
             ) : (
               isLoadingCryptoSignals ? (
-                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="h-8 w-8 border-2 border-[var(--primary)] border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-sm text-slate-400">Loading crypto signal...</p>
@@ -1330,17 +1330,17 @@ export default function DashboardPage() {
               ) : cryptoSignals.length > 0 ? (
                 <div className="space-y-2 sm:space-y-3">
                   {cryptoSignals.map((trade) => (
-                    <div key={trade.id} className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+                    <div key={trade.id} className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur">
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                          <span className={`rounded-lg px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
+                          <span className={`rounded-full px-2.5 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm font-semibold text-white ${trade.type === "BUY"
                             ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)]"
                             : "bg-gradient-to-r from-red-500 to-red-600"
                             }`}>
                             {trade.type}
                           </span>
                           <span className="text-xs sm:text-sm font-medium text-white">{trade.pair}</span>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "bg-slate-700" : "bg-slate-600"
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] sm:text-xs text-slate-300 ${trade.confidence === "HIGH" ? "border border-white/15 bg-white/10" : "border border-white/10 bg-white/[0.06]"
                             }`}>{trade.confidence}</span>
                         </div>
 
@@ -1361,7 +1361,7 @@ export default function DashboardPage() {
                             <span>{trade.progressMin}</span>
                             <span>{trade.progressMax}</span>
                           </div>
-                          <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-slate-800">
+                          <div className="h-1.5 sm:h-2 w-full overflow-hidden rounded-full bg-white/10">
                             <div
                               className={`h-full bg-gradient-to-r ${trade.type === "BUY"
                                 ? "from-green-500 to-emerald-500"
@@ -1388,7 +1388,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 backdrop-blur text-center">
+                <div className="rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-6 sm:p-8 backdrop-blur text-center">
                   <div className="flex flex-col items-center gap-3">
                     <svg className="h-12 w-12 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1415,7 +1415,7 @@ export default function DashboardPage() {
               {connectionType === "crypto" && (
                 <button
                   onClick={() => router.push("/dashboard/ai-insights")}
-                  className="rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-white transition-all duration-300 hover:text-white hover:scale-[1.02] shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] w-fit"
+                  className="rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-3 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-xs font-semibold text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-xl shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] w-fit"
                 >
                   View All AI Insights
                 </button>
@@ -1440,11 +1440,11 @@ export default function DashboardPage() {
                       setSelectedNews(index);
                       setShowNewsOverlay(true);
                     }}
-                     className="cursor-pointer rounded-lg sm:rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(252,79,2,0.08),0_0_30px_rgba(253,163,0,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur"
+                     className="cursor-pointer rounded-lg sm:rounded-2xl animate-fade-in border border-white/[0.08] bg-[#0e0e0e]/90 shadow-[0_12px_40px_rgba(0,0,0,0.4)] p-4 sm:p-6 backdrop-blur"
                   >
                     <div className="mb-3 sm:mb-4 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
                       <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-                        <span className="rounded-md bg-[var(--primary)]/10 px-2 py-1 text-[10px] sm:text-xs font-semibold text-[var(--primary)]">
+                        <span className="rounded-full border border-[var(--primary)]/20 bg-[var(--primary)]/10 px-2.5 py-1 text-[10px] sm:text-xs font-semibold text-[var(--primary-light)]">
                           {news.symbol}
                         </span>
                         <span className="text-[10px] sm:text-xs text-slate-500">•</span>
@@ -1670,7 +1670,7 @@ export default function DashboardPage() {
                   <span className="rounded-full bg-slate-700 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm text-slate-300">{overlayTrade.confidence}</span>
                 </div>
 
-                <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4">
+                <div className="space-y-2 sm:space-y-4 rounded-lg sm:rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 sm:p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs sm:text-sm text-slate-400">Entry</span>
                     <span className="text-sm sm:text-base font-medium text-white">{"entry" in overlayTrade ? overlayTrade.entry : `$${(overlayTrade as { entryShort: string }).entryShort}`}</span>
