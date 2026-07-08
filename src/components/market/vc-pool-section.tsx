@@ -148,7 +148,7 @@ export function VCPoolSection() {
                   {pagination?.total ?? stats.totalPools}
                 </p>
               </div>
-              <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-4">
+              <div className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4">
                 <p className="mb-1 text-xs text-slate-400">
                   Avg. Contribution / seat
                 </p>
@@ -156,7 +156,7 @@ export function VCPoolSection() {
                   {stats.avgContribution ? `$${stats.avgContribution.toFixed(0)}` : "—"}
                 </p>
               </div>
-              <div className="rounded-xl border border-[--color-border] bg-[--color-surface] p-4">
+              <div className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4">
                 <p className="mb-1 text-xs text-slate-400">Avg. Duration</p>
                 <p className="text-2xl font-bold text-white">
                   {stats.avgDuration ? `${stats.avgDuration.toFixed(0)} days` : "—"}

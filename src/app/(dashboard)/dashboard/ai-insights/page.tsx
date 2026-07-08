@@ -398,15 +398,15 @@ function FilterButtons({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex w-fit flex-wrap gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1">
       {filters.map((filter) => (
         <button
           key={filter.id}
           onClick={() => onFilterChange(filter.id)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+          className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-300 ${
             activeFilter === filter.id
               ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30"
-              : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+              : "text-slate-400 hover:text-white"
           }`}
         >
           {filter.label}
@@ -468,7 +468,7 @@ function PaginationControls({
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-700/50">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
       {/* Info text */}
       <div className="text-xs sm:text-sm text-slate-400">
         Showing {startItem} to {endItem} of {totalItems} items
@@ -480,10 +480,10 @@ function PaginationControls({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
             currentPage === 1
-              ? "bg-slate-800/30 text-slate-600 cursor-not-allowed"
-              : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+              ? "border border-white/[0.05] bg-white/[0.02] text-slate-600 cursor-not-allowed"
+              : "border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.07] hover:text-white"
           }`}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -505,10 +505,10 @@ function PaginationControls({
               <button
                 key={page}
                 onClick={() => onPageChange(page)}
-                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
                   currentPage === page
                     ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30"
-                    : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                    : "border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.07] hover:text-white"
                 }`}
               >
                 {page}
@@ -521,10 +521,10 @@ function PaginationControls({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
+          className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all ${
             currentPage === totalPages
-              ? "bg-slate-800/30 text-slate-600 cursor-not-allowed"
-              : "bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+              ? "border border-white/[0.05] bg-white/[0.02] text-slate-600 cursor-not-allowed"
+              : "border border-white/[0.08] bg-white/[0.03] text-slate-400 hover:bg-white/[0.07] hover:text-white"
           }`}
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -956,7 +956,12 @@ export default function AIInsightsPage() {
   if (isCheckingConnection) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
+        <div className="relative h-14 w-14">
+          <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+            <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -982,11 +987,18 @@ export default function AIInsightsPage() {
       <div className="relative z-10">
       {/* Page Header */}
         <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
-        <div>
-            <p className="text-xs sm:text-sm text-slate-400 mb-1 sm:mb-2">
+        <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+              <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9.375 17.6a2.25 2.25 0 01-1.423 1.423L6.256 19.5l1.696.477a2.25 2.25 0 011.423 1.423l.438 1.696.477-1.696a2.25 2.25 0 011.423-1.423l1.696-.477-1.696-.438a2.25 2.25 0 01-1.423-1.423l-.477-1.696zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+              </svg>
+            </span>
+            <div>
+              <h1 className="text-base sm:text-lg font-semibold text-white">AI Insights</h1>
+              <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">
               AI-powered {connectionType === "stocks" ? "stock" : "crypto"} market news and analysis
             </p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">AI Insights</h1>
+            </div>
         </div>
 
           {/* Filter Buttons */}
@@ -994,11 +1006,11 @@ export default function AIInsightsPage() {
 
           {/* Sort Options */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-            <span className="text-xs sm:text-sm text-slate-400">Latest</span>
+            <span className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Latest</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 w-full sm:w-auto"
+              className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-1.5 text-xs sm:text-sm text-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 w-full sm:w-auto"
             >
               <option value="most-recent">Most recent</option>
               <option value={connectionType === "stocks" ? "stock-based" : "coin-based"}>
@@ -1013,29 +1025,42 @@ export default function AIInsightsPage() {
       <div className="space-y-3 sm:space-y-4">
         {isLoadingNews ? (
           <div className="flex flex-col items-center justify-center py-8 sm:py-12 space-y-3 sm:space-y-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
+            <div className="relative h-14 w-14">
+              <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                <div className="h-6 w-6 animate-spin rounded-full border-4 border-slate-700/30 border-t-[var(--primary)]"></div>
+              </div>
+            </div>
             {isInitializingML && (
               <div className="text-center max-w-xs sm:max-w-md px-4">
-                <p className="text-xs sm:text-sm text-slate-300 mb-2">
+                <p className="text-sm font-medium text-slate-300 mb-2">
                   Initializing FinBERT ML Model
                 </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   Downloading ~438MB model from Hugging Face. This is a one-time process that takes 5-10 minutes depending on your internet speed. The model will be cached after download.
                 </p>
                 {loadingStartTime && (
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-[11px] text-slate-500 mt-2">
                     Elapsed: {Math.round((Date.now() - loadingStartTime) / 1000 / 60)} minute{Math.round((Date.now() - loadingStartTime) / 1000 / 60) !== 1 ? 's' : ''}
                   </p>
                 )}
               </div>
             )}
             {!isInitializingML && (
-              <p className="text-xs sm:text-sm text-slate-400">Loading news...</p>
+              <p className="text-sm font-medium text-slate-300">Loading news...</p>
             )}
           </div>
         ) : newsError ? (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 sm:p-4 text-center">
-            <p className="text-xs sm:text-sm text-red-300">{newsError}</p>
+          <div className="py-10 text-center">
+            <div className="relative mx-auto mb-4 h-14 w-14">
+              <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.008v.008H12v-.008z" />
+                </svg>
+              </div>
+            </div>
+            <p className="mx-auto max-w-md px-4 text-sm font-medium text-slate-300">{newsError}</p>
           </div>
           ) : paginatedNews.length > 0 ? (
             <>
@@ -1043,7 +1068,7 @@ export default function AIInsightsPage() {
             <div
                   key={`${news.symbol}-${(currentPage - 1) * itemsPerPage + index}`}
               onClick={() => handleNewsClick(news)}
-                className="group cursor-pointer rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_25px_30px_-5px_rgba(0,0,0,0.15),0_0_25px_rgba(var(--primary-rgb),0.12),0_0_35px_rgba(var(--primary-light-rgb),0.1)]"
+                className="group cursor-pointer rounded-lg sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-4 sm:p-6 backdrop-blur shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_16px_50px_rgba(0,0,0,0.55)] hover:border-white/[0.14]"
               >
                 {/* Title Row with Coin Logo and Sparkline on Right */}
                 <div className="flex items-start justify-between gap-2 sm:gap-4 mb-3 sm:mb-4">
@@ -1068,27 +1093,27 @@ export default function AIInsightsPage() {
                 {/* AI Summary */}
                 {news.aiSummary && (
                   <div className="space-y-1 text-left mb-3 sm:mb-4">
-                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">AI Summary</p>
+                    <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-1">AI Summary</p>
                     <p className="text-xs sm:text-sm text-slate-300 leading-relaxed line-clamp-2">{news.aiSummary}</p>
                   </div>
                 )}
 
                 {/* Horizontal Line */}
-                <div className="border-t border-slate-700/50 my-3 sm:my-4"></div>
+                <div className="border-t border-white/[0.08] my-3 sm:my-4"></div>
 
                 {/* Single Line: Market Mood, Impact on Coin, Impact Level, Timestamp */}
                 <div className="flex items-center gap-2 sm:gap-4 flex-wrap text-xs sm:text-sm">
                   {/* Market Mood */}
                   <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="text-xs text-slate-400 hidden sm:inline">Market Mood</span>
+                    <span className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 hidden sm:inline">Market Mood</span>
                     <MarketMoodBadge mood={news.marketMood || "Neutral"} />
                   </div>
 
                   {/* Impact on Coin */}
                   {news.impactScore !== undefined && (
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="text-xs text-slate-400 hidden sm:inline">Impact</span>
-                      <span className="text-xs font-semibold px-2 py-1 rounded bg-green-500/20 text-green-400 border border-green-500/30">
+                      <span className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 hidden sm:inline">Impact</span>
+                      <span className="rounded-md border border-white/[0.08] bg-white/[0.05] px-2 py-0.5 text-[10px] sm:text-xs font-medium text-slate-300 [font-variant-numeric:tabular-nums]">
                         {news.impactScore}
                       </span>
                     </div>
@@ -1110,6 +1135,12 @@ export default function AIInsightsPage() {
                   {/* Timestamp */}
                   <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
                     <span className="text-xs text-slate-400">{getTimeAgo(news.published_at)}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--primary-light)] opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      Read more
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                      </svg>
+                    </span>
                   </div>
                 </div>
             </div>
@@ -1125,8 +1156,17 @@ export default function AIInsightsPage() {
               />
             </>
         ) : (
-          <div className="py-8 sm:py-12 text-center text-slate-400">
-              <p className="text-xs sm:text-sm">No news available</p>
+          <div className="py-8 sm:py-12 text-center">
+              <div className="relative mx-auto mb-4 h-14 w-14">
+                <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                  <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-sm font-medium text-slate-300">No news available</p>
+              <p className="mt-1 text-[11px] text-slate-500">Fresh insights will appear here</p>
           </div>
         )}
         </div>
@@ -1161,14 +1201,21 @@ export default function AIInsightsPage() {
           >
             <div className="p-3 sm:p-6 space-y-3 sm:space-y-6 pb-8 sm:pb-0">
               {/* Header with gradient accent */}
-              <div className="flex items-center justify-between pb-2 sm:pb-4 border-b border-slate-700/50">
-                <div className="flex items-center gap-2">
-                  <div className="w-1 h-4 sm:h-6 bg-gradient-to-b from-[var(--primary)] to-[var(--primary-light)] rounded-full"></div>
-                  <h2 className="text-base sm:text-2xl font-bold text-white truncate">AI Deep Insight</h2>
+              <div className="flex items-center justify-between pb-2 sm:pb-4 border-b border-white/[0.08]">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+                    <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9.375 17.6a2.25 2.25 0 01-1.423 1.423L6.256 19.5l1.696.477a2.25 2.25 0 011.423 1.423l.438 1.696.477-1.696a2.25 2.25 0 011.423-1.423l1.696-.477-1.696-.438a2.25 2.25 0 01-1.423-1.423l-.477-1.696zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-base sm:text-lg font-semibold text-white truncate">AI Deep Insight</h2>
+                    <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">AI-powered breakdown</p>
+                  </div>
                 </div>
                 <button
                   onClick={handleCloseSidebar}
-                  className="rounded-lg p-1.5 sm:p-2 text-slate-400 hover:bg-slate-700/50 hover:text-white transition-all hover:scale-110 flex-shrink-0"
+                  className="rounded-full p-1.5 sm:p-2 text-slate-400 hover:bg-white/[0.07] hover:text-white transition-all hover:scale-110 flex-shrink-0"
                   aria-label="Close"
                 >
                   <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1178,7 +1225,7 @@ export default function AIInsightsPage() {
               </div>
 
               {/* Asset Info Card */}
-              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-2.5 sm:p-4 backdrop-blur border border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
                 <div className="flex items-center gap-2 sm:gap-4">
                   {connectionType === "stocks" ? (
                     <StockLogo symbol={selectedNews.symbol} size="lg" />
@@ -1205,10 +1252,10 @@ export default function AIInsightsPage() {
 
               {/* AI Summary Card */}
               {selectedNews.aiSummary && (
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-3 sm:p-5 backdrop-blur border border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
                   <div className="flex items-center gap-2 mb-2 sm:mb-3">
                     <div className="w-2 h-2 rounded-full bg-[var(--primary)] animate-pulse"></div>
-                    <p className="text-xs font-semibold text-[var(--primary)] uppercase tracking-wide">AI Summary</p>
+                    <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-[var(--primary)]">AI Summary</p>
                   </div>
                   <p className="text-xs sm:text-base text-slate-200 leading-relaxed">{selectedNews.aiSummary}</p>
                 </div>
@@ -1217,14 +1264,14 @@ export default function AIInsightsPage() {
               {/* Key Metrics Grid */}
               <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 {/* Market Mood */}
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Market Mood</p>
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-2.5 sm:p-4 backdrop-blur border border-white/[0.08]">
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-2 sm:mb-3">Market Mood</p>
                   <MarketMoodBadge mood={selectedNews.marketMood || "Neutral"} />
                 </div>
 
                 {/* Impact Level */}
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Impact Level</p>
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-2.5 sm:p-4 backdrop-blur border border-white/[0.08]">
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-2 sm:mb-3">Impact Level</p>
                   <span className={`inline-block px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold ${
                     selectedNews.impactLevel === "High" ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" :
                     selectedNews.impactLevel === "Low" ? "bg-slate-500/20 text-slate-400 border border-slate-500/30" :
@@ -1237,10 +1284,10 @@ export default function AIInsightsPage() {
 
               {/* Impact Score with Visual Bar */}
               {selectedNews.impactScore !== undefined && (
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30">
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-3 sm:p-5 backdrop-blur border border-white/[0.08]">
                   <div className="flex items-center justify-between mb-2 sm:mb-3">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide">Impact Score</p>
-                    <span className="text-base sm:text-lg font-bold text-white">{selectedNews.impactScore}/100</span>
+                    <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Impact Score</p>
+                    <span className="text-base sm:text-lg font-bold text-white [font-variant-numeric:tabular-nums]">{selectedNews.impactScore}/100</span>
                   </div>
                   <ImpactScoreBar score={selectedNews.impactScore} level={selectedNews.impactLevel || "Medium"} />
                 </div>
@@ -1249,8 +1296,8 @@ export default function AIInsightsPage() {
               {/* Risk & Trend Row */}
               <div className="grid grid-cols-2 gap-2 sm:gap-4">
                 {/* Risk Rating */}
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Risk Rating</p>
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-2.5 sm:p-4 backdrop-blur border border-white/[0.08]">
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-2 sm:mb-3">Risk Rating</p>
                   <span className={`inline-block px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-semibold ${
                     selectedNews.riskRating === "Low" ? "bg-green-500/20 text-green-400 border border-green-500/30" :
                     selectedNews.riskRating === "High" ? "bg-red-500/20 text-red-400 border border-red-500/30" :
@@ -1261,8 +1308,8 @@ export default function AIInsightsPage() {
                 </div>
 
                 {/* Trend Direction */}
-                <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-2.5 sm:p-4 backdrop-blur border border-slate-700/30">
-                  <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Trend</p>
+                <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-2.5 sm:p-4 backdrop-blur border border-white/[0.08]">
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-2 sm:mb-3">Trend</p>
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     {selectedNews.trendDirection && (
                       <TrendGraph trend={selectedNews.trendDirection} />
@@ -1281,12 +1328,12 @@ export default function AIInsightsPage() {
               </div>
 
               {/* Sentiment Score */}
-              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30">
-                <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Sentiment Analysis</p>
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-3 sm:p-5 backdrop-blur border border-white/[0.08]">
+                <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-2 sm:mb-3">Sentiment Analysis</p>
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs sm:text-sm text-slate-300">Score</span>
-                    <span className={`text-xs sm:text-sm font-semibold ${
+                    <span className={`text-xs sm:text-sm font-bold [font-variant-numeric:tabular-nums] ${
                       selectedNews.sentiment.score > 0 ? "text-green-400" :
                       selectedNews.sentiment.score < 0 ? "text-red-400" :
                       "text-slate-400"
@@ -1296,7 +1343,7 @@ export default function AIInsightsPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs sm:text-sm text-slate-300">Confidence</span>
-                    <span className="text-xs sm:text-sm font-semibold text-white">
+                    <span className="text-xs sm:text-sm font-bold text-white [font-variant-numeric:tabular-nums]">
                       {(selectedNews.sentiment.confidence * 100).toFixed(0)}%
                     </span>
                   </div>
@@ -1314,13 +1361,13 @@ export default function AIInsightsPage() {
               </div>
 
               {/* Full Description */}
-              <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent p-3 sm:p-5 backdrop-blur border border-slate-700/30">
-                <p className="text-xs text-slate-400 uppercase tracking-wide mb-2 sm:mb-3">Full Description</p>
+              <div className="rounded-lg sm:rounded-xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-3 sm:p-5 backdrop-blur border border-white/[0.08]">
+                <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400 mb-2 sm:mb-3">Full Description</p>
                 <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{selectedNews.description}</p>
               </div>
 
               {/* Footer with Actions */}
-              <div className="pt-2 sm:pt-4 border-t border-slate-700/50 space-y-2 sm:space-y-3">
+              <div className="pt-2 sm:pt-4 border-t border-white/[0.08] space-y-2 sm:space-y-3">
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span>
                     Published: {selectedNews.published_at 

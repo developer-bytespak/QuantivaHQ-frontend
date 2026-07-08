@@ -1459,7 +1459,7 @@ export default function PaperTradingPage() {
           <p className="text-xs sm:text-sm text-red-300">Failed to load strategies: {preBuiltError}</p>
         </div>
       ) : preBuiltStrategies.length > 0 ? (
-        <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-3 sm:p-4 backdrop-blur">
+        <div className="rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-3 sm:p-4 backdrop-blur">
           <div className="flex gap-1 sm:gap-2 border-b border-slate-700/50 overflow-x-auto smooth-scroll-horizontal">
             {preBuiltStrategies.map((strategy, idx) => {
               const strategyId = strategy.strategy_id;
@@ -1488,7 +1488,7 @@ export default function PaperTradingPage() {
 
           {/* Filters */}
           <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-3">
-            <div className="flex gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 w-full sm:w-auto">
+            <div className="flex gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1 w-full sm:w-auto">
               {(["24h", "7d", "30d", "all"] as const).map((period) => (
                 <button
                   key={period}
@@ -1527,7 +1527,7 @@ export default function PaperTradingPage() {
       {/* Signals Grid */}
       <div>
         {currentStrategy && loadingSignals[currentStrategy.strategy_id] ? (
-          <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 text-center backdrop-blur">
+          <div className="rounded-lg sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-6 sm:p-8 text-center backdrop-blur">
             <p className="text-xs sm:text-sm text-slate-400">Loading signals...</p>
           </div>
         ) : signalsError[currentStrategy?.strategy_id || ""] ? (
@@ -1576,7 +1576,7 @@ export default function PaperTradingPage() {
             )}
           </>
         ) : (
-          <div className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 sm:p-8 text-center backdrop-blur">
+          <div className="rounded-lg sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-6 sm:p-8 text-center backdrop-blur">
             <p className="text-xs sm:text-sm text-slate-400">
               {currentStrategy
                 ? `No signals available for ${currentStrategy.name}. ${isStocksConnection ? 'Stock signals are generated every 10 minutes during market hours.' : 'Signals are generated every 10 minutes.'}`
@@ -1589,8 +1589,8 @@ export default function PaperTradingPage() {
       {/* Trade Details Overlay */}
       {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
         <div className="fixed inset-0 z-[400] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" onClick={() => setShowTradeOverlay(false)}>
-          <div className="relative w-full max-w-4xl max-h-[90vh] rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-4 sm:mb-6 flex items-center justify-between sticky top-0 bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-3 sm:p-4 -m-4 sm:-m-6 mb-2 sm:mb-4">
+          <div className="relative w-full max-w-4xl max-h-[90vh] rounded-lg sm:rounded-2xl border border-white/[0.12] bg-gradient-to-b from-white/[0.09] to-white/[0.03] p-4 sm:p-6 shadow-2xl shadow-black/50 backdrop-blur overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 sm:mb-6 flex items-center justify-between sticky top-0 border border-white/[0.12] bg-gradient-to-b from-white/[0.09] to-white/[0.03] p-3 sm:p-4 -m-4 sm:-m-6 mb-2 sm:mb-4">
               <h2 className="text-lg sm:text-2xl font-bold text-white">Trade Details</h2>
               <button onClick={() => setShowTradeOverlay(false)} className="rounded-lg p-1.5 sm:p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white" aria-label="Close">
                 <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>

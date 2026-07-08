@@ -188,7 +188,7 @@ export default function StockTradingDataTab({ symbol, currentPrice, connectionId
       {activeView === "quote" && quoteData && (
         <div className="space-y-4">
           {/* Current Price Card */}
-          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+          <div className="rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="space-y-1">
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Last Trade Price</p>
@@ -218,7 +218,7 @@ export default function StockTradingDataTab({ symbol, currentPrice, connectionId
           {/* Bid/Ask Spread */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Bid (Buy) Side */}
-            <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+            <div className="rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-6">
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-1.5 rounded-lg bg-gradient-to-br from-green-500/20 to-green-600/10">
                   <svg className="w-4 h-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -244,7 +244,7 @@ export default function StockTradingDataTab({ symbol, currentPrice, connectionId
             </div>
 
             {/* Ask (Sell) Side */}
-            <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+            <div className="rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-6">
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-1.5 rounded-lg bg-gradient-to-br from-red-500/20 to-red-600/10">
                   <svg className="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -271,7 +271,7 @@ export default function StockTradingDataTab({ symbol, currentPrice, connectionId
           </div>
 
           {/* Spread Info */}
-          <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+          <div className="rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Spread</p>
@@ -307,7 +307,7 @@ export default function StockTradingDataTab({ symbol, currentPrice, connectionId
 
       {/* Recent Activity View */}
       {activeView === "activity" && (
-        <div className="rounded-2xl shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),,0.08),0_0_30px_rgba(var(--primary-light-rgb),,0.06)] bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur p-6">
+        <div className="rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary-light)]/10">
               <svg className="w-4 h-4 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

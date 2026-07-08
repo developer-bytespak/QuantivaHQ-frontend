@@ -35,7 +35,7 @@ export function PortfolioGreeksDashboard({ data, isLoading }: PortfolioGreeksDas
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-20 animate-pulse rounded-xl border border-[--color-border] bg-[--color-surface]/60" />
+          <div key={i} className="h-20 animate-pulse rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02]" />
         ))}
       </div>
     );
@@ -60,7 +60,7 @@ export function PortfolioGreeksDashboard({ data, isLoading }: PortfolioGreeksDas
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {cards.map((card) => (
           <Tooltip key={card.label} content={card.tip} position="top">
-            <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 px-3 py-2.5 shadow-card transition-shadow hover:shadow-card-hover">
+            <div className="rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] px-3 py-2.5 shadow-card transition-shadow hover:shadow-card-hover">
               <div className="flex items-center gap-1.5">
                 {card.symbol && (
                   <span className="text-base text-[var(--primary)]">{card.symbol}</span>

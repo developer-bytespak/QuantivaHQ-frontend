@@ -34,17 +34,20 @@ export function SpendPanel() {
   };
 
   return (
-    <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-rgb),0.06)]">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary)]/20 to-[var(--primary)]/10 border border-[var(--primary)]/20 flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-6 shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14]">
+      <div className="flex items-center gap-3 mb-4 sm:mb-5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+          <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
           </svg>
+        </span>
+        <div>
+          <h3 className="text-base sm:text-lg font-semibold text-white">Spend QHQ</h3>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">Redeem for discounts</p>
         </div>
-        <h3 className="text-lg font-bold text-white">Spend QHQ</h3>
       </div>
 
-      <p className="text-xs text-slate-400 bg-white/[0.05] rounded-lg px-3 py-2 border border-[--color-border] mb-4">
+      <p className="text-xs text-slate-400 rounded-xl px-3 py-2 border border-white/[0.08] bg-white/[0.04] mb-4">
         Use QHQ to get a discount on your next subscription renewal. 10% of spent QHQ is burned.
       </p>
 
@@ -59,16 +62,16 @@ export function SpendPanel() {
               disabled={!affordable}
               className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all duration-200 ${
                 isSelected
-                  ? 'border-2 border-[var(--primary)] bg-gradient-to-br from-[var(--primary)]/15 to-[var(--primary)]/5 hover:scale-[1.01] active:scale-[0.99]'
+                  ? 'border-[var(--primary)]/60 bg-gradient-to-b from-[rgba(var(--primary-rgb),0.12)] via-white/[0.03] to-white/[0.015] hover:scale-[1.01] active:scale-[0.99]'
                   : affordable
-                  ? 'border border-[--color-border] bg-gradient-to-br from-white/[0.07] to-transparent hover:border-[var(--primary)]/50 hover:shadow-[0_0_20px_rgba(var(--primary-rgb),0.15)] group'
-                  : 'border border-[--color-border] bg-gradient-to-br from-white/[0.03] to-transparent opacity-40 cursor-not-allowed'
+                  ? 'border-white/[0.08] bg-white/[0.03] hover:border-[var(--primary)]/40 hover:bg-white/[0.05] group'
+                  : 'border-white/[0.06] bg-white/[0.02] opacity-40 cursor-not-allowed'
               }`}
             >
               <span className="text-sm text-white">
-                Spend <span className="font-semibold text-[var(--primary)]">{option.qhq} QHQ</span>
+                Spend <span className="font-semibold text-[var(--primary-light)] [font-variant-numeric:tabular-nums]">{option.qhq} QHQ</span>
               </span>
-              <span className="text-sm font-bold text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">
+              <span className="text-sm font-bold text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20 [font-variant-numeric:tabular-nums]">
                 {option.discount}% off
               </span>
             </button>
@@ -79,10 +82,10 @@ export function SpendPanel() {
       {selected !== null && (
         <div className="mb-4">
           <div className="flex justify-between text-xs text-slate-400 mb-1">
-            <span>Spending</span>
-            <span>{selected} / {pendingBalance.toFixed(0)} QHQ</span>
+            <span className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Spending</span>
+            <span className="[font-variant-numeric:tabular-nums]">{selected} / {pendingBalance.toFixed(0)} QHQ</span>
           </div>
-          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] rounded-full transition-all duration-300"
               style={{ width: `${Math.min((selected / pendingBalance) * 100, 100)}%` }}
@@ -94,10 +97,10 @@ export function SpendPanel() {
       <button
         onClick={handleSpend}
         disabled={!selected || isSpending}
-        className={`w-full py-3 px-4 rounded-lg font-semibold transition-all ${
+        className={`w-full py-3 px-4 rounded-full font-semibold transition-all ${
           selected && !isSpending
-            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white hover:from-[#fd6a00] hover:to-[#fdb800] hover:scale-[1.02] active:scale-[0.98]'
-            : 'bg-slate-700 text-slate-400 cursor-not-allowed'
+            ? 'bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] hover:scale-[1.03] active:scale-[0.98]'
+            : 'border border-white/[0.08] bg-white/[0.04] text-slate-500 cursor-not-allowed'
         }`}
       >
         {isSpending ? 'Applying...' : selected ? `Apply ${selected} QHQ Discount` : 'Select a discount tier'}

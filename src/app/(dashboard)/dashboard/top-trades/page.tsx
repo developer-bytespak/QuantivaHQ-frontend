@@ -1428,7 +1428,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             </div>
           )}
         </div>
-        <div className="flex flex-wrap gap-1 sm:gap-2 rounded-lg bg-[--color-surface]/60 p-1 items-center">
+        <div className="flex flex-wrap gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1 items-center">
           <Link
             href="/dashboard/custom-strategies-trading?mode=live&from=top-trades"
             className="rounded-md px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-medium transition-all bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] hover:opacity-90 shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 whitespace-nowrap flex items-center gap-1.5 text-white"
@@ -1556,7 +1556,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       ) : preBuiltStrategies.length > 0 ? (
         <div className="space-y-3 sm:space-y-4">
           {/* Strategy Tabs */}
-          <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent p-2 sm:p-3 backdrop-blur overflow-x-auto smooth-scroll-horizontal">
+          <div className="rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-2 sm:p-3 backdrop-blur overflow-x-auto smooth-scroll-horizontal">
             <div className="flex gap-1 sm:gap-2 min-w-max">
               {preBuiltStrategies.map((strategy, idx) => {
                 const strategyId = strategy.strategy_id;
@@ -1590,7 +1590,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           
           {/* Strategy Description Card */}
           {currentStrategy && (
-            <div className="rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur border border-[var(--primary)]/20 p-4 sm:p-5">
+            <div className="rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur border border-[var(--primary)]/20 p-4 sm:p-5">
               <h3 className="text-base sm:text-lg font-semibold text-white mb-2">{currentStrategy.name}</h3>
               <p className="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed">{currentStrategy.description || "No description available"}</p>
               <div className="grid grid-cols-3 gap-3">
@@ -1729,7 +1729,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         )}
 
         {currentStrategy && loadingSignals[currentStrategy.strategy_id] && !strategySignals[currentStrategy.strategy_id] ? (
-          <div className="rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur">
+          <div className="rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-8 text-center backdrop-blur">
             <p className="text-sm text-slate-400">Loading signals...</p>
           </div>
         ) : currentStrategy && signalsError[currentStrategy.strategy_id] ? (
@@ -1746,7 +1746,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           <div>
             <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:grid-cols-2">
               {paginatedTrades.map((trade, index) => (
-                <div key={trade.id} className="rounded-lg sm:rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-4 sm:p-6 backdrop-blur">
+                <div key={trade.id} className="rounded-lg sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-4 sm:p-6 backdrop-blur">
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-center gap-3">
                       <AssetAvatar
@@ -1881,7 +1881,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                           Auto Trade
                         </button>
                       )}
-                      <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-700/40 bg-slate-900/40 p-1">
+                      <div className="grid grid-cols-2 gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1">
                         <button
                           onClick={() => handleViewCoinDetail(trade)}
                           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-slate-800/60 px-3 text-sm font-medium text-slate-200 transition-all duration-300 hover:bg-slate-700/70 hover:text-white"
@@ -1917,7 +1917,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             )}
           </div>
         ) : (
-          <div className="rounded-2xl  bg-gradient-to-br from-white/[0.07] to-transparent p-8 text-center backdrop-blur shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
+          <div className="rounded-2xl  border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] p-8 text-center backdrop-blur shadow-[0_12px_40px_rgba(0,0,0,0.45)]">
             {(hasMinEntryFilter || hasMaxEntryFilter) ? (
               <p className="text-sm text-slate-400">No signals found for selected entry range</p>
             ) : currentStrategy ? (
@@ -1950,7 +1950,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
       {/* Trade Details Overlay */}
       {showTradeOverlay && filteredAndSortedTrades[selectedTradeIndex] && (
         <div className="fixed inset-0 z-[400] isolate flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setShowTradeOverlay(false)}>
-          <div className="relative mx-4 w-full max-w-4xl max-h-[700px] rounded-2xl  bg-gradient-to-br from-white/[0.15] to-white/[0.05] p-4 shadow-2xl shadow-black/50 backdrop-blur" onClick={(e) => e.stopPropagation()}>
+          <div className="relative mx-4 w-full max-w-4xl max-h-[700px] rounded-2xl  border border-white/[0.12] bg-gradient-to-b from-white/[0.09] to-white/[0.03] p-4 shadow-2xl shadow-black/50 backdrop-blur" onClick={(e) => e.stopPropagation()}>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-2xl font-bold text-white">Trade Details</h2>
               <button onClick={() => setShowTradeOverlay(false)} className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-[--color-surface] hover:text-white" aria-label="Close">

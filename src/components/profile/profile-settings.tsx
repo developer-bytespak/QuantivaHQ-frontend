@@ -1133,13 +1133,13 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
           ) : (
             <div className="w-full max-w-xs space-y-4">
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Name *</label>
+                <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-2">Name *</label>
                 <input
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                  className={`w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border ${
                     errors.fullLegalName ? "border-red-400" : "border-white/30"
                   } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
                   placeholder="Enter your name"
@@ -1149,11 +1149,11 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                 )}
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Gender</label>
+                <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-2">Gender</label>
                 <select
                   value={editGender}
                   onChange={(e) => setEditGender(e.target.value as "male" | "female" | "other" | "prefer-not-to-say" | "")}
-                  className="w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
+                  className="w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent"
                 >
                   <option value="">Select gender</option>
                   <option value="male">Male</option>
@@ -1163,13 +1163,13 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                 </select>
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Phone Number</label>
+                <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-2">Phone Number</label>
                 <input
                   type="tel"
                   value={editPhone}
                   onChange={(e) => setEditPhone(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                  className={`w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border ${
                     errors.phoneNumber ? "border-red-400" : "border-white/30"
                   } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
                   placeholder="+1234567890"
@@ -1179,7 +1179,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                 )}
               </div>
               <div className="relative">
-                <label className="block text-white/80 text-sm font-medium mb-2">Nationality/Country *</label>
+                <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-2">Nationality/Country *</label>
                 <button
                   ref={nationalityButtonRef}
                   type="button"
@@ -1232,7 +1232,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                     setIsNationalityDropdownOpen(!isNationalityDropdownOpen);
                     setCountrySearchQuery("");
                   }}
-                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                  className={`w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border ${
                     errors.nationality ? "border-red-400" : "border-white/30"
                   } text-white text-left focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent flex items-center justify-between`}
                 >
@@ -1287,7 +1287,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                               value={countrySearchQuery}
                               onChange={(e) => setCountrySearchQuery(e.target.value)}
                               placeholder="Search countries..."
-                              className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent text-sm"
+                              className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-slate-400 focus:outline-none focus:border-[var(--primary)]/60 focus:ring-2 focus:ring-[var(--primary)]/20 text-sm"
                               autoFocus
                             />
                           </div>
@@ -1329,14 +1329,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                 )}
               </div>
               <div>
-                <label className="block text-white/80 text-sm font-medium mb-2">Date of Birth *</label>
+                <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-2">Date of Birth *</label>
                 <input
                   type="date"
                   value={editDob}
                   onChange={(e) => setEditDob(e.target.value)}
                   onKeyDown={handleKeyDown}
                   max={maxDateOfBirth}
-                  className={`w-full px-4 py-2 rounded-lg bg-white/20 backdrop-blur-sm border ${
+                  className={`w-full px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm border ${
                     errors.dateOfBirth ? "border-red-400" : "border-white/30"
                   } text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent`}
                 />
@@ -1348,14 +1348,14 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                 <button
                   onClick={handleSaveEdit}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 rounded-lg bg-white/30 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 rounded-full bg-white/30 hover:bg-white/40 backdrop-blur-sm border border-white/30 text-white font-medium transition-all duration-200 hover:scale-[1.03] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? "Saving..." : "Save"}
                 </button>
                 <button
                   onClick={handleCancelEdit}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 text-white font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -1503,7 +1503,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       setShowCameraModal(false);
                       stopCamera();
                     }}
-                    className="px-4 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium transition-colors"
+                    className="px-4 py-2 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-medium shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] hover:scale-[1.03] transition-all"
                   >
                     Close
                   </button>
@@ -1554,13 +1554,13 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                   <div className="flex justify-center gap-4">
                     <button
                       onClick={retakePhoto}
-                      className="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-colors"
+                      className="px-6 py-2 rounded-full border border-white/[0.1] bg-white/[0.04] hover:border-white/[0.2] hover:bg-white/[0.08] text-white font-medium transition-all"
                     >
                       Retake
                     </button>
                     <button
                       onClick={usePhoto}
-                      className="px-6 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium transition-colors"
+                      className="px-6 py-2 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-medium shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] hover:scale-[1.03] transition-all"
                     >
                       Use Photo
                     </button>
@@ -1624,7 +1624,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
               </p>
               <button
                 onClick={() => setShowComingSoonModal(false)}
-                className="px-6 py-2 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-medium transition-colors"
+                className="px-6 py-2 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-medium shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] hover:scale-[1.03] transition-all"
               >
                 Got it
               </button>
@@ -1635,14 +1635,25 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Settings Menu */}
-      <div className="bg-gradient-to-br from-white/[0.07] to-transparent backdrop-blur-xl rounded-xl sm:rounded-2xl p-3 sm:p-6 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_0_20px_rgba(var(--primary-rgb),0.08),0_0_30px_rgba(var(--primary-light-rgb),0.06)]">
-        <h3 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Settings</h3>
+      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] p-3 sm:p-6">
+        <div className="mb-4 sm:mb-6 flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+            <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </span>
+          <div>
+            <h3 className="text-base sm:text-lg font-semibold text-white">Settings</h3>
+            <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">Account & preferences</p>
+          </div>
+        </div>
         <div className="space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={item.onClick}
-              className="w-full flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-br from-white/[0.07] to-transparent hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
+              className="w-full flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] hover:from-white/[0.1] hover:to-transparent transition-all duration-200 group cursor-pointer"
             >
               <div className={`flex-shrink-0 text-sm sm:text-base ${item.color || "text-[var(--primary)]"}`}>
                 {item.icon}
@@ -1711,7 +1722,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                         <>
                           {/* Password Input - only for non-Google users */}
                           <div className="mb-3 sm:mb-4">
-                            <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                            <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-300 mb-1 sm:mb-2">
                               Password <span className="text-[var(--primary)]">*</span>
                             </label>
                             <div className="relative">
@@ -1721,7 +1732,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                                 onChange={(e) => setDeletePassword(e.target.value)}
                                 placeholder="Enter password"
                                 disabled={isLoading}
-                                className="w-full px-3 py-2 pr-10 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]/50 text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full px-3 py-2 pr-10 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-slate-400 focus:outline-none focus:border-[var(--primary)]/60 focus:ring-2 focus:ring-[var(--primary)]/20 text-xs sm:text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                               />
                               <button
                                 type="button"
@@ -1748,7 +1759,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
                       {/* Reason Input (Optional) */}
                   <div className="mb-4 sm:mb-6">
-                    <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                    <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-300 mb-1 sm:mb-2">
                       Why are you leaving? (Optional)
                     </label>
                     <textarea
@@ -1758,7 +1769,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       maxLength={500}
                       rows={2}
                       disabled={isLoading}
-                      className="w-full px-3 py-2 rounded-md bg-slate-800/70 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]/50 text-xs sm:text-sm transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white placeholder-slate-400 focus:outline-none focus:border-[var(--primary)]/60 focus:ring-2 focus:ring-[var(--primary)]/20 text-xs sm:text-sm transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <p className="text-slate-400 text-[10px] sm:text-xs mt-0.5 text-right">
                       {deleteReason.length}/500
@@ -1788,7 +1799,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
 
                   {/* 2FA Code Input */}
                   <div className="mb-4 sm:mb-6">
-                    <label className="block text-slate-300 text-xs sm:text-sm font-medium mb-1 sm:mb-2">
+                    <label className="block text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-slate-300 mb-1 sm:mb-2">
                       Enter 6-digit verification code <span className="text-[var(--primary)]">*</span>
                     </label>
                     <input
@@ -1804,7 +1815,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       maxLength={6}
                       disabled={isLoading}
                       autoFocus
-                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-slate-800/70 border border-slate-600 text-white text-center text-xl sm:text-2xl tracking-widest placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-[var(--primary)]/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl border border-white/[0.1] bg-white/[0.04] text-white text-center text-xl sm:text-2xl tracking-widest [font-variant-numeric:tabular-nums] placeholder-slate-400 focus:outline-none focus:border-[var(--primary)]/60 focus:ring-2 focus:ring-[var(--primary)]/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <button
                       onClick={handleSendVerificationCode}
@@ -1839,7 +1850,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       setDeleteError("");
                     }}
                     disabled={isLoading}
-                    className="px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-white font-medium text-sm sm:text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 sm:px-4 py-2 sm:py-3 rounded-full border border-white/[0.1] bg-white/[0.04] hover:border-white/[0.2] hover:bg-white/[0.08] text-white font-medium text-sm sm:text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Back
                   </button>
@@ -1856,7 +1867,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                     setDeleteIsGoogleUser(null);
                   }}
                   disabled={isLoading}
-                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-white font-medium text-sm sm:text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-full border border-white/[0.1] bg-white/[0.04] hover:border-white/[0.2] hover:bg-white/[0.08] text-white font-medium text-sm sm:text-base transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -1868,7 +1879,7 @@ export function ProfileSettings({ onBack }: { onBack: () => void }) {
                       ? deleteIsGoogleUser === null || (!deleteIsGoogleUser && !deletePassword)
                       : !deleteTwoFactorCode)
                   }
-                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] hover:from-[var(--primary-hover)] hover:to-[var(--primary-light)] text-white font-bold text-sm sm:text-base transition-all duration-200 shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary-rgb),0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-[var(--primary)] disabled:hover:to-[var(--primary-hover)] disabled:shadow-none"
+                  className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-bold text-sm sm:text-base transition-all duration-200 shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] hover:scale-[1.03] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center gap-2">

@@ -88,7 +88,7 @@ export function OptionOrderForm({
     invalidPrice;
 
   return (
-    <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4">
+    <div className="rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-4">
       <h3 className="mb-4 text-sm font-semibold text-slate-200">Place Order</h3>
 
       {/* Contract info */}

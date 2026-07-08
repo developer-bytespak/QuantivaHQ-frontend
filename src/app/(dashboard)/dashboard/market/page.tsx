@@ -231,14 +231,14 @@ export default function MarketPage() {
           </div>
           <button
             onClick={() => router.push("/dashboard")}
-            className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
+            className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-white/[0.2] hover:bg-white/[0.08] w-full sm:w-auto"
           >
             Back to Dashboard
           </button>
         </div>
 
         {/* Search + index filter bar */}
-        <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4 space-y-3">
+        <div className="rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-3 sm:p-4 space-y-3">
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <svg className="absolute left-3 top-1/2 h-4 w-4 sm:h-5 sm:w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -249,14 +249,14 @@ export default function MarketPage() {
                 placeholder="Search by symbol or name..."
                 value={stocksSearchInput}
                 onChange={(e) => setStocksSearchInput(e.target.value)}
-                className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
+                className="w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
               />
             </div>
             {showIndexDropdown && (
               <select
                 value={selectedIndex ?? ""}
                 onChange={(e) => setSelectedIndex(e.target.value || null)}
-                className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-2 sm:py-2.5 text-xs sm:text-sm text-white focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
+                className="rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-white focus:border-[var(--primary)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
               >
                 <option value="">All Stocks</option>
                 {stockIndexes?.map((idx) => (
@@ -271,28 +271,47 @@ export default function MarketPage() {
 
         {/* Error */}
         {errorMessage && (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-center">
-            <p className="text-sm text-red-300">{errorMessage}</p>
+          <div className="rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] py-10 text-center">
+            <div className="relative mx-auto mb-4 h-14 w-14">
+              <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(239,68,68,0.18),transparent_70%)] blur-md" />
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-sm font-medium text-slate-300">{errorMessage}</p>
           </div>
         )}
 
         {/* Stocks Table */}
         {!errorMessage && (
           <>
-            <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 overflow-hidden">
+            <div className="rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] overflow-hidden">
+              <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-4 sm:px-5">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+                  <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold text-white">Market</h2>
+                  <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">Live stock prices & trends</p>
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="border-b border-[--color-border]">
+                  <thead className="border-b border-white/[0.08]">
                     <tr className="text-left">
-                      <th className="py-3 px-4 text-xs font-medium text-slate-400">#</th>
-                      <th className="py-3 px-4 text-xs font-medium text-slate-400">Stock</th>
-                      <th className="py-3 px-4 text-xs font-medium text-slate-400">Price</th>
-                      <th className="py-3 px-4 text-xs font-medium text-slate-400">24h %</th>
-                      <th className="py-3 px-4 text-xs font-medium text-slate-400 hidden md:table-cell">Market Cap</th>
-                      <th className="py-3 px-4 text-xs font-medium text-slate-400 hidden lg:table-cell">Volume (24h)</th>
+                      <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">#</th>
+                      <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">Stock</th>
+                      <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">Price</th>
+                      <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">24h %</th>
+                      <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500 hidden md:table-cell">Market Cap</th>
+                      <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500 hidden lg:table-cell">Volume (24h)</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[--color-border]">
+                  <tbody className="divide-y divide-white/[0.05]">
                     {stocksFetching ? (
                       Array.from({ length: STOCKS_PER_PAGE }).map((_, i) => (
                         <tr key={`skeleton-${i}`} className="animate-pulse">
@@ -321,8 +340,8 @@ export default function MarketPage() {
                       ))
                     ) : stocksItems.length > 0 ? (
                       stocksItems.map((stock, index) => (
-                        <tr key={stock.symbol} className="group cursor-pointer hover:bg-slate-800/40 transition-colors" onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}>
-                          <td className="py-4 px-4 text-sm font-medium text-slate-400">{stocksStartIndex + index + 1}</td>
+                        <tr key={stock.symbol} className="group cursor-pointer border-b border-white/[0.05] hover:bg-white/[0.03] transition-colors" onClick={() => router.push(`/dashboard/market/${stock.symbol}`)}>
+                          <td className="py-4 px-4 text-sm font-medium text-slate-400 [font-variant-numeric:tabular-nums]">{stocksStartIndex + index + 1}</td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-3">
                               <div>
@@ -331,20 +350,30 @@ export default function MarketPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-sm font-medium text-white">{formatPrice(stock.price)}</td>
-                          <td className={`py-4 px-4 text-sm font-medium ${stock.changePercent24h >= 0 ? "text-green-400" : "text-red-400"}`}>
+                          <td className="py-4 px-4 text-sm font-medium text-white [font-variant-numeric:tabular-nums]">{formatPrice(stock.price)}</td>
+                          <td className={`py-4 px-4 text-sm font-medium [font-variant-numeric:tabular-nums] ${stock.changePercent24h >= 0 ? "text-green-400" : "text-red-400"}`}>
                             {formatPercent(stock.changePercent24h)}
                           </td>
-                          <td className="py-4 px-4 text-sm text-slate-300 hidden md:table-cell">{formatMarketCap(stock.marketCap)}</td>
-                          <td className="py-4 px-4 text-sm text-slate-300 hidden lg:table-cell">{formatVolume(stock.volume24h)}</td>
+                          <td className="py-4 px-4 text-sm text-slate-300 hidden md:table-cell [font-variant-numeric:tabular-nums]">{formatMarketCap(stock.marketCap)}</td>
+                          <td className="py-4 px-4 text-sm text-slate-300 hidden lg:table-cell [font-variant-numeric:tabular-nums]">{formatVolume(stock.volume24h)}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="py-10 text-center text-slate-400 text-sm">
-                          {debouncedStocksSearch
-                            ? `No stocks found matching "${debouncedStocksSearch}"`
-                            : "No stocks found"}
+                        <td colSpan={6} className="py-10 text-center">
+                          <div className="relative mx-auto mb-4 h-14 w-14">
+                            <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+                            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                              <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                              </svg>
+                            </div>
+                          </div>
+                          <p className="text-sm font-medium text-slate-300">
+                            {debouncedStocksSearch
+                              ? `No stocks found matching "${debouncedStocksSearch}"`
+                              : "No stocks found"}
+                          </p>
                         </td>
                       </tr>
                     )}
@@ -362,11 +391,11 @@ export default function MarketPage() {
                     tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                   disabled={stocksPage === 1 || stocksFetching}
-                  className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50"
+                  className="rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-white/[0.2] hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Previous
                 </button>
-                <span className="text-sm text-slate-400">
+                <span className="text-sm text-slate-400 [font-variant-numeric:tabular-nums]">
                   Page {stocksPage} of {stocksTotalPages.toLocaleString()}
                 </span>
                 <button
@@ -375,7 +404,7 @@ export default function MarketPage() {
                     tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
                   }}
                   disabled={stocksPage >= stocksTotalPages || stocksFetching}
-                  className="rounded-lg border border-[--color-border] bg-[--color-surface] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed hover:border-[var(--primary)]/50"
+                  className="rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-2 text-sm font-medium text-white transition-colors hover:border-white/[0.2] hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                 </button>
@@ -406,14 +435,14 @@ export default function MarketPage() {
         </div>
         <button
           onClick={() => router.push("/dashboard")}
-          className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] w-full sm:w-auto"
+          className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-white/[0.2] hover:bg-white/[0.08] w-full sm:w-auto"
         >
           Back to Dashboard
         </button>
       </div>
 
       {/* Search Bar */}
-      <div className="rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4 space-y-3">
+      <div className="rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-3 sm:p-4 space-y-3">
         {/* Search + filter toggle row */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -428,16 +457,16 @@ export default function MarketPage() {
               placeholder="Search by name or symbol..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-[--color-border] bg-[--color-surface] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20"
+              className="w-full rounded-full border border-white/[0.1] bg-white/[0.04] px-10 py-2 sm:py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-[var(--primary)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
             />
           </div>
           <button
             type="button"
             onClick={() => setShowPriceFilter((v) => !v)}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all whitespace-nowrap ${
+            className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition-all whitespace-nowrap ${
               showPriceFilter || minPrice || maxPrice
                 ? "border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]"
-                : "border-[--color-border] bg-[--color-surface] text-slate-400 hover:border-slate-500 hover:text-white"
+                : "border-white/[0.1] bg-white/[0.04] text-slate-400 hover:border-white/[0.2] hover:bg-white/[0.08] hover:text-white"
             }`}
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -454,7 +483,7 @@ export default function MarketPage() {
 
         {/* Collapsible price filter */}
         {showPriceFilter && (
-          <div className="rounded-lg border border-[var(--primary)]/20 bg-[--color-surface] p-3">
+          <div className="rounded-xl border border-[var(--primary)]/20 bg-white/[0.02] p-3">
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Filter by Price (USD)</p>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <div className="relative flex-1">
@@ -463,7 +492,7 @@ export default function MarketPage() {
                   type="number" min="0" step="0.01" placeholder="Min Price"
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
-                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  className="w-full rounded-full border border-white/[0.1] bg-white/[0.04] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                 />
               </div>
               <span className="hidden text-xs text-slate-500 sm:block">to</span>
@@ -473,13 +502,13 @@ export default function MarketPage() {
                   type="number" min="0" step="0.01" placeholder="Max Price"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
-                  className="w-full rounded-lg border border-[--color-border] bg-[--color-surface-alt] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
+                  className="w-full rounded-full border border-white/[0.1] bg-white/[0.04] pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-[var(--primary)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20"
                 />
               </div>
               <button
                 type="button"
                 onClick={() => { setMinPrice(""); setMaxPrice(""); setShowPriceFilter(false); }}
-                className="rounded-lg border border-[--color-border] bg-[--color-surface-alt] px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-red-500/50 hover:text-red-400 whitespace-nowrap"
+                className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:border-red-500/50 hover:text-red-400 whitespace-nowrap"
               >
                 Reset
               </button>
@@ -490,13 +519,17 @@ export default function MarketPage() {
 
       {/* Error Display */}
       {error && (
-        <div className="rounded-lg border-l-4 border-red-500/50 bg-red-500/10 p-3 sm:p-4">
-          <div className="flex items-start gap-2 sm:gap-3">
-            <svg className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 text-red-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div className="flex-1">
-              <p className="text-xs sm:text-sm text-red-200 font-medium mb-2">{error}</p>
+        <div className="rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] py-10 text-center">
+          <div className="relative mx-auto mb-4 h-14 w-14">
+            <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(239,68,68,0.18),transparent_70%)] blur-md" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+              <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+          <p className="text-sm font-medium text-slate-300">{error}</p>
+          <div className="mt-3">
               <button
                 onClick={() => {
                   setError(null);
@@ -514,17 +547,27 @@ export default function MarketPage() {
                       setIsLoading(false);
                     });
                 }}
-                className="text-xs text-red-300 hover:text-red-100 underline"
+                className="rounded-full border border-white/[0.1] bg-white/[0.04] px-4 py-1.5 text-xs font-medium text-red-300 transition-colors hover:border-white/[0.2] hover:bg-white/[0.08] hover:text-red-200"
               >
                 Click to retry
               </button>
-            </div>
           </div>
         </div>
       )}
 
       {/* Market Table */}
-      <div ref={tableRef} className="rounded-xl sm:rounded-2xl border border-[--color-border] bg-gradient-to-br from-[--color-surface-alt]/80 to-[--color-surface-alt]/60 backdrop-blur shadow-xl shadow-blue-900/10 overflow-hidden">
+      <div ref={tableRef} className="rounded-xl sm:rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur shadow-[0_12px_40px_rgba(0,0,0,0.45)] overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-4 sm:px-5">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
+            <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+            </svg>
+          </span>
+          <div>
+            <h2 className="text-base sm:text-lg font-semibold text-white">Market</h2>
+            <p className="mt-0.5 text-[10px] sm:text-xs text-slate-500">Live prices & trends</p>
+          </div>
+        </div>
         <div className="smooth-scroll-horizontal">
           <table className="w-full min-w-[500px]">
               <colgroup>
@@ -535,17 +578,17 @@ export default function MarketPage() {
                 <col className="w-[120px] sm:w-[140px]" />
                 <col className="w-[120px] sm:w-[140px]" />
               </colgroup>
-              <thead className="divide-y divide-[--color-border]">
-                <tr className="group/row relative hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100">
-                  <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">Rank</th>
-                  <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">Assets</th>
-                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">price</th>
-                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white">24h change</th>
-                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white hidden sm:table-cell">Market cap</th>
-                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white hidden md:table-cell">volume (24h)</th>
+              <thead className="border-b border-white/[0.08]">
+                <tr>
+                  <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">Rank</th>
+                  <th className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">Assets</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">price</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">24h change</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500 hidden sm:table-cell">Market cap</th>
+                  <th className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500 hidden md:table-cell">volume (24h)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[--color-border]">
+              <tbody className="divide-y divide-white/[0.05]">
                 {isLoading ? (
                   <tr>
                     <td colSpan={6} className="py-12 text-center">
@@ -559,32 +602,42 @@ export default function MarketPage() {
                     <tr
                       key={coin.id}
                       onClick={() => router.push(`/dashboard/market/${coin.symbol.toUpperCase()}`)}
-                      className="group/row relative cursor-pointer hover:bg-[--color-surface]/40 transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
+                      className="group/row relative cursor-pointer border-b border-white/[0.05] hover:bg-white/[0.03] transition-colors before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-gradient-to-b before:from-[var(--primary)] before:to-[var(--primary-light)] before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100"
                     >
-                      <td className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-slate-300 whitespace-nowrap">
+                      <td className="py-2 sm:py-3 pl-0 pr-1 text-left text-[10px] sm:text-xs md:text-sm font-medium text-slate-300 whitespace-nowrap [font-variant-numeric:tabular-nums]">
                         {startIndex + index + 1}
                       </td>
                       <td className="py-2 sm:py-3 pl-0 pr-1 text-left">
                         <div className="flex items-center justify-start gap-1.5 sm:gap-2 md:gap-3">
-                          <Image src={coin.image} alt={coin.name} width={32} height={32} className="h-5 w-5 sm:h-6 sm:w-6 md:h-7 md:w-7 lg:h-8 lg:w-8 rounded-full flex-shrink-0" />
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] p-1">
+                            <Image src={coin.image} alt={coin.name} width={32} height={32} className="h-full w-full rounded-full" />
+                          </span>
                           <div className="text-left min-w-0 flex-1">
                             <p className="text-[10px] sm:text-xs md:text-sm font-medium text-white truncate">{coin.name}</p>
                             <p className="text-[9px] sm:text-[10px] md:text-xs text-slate-400 uppercase truncate">{coin.symbol}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white whitespace-nowrap">{formatCurrency(coin.current_price)}</td>
-                      <td className={`py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium whitespace-nowrap ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium text-white whitespace-nowrap [font-variant-numeric:tabular-nums]">{formatCurrency(coin.current_price)}</td>
+                      <td className={`py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm font-medium whitespace-nowrap [font-variant-numeric:tabular-nums] ${coin.price_change_percentage_24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {formatPercent(coin.price_change_percentage_24h)}
                       </td>
-                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell">{formatLargeNumber(coin.market_cap)}</td>
-                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell">{formatLargeNumber(coin.total_volume)}</td>
+                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm text-slate-300 whitespace-nowrap hidden sm:table-cell [font-variant-numeric:tabular-nums]">{formatLargeNumber(coin.market_cap)}</td>
+                      <td className="py-2 sm:py-3 pl-1 pr-1 sm:pr-2 text-left text-[10px] sm:text-xs md:text-sm text-slate-300 whitespace-nowrap hidden md:table-cell [font-variant-numeric:tabular-nums]">{formatLargeNumber(coin.total_volume)}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
-                      <p className="text-sm">No coins found matching your search</p>
+                    <td colSpan={6} className="py-12 text-center">
+                      <div className="relative mx-auto mb-4 h-14 w-14">
+                        <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
+                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">
+                          <svg className="h-6 w-6 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <p className="text-sm font-medium text-slate-300">No coins found matching your search</p>
                     </td>
                   </tr>
                 )}
@@ -595,17 +648,17 @@ export default function MarketPage() {
 
       {/* Pagination Controls */}
       {!isLoading && filteredCoins.length > 0 && totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-lg sm:rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-3 sm:p-4">
-          <div className="text-xs sm:text-sm text-slate-400 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-lg sm:rounded-xl border border-white/[0.09] bg-gradient-to-b from-white/[0.05] to-white/[0.02] p-3 sm:p-4">
+          <div className="text-xs sm:text-sm text-slate-400 text-center sm:text-left [font-variant-numeric:tabular-nums]">
             Showing {startIndex + 1} - {Math.min(endIndex, filteredCoins.length)} of {filteredCoins.length} coins
           </div>
-          
+
           <div className="flex items-center justify-center gap-1 sm:gap-1.5 overflow-x-auto">
             {/* Previous Button */}
             <button
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-white/[0.2] hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
@@ -628,10 +681,10 @@ export default function MarketPage() {
                   <button
                     key={pageNum}
                     onClick={() => handlePageChange(pageNum)}
-                    className={`rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all ${
+                    className={`rounded-full px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium transition-all [font-variant-numeric:tabular-nums] ${
                       currentPage === pageNum
                         ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]"
-                        : "border border-[--color-border] bg-[--color-surface] text-slate-300 hover:border-[var(--primary)]/50 hover:text-white"
+                        : "border border-white/[0.1] bg-white/[0.04] text-slate-300 hover:border-white/[0.2] hover:bg-white/[0.08] hover:text-white"
                     }`}
                   >
                     {pageNum}
@@ -644,7 +697,7 @@ export default function MarketPage() {
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-[var(--primary)]/50 hover:bg-[--color-surface-alt] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-full border border-white/[0.1] bg-white/[0.04] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-white transition-colors hover:border-white/[0.2] hover:bg-white/[0.08] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>

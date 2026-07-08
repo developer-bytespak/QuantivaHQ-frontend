@@ -80,8 +80,13 @@ export default function DashboardLayout({
           <DashboardSidebar sections={DASHBOARD_NAV} />
           <div className="flex h-screen flex-1 flex-col overflow-hidden">
             <TopBar />
-            <main className="flex-1 overflow-y-auto bg-[--color-surface-alt]/60 px-6 pb-16 pt-10">
-              <div className="mx-auto w-full max-w-7xl space-y-8">{children}</div>
+            <main className="relative flex-1 overflow-y-auto bg-[--color-surface-alt]/60 px-6 pb-16 pt-10">
+              {/* Soft brand aura at the top of the workspace */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_60%_100%_at_50%_0%,rgba(var(--primary-rgb),0.07),transparent_70%)]"
+              />
+              <div className="relative mx-auto w-full max-w-7xl space-y-8">{children}</div>
             </main>
           </div>
 

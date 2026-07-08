@@ -231,7 +231,7 @@ export function ManualTradeModal({
       onClick={onClose}
     >
       <div
-        className="relative mx-4 w-full max-w-lg rounded-2xl bg-gradient-to-br from-white/[0.07] to-transparent p-6 shadow-2xl shadow-black/50 backdrop-blur"
+        className="relative mx-4 w-full max-w-lg rounded-2xl border border-white/[0.12] bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-6 shadow-2xl shadow-black/50 backdrop-blur"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
