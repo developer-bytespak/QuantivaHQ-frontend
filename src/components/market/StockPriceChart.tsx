@@ -10,6 +10,10 @@ import {
   CandlestickSeries,
   HistogramSeries,
 } from 'lightweight-charts';
+import { ChartIndicators } from '@/lib/indicators/manager';
+import { useChartIndicators } from '@/lib/indicators/useChartIndicators';
+import { chartHeightFor } from '@/lib/indicators/layout';
+import ChartIndicatorMenu from './ChartIndicatorMenu';
 
 interface Bar {
   timestamp: string;
@@ -42,9 +46,9 @@ const mapTimeframeToAlpaca = (timeframe: string): string => {
   return mapping[timeframe] || '1Day';
 };
 
-// Calculate limit based on timeframe
-const getLimitForTimeframe = (timeframe: string): number => {
-  const limits: Record<string, number> = {
+// Bars actually shown for each timeframe (the visible window).
+const windowBarsForTimeframe = (timeframe: string): number => {
+  const windows: Record<string, number> = {
     '8H': 8,      // 8 hourly bars
     '1D': 24,     // 24 hourly bars or 1 day
     '1W': 7,      // 7 daily bars
@@ -52,17 +56,30 @@ const getLimitForTimeframe = (timeframe: string): number => {
     '3M': 90,     // 90 daily bars
     '6M': 180,    // 180 daily bars
   };
-  return limits[timeframe] || 30;
+  return windows[timeframe] || 30;
 };
+
+// Extra history fetched purely to warm up the long moving averages. A
+// 200-period MA needs ~200 prior bars before it can be plotted, so we pull
+// this many bars *before* the visible window and then pin the view back to
+// the timeframe (see setVisibleLogicalRange below). It's still one request —
+// Alpaca bills by request, not bar count — so there's no added cost.
+const MA_WARMUP_BARS = 220;
+
+const getLimitForTimeframe = (timeframe: string): number =>
+  windowBarsForTimeframe(timeframe) + MA_WARMUP_BARS;
 
 export default function StockPriceChart({ symbol, interval, timeframe = '1D', bars, connectionId }: StockPriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const indicatorsRef = useRef<ChartIndicators | null>(null);
   const [data, setData] = useState<Bar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { active, toggle, clear, getActive } = useChartIndicators();
 
   // Fetch stock chart data from API
   useEffect(() => {
@@ -146,7 +163,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: 400,
+      height: chartHeightFor(getActive()),
       layout: {
         background: { type: ColorType.Solid, color: '#111113' },
         textColor: '#d1d4dc',
@@ -215,8 +232,22 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
     candlestickSeriesInstance.setData(candlestickData);
     volumeSeriesInstance.setData(volumeData);
 
-    // Fit content
-    chart.timeScale().fitContent();
+    // Technical studies (SMA/EMA overlays + RSI/MACD panes) from the same bars.
+    indicatorsRef.current = new ChartIndicators(chart);
+    indicatorsRef.current.setCandles(
+      candlestickData.map((c) => ({ time: c.time as number, close: c.close })),
+    );
+    indicatorsRef.current.apply(getActive());
+
+    // We fetch extra history to warm up the long MAs, so instead of fitting
+    // ALL bars we pin the view to the timeframe's window (most recent bars).
+    const visibleBars = windowBarsForTimeframe(timeframe);
+    const len = candlestickData.length;
+    if (len > visibleBars) {
+      chart.timeScale().setVisibleLogicalRange({ from: len - visibleBars, to: len - 1 });
+    } else {
+      chart.timeScale().fitContent();
+    }
 
     // Handle resize
     const handleResize = () => {
@@ -232,11 +263,23 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (indicatorsRef.current) {
+        indicatorsRef.current.dispose();
+        indicatorsRef.current = null;
+      }
       if (chartRef.current) {
         chartRef.current.remove();
+        chartRef.current = null;
       }
     };
   }, [data]);
+
+  // Re-draw studies when the user toggles them, and grow the chart to fit any
+  // added oscillator panes. The chart itself is only rebuilt on data changes.
+  useEffect(() => {
+    indicatorsRef.current?.apply(active);
+    chartRef.current?.applyOptions({ height: chartHeightFor(active) });
+  }, [active]);
 
   if (isLoading) {
     return (
@@ -268,11 +311,18 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
 
   return (
     <div className="rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-6">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-white mb-1">{symbol} Price Chart</h3>
-        <p className="text-sm text-slate-400">Historical price data • {timeframe}</p>
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-1">{symbol} Price Chart</h3>
+          <p className="text-sm text-slate-400">Historical price data • {timeframe}</p>
+        </div>
+        <ChartIndicatorMenu active={active} onToggle={toggle} onClear={clear} />
       </div>
-      <div ref={chartContainerRef} className="w-full h-96" />
+      <div
+        ref={chartContainerRef}
+        className="w-full"
+        style={{ height: `${chartHeightFor(active)}px` }}
+      />
     </div>
   );
 }
