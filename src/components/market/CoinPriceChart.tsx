@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { 
-  createChart, 
-  IChartApi, 
-  ISeriesApi, 
-  CandlestickData, 
-  HistogramData, 
-  LineData,
+import {
+  createChart,
+  IChartApi,
+  ISeriesApi,
+  CandlestickData,
+  HistogramData,
   CandlestickSeries,
-  LineSeries,
   HistogramSeries
 } from "lightweight-charts";
 import { exchangesService } from "@/lib/api/exchanges.service";
 import type { CandlesByInterval } from "@/lib/api/exchanges.service";
 import { getPublicKlines } from "@/lib/api/public-market.service";
+import { ChartIndicators } from "@/lib/indicators/manager";
+import { useChartIndicators } from "@/lib/indicators/useChartIndicators";
+import { chartHeightFor } from "@/lib/indicators/layout";
+import ChartIndicatorMenu from "./ChartIndicatorMenu";
 
 interface CoinPriceChartProps {
   /** When omitted, the chart runs in public mode and pulls data from
@@ -50,11 +52,12 @@ export default function CoinPriceChart({
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
-  const ma5SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const ma10SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const indicatorsRef = useRef<ChartIndicators | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [chartInitialized, setChartInitialized] = useState(false);
   const [chartReady, setChartReady] = useState(false);
+
+  const { active, toggle, clear, getActive } = useChartIndicators();
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -93,7 +96,7 @@ export default function CoinPriceChart({
           horzLines: { color: "#1e293b" },
         },
         width: width,
-        height: 400,
+        height: chartHeightFor(getActive()),
         timeScale: {
           timeVisible: true,
           secondsVisible: false,
@@ -131,31 +134,16 @@ export default function CoinPriceChart({
         },
       });
 
-      // Create MA5 series
-      const ma5SeriesInstance = chart.addSeries(LineSeries, {
-        color: "#fbbf24",
-        lineWidth: 2,
-        title: "MA(5)",
-        priceScaleId: "right",
-      });
-      ma5SeriesRef.current = ma5SeriesInstance as ISeriesApi<"Line">;
-
-      // Create MA10 series
-      const ma10SeriesInstance = chart.addSeries(LineSeries, {
-        color: "#f97316",
-        lineWidth: 2,
-        title: "MA(10)",
-        priceScaleId: "right",
-      });
-      ma10SeriesRef.current = ma10SeriesInstance as ISeriesApi<"Line">;
-
-      // Create right price scale for MAs
+      // Create right price scale (shared by candles + moving-average overlays)
       chart.priceScale("right").applyOptions({
         scaleMargins: {
           top: 0.1,
           bottom: 0.1,
         },
       });
+
+      // Technical-study manager (SMA/EMA overlays + RSI/MACD panes).
+      indicatorsRef.current = new ChartIndicators(chart);
 
       // Handle resize
       const handleResize = () => {
@@ -192,6 +180,10 @@ export default function CoinPriceChart({
         window.removeEventListener("resize", handleResize);
         if (resizeObserver) {
           resizeObserver.disconnect();
+        }
+        if (indicatorsRef.current) {
+          indicatorsRef.current.dispose();
+          indicatorsRef.current = null;
         }
         if (chartRef.current) {
           chartRef.current.remove();
@@ -253,9 +245,11 @@ export default function CoinPriceChart({
           // Fallback: Fetch from API (for intervals not included in embedded data).
           // Public mode (no connectionId) pulls from Binance's anonymous
           // klines endpoint; connected mode goes through the exchange.
-          let limit = 100;
+          // 300 candles gives the 200-period moving averages enough history to
+          // render (Binance klines weight is still just 2 at this size).
+          let limit = 300;
           if (timeframe === "3M" || timeframe === "6M") {
-            limit = 200;
+            limit = 400;
           }
 
           if (connectionId) {
@@ -302,42 +296,21 @@ export default function CoinPriceChart({
             color: c.close >= c.open ? "#22c55e80" : "#ef444480",
           }));
 
-          // Calculate moving averages
-          const ma5: any[] = [];
-          const ma10: any[] = [];
-
-          for (let i = 0; i < candles.length; i++) {
-            if (i >= 4) {
-              const ma5Value =
-                candles.slice(i - 4, i + 1).reduce((sum, c) => sum + c.close, 0) / 5;
-              ma5.push({
-                time: candles[i].time,
-                value: ma5Value,
-              });
-            }
-
-            if (i >= 9) {
-              const ma10Value =
-                candles.slice(i - 9, i + 1).reduce((sum, c) => sum + c.close, 0) / 10;
-              ma10.push({
-                time: candles[i].time,
-                value: ma10Value,
-              });
-            }
-          }
-
-          // Update series
+          // Update price + volume series
           if (candlestickSeriesRef.current) {
             candlestickSeriesRef.current.setData(candles as CandlestickData[]);
           }
           if (volumeSeriesRef.current) {
             volumeSeriesRef.current.setData(volumes as HistogramData[]);
           }
-          if (ma5SeriesRef.current && ma5.length > 0) {
-            ma5SeriesRef.current.setData(ma5 as LineData[]);
-          }
-          if (ma10SeriesRef.current && ma10.length > 0) {
-            ma10SeriesRef.current.setData(ma10 as LineData[]);
+
+          // Feed the technical studies from the same candles and (re)draw the
+          // user's active selection.
+          if (indicatorsRef.current) {
+            indicatorsRef.current.setCandles(
+              candles.map((c) => ({ time: c.time as number, close: c.close })),
+            );
+            indicatorsRef.current.apply(getActive());
           }
         }
       } catch (error) {
@@ -356,14 +329,25 @@ export default function CoinPriceChart({
     };
   }, [connectionId, symbol, interval, timeframe, chartReady, candlesByInterval, initialCandles]);
 
+  // Re-draw studies when the user toggles them (no refetch needed — the
+  // manager already holds the latest candles). Also grow the chart so added
+  // oscillator panes don't crush the price pane.
+  useEffect(() => {
+    indicatorsRef.current?.apply(active);
+    chartRef.current?.applyOptions({ height: chartHeightFor(active) });
+  }, [active]);
+
   return (
     <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 relative">
-      <div 
-        ref={chartContainerRef} 
-        style={{ 
-          width: "100%", 
-          height: "400px", 
-          minHeight: "400px"
+      <div className="mb-3 flex items-center justify-end">
+        <ChartIndicatorMenu active={active} onToggle={toggle} onClear={clear} />
+      </div>
+      <div
+        ref={chartContainerRef}
+        style={{
+          width: "100%",
+          height: `${chartHeightFor(active)}px`,
+          minHeight: `${chartHeightFor(active)}px`
         }}
       />
       {isLoading && (
