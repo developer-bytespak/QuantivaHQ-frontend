@@ -200,7 +200,7 @@ export default function MarketDetailPage() {
 
         const [ticker, candles, depth, trades] = await Promise.all([
           getPublicTicker(tradingPair),
-          getPublicKlines(tradingPair, "1h", 200),
+          getPublicKlines(tradingPair, "1h", 300),
           getPublicDepth(tradingPair, 20).catch(() => null),
           getPublicTrades(tradingPair, 50).catch(() => []),
         ]);
