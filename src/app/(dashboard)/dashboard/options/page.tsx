@@ -151,13 +151,62 @@ export default function OptionsPage() {
     const leg = signal.legs[0];
     if (!leg) return;
 
-    const matching = store.optionsChain.find(
-      (c) => c.type === leg.type && Math.abs(c.strike - leg.strike) < 1,
-    );
-    if (matching) {
-      handleSelectContract(matching);
-      if (matching.expiry) store.setSelectedExpiry(matching.expiry.split("T")[0]);
+    // The signal's contract is computed from spot + generic listing rules, so
+    // its exact (strike, expiry) may not be listed on the venue. The live chain
+    // is the only ground truth — snap the signal onto the closest REAL contract
+    // instead of blindly taking the first strike match (which ignored expiry and
+    // could land the user on a wildly different contract, e.g. 158d vs 32d).
+    const candidates = store.optionsChain.filter((c) => c.type === leg.type);
+    if (candidates.length === 0) {
+      setOrderToast(
+        `No ${leg.type} contracts are currently listed for ${signal.underlying}.`,
+      );
+      return;
     }
+
+    const targetExpiryMs = leg.expiry ? new Date(leg.expiry).getTime() : NaN;
+    const expiryMs = (c: OptionContract) =>
+      c.expiry ? new Date(c.expiry).getTime() : NaN;
+
+    // Expiry defines an option's whole risk/reward, so match it first: pick the
+    // nearest listed expiry, then the nearest strike within that expiry.
+    const nearestExpiryContract = Number.isNaN(targetExpiryMs)
+      ? candidates[0]
+      : candidates.reduce((best, c) =>
+          Math.abs(expiryMs(c) - targetExpiryMs) <
+          Math.abs(expiryMs(best) - targetExpiryMs)
+            ? c
+            : best,
+        );
+    const chosenExpiry = nearestExpiryContract.expiry;
+
+    const matching = candidates
+      .filter((c) => c.expiry === chosenExpiry)
+      .reduce((best, c) =>
+        Math.abs(c.strike - leg.strike) < Math.abs(best.strike - leg.strike)
+          ? c
+          : best,
+      );
+
+    // Warn when the closest listed contract meaningfully differs from what the
+    // signal card showed, so the user reviews before placing a trade whose
+    // premium/breakeven no longer matches the recommendation.
+    const expiryDriftDays = Number.isNaN(targetExpiryMs)
+      ? 0
+      : Math.abs(expiryMs(matching) - targetExpiryMs) / 86_400_000;
+    const strikeDriftPct =
+      leg.strike > 0 ? Math.abs(matching.strike - leg.strike) / leg.strike : 0;
+    if (expiryDriftDays > 7 || strikeDriftPct > 0.03) {
+      const target = leg.expiry ? leg.expiry.slice(0, 10) : "—";
+      setOrderToast(
+        `The signal's exact contract (${leg.type} $${leg.strike}, exp ${target}) isn't listed. ` +
+          `Selected the closest available: $${matching.strike} exp ${chosenExpiry.slice(0, 10)}. ` +
+          `Review the premium and risk before placing.`,
+      );
+    }
+
+    if (matching.expiry) store.setSelectedExpiry(matching.expiry.split("T")[0]);
+    handleSelectContract(matching);
   }, [store.optionsChain, store.isLoadingChain]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Fetch account balance ───────────────────────────────────────────────
