@@ -6,7 +6,7 @@ import { Parallax } from "./motion/parallax";
 import { GradientText } from "./motion/gradient-text";
 
 const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=com.quantivahq.app";
+  "https://play.google.com/store/apps/details?id=com.quantivahq";
 const APP_STORE_URL = "https://apps.apple.com/app/quantiva-hq/id6762023500";
 
 /** CSS-built phone mockup — no external assets. */
