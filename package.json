@@ -45,5 +45,8 @@
     "eslint-config-next": "^16.0.7",
     "tailwindcss": "^4",
     "typescript": "5.9.3"
+  },
+  "overrides": {
+    "@coinbase/cdp-sdk": "1.45.0"
   }
 }
