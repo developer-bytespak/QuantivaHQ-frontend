@@ -59,31 +59,6 @@ export default function DashboardPage() {
   // Ref to track if initialization has happened (prevents duplicate calls)
   const hasInitialized = useRef(false);
 
-  // Dividends received (stocks/Alpaca connections only). Non-fatal: on any
-  // error the card simply doesn't render.
-  const [dividendsData, setDividendsData] = useState<{
-    items: Array<{ symbol: string; amount: number; date: string | null }>;
-    total: number;
-    ytdTotal: number;
-  } | null>(null);
-
-  useEffect(() => {
-    if (connectionType !== "stocks" || !connectionId) {
-      setDividendsData(null);
-      return;
-    }
-    let cancelled = false;
-    exchangesService
-      .getDividends(connectionId)
-      .then((data) => {
-        if (!cancelled && data && Array.isArray(data.items)) setDividendsData(data);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [connectionType, connectionId]);
-
   // Market data state - different sources based on type
   const [marketData, setMarketData] = useState<CoinGeckoCoin[]>([]);
   const [isLoadingMarket, setIsLoadingMarket] = useState(false);
@@ -937,49 +912,6 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-
-          {/* Dividends Received (stocks connections only) */}
-          {connectionType === "stocks" && dividendsData && (
-            <div className="rounded-xl sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent p-4 sm:p-6 backdrop-blur">
-              <div className="mb-4 sm:mb-5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[var(--primary)]/25 bg-[var(--primary)]/10">
-                    <svg className="h-4 w-4 text-[var(--primary-light)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </span>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-semibold text-white">Dividends Received</h2>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5">Cash dividends paid into your Alpaca account</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] sm:text-xs text-slate-500">This year</p>
-                  <p className="text-sm sm:text-base font-semibold text-green-400 [font-variant-numeric:tabular-nums]">{formatCurrency(dividendsData.ytdTotal)}</p>
-                </div>
-              </div>
-              {dividendsData.items.length === 0 ? (
-                <p className="py-4 text-center text-sm text-slate-400">No dividends received yet</p>
-              ) : (
-                <ul className="space-y-2">
-                  {dividendsData.items.slice(0, 5).map((div, idx) => (
-                    <li key={`${div.symbol}-${div.date}-${idx}`} className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 sm:px-4 py-3 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-green-500/15 text-green-400 text-xs font-bold">$</div>
-                        <div>
-                          <span className="text-xs sm:text-sm font-semibold text-white">{div.symbol || "Dividend"}</span>
-                          {div.date && (
-                            <div className="text-[10px] text-slate-500 mt-0.5">{new Date(div.date).toLocaleDateString()}</div>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-xs sm:text-sm font-semibold text-green-400 [font-variant-numeric:tabular-nums]">+{formatCurrency(div.amount)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
 
           {/* Holdings & Market */}
           <div className="rounded-xl sm:rounded-2xl animate-fade-in relative overflow-hidden border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition-colors duration-300 hover:border-white/[0.14] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent backdrop-blur">
