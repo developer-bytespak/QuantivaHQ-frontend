@@ -22,6 +22,27 @@ export function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Total dividends received on the Alpaca account (stocks connections only).
+  // Non-fatal: on any error the stat simply doesn't render.
+  const [dividendsTotal, setDividendsTotal] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (connectionType !== "stocks" || !connectionId) {
+      setDividendsTotal(null);
+      return;
+    }
+    let cancelled = false;
+    exchangesService
+      .getDividends(connectionId)
+      .then((data) => {
+        if (!cancelled && data && typeof data.total === "number") setDividendsTotal(data.total);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [connectionType, connectionId]);
+
   const fetchDashboard = useCallback(async (connId: string) => {
     try {
       setError(null);
@@ -79,6 +100,14 @@ export function ProfilePage() {
                   <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Available USD (Spot)</p>
                   <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(availableSpotUSD)}</p>
                 </div>
+                {!isCrypto && dividendsTotal !== null && (
+                  <div>
+                    <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Total dividends</p>
+                    <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">
+                      {dividendsTotal < 0 ? "-" : ""}${formatNumber(Math.abs(dividendsTotal))}
+                    </p>
+                  </div>
+                )}
                 {supportsMargin && (
                   <>
                     <div>
