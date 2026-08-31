@@ -25,6 +25,7 @@ export function useStocksPaginated(
       params.index ?? null,
       params.search ?? "",
       params.sector ?? "",
+      params.payersOnly ?? false,
     ],
     queryFn: () => getPaginatedStocks(params),
     enabled: options.enabled ?? true,

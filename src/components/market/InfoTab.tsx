@@ -36,6 +36,8 @@ interface InfoTabProps {
     peRatio?: number;
     eps?: number;
     dividendYield?: number;
+    dividendFrequency?: string | null;
+    exDividendDate?: string | null;
     avgVolume?: number;
     description?: string;
   };
@@ -427,6 +429,34 @@ export default function InfoTab({ coinSymbol, connectionId, tradingPair, stockDa
               <p className="text-xl font-bold text-white">{stockData.dividendYield.toFixed(2)}%</p>
             </div>
           )}
+
+          {stockData.dividendYield && stockData.dividendFrequency ? (
+            <div className="rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-purple-500/20">
+                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7V4a1 1 0 011-1h14a1 1 0 011 1v3M4 7h16M4 7v13a1 1 0 001 1h14a1 1 0 001-1V7M9 12h6" />
+                  </svg>
+                </div>
+                <h4 className="text-xs font-medium text-slate-400">Payout Frequency</h4>
+              </div>
+              <p className="text-xl font-bold text-white">{stockData.dividendFrequency}</p>
+            </div>
+          ) : null}
+
+          {stockData.dividendYield && stockData.exDividendDate ? (
+            <div className="rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.45)] border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 rounded-lg bg-purple-500/20">
+                  <svg className="w-4 h-4 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h4 className="text-xs font-medium text-slate-400">Ex-Dividend Date</h4>
+              </div>
+              <p className="text-xl font-bold text-white">{new Date(stockData.exDividendDate).toLocaleDateString()}</p>
+            </div>
+          ) : null}
         </div>
       </div>
     );
