@@ -92,6 +92,8 @@ interface StockDetailData {
   peRatio?: number;
   eps?: number;
   dividendYield?: number;
+  dividendFrequency?: string | null;
+  exDividendDate?: string | null;
   avgVolume?: number;
   marketCapFormatted?: string;
   description?: string;
@@ -803,6 +805,8 @@ export default function MarketDetailPage() {
             peRatio: stockData.peRatio,
             eps: stockData.eps,
             dividendYield: stockData.dividendYield,
+            dividendFrequency: stockData.dividendFrequency,
+            exDividendDate: stockData.exDividendDate,
             avgVolume: stockData.avgVolume,
             description: stockData.description,
           } : undefined}

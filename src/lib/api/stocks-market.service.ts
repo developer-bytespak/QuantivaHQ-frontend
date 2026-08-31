@@ -18,6 +18,10 @@ export interface MarketStock {
   changePercent24h: number;
   marketCap: number | null;
   volume24h: number;
+  /** Annual dividend yield as a percent (2.4 = 2.4%). 0 = non-payer, null = unknown. */
+  dividendYield?: number | null;
+  /** Monthly | Quarterly | Semi-Annual | Annual | Irregular */
+  dividendFrequency?: string | null;
   dataSource?: string;
 }
 
@@ -43,6 +47,7 @@ export interface GetPaginatedStocksParams {
   index?: string | null;
   search?: string;
   sector?: string;
+  payersOnly?: boolean;
 }
 
 /**
@@ -53,13 +58,14 @@ export interface GetPaginatedStocksParams {
 export async function getPaginatedStocks(
   params: GetPaginatedStocksParams = {},
 ): Promise<PaginatedStocksResponse> {
-  const { page = 1, limit = 50, index, search, sector } = params;
+  const { page = 1, limit = 50, index, search, sector, payersOnly } = params;
   const query = new URLSearchParams();
   query.append("page", String(page));
   query.append("limit", String(limit));
   if (index) query.append("index", index);
   if (search) query.append("search", search);
   if (sector) query.append("sector", sector);
+  if (payersOnly) query.append("payersOnly", "true");
 
   const url = `${API_BASE_URL}/api/stocks-market/stocks-paginated?${query.toString()}`;
   const res = await fetch(url, { credentials: "include" });

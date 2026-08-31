@@ -11,6 +11,7 @@ interface StockOrdersPanelProps {
 
 type TabType = "orders" | "positions" | "activities";
 type OrderFilter = "all" | "open" | "filled" | "canceled";
+type ActivityFilter = "all" | "dividends";
 
 export function StockOrdersPanel({ onClose, refreshTrigger }: StockOrdersPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>("orders");
@@ -20,6 +21,8 @@ export function StockOrdersPanel({ onClose, refreshTrigger }: StockOrdersPanelPr
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [orderFilter, setOrderFilter] = useState<OrderFilter>("all");
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+  const [divActivities, setDivActivities] = useState<any[] | null>(null);
   const [cancelingOrder, setCancelingOrder] = useState<string | null>(null);
   const [closingPosition, setClosingPosition] = useState<string | null>(null);
 
@@ -58,6 +61,16 @@ export function StockOrdersPanel({ onClose, refreshTrigger }: StockOrdersPanelPr
       setLoading(false);
     }
   };
+
+  // Lazily fetch the dividends-only activity feed when its filter is first selected
+  // (the mixed 50-row feed may not reach far enough back to include DIV rows)
+  useEffect(() => {
+    if (activityFilter !== "dividends" || divActivities !== null) return;
+    alpacaPaperTradingService
+      .getActivities({ activity_types: "DIV", page_size: 50 })
+      .then((data) => setDivActivities(data || []))
+      .catch(() => setDivActivities([]));
+  }, [activityFilter, divActivities]);
 
   // Filter orders
   const filteredOrders = orders.filter((order) => {
@@ -438,13 +451,42 @@ export function StockOrdersPanel({ onClose, refreshTrigger }: StockOrdersPanelPr
               {/* Activities Tab */}
               {activeTab === "activities" && (
                 <div>
-                  {activities.length === 0 ? (
+                  {/* Activity Filters */}
+                  <div className="px-6 py-4 border-b border-slate-700/30 flex items-center gap-2 flex-wrap">
+                    {(["all", "dividends"] as ActivityFilter[]).map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => setActivityFilter(filter)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                          activityFilter === filter
+                            ? "bg-blue-500 text-white"
+                            : "bg-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700"
+                        }`}
+                      >
+                        {filter === "all" ? "All" : "Dividends"}
+                      </button>
+                    ))}
+                    {activityFilter === "dividends" && divActivities !== null && (
+                      <span className="ml-auto text-xs text-slate-400">
+                        Dividends received:{" "}
+                        <span className="font-semibold text-emerald-400">
+                          ${divActivities.reduce((sum, a) => sum + (Number(a.net_amount) || 0), 0).toFixed(2)}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+
+                  {activityFilter === "dividends" && divActivities === null ? (
                     <div className="flex items-center justify-center h-48 text-slate-400">
-                      No recent activities
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading dividends...
+                    </div>
+                  ) : (activityFilter === "dividends" ? divActivities! : activities).length === 0 ? (
+                    <div className="flex items-center justify-center h-48 text-slate-400">
+                      {activityFilter === "dividends" ? "No dividends received yet" : "No recent activities"}
                     </div>
                   ) : (
                     <div className="divide-y divide-slate-700/30">
-                      {activities.map((activity, idx) => (
+                      {(activityFilter === "dividends" ? divActivities! : activities).map((activity, idx) => (
                         <div key={idx} className="px-6 py-4 hover:bg-slate-800/30 transition-colors">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">

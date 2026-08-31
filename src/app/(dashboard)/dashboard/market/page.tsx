@@ -28,6 +28,7 @@ export default function MarketPage() {
   const [selectedIndex, setSelectedIndex] = useState<string | null>(null);
   const [stocksSearchInput, setStocksSearchInput] = useState("");
   const [debouncedStocksSearch, setDebouncedStocksSearch] = useState("");
+  const [dividendPayersOnly, setDividendPayersOnly] = useState(false);
   const STOCKS_PER_PAGE = 50;
 
   // Debounce search input by 300ms so typing doesn't fire a request per keystroke
@@ -36,10 +37,10 @@ export default function MarketPage() {
     return () => clearTimeout(t);
   }, [stocksSearchInput]);
 
-  // Reset to page 1 whenever the search query or selected index changes
+  // Reset to page 1 whenever the search query, selected index, or payers filter changes
   useEffect(() => {
     setStocksPage(1);
-  }, [debouncedStocksSearch, selectedIndex]);
+  }, [debouncedStocksSearch, selectedIndex, dividendPayersOnly]);
 
   const {
     data: stocksResult,
@@ -51,6 +52,7 @@ export default function MarketPage() {
       limit: STOCKS_PER_PAGE,
       index: selectedIndex,
       search: debouncedStocksSearch || undefined,
+      payersOnly: dividendPayersOnly,
     },
     { enabled: connectionType === "stocks" },
   );
@@ -266,6 +268,19 @@ export default function MarketPage() {
                 ))}
               </select>
             )}
+            <button
+              onClick={() => setDividendPayersOnly((v) => !v)}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-2 sm:py-2.5 text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                dividendPayersOnly
+                  ? "border-[var(--primary)]/60 bg-[var(--primary)]/10 text-[var(--primary)]"
+                  : "border-white/[0.1] bg-white/[0.04] text-slate-400 hover:border-white/[0.2] hover:bg-white/[0.08]"
+              }`}
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Dividend payers
+            </button>
           </div>
         </div>
 
@@ -309,6 +324,7 @@ export default function MarketPage() {
                       <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">24h %</th>
                       <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500 hidden md:table-cell">Market Cap</th>
                       <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500 hidden lg:table-cell">Volume (24h)</th>
+                      <th className="py-3 px-4 text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500 hidden lg:table-cell">Dividend</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.05]">
@@ -336,6 +352,9 @@ export default function MarketPage() {
                           <td className="py-4 px-4 hidden lg:table-cell">
                             <div className="h-3 w-24 rounded bg-slate-700/50" />
                           </td>
+                          <td className="py-4 px-4 hidden lg:table-cell">
+                            <div className="h-3 w-20 rounded bg-slate-700/50" />
+                          </td>
                         </tr>
                       ))
                     ) : stocksItems.length > 0 ? (
@@ -356,11 +375,16 @@ export default function MarketPage() {
                           </td>
                           <td className="py-4 px-4 text-sm text-slate-300 hidden md:table-cell [font-variant-numeric:tabular-nums]">{formatMarketCap(stock.marketCap)}</td>
                           <td className="py-4 px-4 text-sm text-slate-300 hidden lg:table-cell [font-variant-numeric:tabular-nums]">{formatVolume(stock.volume24h)}</td>
+                          <td className="py-4 px-4 text-sm text-slate-300 hidden lg:table-cell [font-variant-numeric:tabular-nums]">
+                            {stock.dividendYield && stock.dividendYield > 0
+                              ? `${stock.dividendYield.toFixed(2)}%${stock.dividendFrequency ? ` · ${stock.dividendFrequency}` : ""}`
+                              : "N/A"}
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="py-10 text-center">
+                        <td colSpan={7} className="py-10 text-center">
                           <div className="relative mx-auto mb-4 h-14 w-14">
                             <div aria-hidden className="absolute inset-0 rounded-2xl bg-[radial-gradient(circle,rgba(var(--primary-rgb),0.18),transparent_70%)] blur-md" />
                             <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-white/[0.09] bg-gradient-to-b from-white/[0.06] to-white/[0.02]">

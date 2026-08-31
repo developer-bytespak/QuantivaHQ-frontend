@@ -551,6 +551,22 @@ export const exchangesService = {
   },
 
   /**
+   * Get dividends received on the user's Alpaca account (activity type DIV).
+   * Only for Alpaca connections.
+   */
+  async getDividends(connectionId: string): Promise<{
+    items: Array<{ symbol: string; amount: number; date: string | null }>;
+    total: number;
+    ytdTotal: number;
+  }> {
+    return apiRequest<never, any>({
+      path: `/exchanges/connections/${connectionId}/dividends`,
+      method: "GET",
+      credentials: "include",
+    });
+  },
+
+  /**
    * Get stock historical bars using the user's Alpaca connection.
    */
   async getStockBars(
