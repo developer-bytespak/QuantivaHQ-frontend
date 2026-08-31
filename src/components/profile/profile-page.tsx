@@ -96,10 +96,6 @@ export function ProfilePage() {
                   <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Invested value (Spot)</p>
                   <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(investedSpotUSD)}</p>
                 </div>
-                <div>
-                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Available USD (Spot)</p>
-                  <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(availableSpotUSD)}</p>
-                </div>
                 {!isCrypto && dividendsTotal !== null && (
                   <div>
                     <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Total dividends</p>
@@ -108,6 +104,10 @@ export function ProfilePage() {
                     </p>
                   </div>
                 )}
+                <div>
+                  <p className="text-[10px] sm:text-xs font-medium uppercase tracking-[0.14em] text-white/80 mb-1">Available USD (Spot)</p>
+                  <p className="text-base sm:text-xl font-semibold text-white [font-variant-numeric:tabular-nums]">${formatNumber(availableSpotUSD)}</p>
+                </div>
                 {supportsMargin && (
                   <>
                     <div>
