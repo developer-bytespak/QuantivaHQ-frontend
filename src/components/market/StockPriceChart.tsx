@@ -13,6 +13,12 @@ import {
 import { ChartIndicators } from '@/lib/indicators/manager';
 import { useChartIndicators } from '@/lib/indicators/useChartIndicators';
 import { chartHeightFor } from '@/lib/indicators/layout';
+import {
+  CHART_CANDLE_LIMIT,
+  CHART_INTERVAL_MAP,
+  ChartIntervalId,
+  DEFAULT_CHART_INTERVAL,
+} from '@/lib/chart/intervals';
 import ChartIndicatorMenu from './ChartIndicatorMenu';
 
 interface Bar {
@@ -22,54 +28,35 @@ interface Bar {
   low: number;
   close: number;
   volume: number;
+  /** Per-bar VWAP from Alpaca, when the backend passes it through. */
+  vwap?: number;
 }
 
 interface StockPriceChartProps {
   symbol?: string;
-  interval?: string;
-  timeframe?: string;
+  /** Candle size. Defaults to daily. */
+  intervalId?: ChartIntervalId;
   bars?: Bar[];
   /** When provided (Alpaca), bars are fetched using the user's connection. */
   connectionId?: string | null;
 }
 
-// Map frontend timeframe to Alpaca API timeframe
-const mapTimeframeToAlpaca = (timeframe: string): string => {
-  const mapping: Record<string, string> = {
-    '8H': '1Hour',
-    '1D': '1Day',
-    '1W': '1Day',
-    '1M': '1Day',
-    '3M': '1Day',
-    '6M': '1Day',
-  };
-  return mapping[timeframe] || '1Day';
-};
+const toBar = (bar: any): Bar => ({
+  timestamp: bar.timestamp,
+  open: bar.open,
+  high: bar.high,
+  low: bar.low,
+  close: bar.close,
+  volume: bar.volume,
+  ...(typeof bar.vwap === 'number' ? { vwap: bar.vwap } : {}),
+});
 
-// Bars actually shown for each timeframe (the visible window).
-const windowBarsForTimeframe = (timeframe: string): number => {
-  const windows: Record<string, number> = {
-    '8H': 8,      // 8 hourly bars
-    '1D': 24,     // 24 hourly bars or 1 day
-    '1W': 7,      // 7 daily bars
-    '1M': 30,     // 30 daily bars
-    '3M': 90,     // 90 daily bars
-    '6M': 180,    // 180 daily bars
-  };
-  return windows[timeframe] || 30;
-};
-
-// Extra history fetched purely to warm up the long moving averages. A
-// 200-period MA needs ~200 prior bars before it can be plotted, so we pull
-// this many bars *before* the visible window and then pin the view back to
-// the timeframe (see setVisibleLogicalRange below). It's still one request —
-// Alpaca bills by request, not bar count — so there's no added cost.
-const MA_WARMUP_BARS = 220;
-
-const getLimitForTimeframe = (timeframe: string): number =>
-  windowBarsForTimeframe(timeframe) + MA_WARMUP_BARS;
-
-export default function StockPriceChart({ symbol, interval, timeframe = '1D', bars, connectionId }: StockPriceChartProps) {
+export default function StockPriceChart({
+  symbol,
+  intervalId = DEFAULT_CHART_INTERVAL,
+  bars,
+  connectionId,
+}: StockPriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -80,6 +67,8 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
   const [error, setError] = useState<string | null>(null);
 
   const { active, toggle, clear, getActive } = useChartIndicators();
+  const intervalDef = CHART_INTERVAL_MAP[intervalId];
+  const intraday = intervalDef.isIntraday;
 
   // Fetch stock chart data from API
   useEffect(() => {
@@ -98,19 +87,12 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
           return;
         }
 
-        const alpacaTimeframe = mapTimeframeToAlpaca(timeframe);
-        const limit = getLimitForTimeframe(timeframe);
+        const alpacaTimeframe = intervalDef.alpaca;
+        const limit = CHART_CANDLE_LIMIT;
 
         if (connectionId) {
           const result = await exchangesService.getStockBars(connectionId, symbol.toUpperCase(), alpacaTimeframe, limit);
-          const barsData: Bar[] = (result.bars || []).map((bar: any) => ({
-            timestamp: bar.timestamp,
-            open: bar.open,
-            high: bar.high,
-            low: bar.low,
-            close: bar.close,
-            volume: bar.volume,
-          }));
+          const barsData: Bar[] = (result.bars || []).map(toBar);
           if (barsData.length === 0) setError('No chart data available for this stock');
           else setData(barsData);
           return;
@@ -126,14 +108,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
         }
 
         const result = await response.json();
-        const barsData: Bar[] = (result.bars || []).map((bar: any) => ({
-          timestamp: bar.timestamp,
-          open: bar.open,
-          high: bar.high,
-          low: bar.low,
-          close: bar.close,
-          volume: bar.volume,
-        }));
+        const barsData: Bar[] = (result.bars || []).map(toBar);
 
         if (barsData.length === 0) {
           setError('No chart data available for this stock');
@@ -155,7 +130,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
     } else if (symbol) {
       fetchStockChartData();
     }
-  }, [symbol, interval, timeframe, bars, connectionId]);
+  }, [symbol, intervalDef, bars, connectionId]);
 
   useEffect(() => {
     if (!chartContainerRef.current || !data || data.length === 0) return;
@@ -163,7 +138,7 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
     // Create chart
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
-      height: chartHeightFor(getActive()),
+      height: chartHeightFor(getActive(), intraday),
       layout: {
         background: { type: ColorType.Solid, color: '#111113' },
         textColor: '#d1d4dc',
@@ -232,22 +207,28 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
     candlestickSeriesInstance.setData(candlestickData);
     volumeSeriesInstance.setData(volumeData);
 
-    // Technical studies (SMA/EMA overlays + RSI/MACD panes) from the same bars.
+    // Technical studies (overlays + RSI/MACD/ATR panes) from the same bars.
+    // US equity session rules: VWAP anchors at the 09:30 ET open.
     indicatorsRef.current = new ChartIndicators(chart);
+    indicatorsRef.current.setContext({
+      session: 'us-equity',
+      intraday,
+      barSeconds: intervalDef.seconds,
+    });
     indicatorsRef.current.setCandles(
-      candlestickData.map((c) => ({ time: c.time as number, close: c.close })),
+      data.map((bar, i) => ({
+        time: candlestickData[i].time as number,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        volume: bar.volume,
+        vwap: bar.vwap,
+      })),
     );
     indicatorsRef.current.apply(getActive());
 
-    // We fetch extra history to warm up the long MAs, so instead of fitting
-    // ALL bars we pin the view to the timeframe's window (most recent bars).
-    const visibleBars = windowBarsForTimeframe(timeframe);
-    const len = candlestickData.length;
-    if (len > visibleBars) {
-      chart.timeScale().setVisibleLogicalRange({ from: len - visibleBars, to: len - 1 });
-    } else {
-      chart.timeScale().fitContent();
-    }
+    chart.timeScale().fitContent();
 
     // Handle resize
     const handleResize = () => {
@@ -272,14 +253,14 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
         chartRef.current = null;
       }
     };
-  }, [data]);
+  }, [data, intervalDef, intraday]);
 
   // Re-draw studies when the user toggles them, and grow the chart to fit any
-  // added oscillator panes. The chart itself is only rebuilt on data changes.
+  // added panes. The chart itself is only rebuilt on data changes.
   useEffect(() => {
     indicatorsRef.current?.apply(active);
-    chartRef.current?.applyOptions({ height: chartHeightFor(active) });
-  }, [active]);
+    chartRef.current?.applyOptions({ height: chartHeightFor(active, intraday) });
+  }, [active, intraday]);
 
   if (isLoading) {
     return (
@@ -314,17 +295,21 @@ export default function StockPriceChart({ symbol, interval, timeframe = '1D', ba
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-white mb-1">{symbol} Price Chart</h3>
-          <p className="text-sm text-slate-400">Historical price data • {timeframe}</p>
+          <p className="text-sm text-slate-400">Historical price data, {intervalDef.label} candles</p>
         </div>
-        <ChartIndicatorMenu active={active} onToggle={toggle} onClear={clear} />
+        <ChartIndicatorMenu
+          active={active}
+          onToggle={toggle}
+          onClear={clear}
+          intraday={intraday}
+          sessionMode="us-equity"
+        />
       </div>
       <div
         ref={chartContainerRef}
         className="w-full"
-        style={{ height: `${chartHeightFor(active)}px` }}
+        style={{ height: `${chartHeightFor(active, intraday)}px` }}
       />
     </div>
   );
 }
-
-

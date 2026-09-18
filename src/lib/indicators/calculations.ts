@@ -117,3 +117,82 @@ export function macd(
   );
   return { macd: macdLine, signal, histogram };
 }
+
+/** Bar fields needed by the range/volume based studies below. */
+export interface OhlcvBar {
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  /** Per-bar VWAP from the data source, preferred over (h+l+c)/3 when present. */
+  vwap?: number;
+}
+
+/**
+ * Average True Range with Wilder's smoothing (the standard). True range for
+ * the first bar is just high-low (no previous close). The first ATR is the
+ * simple mean of the first `period` true ranges; after that
+ * atr = (prev * (period-1) + tr) / period.
+ */
+export function atr(
+  bars: Array<Pick<OhlcvBar, "high" | "low" | "close">>,
+  period = 14,
+): Series {
+  const out: Series = new Array(bars.length).fill(null);
+  if (period <= 0 || bars.length < period) return out;
+
+  const tr = (i: number): number => {
+    const b = bars[i];
+    if (i === 0) return b.high - b.low;
+    const prevClose = bars[i - 1].close;
+    return Math.max(
+      b.high - b.low,
+      Math.abs(b.high - prevClose),
+      Math.abs(b.low - prevClose),
+    );
+  };
+
+  let seed = 0;
+  for (let i = 0; i < period; i++) seed += tr(i);
+  let prev = seed / period;
+  out[period - 1] = prev;
+
+  for (let i = period; i < bars.length; i++) {
+    prev = (prev * (period - 1) + tr(i)) / period;
+    out[i] = prev;
+  }
+  return out;
+}
+
+/**
+ * Session-anchored VWAP: cumulative sum(typical price * volume) / sum(volume),
+ * restarting whenever `sessionKeys[i]` differs from the previous bar's key.
+ * A `null` key marks a bar outside the session (e.g. US pre-market): it gets
+ * no value and does not accumulate, but does not reset either. Bars with no
+ * cumulative volume yet yield null.
+ */
+export function vwap(bars: OhlcvBar[], sessionKeys: Array<string | null>): Series {
+  const out: Series = new Array(bars.length).fill(null);
+  let cumPV = 0;
+  let cumV = 0;
+  let currentKey: string | null = null;
+
+  for (let i = 0; i < bars.length; i++) {
+    const key = sessionKeys[i] ?? null;
+    if (key === null) continue;
+    if (key !== currentKey) {
+      currentKey = key;
+      cumPV = 0;
+      cumV = 0;
+    }
+    const b = bars[i];
+    const typical =
+      typeof b.vwap === "number" && Number.isFinite(b.vwap)
+        ? b.vwap
+        : (b.high + b.low + b.close) / 3;
+    cumPV += typical * b.volume;
+    cumV += b.volume;
+    out[i] = cumV > 0 ? cumPV / cumV : null;
+  }
+  return out;
+}

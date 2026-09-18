@@ -16,35 +16,43 @@ import { getPublicKlines } from "@/lib/api/public-market.service";
 import { ChartIndicators } from "@/lib/indicators/manager";
 import { useChartIndicators } from "@/lib/indicators/useChartIndicators";
 import { chartHeightFor } from "@/lib/indicators/layout";
+import {
+  CHART_CANDLE_LIMIT,
+  CHART_INTERVAL_MAP,
+  ChartIntervalId,
+  DEFAULT_CHART_INTERVAL,
+} from "@/lib/chart/intervals";
+import { aggregateCandlesByUtcYear } from "@/lib/chart/aggregate";
 import ChartIndicatorMenu from "./ChartIndicatorMenu";
+
+interface RawCandle {
+  openTime: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+  closeTime: number;
+}
 
 interface CoinPriceChartProps {
   /** When omitted, the chart runs in public mode and pulls data from
    *  Binance's anonymous market endpoints. */
   connectionId?: string;
   symbol: string;
-  interval: string;
-  timeframe: string;
+  /** Candle size. Defaults to daily. */
+  intervalId?: ChartIntervalId;
   /** Pre-fetched candle data from getCoinDetail (backend optimization Phase 2) */
   candlesByInterval?: CandlesByInterval;
-  /** Optional initial candles for public mode (avoids a second fetch on
+  /** Optional initial daily candles for public mode (avoids a second fetch on
    *  first render when the page already pulled klines via getPublicKlines). */
-  initialCandles?: Array<{
-    openTime: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume: number;
-    closeTime: number;
-  }>;
+  initialCandles?: RawCandle[];
 }
 
 export default function CoinPriceChart({
   connectionId,
   symbol,
-  interval,
-  timeframe,
+  intervalId = DEFAULT_CHART_INTERVAL,
   candlesByInterval,
   initialCandles,
 }: CoinPriceChartProps) {
@@ -58,6 +66,8 @@ export default function CoinPriceChart({
   const [chartReady, setChartReady] = useState(false);
 
   const { active, toggle, clear, getActive } = useChartIndicators();
+  const intervalDef = CHART_INTERVAL_MAP[intervalId];
+  const intraday = intervalDef.isIntraday;
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -73,7 +83,7 @@ export default function CoinPriceChart({
 
       const container = chartContainerRef.current;
       const width = container.clientWidth || container.offsetWidth || 800;
-      
+
       // Only create chart if container has dimensions
       if (width === 0) {
         // Retry after a short delay (max 10 retries)
@@ -96,7 +106,7 @@ export default function CoinPriceChart({
           horzLines: { color: "#1e293b" },
         },
         width: width,
-        height: chartHeightFor(getActive()),
+        height: chartHeightFor(getActive(), CHART_INTERVAL_MAP[intervalId].isIntraday),
         timeScale: {
           timeVisible: true,
           secondsVisible: false,
@@ -125,7 +135,7 @@ export default function CoinPriceChart({
         priceScaleId: "volume",
       });
       volumeSeriesRef.current = volumeSeriesInstance as ISeriesApi<"Histogram">;
-      
+
       // Set scale margins for volume on the price scale
       chart.priceScale("volume").applyOptions({
         scaleMargins: {
@@ -134,7 +144,7 @@ export default function CoinPriceChart({
         },
       });
 
-      // Create right price scale (shared by candles + moving-average overlays)
+      // Create right price scale (shared by candles + overlays)
       chart.priceScale("right").applyOptions({
         scaleMargins: {
           top: 0.1,
@@ -142,7 +152,7 @@ export default function CoinPriceChart({
         },
       });
 
-      // Technical-study manager (SMA/EMA overlays + RSI/MACD panes).
+      // Technical-study manager (overlays + RSI/MACD/ATR panes).
       indicatorsRef.current = new ChartIndicators(chart);
 
       // Handle resize
@@ -208,7 +218,7 @@ export default function CoinPriceChart({
 
   useEffect(() => {
     let retryTimer: NodeJS.Timeout | null = null;
-    
+
     const fetchData = async () => {
       if (!symbol) {
         setIsLoading(false);
@@ -227,60 +237,57 @@ export default function CoinPriceChart({
       try {
         setIsLoading(true);
 
-        let rawCandles: Array<{
-          openTime: number;
-          open: number;
-          high: number;
-          low: number;
-          close: number;
-          volume: number;
-          closeTime: number;
-        }> = [];
+        const binanceInterval = intervalDef.binance;
+        let rawCandles: RawCandle[] = [];
 
-        // Phase 2 optimization: Use embedded candle data if available for this interval
-        const embeddedCandles = candlesByInterval?.[interval];
+        // Phase 2 optimization: use embedded candle data if the backend sent
+        // this interval. Rolled-up intervals (1Y) always fetch their source
+        // candles so the roll-up has the full history.
+        const embeddedCandles = intervalDef.aggregate
+          ? undefined
+          : candlesByInterval?.[binanceInterval];
         if (embeddedCandles && embeddedCandles.length > 0) {
           rawCandles = embeddedCandles;
+        } else if (
+          !connectionId &&
+          intervalId === "1D" &&
+          initialCandles &&
+          initialCandles.length > 0
+        ) {
+          // Public mode: the page already pulled daily klines on load.
+          rawCandles = initialCandles;
         } else {
-          // Fallback: Fetch from API (for intervals not included in embedded data).
-          // Public mode (no connectionId) pulls from Binance's anonymous
-          // klines endpoint; connected mode goes through the exchange.
-          // 300 candles gives the 200-period moving averages enough history to
-          // render (Binance klines weight is still just 2 at this size).
-          let limit = 300;
-          if (timeframe === "3M" || timeframe === "6M") {
-            limit = 400;
-          }
+          // Fetch from the API. Public mode (no connectionId) pulls from
+          // Binance's anonymous klines endpoint; connected mode goes through
+          // the exchange. 300 candles gives the 200-period moving averages
+          // enough history (Binance klines weight is still just 2 at this size).
+          const limit = CHART_CANDLE_LIMIT;
 
           if (connectionId) {
             const response = await exchangesService.getCandlestickData(
               connectionId,
               symbol,
-              interval,
+              binanceInterval,
               limit,
             );
             if (response.success && response.data) {
               rawCandles = response.data;
             }
           } else {
-            // Public mode — first try the initialCandles for the default
-            // interval, then fall back to fetching public klines for the
-            // selected timeframe.
-            if (interval === "1d" && initialCandles && initialCandles.length > 0) {
-              rawCandles = initialCandles;
-            } else {
-              try {
-                rawCandles = await getPublicKlines(symbol, interval, limit);
-              } catch (err) {
-                console.warn("[CoinPriceChart] public klines fetch failed", err);
-              }
+            try {
+              rawCandles = await getPublicKlines(symbol, binanceInterval, limit);
+            } catch (err) {
+              console.warn("[CoinPriceChart] public klines fetch failed", err);
             }
           }
         }
 
         if (rawCandles.length > 0) {
           // Sort data by time in ascending order (lightweight-charts requirement)
-          const sortedData = [...rawCandles].sort((a, b) => a.openTime - b.openTime);
+          let sortedData = [...rawCandles].sort((a, b) => a.openTime - b.openTime);
+          if (intervalDef.aggregate === "year") {
+            sortedData = aggregateCandlesByUtcYear(sortedData);
+          }
 
           const candles = sortedData.map((c) => ({
             time: (c.openTime / 1000) as any,
@@ -303,12 +310,26 @@ export default function CoinPriceChart({
           if (volumeSeriesRef.current) {
             volumeSeriesRef.current.setData(volumes as HistogramData[]);
           }
+          chartRef.current?.timeScale().fitContent();
 
           // Feed the technical studies from the same candles and (re)draw the
-          // user's active selection.
+          // user's active selection. Crypto trades around the clock, so
+          // session-anchored studies reset at UTC midnight.
           if (indicatorsRef.current) {
+            indicatorsRef.current.setContext({
+              session: "utc",
+              intraday: intervalDef.isIntraday,
+              barSeconds: intervalDef.seconds,
+            });
             indicatorsRef.current.setCandles(
-              candles.map((c) => ({ time: c.time as number, close: c.close })),
+              sortedData.map((c) => ({
+                time: c.openTime / 1000,
+                open: c.open,
+                high: c.high,
+                low: c.low,
+                close: c.close,
+                volume: c.volume,
+              })),
             );
             indicatorsRef.current.apply(getActive());
           }
@@ -321,33 +342,39 @@ export default function CoinPriceChart({
     };
 
     fetchData();
-    
+
     return () => {
       if (retryTimer) {
         clearTimeout(retryTimer);
       }
     };
-  }, [connectionId, symbol, interval, timeframe, chartReady, candlesByInterval, initialCandles]);
+  }, [connectionId, symbol, intervalId, intervalDef, chartReady, candlesByInterval, initialCandles]);
 
-  // Re-draw studies when the user toggles them (no refetch needed — the
+  // Re-draw studies when the user toggles them (no refetch needed, the
   // manager already holds the latest candles). Also grow the chart so added
-  // oscillator panes don't crush the price pane.
+  // panes don't crush the price pane.
   useEffect(() => {
     indicatorsRef.current?.apply(active);
-    chartRef.current?.applyOptions({ height: chartHeightFor(active) });
-  }, [active]);
+    chartRef.current?.applyOptions({ height: chartHeightFor(active, intraday) });
+  }, [active, intraday]);
 
   return (
     <div className="rounded-xl border border-[--color-border] bg-[--color-surface]/60 p-4 relative">
       <div className="mb-3 flex items-center justify-end">
-        <ChartIndicatorMenu active={active} onToggle={toggle} onClear={clear} />
+        <ChartIndicatorMenu
+          active={active}
+          onToggle={toggle}
+          onClear={clear}
+          intraday={intraday}
+          sessionMode="utc"
+        />
       </div>
       <div
         ref={chartContainerRef}
         style={{
           width: "100%",
-          height: `${chartHeightFor(active)}px`,
-          minHeight: `${chartHeightFor(active)}px`
+          height: `${chartHeightFor(active, intraday)}px`,
+          minHeight: `${chartHeightFor(active, intraday)}px`
         }}
       />
       {isLoading && (
@@ -358,4 +385,3 @@ export default function CoinPriceChart({
     </div>
   );
 }
-
