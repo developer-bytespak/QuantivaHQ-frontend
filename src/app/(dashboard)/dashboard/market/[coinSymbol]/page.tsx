@@ -13,6 +13,8 @@ import { useExchange } from "@/context/ExchangeContext";
 import { useRealtimePrice } from "@/hooks/useRealtimePrice";
 import { useBinancePublicPrice } from "@/hooks/useBinancePublicPrice";
 import CoinDetailHeader from "@/components/market/CoinDetailHeader";
+import ChartIntervalPicker from "@/components/market/ChartIntervalPicker";
+import { useChartInterval } from "@/lib/chart/useChartInterval";
 import dynamic from "next/dynamic";
 
 const CoinPriceChart = dynamic(() => import("@/components/market/CoinPriceChart"), {
@@ -121,8 +123,8 @@ export default function MarketDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"Price" | "Info" | "Trading Data">("Price");
-  const [selectedTimeframe, setSelectedTimeframe] = useState<string>("1D");
-  const [selectedInterval, setSelectedInterval] = useState<string>("1d");
+  // Candle size for the price chart, remembered between visits.
+  const { interval: chartInterval, setInterval: setChartInterval } = useChartInterval();
   // Phase 5: Pre-fetched trading data from unified endpoint
   const [initialOrderBook, setInitialOrderBook] = useState<OrderBook | null>(null);
   const [initialTrades, setInitialTrades] = useState<RecentTrade[]>([]);
@@ -177,16 +179,6 @@ export default function MarketDetailPage() {
     if (isPublicCryptoMode) return publicRealtimePrice.changePercent24h ?? coinData?.changePercent24h ?? 0;
     return realtimePrice.changePercent24h ?? coinData?.changePercent24h ?? 0;
   }, [connectionType, isPublicCryptoMode, stockData?.changePercent24h, publicRealtimePrice.changePercent24h, realtimePrice.changePercent24h, coinData?.changePercent24h]);
-
-  // Map timeframe to interval
-  const timeframeMap: Record<string, string> = {
-    "8H": "8h",
-    "1D": "1d",
-    "1W": "1w",
-    "1M": "1M",
-    "3M": "1M", // Will need to calculate from startTime
-    "6M": "1M", // Will need to calculate from startTime
-  };
 
   useEffect(() => {
     const fetchPublicCryptoData = async () => {
@@ -366,12 +358,6 @@ export default function MarketDetailPage() {
       setIsLoading(false);
     }
   }, [symbol, connectionId, isPublicCryptoMode, defaultQuote]);
-
-  const handleTimeframeChange = (timeframe: string) => {
-    setSelectedTimeframe(timeframe);
-    const interval = timeframeMap[timeframe] || "1d";
-    setSelectedInterval(interval);
-  };
 
   if (isLoading) {
     return (
@@ -597,31 +583,16 @@ export default function MarketDetailPage() {
             </div>
           </div>
 
-          {/* Enhanced Timeframe Selector */}
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            {["8H", "1D", "1W", "1M", "3M", "6M"].map((tf) => (
-              <button
-                key={tf}
-                onClick={() => handleTimeframeChange(tf)}
-                className={`whitespace-nowrap rounded-lg px-5 py-2.5 text-sm font-semibold transition-all duration-200 ${
-                  selectedTimeframe === tf
-                    ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.4)] scale-105"
-                    : "border border-white/[0.09] bg-gradient-to-b from-white/[0.055] via-white/[0.02] to-white/[0.015] backdrop-blur text-slate-300 hover:text-white hover:scale-[1.02]"
-                }`}
-              >
-                {tf}
-              </button>
-            ))}
-          </div>
+          {/* Candle interval selector (1m through 1Y) */}
+          <ChartIntervalPicker value={chartInterval} onChange={setChartInterval} />
 
-          {/* Chart — renders in both connected and public-crypto modes.
+          {/* Chart, renders in both connected and public-crypto modes.
               The chart component decides its data source based on whether
               connectionId is provided. */}
           {connectionType === "stocks" ? (
             <StockPriceChart
               symbol={symbol.toUpperCase()}
-              interval={selectedInterval}
-              timeframe={selectedTimeframe}
+              intervalId={chartInterval}
               connectionId={connectionId}
             />
           ) : (
@@ -629,8 +600,7 @@ export default function MarketDetailPage() {
               <CoinPriceChart
                 connectionId={connectionId ?? undefined}
                 symbol={coinData.tradingPair}
-                interval={selectedInterval}
-                timeframe={selectedTimeframe}
+                intervalId={chartInterval}
                 candlesByInterval={coinData.candles_by_interval}
                 initialCandles={coinData.candles}
               />
