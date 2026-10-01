@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import useSubscriptionStore from "@/state/subscription-store";
-import { FeatureType, PlanTier } from "@/mock-data/subscription-dummy-data";
+import { FeatureType } from "@/mock-data/subscription-dummy-data";
 import { LockedFeatureOverlay } from "@/components/common/feature-guard";
 
 export function CustomStrategiesSection() {
@@ -12,6 +11,7 @@ export function CustomStrategiesSection() {
     canAccessFeature,
     getUsagePercentage,
     isFeatureLimitReached,
+    isPremium,
   } = useSubscriptionStore();
 
   const canCreateStrategies = canAccessFeature(FeatureType.CUSTOM_STRATEGIES);
@@ -48,7 +48,7 @@ export function CustomStrategiesSection() {
   ];
 
   const displayedStrategies =
-    !currentSubscription || currentSubscription.tier === PlanTier.FREE ? [] : strategies;
+    !currentSubscription || !isPremium() ? [] : strategies;
 
   return (
     <div className="relative">
@@ -88,7 +88,7 @@ export function CustomStrategiesSection() {
             </div>
             {limitReached && (
               <p className="text-xs text-red-400 mt-2">
-                ❌ Limit reached. Upgrade to ELITE for unlimited strategies.
+                Limit reached. Upgrade to Premium for unlimited strategies.
               </p>
             )}
             {percentage >= 80 && !limitReached && (

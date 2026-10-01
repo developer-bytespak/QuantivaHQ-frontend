@@ -11,14 +11,13 @@ export function CustomStrategiesPaywall() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 className="mb-2 text-xl font-bold text-white">Custom Strategies are a PRO feature</h2>
+        <h2 className="mb-2 text-xl font-bold text-white">Custom Strategies are a Premium feature</h2>
         <p className="mb-5 text-sm text-slate-300">
           Build your own trading strategies with AI-powered signals and automated execution.
-          Upgrade to <span className="font-semibold text-[var(--primary)]">PRO</span> for up to 5 custom strategies,
-          or <span className="font-semibold text-[var(--primary)]">ELITE</span> for unlimited.
+          Upgrade to <span className="font-semibold text-[var(--primary)]">Premium</span> for unlimited custom strategies.
         </p>
         <Link
-          href="/dashboard/settings/subscription?tab=change"
+          href="/dashboard/settings/subscription"
           className="block w-full rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition hover:opacity-90 hover:scale-[1.02]"
         >
           Upgrade to unlock

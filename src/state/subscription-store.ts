@@ -1,7 +1,13 @@
 import { create } from 'zustand';
 import { logger } from '@/lib/utils/logger';
 import { apiRequest } from '@/lib/api/client';
-import { getFreeSignalTradesQuota, type FreeSignalTradesQuota } from '@/lib/api/onboarding';
+import {
+  PREMIUM_BILLING_PERIODS,
+  formatPremiumAmount,
+  isPaidTier,
+  isPremiumBillingPeriod,
+  premiumSavingsPercent,
+} from '@/config/subscription';
 import {
   PlanTier,
   BillingPeriod,
@@ -10,49 +16,58 @@ import {
   USER_USAGE_STATS,
   PAYMENT_HISTORY,
   SubscriptionPlan,
-  PlanFeature,
   PaymentRecord,
   UsageData,
 } from '@/mock-data/subscription-dummy-data';
 
-interface CurrentSubscription {
+export interface CurrentSubscription {
   subscription_id: string;
   user_id: string;
   plan_id: string;
   tier: PlanTier;
   billing_period: BillingPeriod;
   status: string;
-  current_period_start: Date;
-  current_period_end: Date;
-  next_billing_date: Date;
+  billing_provider: string | null; // 'stripe' | 'apple' | 'admin_override' | null
+  provider_status: string | null; // 'trialing' | 'active' | 'past_due' | null
+  current_period_start: Date | null;
+  current_period_end: Date | null;
+  next_billing_date: Date | null;
   last_payment_date: Date | null;
+  trial_start: Date | null;
+  trial_end: Date | null;
+  /** @deprecated use trial_end */
   trial_ends_at: Date | null;
+  is_trialing: boolean;
+  /** @deprecated use is_trialing */
   is_trial: boolean;
   auto_renew: boolean;
+  cancel_at_period_end: boolean;
   cancelled_at: Date | null;
+  access_until: Date | null;
   external_id: string | null;
+  trial_eligible?: boolean;
 }
 
 interface SubscriptionState {
   // Data
   currentSubscription: CurrentSubscription | null;
   hasPlan: boolean | null; // from API: true = user has a plan, false = must see choose-plan
+  trialEligible: boolean;
+  /** The MONTHLY Premium row (kept for callers that predate billing periods). */
+  premiumPlan: SubscriptionPlan | null;
+  /** All active PREMIUM rows, ordered MONTHLY, QUARTERLY, YEARLY. */
+  premiumPlans: SubscriptionPlan[];
   allPlans: SubscriptionPlan[];
   allSubscriptions: any[]; // Direct frontend API response
   usageStats: UsageData;
   paymentHistory: PaymentRecord[];
-  selectedBillingPeriod: BillingPeriod;
   selectedPlanId: string | null; // Track which plan user is viewing
-  freeSignalTrades: FreeSignalTradesQuota | null;
+  /** Billing period the user is currently looking at in pricing UI. */
+  selectedBillingPeriod: BillingPeriod;
 
   // UI States
   isLoading: boolean;
   error: string | null;
-  showUpgradeModal: boolean;
-  showCancelModal: boolean;
-  showPaymentModal: boolean;
-
-
 
   // Actions
   setCurrentSubscription: (sub: CurrentSubscription | null) => void;
@@ -60,14 +75,10 @@ interface SubscriptionState {
   setAllSubscriptions: (subs: any[]) => void;
   setUsageStats: (stats: UsageData) => void;
   setPaymentHistory: (history: PaymentRecord[]) => void;
-  setSelectedBillingPeriod: (period: BillingPeriod) => void;
   setSelectedPlanId: (planId: string | null) => void;
-  setShowUpgradeModal: (show: boolean) => void;
-  setShowCancelModal: (show: boolean) => void;
-  setShowPaymentModal: (show: boolean) => void;
+  setSelectedBillingPeriod: (period: BillingPeriod) => void;
   setError: (error: string | null) => void;
   setIsLoading: (loading: boolean) => void;
-  setFreeSignalTrades: (quota: FreeSignalTradesQuota | null) => void;
 
   // Helpers
   canAccessFeature: (feature: FeatureType) => boolean;
@@ -76,33 +87,74 @@ interface SubscriptionState {
   isFeatureLimitReached: (feature: FeatureType) => boolean;
   getDaysUntilNextBilling: () => number;
   isTrialActive: () => boolean;
+  getTrialDaysLeft: () => number;
   isSubscriptionActive: () => boolean;
-  getAvailableUpgradePlans: () => SubscriptionPlan[];
+  isPremium: () => boolean;
+  isCancelScheduled: () => boolean;
+  getAccessEndsAt: () => Date | null;
   getCurrentPlan: () => SubscriptionPlan | null;
-  getPlansByPeriod: (period: BillingPeriod) => SubscriptionPlan[];
-  getPlansGroupedByTier: () => Record<PlanTier, SubscriptionPlan[]>;
+  /** Premium row for `period` (defaults to selectedBillingPeriod, then MONTHLY). */
+  getPremiumPlan: (period?: BillingPeriod) => SubscriptionPlan | null;
+  /** Plain amount string such as "29.99" for `period` (defaults as getPremiumPlan). */
+  getPremiumPriceLabel: (period?: BillingPeriod) => string;
+  /** Whole-number percent saved versus paying monthly; 0 for MONTHLY. */
+  getPremiumSavingsPercent: (period: BillingPeriod) => number;
+  /** Plain amount string for the user's own billing period (what they are charged). */
+  getCurrentPremiumPrice: () => string;
+  isTrialEligible: () => boolean;
   fetchSubscriptionData: () => Promise<void>;
-  fetchFreeSignalTradesQuota: () => Promise<void>;
+  pollUntilPremium: (opts?: { attempts?: number; intervalMs?: number }) => Promise<boolean>;
 }
+
+const toDate = (value: unknown): Date | null => {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(value as string);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const daysFromNow = (date: Date | null): number => {
+  if (!date) return 0;
+  const diff = date.getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+};
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const PERIOD_ORDER: Record<string, number> = PREMIUM_BILLING_PERIODS.reduce(
+  (acc, p, i) => ({ ...acc, [p]: i }),
+  {} as Record<string, number>,
+);
+
+/** PREMIUM rows only, de-duplicated per period and ordered MONTHLY, QUARTERLY, YEARLY. */
+const pickPremiumPlans = (plans: SubscriptionPlan[]): SubscriptionPlan[] => {
+  const byPeriod = new Map<string, SubscriptionPlan>();
+  for (const p of plans) {
+    if (p?.tier !== PlanTier.PREMIUM) continue;
+    const period = String(p.billing_period ?? BillingPeriod.MONTHLY);
+    if (!byPeriod.has(period)) byPeriod.set(period, p);
+  }
+  return Array.from(byPeriod.values()).sort(
+    (a, b) => (PERIOD_ORDER[a.billing_period] ?? 99) - (PERIOD_ORDER[b.billing_period] ?? 99),
+  );
+};
 
 const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   // Initial Data - populated from backend API
   currentSubscription: CURRENT_USER_SUBSCRIPTION,
   hasPlan: null,
+  trialEligible: false,
+  premiumPlan: null,
+  premiumPlans: [],
   allPlans: [],
   allSubscriptions: [],
   usageStats: USER_USAGE_STATS,
   paymentHistory: PAYMENT_HISTORY,
-  selectedBillingPeriod: BillingPeriod.MONTHLY,
   selectedPlanId: null,
-  freeSignalTrades: null,
+  selectedBillingPeriod: BillingPeriod.MONTHLY,
 
   // UI States
   isLoading: false,
   error: null,
-  showUpgradeModal: false,
-  showCancelModal: false,
-  showPaymentModal: false,
 
   // Setters
   setCurrentSubscription: (sub) => set({ currentSubscription: sub }),
@@ -115,21 +167,14 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   setPaymentHistory: (history) => set({ paymentHistory: history }),
 
-  setSelectedBillingPeriod: (period) => set({ selectedBillingPeriod: period }),
-
   setSelectedPlanId: (planId) => set({ selectedPlanId: planId }),
 
-  setShowUpgradeModal: (show) => set({ showUpgradeModal: show }),
-
-  setShowCancelModal: (show) => set({ showCancelModal: show }),
-
-  setShowPaymentModal: (show) => set({ showPaymentModal: show }),
+  setSelectedBillingPeriod: (period) =>
+    set({ selectedBillingPeriod: isPremiumBillingPeriod(period) ? period : BillingPeriod.MONTHLY }),
 
   setError: (error) => set({ error }),
 
   setIsLoading: (loading) => set({ isLoading: loading }),
-
-  setFreeSignalTrades: (quota) => set({ freeSignalTrades: quota }),
 
   // Helper Functions
   canAccessFeature: (feature: FeatureType) => {
@@ -139,14 +184,17 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       const plan = allPlans?.find((p) => p.plan_id === currentSubscription.plan_id);
 
       // Use tier from matched plan if found, otherwise fall back to currentSubscription.tier directly.
-      // This handles ELITE_PLUS users whose plan may not yet appear in allPlans (e.g. plan list
+      // This handles users whose plan may not yet appear in allPlans (e.g. plan list
       // not loaded yet, or backend omits it from allSubscriptions).
       const tier = plan?.tier ?? currentSubscription.tier;
 
-      // ELITE_PLUS tier gets access to all features including options
+      // PREMIUM unlocks every feature.
+      if (tier === PlanTier.PREMIUM) return true;
+
+      // LEGACY-TIER: ELITE_PLUS gets access to all features including options
       if (tier === PlanTier.ELITE_PLUS) return true;
 
-      // ELITE tier gets access to all features EXCEPT OPTIONS_TRADING
+      // LEGACY-TIER: ELITE gets access to all features EXCEPT OPTIONS_TRADING
       if (tier === PlanTier.ELITE && feature !== FeatureType.OPTIONS_TRADING) return true;
 
       // Without the full plan object we cannot check per-feature flags
@@ -180,17 +228,17 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   getUsagePercentage: (feature: FeatureType) => {
     const { usageStats } = get();
     const stats = usageStats[feature];
-    
+
     if (!stats || stats.limit === -1) return 0; // Unlimited
     if (stats.limit === 0) return 0; // Not available
-    
+
     return (stats.used / stats.limit) * 100;
   },
 
   isFeatureLimitReached: (feature: FeatureType) => {
     const { usageStats } = get();
     const stats = usageStats[feature];
-    
+
     if (!stats) return false;
     if (stats.limit === -1) return false; // Unlimited
     if (stats.limit === 0) return true; // Not available
@@ -201,87 +249,107 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   getDaysUntilNextBilling: () => {
     const { currentSubscription } = get();
     if (!currentSubscription) return 0;
-    
-    const today = new Date();
-    const diff = currentSubscription.current_period_end.getTime() - today.getTime();
+    const end = currentSubscription.next_billing_date ?? currentSubscription.current_period_end;
+    if (!end) return 0;
+    const diff = end.getTime() - Date.now();
     return Math.ceil(diff / (1000 * 3600 * 24));
   },
 
   isTrialActive: () => {
     const { currentSubscription } = get();
-    if (!currentSubscription?.trial_ends_at) return false;
-    
-    const today = new Date();
-    const diff = currentSubscription.trial_ends_at.getTime() - today.getTime();
-    return diff > 0;
+    if (!currentSubscription) return false;
+    if (currentSubscription.is_trialing) return true;
+    const end = currentSubscription.trial_end ?? currentSubscription.trial_ends_at;
+    if (!end) return false;
+    return end.getTime() > Date.now();
+  },
+
+  getTrialDaysLeft: () => {
+    const { currentSubscription } = get();
+    if (!currentSubscription) return 0;
+    const end = currentSubscription.trial_end ?? currentSubscription.trial_ends_at;
+    return daysFromNow(end);
   },
 
   isSubscriptionActive: () => {
     const { currentSubscription } = get();
-    return currentSubscription?.status === 'active' && !currentSubscription?.cancelled_at;
+    if (!currentSubscription) return false;
+    if (currentSubscription.status !== 'active') return false;
+    // Cancel-at-period-end keeps access until the period closes.
+    const accessEnd = currentSubscription.access_until ?? currentSubscription.current_period_end;
+    return !accessEnd || accessEnd.getTime() > Date.now();
   },
 
-  getAvailableUpgradePlans: () => {
-    const { currentSubscription, allPlans } = get();
-    if (!currentSubscription) {
-      return allPlans.filter((p) => p.tier !== PlanTier.FREE);
-    }
+  isPremium: () => {
+    const { currentSubscription } = get();
+    if (!currentSubscription) return false;
+    return isPaidTier(currentSubscription.tier);
+  },
 
-    const currentTier = currentSubscription.tier;
+  isCancelScheduled: () => {
+    const { currentSubscription } = get();
+    if (!currentSubscription) return false;
+    if (currentSubscription.cancel_at_period_end) return true;
+    return (
+      !currentSubscription.auto_renew &&
+      !!currentSubscription.cancelled_at &&
+      currentSubscription.status === 'active'
+    );
+  },
 
-    // FREE can upgrade to PRO or ELITE
-    if (currentTier === PlanTier.FREE) {
-      return allPlans.filter((p) => p.tier !== PlanTier.FREE);
-    }
-
-    // PRO can upgrade to ELITE or downgrade
-    if (currentTier === PlanTier.PRO) {
-      return allPlans;
-    }
-
-    // ELITE can downgrade to PRO
-    if (currentTier === PlanTier.ELITE) {
-      return allPlans;
-    }
-
-    return [];
+  getAccessEndsAt: () => {
+    const { currentSubscription } = get();
+    if (!currentSubscription) return null;
+    return currentSubscription.access_until ?? currentSubscription.current_period_end ?? null;
   },
 
   getCurrentPlan: () => {
     const { currentSubscription, allPlans } = get();
     if (!currentSubscription) return null;
-    
+
     return allPlans.find((p) => p.plan_id === currentSubscription.plan_id) || null;
   },
 
-  getPlansByPeriod: (period: BillingPeriod) => {
-    const { allPlans } = get();
-    return allPlans.filter((p) => p.billing_period === period);
+  getPremiumPlan: (period?: BillingPeriod) => {
+    const { premiumPlan, premiumPlans, allPlans, selectedBillingPeriod } = get();
+    const target = period ?? selectedBillingPeriod ?? BillingPeriod.MONTHLY;
+    const fromList =
+      premiumPlans.find((p) => p.billing_period === target) ??
+      allPlans.find((p) => p.tier === PlanTier.PREMIUM && p.billing_period === target);
+    if (fromList) return fromList;
+    // Monthly keeps the pre-billing-period behaviour: any PREMIUM row will do.
+    if (target === BillingPeriod.MONTHLY) {
+      return premiumPlan ?? allPlans.find((p) => p.tier === PlanTier.PREMIUM) ?? null;
+    }
+    return null;
   },
 
-  getPlansGroupedByTier: () => {
-    const { allPlans } = get();
-    const grouped: Record<PlanTier, SubscriptionPlan[]> = {
-      [PlanTier.FREE]: [],
-      [PlanTier.PRO]: [],
-      [PlanTier.ELITE]: [],
-      [PlanTier.ELITE_PLUS]: [],
-    };
-    allPlans.forEach((plan) => {
-      if (grouped[plan.tier]) {
-        grouped[plan.tier].push(plan);
-      }
-    });
-    // Sort each group by billing period: MONTHLY, QUARTERLY, YEARLY
-    const billingOrder = [BillingPeriod.MONTHLY, BillingPeriod.QUARTERLY, BillingPeriod.YEARLY];
-    (Object.keys(grouped) as PlanTier[]).forEach((tier) => {
-      grouped[tier].sort(
-        (a, b) =>
-          billingOrder.indexOf(a.billing_period) - billingOrder.indexOf(b.billing_period)
-      );
-    });
-    return grouped;
+  getPremiumPriceLabel: (period?: BillingPeriod) => {
+    const target = period ?? get().selectedBillingPeriod ?? BillingPeriod.MONTHLY;
+    const plan = get().getPremiumPlan(target);
+    return formatPremiumAmount(plan?.price, target);
   },
+
+  getPremiumSavingsPercent: (period: BillingPeriod) => {
+    if (period === BillingPeriod.MONTHLY) return 0;
+    const { getPremiumPriceLabel } = get();
+    return premiumSavingsPercent(
+      period,
+      getPremiumPriceLabel(period),
+      getPremiumPriceLabel(BillingPeriod.MONTHLY),
+    );
+  },
+
+  getCurrentPremiumPrice: () => {
+    const { currentSubscription, getCurrentPlan, getPremiumPriceLabel } = get();
+    const period = currentSubscription?.billing_period ?? BillingPeriod.MONTHLY;
+    // Prefer the exact row the user is subscribed to; it carries the real price.
+    const own = getCurrentPlan();
+    if (own && isPaidTier(own.tier)) return formatPremiumAmount(own.price, period);
+    return getPremiumPriceLabel(period);
+  },
+
+  isTrialEligible: () => get().trialEligible,
 
   fetchSubscriptionData: async () => {
     set({ isLoading: true, error: null });
@@ -290,15 +358,31 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       logger.info('Fetched subscription data:', data);
 
       // Convert date strings to Date objects for currentSubscription
-      let currentSubscription = data.current ? {
-        ...data.current,
-        current_period_start: new Date(data.current.current_period_start),
-        current_period_end: new Date(data.current.current_period_end),
-        next_billing_date: new Date(data.current.next_billing_date),
-        last_payment_date: data.current.last_payment_date ? new Date(data.current.last_payment_date) : null,
-        trial_ends_at: data.current.trial_ends_at ? new Date(data.current.trial_ends_at) : null,
-        cancelled_at: data.current.cancelled_at ? new Date(data.current.cancelled_at) : null,
-      } : null;
+      const c = data.current;
+      const currentSubscription: CurrentSubscription | null = c
+        ? {
+            ...c,
+            tier: (c.tier ?? PlanTier.FREE) as PlanTier,
+            billing_period: (c.billing_period ?? BillingPeriod.MONTHLY) as BillingPeriod,
+            status: c.status ?? 'active',
+            billing_provider: c.billing_provider ?? null,
+            provider_status: c.provider_status ?? null,
+            current_period_start: toDate(c.current_period_start),
+            current_period_end: toDate(c.current_period_end),
+            next_billing_date: toDate(c.next_billing_date),
+            last_payment_date: toDate(c.last_payment_date),
+            trial_start: toDate(c.trial_start),
+            trial_end: toDate(c.trial_end ?? c.trial_ends_at),
+            trial_ends_at: toDate(c.trial_end ?? c.trial_ends_at),
+            is_trialing: c.is_trialing === true,
+            is_trial: c.is_trialing === true || c.is_trial === true,
+            auto_renew: c.auto_renew !== false,
+            cancel_at_period_end: c.cancel_at_period_end === true,
+            cancelled_at: toDate(c.cancelled_at),
+            access_until: toDate(c.access_until),
+            external_id: c.external_id ?? null,
+          }
+        : null;
 
       // Convert date strings in payment history and normalize amount
       const paymentHistory = (data.payments || []).map((payment: any) => ({
@@ -323,11 +407,27 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         });
       }
 
+      const allPlans: SubscriptionPlan[] = data.allSubscriptions || [];
+      const premiumPlans: SubscriptionPlan[] = pickPremiumPlans(
+        Array.isArray(data.premium_plans) && data.premium_plans.length > 0
+          ? data.premium_plans
+          : allPlans,
+      );
+      const premiumPlan: SubscriptionPlan | null =
+        data.premium_plan ??
+        premiumPlans.find((p) => p.billing_period === BillingPeriod.MONTHLY) ??
+        premiumPlans[0] ??
+        null;
+
       // Map API response to store state (hasPlan: true = skip choose-plan, false = show choose-plan)
       set({
         currentSubscription,
         hasPlan: data.hasPlan === true || data.hasPlan === false ? data.hasPlan : null,
-        allPlans: data.allSubscriptions || [],
+        trialEligible: data.trial_eligible === true,
+        premiumPlan,
+        premiumPlans,
+        allPlans,
+        allSubscriptions: allPlans,
         usageStats,
         paymentHistory,
         isLoading: false,
@@ -343,14 +443,13 @@ const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     }
   },
 
-  fetchFreeSignalTradesQuota: async () => {
-    try {
-      const quota = await getFreeSignalTradesQuota();
-      set({ freeSignalTrades: quota });
-    } catch (err) {
-      logger.warn('Failed to fetch free signal-trades quota:', err);
-      set({ freeSignalTrades: null });
+  pollUntilPremium: async ({ attempts = 6, intervalMs = 1500 } = {}) => {
+    for (let i = 0; i < attempts; i++) {
+      await get().fetchSubscriptionData();
+      if (get().isPremium()) return true;
+      if (i < attempts - 1) await sleep(intervalMs);
     }
+    return get().isPremium();
   },
 }));
 

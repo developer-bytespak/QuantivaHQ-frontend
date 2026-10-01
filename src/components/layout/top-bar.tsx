@@ -12,6 +12,8 @@ import { QhqBalanceChip } from "@/components/common/qhq-balance-chip";
 import { isValidImageUrl } from "@/lib/utils/security";
 import useSubscriptionStore from "@/state/subscription-store";
 import { useSessionStore } from "@/state/session-store";
+import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { PLAN_DISPLAY_NAMES, formatPlanDateShort } from "@/config/subscription";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -111,8 +113,34 @@ function UserProfileSection() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { currentSubscription } = useSubscriptionStore();
+  const {
+    currentSubscription,
+    isPremium,
+    isTrialActive,
+    getTrialDaysLeft,
+    isCancelScheduled,
+    getAccessEndsAt,
+  } = useSubscriptionStore();
   const { isAdmin, isSuperAdmin, setAdminFlags } = useSessionStore();
+
+  const planTier = currentSubscription?.tier ?? PlanTier.FREE;
+  const planLabel = isPremium()
+    ? planTier === PlanTier.PREMIUM
+      ? "Premium Plan"
+      : `${PLAN_DISPLAY_NAMES[planTier] ?? planTier} Plan`
+    : "Free Plan";
+  const planSubline = (() => {
+    if (!isPremium()) return "Upgrade";
+    if (isCancelScheduled()) {
+      const ends = formatPlanDateShort(getAccessEndsAt());
+      return ends ? `Ends ${ends}` : "Cancellation scheduled";
+    }
+    if (isTrialActive()) {
+      const days = getTrialDaysLeft();
+      return `Trial: ${days} ${days === 1 ? "day" : "days"} left`;
+    }
+    return null;
+  })();
 
   // Sync admin flags from localStorage on mount (in case store was not hydrated)
   useEffect(() => {
@@ -323,7 +351,22 @@ function UserProfileSection() {
               <svg className="h-4 w-4 sm:h-5 sm:w-5 text-[var(--primary)] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
-              <span>{currentSubscription?.tier ?? "FREE"} Plan</span>
+              <span className="flex min-w-0 flex-col items-start leading-tight">
+                <span className="truncate">{planLabel}</span>
+                {planSubline && (
+                  <span
+                    className={`text-[10px] font-normal ${
+                      planSubline === "Upgrade"
+                        ? "text-[var(--primary)]"
+                        : isCancelScheduled()
+                          ? "text-amber-400"
+                          : "text-slate-400"
+                    }`}
+                  >
+                    {planSubline}
+                  </span>
+                )}
+              </span>
             </button>
 
             {/* Settings */}

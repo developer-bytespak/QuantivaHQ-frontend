@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PREMIUM_PRICES } from "@/config/subscription";
+
+const PREMIUM_PRICING_SENTENCE = `Premium is available monthly ($${PREMIUM_PRICES.MONTHLY}), quarterly ($${PREMIUM_PRICES.QUARTERLY}) or yearly ($${PREMIUM_PRICES.YEARLY})`;
 
 const faqs = [
   {
@@ -16,10 +19,11 @@ const faqs = [
         answer:
           "Click the 'Get Started' button on the homepage, fill in your details (name, email, password), and verify your email address. Once verified, you can complete your profile setup and start exploring the platform.",
       },
+      // LEGAL COPY: needs owner sign-off before release
       {
         question: "Is QuantivaHQ free to use?",
         answer:
-          "QuantivaHQ offers multiple subscription tiers. You can explore the platform with a free plan that includes basic features. For advanced tools like AI signals, automated strategies, and priority support, check out our Pro and Enterprise plans on the Pricing page.",
+          `Yes. The Free plan lets you view real-time market data and track your portfolio at no cost. ${PREMIUM_PRICING_SENTENCE} and unlocks every feature: AI trading signals with auto execution, unlimited custom strategies, options trading, and VC Pool access. First-time subscribers get a 7-day free trial on any billing period. A card is required to start the trial and it is charged the amount for your chosen billing period on day 8 unless you cancel before then. One trial per account.`,
       },
       {
         question: "What devices and browsers are supported?",
@@ -49,7 +53,7 @@ const faqs = [
       {
         question: "Is my account protected with two-factor authentication (2FA)?",
         answer:
-          "Yes! Every QuantivaHQ account comes with 2FA enabled by default from the moment you sign up. You don't need to set it up separately — your account is automatically protected with an extra layer of security right from the start.",
+          "Yes! Every QuantivaHQ account comes with 2FA enabled by default from the moment you sign up. You don't need to set it up separately: your account is automatically protected with an extra layer of security right from the start.",
       },
     ],
   },
@@ -74,7 +78,7 @@ const faqs = [
       {
         question: "What are AI trading signals?",
         answer:
-          "Think of AI trading signals as your smart assistant that watches the markets for you. Our engines scan thousands of data points — price movements, market trends, and overall sentiment — to spot potential opportunities and alert you in real time. It's like having an experienced analyst working around the clock so you never miss a promising move.",
+          "Think of AI trading signals as your smart assistant that watches the markets for you. Our engines scan thousands of data points (price movements, market trends, and overall sentiment) to spot potential opportunities and alert you in real time. It's like having an experienced analyst working around the clock so you never miss a promising move.",
       },
     ],
   },
@@ -106,15 +110,16 @@ const faqs = [
         answer:
           "We accept major credit and debit cards (Visa, Mastercard, American Express), and select digital payment methods. All payments are processed securely through our payment partners.",
       },
+      // LEGAL COPY: needs owner sign-off before release
       {
-        question: "How do I upgrade or downgrade my plan?",
+        question: "How do I start Premium or go back to Free?",
         answer:
-          "Go to your account settings and navigate to the Subscription section. You can upgrade or downgrade your plan at any time. Upgrades take effect immediately, while downgrades apply at the end of your current billing cycle.",
+          `Go to Settings and open the Subscription section. ${PREMIUM_PRICING_SENTENCE} and unlocks every feature. If you have never subscribed before, you start with a 7-day free trial on whichever billing period you choose (card required, charged that period's amount on day 8 unless cancelled). Cancelling moves you back to the Free plan at the end of your current billing period, so you keep Premium access until then.`,
       },
       {
         question: "Can I cancel my subscription?",
         answer:
-          "Yes, you can cancel your subscription at any time from your account settings. Your access to premium features will continue until the end of your current billing period. No refunds are issued for partial billing periods.",
+          "Yes, you can cancel at any time from Settings. Cancellation takes effect at the end of the current billing period (or at the end of the trial, if you are still in it), and you keep Premium access until that date. No refunds are issued for partial billing periods. Any platform trade fees already incurred remain billable.",
       },
     ],
   },
@@ -129,7 +134,7 @@ const faqs = [
       {
         question: "How quickly will I get a response from support?",
         answer:
-          "Our support team is always available and ready to help. You can expect a response within 24 hours or less — we're committed to resolving your questions as quickly as possible.",
+          "Our support team is always available and ready to help. You can expect a response within 24 hours or less. We're committed to resolving your questions as quickly as possible.",
       },
       {
         question: "How can I share feedback or suggest a new feature?",

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, Suspense, useEffect, useRef, useState } from "react";
 import { DashboardSidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/top-bar";
 import { DASHBOARD_NAV } from "@/config/navigation";
@@ -8,11 +8,7 @@ import { AuthGuard } from "@/components/common/auth-guard";
 import { useExchange } from "@/context/ExchangeContext";
 import useSubscriptionStore from "@/state/subscription-store";
 import useKycStore from "@/state/kyc-store";
-import {
-  UpgradeModal,
-  CancelSubscriptionModal,
-  PaymentModal,
-} from "@/components/common/subscription-modals";
+import { PlanActivationWatcher } from "@/components/subscription/plan-activation-watcher";
 
 export default function DashboardLayout({
   children,
@@ -21,15 +17,7 @@ export default function DashboardLayout({
 }) {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const { refetch: refetchConnection } = useExchange();
-  const {
-    showUpgradeModal,
-    setShowUpgradeModal,
-    showCancelModal,
-    setShowCancelModal,
-    showPaymentModal,
-    setShowPaymentModal,
-    fetchSubscriptionData,
-  } = useSubscriptionStore();
+  const { fetchSubscriptionData } = useSubscriptionStore();
   const startKycPolling = useKycStore((s) => s.startPolling);
   const stopKycPolling = useKycStore((s) => s.stopPolling);
   const cancelledRef = useRef(false);
@@ -90,19 +78,10 @@ export default function DashboardLayout({
             </main>
           </div>
 
-          {/* Subscription Modals */}
-          <UpgradeModal
-            isOpen={showUpgradeModal}
-            onClose={() => setShowUpgradeModal(false)}
-          />
-          <CancelSubscriptionModal
-            isOpen={showCancelModal}
-            onClose={() => setShowCancelModal(false)}
-          />
-          <PaymentModal
-            isOpen={showPaymentModal}
-            onClose={() => setShowPaymentModal(false)}
-          />
+          {/* Polls for Premium activation after returning from Stripe Checkout */}
+          <Suspense fallback={null}>
+            <PlanActivationWatcher />
+          </Suspense>
         </div>
       )}
     </AuthGuard>

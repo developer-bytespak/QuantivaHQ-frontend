@@ -23,6 +23,28 @@ import { getNextOnboardingStepRoute } from "@/lib/auth/flow-router.service";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
 
+// Backend returns 403 with one of these codes when a FREE user tries to
+// execute a Top Trades signal. The legacy quota code is kept for older
+// backend builds still in flight.
+const PREMIUM_REQUIRED_CODES = [
+  "SIGNAL_EXECUTION_REQUIRES_PREMIUM",
+  "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED",
+];
+const PREMIUM_REQUIRED_MESSAGE =
+  "Signal execution requires the Premium plan. Start your 7-day free trial from Settings to execute Top Trades.";
+
+/** Returns the user-facing message when `err` is a Premium-required 403, else null. */
+function getPremiumRequiredMessage(err: unknown): string | null {
+  const data = (err as { response?: { data?: { code?: string; message?: unknown } } } | null)?.response?.data as
+    | { code?: string; message?: string | { code?: string } }
+    | undefined;
+  const code: string | undefined =
+    data?.code ||
+    (data?.message && typeof data.message === "object" ? data.message?.code : undefined);
+  if (!code || !PREMIUM_REQUIRED_CODES.includes(code)) return null;
+  return typeof data?.message === "string" && data.message ? data.message : PREMIUM_REQUIRED_MESSAGE;
+}
+
 export interface TopTradesPageProps {
   /** When set, page runs in admin VC Pool mode: trades execute via adminCreateTrade(poolId, body) */
   vcPoolId?: string;
@@ -194,28 +216,20 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const connectionId = propConnectionId ?? ctxConnectionId;
   const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
-  const { currentSubscription, freeSignalTrades, fetchFreeSignalTradesQuota } = useSubscriptionStore();
+  const { currentSubscription } = useSubscriptionStore();
   const { progress: onboardingProgress, fetchProgress: fetchOnboardingProgress } = useOnboardingProgressStore();
   // Top Trades is open to all tiers but gated on full onboarding completion.
   // Admin VC-Pool mode (vcPoolId) bypasses the gate.
   const onboardingComplete = !!vcPoolId || (onboardingProgress ? isFullyOnboarded(onboardingProgress) : false);
   const canAccessTopTrades = onboardingComplete;
+  // FREE users can browse signals but cannot execute them (Premium-only).
   const isFreeTier = !vcPoolId && currentSubscription?.tier === PlanTier.FREE;
-  const freeTradesRemaining = freeSignalTrades?.remaining ?? 0;
-  const freeTradesGranted = freeSignalTrades?.granted ?? 5;
-  const freeQuotaExhausted = isFreeTier && (freeSignalTrades?.has_grant ?? false) && freeTradesRemaining <= 0;
 
   useEffect(() => {
     if (!vcPoolId && !onboardingProgress) {
       void fetchOnboardingProgress();
     }
   }, [vcPoolId, onboardingProgress, fetchOnboardingProgress]);
-
-  useEffect(() => {
-    if (isFreeTier && onboardingComplete && !freeSignalTrades) {
-      void fetchFreeSignalTradesQuota();
-    }
-  }, [isFreeTier, onboardingComplete, freeSignalTrades, fetchFreeSignalTradesQuota]);
 
   // AI insights state with timestamps
   const [aiInsights, setAiInsights] = useState<Record<string, Record<string, { text: string; timestamp: number }>>>({});
@@ -272,6 +286,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const [successToastMessage, setSuccessToastMessage] = useState<string>(
     "Trade executed successfully!",
   );
+  // Shown when a FREE user tries to execute a signal (locally or via a 403
+  // from the backend). Carries an Upgrade link to the subscription settings.
+  const [premiumGateMessage, setPremiumGateMessage] = useState<string | null>(null);
 
   // Paper trading mock usage detection and pagination
   const searchParams = useSearchParams();
@@ -1283,15 +1300,25 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   // copy in sync with this server-side behavior.
   const confirmSell = async (qty: number, isFullClose: boolean) => {
     if (!sellTarget || !connectionId) throw new Error("Missing sale context");
-    const response = await exchangesService.placeOrder(connectionId, {
-      symbol: sellTarget.symbol,
-      side: "SELL",
-      type: "MARKET",
-      quantity: qty,
-      source: "top_trades_leaderboard_sell",
-      closePosition: isFullClose,
-      cancelOpenOrders: !isFullClose,
-    });
+    let response: Awaited<ReturnType<typeof exchangesService.placeOrder>>;
+    try {
+      response = await exchangesService.placeOrder(connectionId, {
+        symbol: sellTarget.symbol,
+        side: "SELL",
+        type: "MARKET",
+        quantity: qty,
+        source: "top_trades_leaderboard_sell",
+        closePosition: isFullClose,
+        cancelOpenOrders: !isFullClose,
+      });
+    } catch (err) {
+      const premiumMsg = getPremiumRequiredMessage(err);
+      if (premiumMsg) {
+        setPremiumGateMessage(premiumMsg);
+        throw new Error(premiumMsg);
+      }
+      throw err;
+    }
     if (response && (response as any).success === false) {
       throw new Error((response as any).message || "Sell order rejected");
     }
@@ -1311,6 +1338,10 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   };
 
   const handleAutoTrade = (trade: any) => {
+    if (isFreeTier) {
+      setPremiumGateMessage(PREMIUM_REQUIRED_MESSAGE);
+      return;
+    }
     setSelectedSignal(trade);
     setShowAutoTradeModal(true);
   };
@@ -1359,9 +1390,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   }
 
   // Onboarding-completion gate. Top Trades requires the full setup
-  // (Personal info + KYC + Subscription + Exchange) so a FREE user has the
-  // 5-trade grant AND an exchange to execute on. Renders an in-page CTA
-  // pointing to the next pending step instead of the page content.
+  // (Personal info + KYC + Subscription + Exchange) so the user has an
+  // exchange to execute on. Renders an in-page CTA pointing to the next
+  // pending step instead of the page content.
   if (!canAccessTopTrades && onboardingProgress) {
     const nextStep = getNextOnboardingStepRoute(onboardingProgress) ?? "/dashboard";
     return (
@@ -1375,7 +1406,6 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
           <h2 className="mb-2 text-xl font-bold text-white">Finish onboarding to unlock Top Trades</h2>
           <p className="mb-5 text-sm text-slate-300">
             Top Trades opens once you complete Personal info, Identity (KYC), Subscription, and Exchange connection.
-            Your first <span className="font-semibold text-[var(--primary)]">5 signal trades</span> are on us when you finish.
           </p>
           <button
             type="button"
@@ -1403,28 +1433,20 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
               : "Track your best performing trades and strategies"
             }
           </p>
-          {isFreeTier && freeSignalTrades?.has_grant && (
-            <div
-              className={`inline-flex items-center gap-2 self-start rounded-full border px-3 py-1 text-xs ${
-                freeQuotaExhausted
-                  ? "border-red-500/40 bg-red-500/10 text-red-300"
-                  : "border-[var(--primary)]/40 bg-[var(--primary)]/10 text-[var(--primary)]"
-              }`}
-            >
+          {isFreeTier && (
+            <div className="inline-flex flex-wrap items-center gap-2 self-start rounded-full border border-[var(--primary)]/40 bg-[var(--primary)]/10 px-3 py-1 text-xs text-[var(--primary)]">
               <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               <span className="font-medium">
-                Free signal trades: {freeTradesRemaining} / {freeTradesGranted}
+                Signal execution is a Premium feature. Start your 7-day free trial.
               </span>
-              {freeQuotaExhausted && (
-                <Link
-                  href="/dashboard/settings/subscription"
-                  className="ml-1 rounded-full bg-[var(--primary)]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)] hover:bg-[var(--primary)]/30"
-                >
-                  Upgrade
-                </Link>
-              )}
+              <Link
+                href="/dashboard/settings/subscription"
+                className="ml-1 rounded-full bg-[var(--primary)]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)] hover:bg-[var(--primary)]/30"
+              >
+                Start free trial
+              </Link>
             </div>
           )}
         </div>
@@ -1870,7 +1892,16 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                     })()}
 
                     <div className="  space-y-2">
-                      {connectionId && (
+                      {connectionId && isFreeTier && (
+                        <Link
+                          href="/dashboard/settings/subscription"
+                          className="flex w-full flex-col items-center justify-center gap-0.5 rounded-xl border border-[var(--primary)]/40 bg-[var(--primary)]/10 px-4 py-2.5 text-center transition-colors hover:bg-[var(--primary)]/20"
+                        >
+                          <span className="text-xs font-semibold text-[var(--primary)]">Signal execution is a Premium feature.</span>
+                          <span className="text-[11px] text-slate-300">Start your 7-day free trial.</span>
+                        </Link>
+                      )}
+                      {connectionId && !isFreeTier && (
                         <button
                           onClick={() => handleAutoTrade(trade)}
                           className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)]/30 transition-all duration-300 hover:-translate-y-[1px] hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/40 active:translate-y-0"
@@ -2191,7 +2222,34 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         />
       )}
 
-      {/* Success Toast — also used by the auto-trade modal to surface
+      {/* Premium-required notice: FREE user tried to execute a signal, or the
+          backend returned SIGNAL_EXECUTION_REQUIRES_PREMIUM. */}
+      {premiumGateMessage && (
+        <div className="fixed top-8 right-8 z-[10000] animate-fade-in flex max-w-md items-start gap-3 rounded-lg border border-[var(--primary)]/40 bg-[#12121a] px-5 py-3 text-white shadow-lg">
+          <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <span className="text-sm leading-snug">{premiumGateMessage}</span>
+          <Link
+            href="/dashboard/settings/subscription"
+            className="shrink-0 rounded-md bg-[var(--primary)] px-3 py-1 text-xs font-semibold text-white hover:bg-[var(--primary-hover)]"
+          >
+            Upgrade
+          </Link>
+          <button
+            type="button"
+            onClick={() => setPremiumGateMessage(null)}
+            aria-label="Dismiss"
+            className="shrink-0 text-slate-400 hover:text-white"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Success Toast: also used by the auto-trade modal to surface
           queued / delayed-protection / filled states without using alert(). */}
       {showSuccessToast && (
         <div className="fixed top-8 right-8 z-[10000] animate-fade-in rounded-lg bg-green-600 px-5 py-3 text-white shadow-lg max-w-md flex items-start gap-3">

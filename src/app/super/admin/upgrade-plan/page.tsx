@@ -14,18 +14,15 @@ import type {
   AdminSuperUpgradeSubscriptionResponse,
   AdminSuperUserSearchResult,
 } from "@/lib/api/vcpool-admin/types";
+import {
+  PREMIUM_BILLING_PERIODS,
+  PREMIUM_PERIOD_LABELS,
+  premiumPriceLabel,
+} from "@/config/subscription";
 
 const PLAN_OPTIONS: { value: PlanTier; label: string; description: string }[] = [
-  { value: "FREE", label: "Free", description: "Basic access, limited features" },
-  { value: "PRO", label: "Pro", description: "Advanced features for active traders" },
-  { value: "ELITE", label: "Elite", description: "Full access to all features" },
-  { value: "ELITE_PLUS", label: "Elite Plus", description: "Premium tier with exclusive benefits" },
-];
-
-const BILLING_OPTIONS: { value: BillingPeriod; label: string }[] = [
-  { value: "MONTHLY", label: "Monthly" },
-  { value: "QUARTERLY", label: "Quarterly" },
-  { value: "YEARLY", label: "Yearly" },
+  { value: "FREE", label: "Free", description: "View-only access" },
+  { value: "PREMIUM", label: "Premium", description: "All features. Monthly, quarterly or yearly." },
 ];
 
 const MIN_SEARCH_LENGTH = 3;
@@ -42,7 +39,7 @@ export default function SuperAdminUpgradePlanPage() {
   const [searchStatus, setSearchStatus] = useState<SearchStatus>("idle");
   const [searchResults, setSearchResults] = useState<AdminSuperUserSearchResult[]>([]);
   const [selectedUser, setSelectedUser] = useState<AdminSuperUserSearchResult | null>(null);
-  const [tier, setTier] = useState<PlanTier>("PRO");
+  const [tier, setTier] = useState<PlanTier>("PREMIUM");
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("MONTHLY");
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<AdminSuperUpgradeSubscriptionResponse | null>(null);
@@ -135,7 +132,8 @@ export default function SuperAdminUpgradePlanPage() {
       const res = await adminSuperUpgradeUserSubscription({
         email: selectedUser.email,
         tier,
-        billing_period: billingPeriod,
+        // Free has no billing period of its own; the backend expects MONTHLY there.
+        billing_period: tier === "PREMIUM" ? billingPeriod : "MONTHLY",
       });
       setResult(res);
       showNotification(res.message, "success");
@@ -164,7 +162,7 @@ export default function SuperAdminUpgradePlanPage() {
         <h2 className="text-lg font-semibold text-white mb-2">Upgrade User Subscription</h2>
         <p className="text-sm text-slate-400 mb-6">
           Override a user&apos;s current subscription plan. This will cancel any existing active subscription
-          and create a new one with the selected plan and billing period.
+          and create a new one with the selected plan and, for Premium, the selected billing period.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -251,7 +249,7 @@ export default function SuperAdminUpgradePlanPage() {
           {/* Plan Tier */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-300">Plan</label>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2">
               {PLAN_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
@@ -278,27 +276,37 @@ export default function SuperAdminUpgradePlanPage() {
             </div>
           </div>
 
-          {/* Billing Period */}
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">Billing Period</label>
-            <div className="flex gap-3">
-              {BILLING_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setBillingPeriod(opt.value)}
-                  disabled={submitting}
-                  className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 ${
-                    billingPeriod === opt.value
-                      ? "border-[#fc4f02] bg-[#fc4f02]/10 text-white"
-                      : "border-[--color-border] bg-[--color-background] text-slate-300 hover:border-slate-500"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+          {/* Billing Period (Premium only) */}
+          {tier === "PREMIUM" && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">Billing Period</label>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {PREMIUM_BILLING_PERIODS.map((period) => (
+                  <button
+                    key={period}
+                    type="button"
+                    onClick={() => setBillingPeriod(period)}
+                    disabled={submitting}
+                    className={`rounded-xl border px-4 py-3 text-left transition-colors disabled:opacity-50 ${
+                      billingPeriod === period
+                        ? "border-[#fc4f02] bg-[#fc4f02]/10 text-white"
+                        : "border-[--color-border] bg-[--color-background] text-slate-300 hover:border-slate-500"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{PREMIUM_PERIOD_LABELS[period]}</span>
+                      {billingPeriod === period && (
+                        <svg className="h-4 w-4 text-[#fc4f02]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-400">{premiumPriceLabel(period)}</p>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <button
             type="submit"

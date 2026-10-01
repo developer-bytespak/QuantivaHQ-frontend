@@ -1,81 +1,94 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { QuantivaLogo } from "@/components/common/quantiva-logo";
 import { BackButton } from "@/components/common/back-button";
-import {
-  PlanTier,
-  BillingPeriod,
-  calculatePrice,
-  getPlansByTier,
-} from "@/mock-data/subscription-dummy-data";
-import { PRICE_IDS } from "@/constant";
+import { BillingPeriodToggle } from "@/components/subscription/billing-period-toggle";
+import useSubscriptionStore from "@/state/subscription-store";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
 import { acknowledgeFreeTier } from "@/lib/api/onboarding";
 import { safeReturnPath } from "@/lib/auth/flow-router.service";
+import {
+  PREMIUM_PERIOD_RENEWAL,
+  PREMIUM_PERIOD_SUFFIX,
+  TRIAL_DAYS,
+  premiumPriceLabel,
+} from "@/config/subscription";
 
-const PRO_FEATURES = [
-  "Everything in FREE, PLUS:",
-  "AI Trading",
-  "Auto Execution",
-  "Up to 5 Custom Strategies",
+const FREE_FEATURES = [
+  "Real-time market data",
+  "Portfolio tracking",
+  "Web and mobile access",
 ];
 
-const ELITE_FEATURES = [
-  "Everything in PRO, PLUS:",
-  "Unlimited Strategies",
-  "Early Access to Features",
-  "VC Pool Access",
+const PREMIUM_FEATURES = [
+  "Everything in Free",
+  "AI trading signals and auto execution",
+  "Unlimited custom strategies",
+  "Options trading",
+  "VC Pool access",
+  "Early access to new features",
 ];
 
-const ELITE_PLUS_FEATURES = [
-  "Everything in ELITE, PLUS:",
-  "Option Trading",
-  "Unlimited Strategies",
-  "Early Access to Features",
-  "VC Pool Access",
-];
-
-function getPriceLabel(period: BillingPeriod): string {
-  switch (period) {
-    case BillingPeriod.MONTHLY:
-      return "/month";
-    case BillingPeriod.QUARTERLY:
-      return "/3 months";
-    case BillingPeriod.YEARLY:
-      return "/year";
-    default:
-      return "";
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === "object" && error !== null) {
+    const e = error as { message?: unknown; response?: { data?: { message?: unknown } } };
+    const fromResponse = e.response?.data?.message;
+    if (typeof fromResponse === "string" && fromResponse.trim()) return fromResponse;
+    if (Array.isArray(fromResponse) && fromResponse.length) return fromResponse.join(", ");
+    if (typeof e.message === "string" && e.message.trim()) return e.message;
   }
+  return fallback;
 }
 
 export default function ChoosePlanPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(
-    BillingPeriod.MONTHLY,
-  );
-  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [skipLoading, setSkipLoading] = useState(false);
   const { createCheckout } = useSubscription();
+  const {
+    allPlans,
+    isLoading,
+    fetchSubscriptionData,
+    isPremium,
+    isTrialEligible,
+    getPremiumPriceLabel,
+    getPremiumSavingsPercent,
+    selectedBillingPeriod,
+    setSelectedBillingPeriod,
+  } = useSubscriptionStore();
 
   const returnPath = useMemo(
     () => safeReturnPath(searchParams.get("return")),
     [searchParams],
   );
 
+  // Load the live catalogue (Premium prices, trial eligibility) if nothing is cached.
+  useEffect(() => {
+    if (allPlans.length === 0) {
+      void fetchSubscriptionData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Already paid: there is nothing to choose here.
+  useEffect(() => {
+    if (isPremium()) {
+      router.replace(returnPath ?? "/dashboard");
+    }
+  }, [allPlans, returnPath, router, isPremium]);
+
   const goAfterSelection = () => {
     router.push(returnPath ?? "/dashboard");
   };
 
-  const handleSkipFree = async () => {
+  const handleContinueFree = async () => {
     setSkipLoading(true);
     try {
-      const result = await acknowledgeFreeTier();
-      const granted = result?.free_signal_trades_granted ?? 5;
-      toast.success(`${granted} free signal trades unlocked. Find them on Top Trades.`);
+      await acknowledgeFreeTier();
       goAfterSelection();
     } catch {
       toast.error("Could not save your choice. Please try again.");
@@ -83,82 +96,44 @@ export default function ChoosePlanPage() {
     }
   };
 
-  const handleSelectPaid = (tier: PlanTier) => {
-    const plans = getPlansByTier(tier).filter(
-      (p) => p.billing_period === billingPeriod,
-    );
-    const plan = plans[0];
-    if (!plan) return;
-
-    let priceId = "";
-    if (tier === PlanTier.PRO) {
-      priceId =
-        billingPeriod === BillingPeriod.MONTHLY
-          ? PRICE_IDS.PRO_PLAN_MONTHLY
-          : billingPeriod === BillingPeriod.QUARTERLY
-            ? PRICE_IDS.PRO_PLAN_QUARTERLY
-            : PRICE_IDS.PRO_PLAN_YEARLY;
-    } else if (tier === PlanTier.ELITE) {
-      priceId =
-        billingPeriod === BillingPeriod.MONTHLY
-          ? PRICE_IDS.ELITE_PLAN_MONTHLY
-          : billingPeriod === BillingPeriod.QUARTERLY
-            ? PRICE_IDS.ELITE_PLAN_QUARTERLY
-            : PRICE_IDS.ELITE_PLAN_YEARLY;
-    } else if (tier === PlanTier.ELITE_PLUS) {
-      priceId =
-        billingPeriod === BillingPeriod.MONTHLY
-          ? PRICE_IDS.ELITE_PLUS_PLAN_MONTHLY
-          : billingPeriod === BillingPeriod.QUARTERLY
-            ? PRICE_IDS.ELITE_PLUS_PLAN_QUARTERLY
-            : PRICE_IDS.ELITE_PLUS_PLAN_YEARLY;
-    }
-
-    setLoadingPlanId(plan.plan_id);
+  const handleStartPremium = () => {
+    setCheckoutLoading(true);
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-    // After Stripe checkout we bring the user back to the dashboard (or to
-    // their chosen return path) — never to the legacy /onboarding/account-type
-    // page, which only exists as a deep-link target for the exchange step now.
+    // After Stripe Checkout bring the user back to the dashboard (or their
+    // chosen return path). The watcher in the dashboard layout picks up
+    // ?onboarding=plan-selected and polls until the plan is active.
     const successPath = returnPath ?? "/dashboard";
     const successQuerySep = successPath.includes("?") ? "&" : "?";
     createCheckout.mutate(
       {
-        plan_id: plan.plan_id,
-        price_id: priceId,
+        billing_period: selectedBillingPeriod,
         cancel_url: `${baseUrl}/onboarding/choose-plan${returnPath ? `?return=${encodeURIComponent(returnPath)}` : ""}`,
         success_url: `${baseUrl}${successPath}${successQuerySep}onboarding=plan-selected`,
       },
       {
-        onSuccess: (data: { url?: string }) => {
+        onSuccess: (data) => {
           if (data?.url) {
             window.location.href = data.url;
           } else {
-            setLoadingPlanId(null);
+            setCheckoutLoading(false);
             toast.error("Could not start checkout.");
           }
         },
-        onError: () => {
-          setLoadingPlanId(null);
-          toast.error("Failed to start checkout. Please try again.");
+        onError: (error: unknown) => {
+          setCheckoutLoading(false);
+          toast.error(getErrorMessage(error, "Failed to start checkout. Please try again."));
         },
       },
     );
   };
 
-  const proPriceInfo = calculatePrice(PlanTier.PRO, billingPeriod);
-  const elitePriceInfo = calculatePrice(PlanTier.ELITE, billingPeriod);
-  const elitePlusPlans = getPlansByTier(PlanTier.ELITE_PLUS).filter(
-    (p) => p.billing_period === billingPeriod,
-  );
-  const elitePlusPrice = elitePlusPlans[0]
-    ? `$${elitePlusPlans[0].price}`
-    : "$119.99";
-
-  const periodOptions: { value: BillingPeriod; label: string }[] = [
-    { value: BillingPeriod.MONTHLY, label: "Monthly" },
-    { value: BillingPeriod.QUARTERLY, label: "Quarterly -15%" },
-    { value: BillingPeriod.YEARLY, label: "Yearly -20%" },
-  ];
+  const trialEligible = isTrialEligible();
+  const period = selectedBillingPeriod;
+  const priceAmount = getPremiumPriceLabel(period);
+  const fullPriceLabel = premiumPriceLabel(period, priceAmount);
+  const periodSuffix = PREMIUM_PERIOD_SUFFIX[period];
+  const renewal = PREMIUM_PERIOD_RENEWAL[period];
+  const busy = checkoutLoading || createCheckout.isPending;
 
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-black">
@@ -172,54 +147,31 @@ export default function ChoosePlanPage() {
           <QuantivaLogo className="h-9 w-9 sm:h-10 sm:w-10" />
         </div>
         <h1 className="mb-1 text-center text-xl font-bold tracking-tight text-white sm:text-2xl">
-          Upgrade your plan
+          Choose your plan
         </h1>
         <p className="mb-6 text-center text-sm text-slate-400">
-          You&apos;re on the Free tier. Upgrade for AI trading, custom strategies, and more — or stay on Free.
+          Start free, or unlock everything with Premium.
         </p>
 
-        <div className="mb-6 w-full max-w-6xl rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-          <p className="text-center text-xs sm:text-sm text-amber-200">
-            <span className="font-semibold">Note:</span> ELITE Plus is recommended for Binance users only.
-          </p>
-        </div>
+        <BillingPeriodToggle
+          className="mb-6"
+          value={period}
+          onChange={setSelectedBillingPeriod}
+          getSavingsPercent={getPremiumSavingsPercent}
+          disabled={busy || skipLoading}
+        />
 
-        {/* Billing period toggle */}
-        <div className="mb-8 flex flex-wrap justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5">
-          {periodOptions.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setBillingPeriod(opt.value)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                billingPeriod === opt.value
-                  ? "bg-[var(--primary)] text-white"
-                  : "text-slate-400 hover:text-white"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Plan cards (FREE tier omitted — every user is already on FREE) */}
-        <div className="grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* PRO */}
-          <div className="relative flex flex-col rounded-xl border-2 border-[var(--primary)]/50 bg-[var(--primary)]/5 p-5 backdrop-blur">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[var(--primary)] px-3 py-0.5 text-xs font-semibold text-white">
-              POPULAR
-            </div>
-            <h3 className="text-lg font-semibold text-white">PRO</h3>
-            <p className="mb-4 text-xs text-slate-400">
-              Perfect for individual traders
-            </p>
+        <div className="grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* FREE */}
+          <div className="flex flex-col rounded-xl border-2 border-white/20 bg-[--color-surface-alt]/80 p-5 backdrop-blur">
+            <h3 className="text-lg font-semibold text-white">Free</h3>
+            <p className="mb-4 text-xs text-slate-400">Explore the markets at no cost</p>
             <p className="mb-4 text-2xl font-bold text-white">
-              ${proPriceInfo.price.toFixed(2)}
-              <span className="text-sm font-normal text-slate-400">
-                {getPriceLabel(billingPeriod)}
-              </span>
+              $0
+              <span className="text-sm font-normal text-slate-400"> /month</span>
             </p>
             <ul className="mb-6 flex-1 space-y-2 text-sm text-slate-300">
-              {PRO_FEATURES.map((f) => (
+              {FREE_FEATURES.map((f) => (
                 <li key={f} className="flex items-start gap-2">
                   <span className="text-green-400">✓</span>
                   <span>{f}</span>
@@ -227,103 +179,61 @@ export default function ChoosePlanPage() {
               ))}
             </ul>
             <button
-              onClick={() => handleSelectPaid(PlanTier.PRO)}
-              disabled={createCheckout.isPending || !!loadingPlanId}
+              type="button"
+              onClick={handleContinueFree}
+              disabled={skipLoading || busy}
+              className="w-full rounded-lg border-2 border-white/30 bg-transparent py-2.5 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5 disabled:opacity-50"
+            >
+              {skipLoading ? "Saving..." : "Continue with Free"}
+            </button>
+          </div>
+
+          {/* PREMIUM */}
+          <div className="relative flex flex-col rounded-xl border-2 border-[var(--primary)]/60 bg-[var(--primary)]/5 p-5 backdrop-blur">
+            {trialEligible && (
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[var(--primary)] px-3 py-0.5 text-xs font-semibold text-white">
+                {TRIAL_DAYS}-DAY FREE TRIAL
+              </div>
+            )}
+            <h3 className="text-lg font-semibold text-white">Premium</h3>
+            <p className="mb-4 text-xs text-slate-400">Every feature. Billed monthly, quarterly or yearly.</p>
+            <p className="mb-4 text-2xl font-bold text-white">
+              {isLoading && allPlans.length === 0 ? (
+                <span className="inline-block h-7 w-24 animate-pulse rounded bg-white/10 align-middle" />
+              ) : (
+                <>${priceAmount}</>
+              )}
+              <span className="text-sm font-normal text-slate-400"> {periodSuffix}</span>
+            </p>
+            <ul className="mb-6 flex-1 space-y-2 text-sm text-slate-300">
+              {PREMIUM_FEATURES.map((f) => (
+                <li key={f} className="flex items-start gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={handleStartPremium}
+              disabled={busy || skipLoading}
               className="w-full rounded-lg bg-[var(--primary)] py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--primary-hover)] disabled:opacity-50"
             >
-              {loadingPlanId && getPlansByTier(PlanTier.PRO).some((p) => p.plan_id === loadingPlanId)
+              {busy
                 ? "Loading..."
-                : "Get Started"}
-            </button>
-          </div>
-
-          {/* ELITE */}
-          <div className="flex flex-col rounded-xl border-2 border-white/20 bg-[--color-surface-alt]/80 p-5 backdrop-blur">
-            <h3 className="text-lg font-semibold text-white">ELITE</h3>
-            <p className="mb-4 text-xs text-slate-400">
-              For professional traders
-            </p>
-            <p className="mb-4 text-2xl font-bold text-white">
-              ${elitePriceInfo.price.toFixed(2)}
-              <span className="text-sm font-normal text-slate-400">
-                {getPriceLabel(billingPeriod)}
-              </span>
-            </p>
-            <ul className="mb-6 flex-1 space-y-2 text-sm text-slate-300">
-              {ELITE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <span className="text-green-400">✓</span>
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={() => handleSelectPaid(PlanTier.ELITE)}
-              disabled={createCheckout.isPending || !!loadingPlanId}
-              className="w-full rounded-lg border-2 border-white/30 bg-transparent py-2.5 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5 disabled:opacity-50"
-            >
-              {loadingPlanId && getPlansByTier(PlanTier.ELITE).some((p) => p.plan_id === loadingPlanId)
-                ? "Loading..."
-                : "Get Started"}
-            </button>
-          </div>
-
-          {/* ELITE Plus */}
-          <div className="flex flex-col rounded-xl border-2 border-white/20 bg-[--color-surface-alt]/80 p-5 backdrop-blur">
-            <h3 className="text-lg font-semibold text-white">ELITE Plus</h3>
-            <p className="mb-4 text-xs text-slate-400">
-              For advanced traders with option trading
-            </p>
-            <p className="mb-4 text-2xl font-bold text-white">
-              {elitePlusPrice}
-              <span className="text-sm font-normal text-slate-400">
-                {getPriceLabel(billingPeriod)}
-              </span>
-            </p>
-            <ul className="mb-6 flex-1 space-y-2 text-sm text-slate-300">
-              {ELITE_PLUS_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2">
-                  <span className="text-green-400">✓</span>
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <button
-              onClick={() => handleSelectPaid(PlanTier.ELITE_PLUS)}
-              disabled={createCheckout.isPending || !!loadingPlanId}
-              className="w-full rounded-lg border-2 border-white/30 bg-transparent py-2.5 text-sm font-semibold text-white transition hover:border-white/50 hover:bg-white/5 disabled:opacity-50"
-            >
-              {loadingPlanId && getPlansByTier(PlanTier.ELITE_PLUS).some((p) => p.plan_id === loadingPlanId)
-                ? "Loading..."
-                : "Get Started"}
+                : trialEligible
+                  ? `Start ${TRIAL_DAYS}-day free trial`
+                  : `Subscribe for ${fullPriceLabel}`}
             </button>
           </div>
         </div>
 
-        {/* Skip — stay on Free, with conversion promo */}
-        <div className="mt-8 flex w-full max-w-2xl flex-col items-center gap-3">
-          <div className="w-full rounded-xl border border-[var(--primary)]/40 bg-[var(--primary)]/5 p-4 text-center sm:p-5">
-            <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-[var(--primary)]/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--primary)]">
-              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Stay on Free? Claim 5 trading signals
-            </div>
-            <p className="text-sm text-slate-200">
-              Your first <span className="font-semibold text-white">5 Top Trades executions are on us</span>.
-              Unlocked the moment you finish onboarding.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleSkipFree}
-            disabled={skipLoading}
-            className="rounded-lg border border-white/20 bg-transparent px-5 py-2.5 text-sm font-medium text-slate-300 transition hover:border-white/40 hover:text-white disabled:opacity-60"
-          >
-            {skipLoading ? "Saving…" : "Continue with Free — claim 5 signals"}
-          </button>
-          <p className="text-xs text-slate-500">You can upgrade any time from the dashboard.</p>
-        </div>
+        <p className="mt-6 max-w-2xl text-center text-xs leading-relaxed text-slate-500">
+          {trialEligible
+            ? `Card required to start your trial. You will not be charged today. On day ${TRIAL_DAYS + 1} your card is charged $${priceAmount} and your plan renews ${renewal} unless you cancel first. Cancel anytime from Settings, and you keep access until your trial ends.`
+            : `Billed $${priceAmount} today and then ${renewal}. Cancel anytime from Settings; you keep access until the end of your billing period.`}
+        </p>
+        <p className="mt-2 text-xs text-slate-500">You can upgrade any time from the dashboard.</p>
       </div>
     </div>
   );

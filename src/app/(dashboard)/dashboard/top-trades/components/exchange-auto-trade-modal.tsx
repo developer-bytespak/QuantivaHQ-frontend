@@ -43,14 +43,15 @@ export function ExchangeAutoTradeModal({
   const [usdtAmount, setUsdtAmount] = useState("");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quotaExhausted, setQuotaExhausted] = useState(false);
+  // Set when the backend rejects the order because the account is not Premium.
+  const [premiumRequired, setPremiumRequired] = useState(false);
   const isPoolTrade = !!vcPoolId;
 
-  const { currentSubscription, freeSignalTrades, fetchFreeSignalTradesQuota } = useSubscriptionStore();
+  const { currentSubscription } = useSubscriptionStore();
   const isFreeTier = !isPoolTrade && currentSubscription?.tier === PlanTier.FREE;
-  const freeTradesRemaining = freeSignalTrades?.remaining ?? 0;
-  const freeTradesGranted = freeSignalTrades?.granted ?? 5;
-  const showQuotaHint = isFreeTier && (freeSignalTrades?.has_grant ?? false);
+  // FREE users cannot execute signals at all; show the trial CTA in place of
+  // the Execute button, before or after a backend 403.
+  const showPremiumGate = isFreeTier || premiumRequired;
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
@@ -139,7 +140,7 @@ export function ExchangeAutoTradeModal({
       return;
     }
     if (!isPoolTrade && amountNum > balance) {
-      setError(`Insufficient balance — need ${formatCurrency(amountNum)} but only ${formatCurrency(balance)} available.`);
+      setError(`Insufficient balance: need ${formatCurrency(amountNum)} but only ${formatCurrency(balance)} available.`);
       return;
     }
     if (!entryPrice || entryPrice <= 0) {
@@ -147,7 +148,7 @@ export function ExchangeAutoTradeModal({
       return;
     }
     if (quantity < 0.00001) {
-      setError(`Amount too small — increase the ${quoteAsset} amount and try again.`);
+      setError(`Amount too small. Increase the ${quoteAsset} amount and try again.`);
       return;
     }
     try {
@@ -173,11 +174,9 @@ export function ExchangeAutoTradeModal({
           source: "top_trade",  // 👈 Signal backend to auto-place OCO
         });
         if (response?.success) {
-          // Refresh FREE-tier quota so the badge / hint reflects the new remaining.
-          if (isFreeTier) void fetchFreeSignalTradesQuota();
           // Show a warning if the OCO (stop-loss / take-profit) order failed (Binance only)
           if (!isBybit && (response as any).ocoError) {
-            setError(`✅ Order filled — but OCO protection failed: ${(response as any).ocoError}. Set a stop-loss manually.`);
+            setError(`✅ Order filled, but OCO protection failed: ${(response as any).ocoError}. Set a stop-loss manually.`);
             onSuccess();
           } else {
             onSuccess();
@@ -195,13 +194,15 @@ export function ExchangeAutoTradeModal({
         data?.code ||
         (data?.message && typeof data.message === "object" ? data.message?.code : undefined);
 
-      // FREE-tier signal-trade quota exhausted — switch the modal into upgrade
-      // mode instead of showing a generic error.
-      if (errorCode === "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED") {
+      // Signal execution is Premium-only. Switch the modal into the trial CTA
+      // instead of showing a generic error. The legacy quota code is kept for
+      // older backend builds.
+      if (
+        errorCode === "SIGNAL_EXECUTION_REQUIRES_PREMIUM" ||
+        errorCode === "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED"
+      ) {
         setError(null);
-        setQuotaExhausted(true);
-        // Sync the store so the page badge updates too.
-        void fetchFreeSignalTradesQuota();
+        setPremiumRequired(true);
         return;
       }
 
@@ -216,7 +217,7 @@ export function ExchangeAutoTradeModal({
       } else if (raw.includes("MARKET_LOT_SIZE") || raw.includes("LOT_SIZE") || raw.includes("filter failure")) {
         msg = "Quantity doesn't meet the exchange's step size requirements. Try a slightly different amount.";
       } else if (raw.includes("PERCENT_PRICE") || raw.includes("percent_price")) {
-        msg = "Order price deviates too far from the current market price. The price may have moved — try refreshing.";
+        msg = "Order price deviates too far from the current market price. The price may have moved. Try refreshing.";
       } else if (raw.includes("PRICE_FILTER") || raw.includes("price_filter")) {
         msg = "Price is outside the allowed range for this pair.";
       } else if (raw.includes("MAX_NUM_ORDERS") || raw.includes("max_num_orders")) {
@@ -361,19 +362,12 @@ export function ExchangeAutoTradeModal({
           </div>
         )}
 
-        {/* Free-tier quota hint */}
-        {showQuotaHint && !quotaExhausted && freeTradesRemaining > 0 && side === "BUY" && (
-          <div className="mb-4 rounded-lg border border-[var(--primary)]/40 bg-[var(--primary)]/10 p-3 text-xs text-[var(--primary)]">
-            This uses 1 of your {freeTradesRemaining} remaining free signal trades.
-          </div>
-        )}
-
-        {/* Free-tier quota exhausted: upgrade CTA replaces Execute */}
-        {quotaExhausted ? (
+        {/* FREE tier: Premium trial CTA replaces Execute */}
+        {showPremiumGate ? (
           <div className="space-y-3">
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
-              <p className="font-semibold">You&apos;ve used all {freeTradesGranted} free signal trades.</p>
-              <p className="mt-1 text-amber-200/80">Upgrade to PRO for unlimited Top Trades executions.</p>
+            <div className="rounded-lg border border-[var(--primary)]/40 bg-[var(--primary)]/10 p-4 text-sm text-slate-200">
+              <p className="font-semibold text-white">Signal execution is a Premium feature.</p>
+              <p className="mt-1 text-slate-300">Start your 7-day free trial to execute this trade.</p>
             </div>
             <div className="flex gap-3">
               <button
@@ -385,9 +379,9 @@ export function ExchangeAutoTradeModal({
               </button>
               <Link
                 href="/dashboard/settings/subscription"
-                className="flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-lg transition-all hover:scale-[1.02]"
+                className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02]"
               >
-                Upgrade to PRO
+                Start free trial
               </Link>
             </div>
           </div>

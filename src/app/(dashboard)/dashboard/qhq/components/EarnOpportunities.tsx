@@ -4,14 +4,20 @@ import { useEffect } from 'react';
 import useQhqStore from '@/state/qhq-store';
 
 const RULE_META: Record<string, { label: string; description: string; icon: string }> = {
+  MONTHLY_PREMIUM: {
+    label: 'Premium Subscription',
+    description: 'Earn QHQ on every Premium payment',
+    icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+  },
+  // Legacy tiers: kept so historical reward rows still render with a label.
   MONTHLY_PRO: {
-    label: 'PRO Subscription',
-    description: 'Earn QHQ each billing cycle on PRO plan',
+    label: 'PRO Subscription (legacy)',
+    description: 'Earned QHQ each billing cycle on the legacy PRO plan',
     icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
   },
   MONTHLY_ELITE: {
-    label: 'ELITE Subscription',
-    description: 'Earn QHQ each billing cycle on ELITE plan',
+    label: 'ELITE Subscription (legacy)',
+    description: 'Earned QHQ each billing cycle on the legacy ELITE plan',
     icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
   },
   TRADE_EXECUTED: {

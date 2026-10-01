@@ -18,7 +18,6 @@ import {
   type EngineWeights,
 } from "@/components/strategies/strategy-form-shared";
 import useSubscriptionStore from "@/state/subscription-store";
-import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { CustomStrategiesPaywall } from "@/components/common/custom-strategies-paywall";
 import { useStockIndexes } from "@/hooks/useStockIndexes";
 import { useStocksPaginated } from "@/hooks/useStocksPaginated";
@@ -56,10 +55,10 @@ const getThresholdWarning = (field: string, value: number) => {
 
 // Paywall wrapper: blocks direct navigation to the create form for FREE
 // users. The inner component (a multi-step wizard with many hooks) only
-// mounts for PRO+ tiers.
+// mounts for Premium.
 export default function CreateStrategyPage() {
-  const { currentSubscription } = useSubscriptionStore();
-  if (currentSubscription && currentSubscription.tier === PlanTier.FREE) {
+  const { currentSubscription, isPremium } = useSubscriptionStore();
+  if (currentSubscription && !isPremium()) {
     return <CustomStrategiesPaywall />;
   }
   return <CreateStrategyPageInner />;

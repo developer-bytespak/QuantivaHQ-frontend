@@ -46,18 +46,17 @@ export function FeatureGuard({
 
 interface LockedFeatureProps {
   featureName: string;
-  requiredTier?: PlanTier;
   message?: string;
 }
 
-export function LockedFeatureOverlay({ featureName, requiredTier, message }: LockedFeatureProps) {
-  const { currentSubscription, setShowUpgradeModal } = useSubscriptionStore();
+export function LockedFeatureOverlay({ featureName, message }: LockedFeatureProps) {
+  const { currentSubscription, isPremium } = useSubscriptionStore();
 
   if (!currentSubscription) {
     return null;
   }
 
-  const defaultMessage = `${featureName} is only available in ${requiredTier || "PRO"} plan and above`;
+  const defaultMessage = `${featureName} is a Premium feature`;
 
   return (
     <div className="absolute inset-0 min-h-[280px] bg-black/60 backdrop-blur-sm rounded-lg flex items-center justify-center z-20">
@@ -66,9 +65,9 @@ export function LockedFeatureOverlay({ featureName, requiredTier, message }: Loc
         <p className="text-sm text-slate-300 mb-4 break-words leading-relaxed">
           {message || defaultMessage}
         </p>
-        {currentSubscription.tier !== PlanTier.ELITE && currentSubscription.tier !== PlanTier.ELITE_PLUS && (
+        {!isPremium() && (
           <Link
-            href="/dashboard/settings/subscription?tab=change"
+            href="/dashboard/settings/subscription"
             className="inline-block px-6 py-2.5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold"
           >
             Upgrade Now

@@ -505,15 +505,15 @@ export default function OptionsPage() {
     [store.venue],
   );
 
-  // ── ELITE Plus Gate (must run before the exchange-connection check —
-  //     otherwise non-ELITE-Plus users on FREE/PRO/ELITE see "Connect
-  //     Exchange First" instead of the upgrade prompt) ─────────────────────
+  // ── Premium Gate (must run before the exchange-connection check,
+  //     otherwise FREE users see "Connect Exchange First" instead of the
+  //     upgrade prompt) ──────────────────────────────────────────────────────
 
   if (!hasAccess) {
     return (
       <UpgradeGate
-        title="Options Trading is for ELITE Plus"
-        description="Trade options with AI-powered recommendations and Greeks analytics. Upgrade to ELITE Plus to access Options Trading."
+        title="Options Trading is a Premium feature"
+        description="Upgrade to Premium to trade options with AI signals. Start your 7-day free trial from Settings."
       />
     );
   }

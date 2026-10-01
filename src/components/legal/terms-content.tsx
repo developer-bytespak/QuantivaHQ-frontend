@@ -1,3 +1,5 @@
+import { PREMIUM_PRICES } from "@/config/subscription";
+
 type TermsContentProps = {
   title?: string;
   accentClassName?: string;
@@ -45,11 +47,13 @@ const sections = [
       "AI-generated summaries, sentiment analysis, risk ratings, explanations, or recommendations may be inaccurate, incomplete, delayed, or unsuitable for your situation. You should independently verify all important information before relying on it for trading, investment, or operational decisions.",
     ],
   },
+  // LEGAL COPY: needs owner sign-off before release
   {
     title: "7. Subscriptions, Billing, and Fees",
     paragraphs: [
-      "Some features are available only through paid subscriptions or tier-based access. By purchasing a plan, you authorize the applicable billing provider to charge the subscription price, applicable taxes, and any disclosed additional charges according to the billing cycle selected by you.",
-      "Subscriptions may auto-renew unless cancelled. Feature access, plan limits, pricing, and included functionality may change over time. Where your account has outstanding platform trade fees, those fees may remain payable or be processed at cancellation in accordance with the fee logic disclosed in the product flow.",
+      `QuantivaHQ offers a Free plan and a single paid plan, Premium. Premium is available monthly ($${PREMIUM_PRICES.MONTHLY}), quarterly ($${PREMIUM_PRICES.QUARTERLY}) or yearly ($${PREMIUM_PRICES.YEARLY}). The Free plan provides view-only access to market data and portfolio tracking. Premium unlocks all platform features, including signal execution, custom strategies, options trading, and VC Pool participation. By subscribing, you authorize the applicable billing provider to charge the subscription price for your chosen billing period, applicable taxes, and any disclosed additional charges on a recurring basis at the start of each billing period.`,
+      `First-time subscribers receive a 7-day free trial on any billing period, limited to one trial per account. A valid payment method is required to start the trial. Unless you cancel before the trial ends, your payment method is charged the price of your chosen billing period on the eighth day ($${PREMIUM_PRICES.MONTHLY} monthly, $${PREMIUM_PRICES.QUARTERLY} quarterly or $${PREMIUM_PRICES.YEARLY} yearly) and the subscription renews at that same interval thereafter.`,
+      "You may cancel at any time from your account settings. Cancellation takes effect at the end of the current billing period or trial period; you retain Premium access until that date, after which your account returns to the Free plan. No refunds or credits are issued for partial billing periods. Where your account has outstanding platform trade fees, those fees remain payable and may be processed at or after cancellation in accordance with the fee logic disclosed in the product flow. Feature access, pricing, and included functionality may change over time with notice as required by law.",
     ],
   },
   {

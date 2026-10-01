@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { qhqApi } from '@/lib/api/qhq-token';
 import useQhqStore from '@/state/qhq-store';
 
+// Discounts apply to the next Premium renewal.
 const DISCOUNT_OPTIONS = [
   { qhq: 50, discount: 5 },
   { qhq: 100, discount: 10 },
@@ -24,7 +25,7 @@ export function SpendPanel() {
     try {
       await qhqApi.spendForSubscriptionDiscount(selected);
       await fetchBalance();
-      toast.success(`Applied ${DISCOUNT_OPTIONS.find((o) => o.qhq === selected)?.discount}% subscription discount!`);
+      toast.success(`Applied ${DISCOUNT_OPTIONS.find((o) => o.qhq === selected)?.discount}% Premium discount!`);
       setSelected(null);
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to apply discount');
@@ -48,7 +49,7 @@ export function SpendPanel() {
       </div>
 
       <p className="text-xs text-slate-400 rounded-xl px-3 py-2 border border-white/[0.08] bg-white/[0.04] mb-4">
-        Use QHQ to get a discount on your next subscription renewal. 10% of spent QHQ is burned.
+        Use QHQ to get a discount on your next Premium renewal. 10% of spent QHQ is burned.
       </p>
 
       <div className="space-y-2 mb-4">
