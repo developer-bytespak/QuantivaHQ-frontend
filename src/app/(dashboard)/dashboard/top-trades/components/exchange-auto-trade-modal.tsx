@@ -7,6 +7,7 @@ import { adminCreateTrade } from "@/lib/api/vcpool-admin";
 import { useTopTradeVcPoolId } from "../context/top-trade-vc-pool-context";
 import useSubscriptionStore from "@/state/subscription-store";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { TRIAL_DAYS } from "@/config/subscription";
 import {
   formatCurrency,
   formatPercent,
@@ -47,11 +48,13 @@ export function ExchangeAutoTradeModal({
   const [premiumRequired, setPremiumRequired] = useState(false);
   const isPoolTrade = !!vcPoolId;
 
-  const { currentSubscription } = useSubscriptionStore();
+  const { currentSubscription, isTrialEligible } = useSubscriptionStore();
   const isFreeTier = !isPoolTrade && currentSubscription?.tier === PlanTier.FREE;
   // FREE users cannot execute signals at all; show the trial CTA in place of
   // the Execute button, before or after a backend 403.
   const showPremiumGate = isFreeTier || premiumRequired;
+  // Trial wording is only shown to accounts that can still start a trial.
+  const trialEligible = isTrialEligible();
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
@@ -367,7 +370,11 @@ export function ExchangeAutoTradeModal({
           <div className="space-y-3">
             <div className="rounded-lg border border-[var(--primary)]/40 bg-[var(--primary)]/10 p-4 text-sm text-slate-200">
               <p className="font-semibold text-white">Signal execution is a Premium feature.</p>
-              <p className="mt-1 text-slate-300">Start your 7-day free trial to execute this trade.</p>
+              <p className="mt-1 text-slate-300">
+                {trialEligible
+                  ? `Start your ${TRIAL_DAYS}-day free trial to execute this trade.`
+                  : "Upgrade to Premium to execute this trade."}
+              </p>
             </div>
             <div className="flex gap-3">
               <button
@@ -381,7 +388,7 @@ export function ExchangeAutoTradeModal({
                 href="/dashboard/settings/subscription"
                 className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02]"
               >
-                Start free trial
+                {trialEligible ? `Start ${TRIAL_DAYS}-day free trial` : "Upgrade to Premium"}
               </Link>
             </div>
           </div>
