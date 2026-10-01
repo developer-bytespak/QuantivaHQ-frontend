@@ -39,7 +39,8 @@ export default function SuperAdminFinancePage() {
   const [groupLoadingKey, setGroupLoadingKey] = useState<null | "SUBSCRIPTION" | "VC_POOL_COLLECTIONS">(null);
   const [refreshing, setRefreshing] = useState(false);
   const [year, setYear] = useState<number>(currentYear);
-  const [planTier, setPlanTier] = useState<"ALL" | "PRO" | "ELITE">("ALL");
+  type PlanTierFilter = "ALL" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
+  const [planTier, setPlanTier] = useState<PlanTierFilter>("ALL");
   const [billingPeriod, setBillingPeriod] = useState<
     "ALL" | "MONTHLY" | "QUARTERLY" | "YEARLY"
   >("ALL");
@@ -67,7 +68,7 @@ export default function SuperAdminFinancePage() {
   }, [data, currentYear]);
 
   const buildFilters = (overrides?: Partial<SuperAdminUnifiedFinanceFilters> & {
-    planTier?: "ALL" | "PRO" | "ELITE";
+    planTier?: PlanTierFilter;
     billingPeriod?: "ALL" | "MONTHLY" | "QUARTERLY" | "YEARLY";
     vcCollectionSource?: "ALL" | "JOIN" | "CANCEL" | "COMPLETION";
   }): SuperAdminUnifiedFinanceFilters => {
@@ -78,7 +79,9 @@ export default function SuperAdminFinancePage() {
 
     return {
       year: nextYear,
-      ...(nextPlanTier !== "ALL" ? { plan_tier: nextPlanTier } : {}),
+      ...(nextPlanTier !== "ALL"
+        ? { plan_tier: nextPlanTier as SuperAdminUnifiedFinanceFilters["plan_tier"] }
+        : {}),
       ...(nextBillingPeriod !== "ALL" ? { billing_period: nextBillingPeriod } : {}),
       ...(nextVcCollectionSource !== "ALL"
         ? { vc_collection_source: nextVcCollectionSource }
@@ -119,7 +122,7 @@ export default function SuperAdminFinancePage() {
         const res = await loadData(buildFilters({ year: currentYear }));
         if (!cancelled && res) {
           setYear(res.filters.year);
-          setPlanTier(res.filters.plan_tier);
+          setPlanTier(res.filters.plan_tier as PlanTierFilter);
           setBillingPeriod(res.filters.billing_period);
           setVcCollectionSource(res.filters.vc_collection_source);
         }
@@ -178,7 +181,7 @@ export default function SuperAdminFinancePage() {
   };
 
   const onSubscriptionFilterChange = async (next: {
-    planTier?: "ALL" | "PRO" | "ELITE";
+    planTier?: PlanTierFilter;
     billingPeriod?: "ALL" | "MONTHLY" | "QUARTERLY" | "YEARLY";
   }) => {
     const nextPlanTier = next.planTier ?? planTier;
@@ -289,15 +292,17 @@ export default function SuperAdminFinancePage() {
                   value={planTier}
                   onChange={(e) =>
                     onSubscriptionFilterChange({
-                      planTier: e.target.value as "ALL" | "PRO" | "ELITE",
+                      planTier: e.target.value as PlanTierFilter,
                     })
                   }
                   disabled={groupLoadingKey === "SUBSCRIPTION"}
                   className="rounded-lg border border-[--color-border] bg-[--color-surface] px-3 py-2 text-sm text-white outline-none focus:border-[#fc4f02]"
                 >
                   <option value="ALL">All</option>
-                  <option value="PRO">Pro</option>
-                  <option value="ELITE">Elite</option>
+                  <option value="PREMIUM">Premium</option>
+                  <option value="PRO">Pro (legacy)</option>
+                  <option value="ELITE">Elite (legacy)</option>
+                  <option value="ELITE_PLUS">Elite Plus (legacy)</option>
                 </select>
               </label>
 

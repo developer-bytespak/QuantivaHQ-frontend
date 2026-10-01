@@ -9,7 +9,7 @@ const DISMISSED_STORAGE_KEY = "qhq.referralBonus.v1.dismissed";
 /**
  * Shown on the dashboard to users who signed up through an affiliate referral
  * and haven't claimed their one-time bonus yet. Claiming credits 100 QHQ,
- * grants a 10% discount on the first subscription purchase, and sends the
+ * grants a 10% discount on the first Premium payment, and sends the
  * user to the QHQ page. Eligibility is enforced server-side; the localStorage
  * key only keeps the popup from re-appearing after an explicit dismissal.
  */
@@ -24,7 +24,7 @@ export function ReferralBonusModal() {
     try {
       if (window.localStorage.getItem(DISMISSED_STORAGE_KEY) === "1") return;
     } catch {
-      // Private mode or storage disabled — fall through and ask the server.
+      // Private mode or storage disabled. Fall through and ask the server.
     }
     let cancelled = false;
     qhqApi
@@ -33,7 +33,7 @@ export function ReferralBonusModal() {
         if (!cancelled && status.eligible) setOpen(true);
       })
       .catch(() => {
-        // Non-critical — if the check fails we simply don't show the popup.
+        // Non-critical: if the check fails we simply don't show the popup.
       });
     return () => {
       cancelled = true;
@@ -98,15 +98,14 @@ export function ReferralBonusModal() {
         </div>
 
         <h2 className="mb-2 text-xl font-bold text-white sm:text-2xl">
-          Claim 100 QHQ tokens and get 10% off on your first subscription
-          purchase
+          Claim 100 QHQ tokens and get 10% off your first Premium payment
         </h2>
         <p className="mb-5 text-sm text-slate-300">
-          You joined through a referral, so this one is on us —{" "}
+          You joined through a referral, so this one is on us:{" "}
           <span className="font-semibold text-white">100 QHQ tokens</span>{" "}
-          credited instantly, plus a{" "}
-          <span className="font-semibold text-white">10% discount</span>{" "}
-          applied automatically at your first subscription checkout.
+          credited instantly, plus{" "}
+          <span className="font-semibold text-white">10% off your first Premium payment</span>,{" "}
+          applied automatically at checkout.
         </p>
 
         {error && (

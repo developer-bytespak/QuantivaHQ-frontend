@@ -8,23 +8,14 @@ export async function getOnboardingProgress(): Promise<OnboardingProgressShape> 
   });
 }
 
-export async function acknowledgeFreeTier(): Promise<{ acknowledged: true; free_signal_trades_granted: number }> {
-  return apiRequest<undefined, { acknowledged: true; free_signal_trades_granted: number }>({
+/**
+ * Marks the "choose plan" onboarding step as acknowledged for users who stay
+ * on Free. The legacy free signal-trade allowance is retired; the backend may
+ * still echo `free_signal_trades_granted` (always 0) for a short while.
+ */
+export async function acknowledgeFreeTier(): Promise<{ acknowledged: true; free_signal_trades_granted?: number }> {
+  return apiRequest<undefined, { acknowledged: true; free_signal_trades_granted?: number }>({
     path: "/onboarding/acknowledge-free-tier",
     method: "POST",
-  });
-}
-
-export interface FreeSignalTradesQuota {
-  has_grant: boolean;
-  granted: number;
-  used: number;
-  remaining: number;
-}
-
-export async function getFreeSignalTradesQuota(): Promise<FreeSignalTradesQuota> {
-  return apiRequest<undefined, FreeSignalTradesQuota>({
-    path: "/onboarding/free-signal-trades",
-    method: "GET",
   });
 }

@@ -45,13 +45,14 @@ export function StockExchangeAutoTradeModal({
   const [sharesAmount, setSharesAmount] = useState("");
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [quotaExhausted, setQuotaExhausted] = useState(false);
+  // Set when the backend rejects the order because the account is not Premium.
+  const [premiumRequired, setPremiumRequired] = useState(false);
 
-  const { currentSubscription, freeSignalTrades, fetchFreeSignalTradesQuota } = useSubscriptionStore();
+  const { currentSubscription } = useSubscriptionStore();
   const isFreeTier = !isPoolTrade && currentSubscription?.tier === PlanTier.FREE;
-  const freeTradesRemaining = freeSignalTrades?.remaining ?? 0;
-  const freeTradesGranted = freeSignalTrades?.granted ?? 5;
-  const showQuotaHint = isFreeTier && (freeSignalTrades?.has_grant ?? false);
+  // FREE users cannot execute signals at all; show the trial CTA in place of
+  // the Execute button, before or after a backend 403.
+  const showPremiumGate = isFreeTier || premiumRequired;
 
   const pair = signal?.pair ?? "";
   const base = (pair.split(/\s*\/\s*/)[0] ?? "").replace(/\s+/g, "");
@@ -133,7 +134,6 @@ export function StockExchangeAutoTradeModal({
           stopLoss: stopLossPercent / 100,
         });
         if (response?.success) {
-          if (isFreeTier) void fetchFreeSignalTradesQuota();
           // The backend can respond in several shapes depending on market state:
           //   1. { queued: true }             — market fully closed (weekend/holiday).
           //                                     Trade stored in DB queue; cron submits
@@ -164,7 +164,7 @@ export function StockExchangeAutoTradeModal({
               `Markets are closed. Your ${side === "BUY" ? "buy" : "sell"} of ${sharesNum} ${symbol} is queued and will submit automatically at the next market open.`;
           } else if (isPdtBlocked) {
             toastMsg =
-              `Your ${side === "BUY" ? "buy" : "sell"} of ${sharesNum} ${symbol} was placed successfully. Take-Profit and Stop-Loss could not be attached yet because your broker (Alpaca) blocks same-day sells under its Pattern Day Trading (PDT) rule. Your protection orders will attach automatically once the position becomes an overnight hold — usually at the next market open. No action needed on your side.`;
+              `Your ${side === "BUY" ? "buy" : "sell"} of ${sharesNum} ${symbol} was placed successfully. Take-Profit and Stop-Loss could not be attached yet because your broker (Alpaca) blocks same-day sells under its Pattern Day Trading (PDT) rule. Your protection orders will attach automatically once the position becomes an overnight hold, usually at the next market open. No action needed on your side.`;
           } else if (r?.delayedProtection) {
             toastMsg =
               r?.delayedProtection?.message ||
@@ -188,10 +188,15 @@ export function StockExchangeAutoTradeModal({
       const errorCode: string | undefined =
         data?.code ||
         (data?.message && typeof data.message === "object" ? data.message?.code : undefined);
-      if (errorCode === "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED") {
+      // Signal execution is Premium-only. Switch the modal into the trial CTA
+      // instead of showing a generic error. The legacy quota code is kept for
+      // older backend builds.
+      if (
+        errorCode === "SIGNAL_EXECUTION_REQUIRES_PREMIUM" ||
+        errorCode === "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED"
+      ) {
         setError(null);
-        setQuotaExhausted(true);
-        void fetchFreeSignalTradesQuota();
+        setPremiumRequired(true);
         return;
       }
       let msg = err?.message ?? "Failed to place order";
@@ -333,17 +338,12 @@ export function StockExchangeAutoTradeModal({
           </div>
         )}
 
-        {showQuotaHint && !quotaExhausted && freeTradesRemaining > 0 && side === "BUY" && (
-          <div className="mb-4 rounded-lg border border-[var(--primary)]/40 bg-[var(--primary)]/10 p-3 text-xs text-[var(--primary)]">
-            This uses 1 of your {freeTradesRemaining} remaining free signal trades.
-          </div>
-        )}
-
-        {quotaExhausted ? (
+        {/* FREE tier: Premium trial CTA replaces Execute */}
+        {showPremiumGate ? (
           <div className="space-y-3">
-            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
-              <p className="font-semibold">You&apos;ve used all {freeTradesGranted} free signal trades.</p>
-              <p className="mt-1 text-amber-200/80">Upgrade to PRO for unlimited Top Trades executions.</p>
+            <div className="rounded-lg border border-[var(--primary)]/40 bg-[var(--primary)]/10 p-4 text-sm text-slate-200">
+              <p className="font-semibold text-white">Signal execution is a Premium feature.</p>
+              <p className="mt-1 text-slate-300">Start your 7-day free trial to execute this trade.</p>
             </div>
             <div className="flex gap-3">
               <button
@@ -355,9 +355,9 @@ export function StockExchangeAutoTradeModal({
               </button>
               <Link
                 href="/dashboard/settings/subscription"
-                className="flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-amber-400 px-4 py-3 text-center text-sm font-semibold text-slate-900 shadow-lg transition-all hover:scale-[1.02]"
+                className="flex-1 rounded-lg bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-4 py-3 text-center text-sm font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all hover:scale-[1.02]"
               >
-                Upgrade to PRO
+                Start free trial
               </Link>
             </div>
           </div>

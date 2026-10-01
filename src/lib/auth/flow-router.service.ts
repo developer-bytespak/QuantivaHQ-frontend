@@ -94,7 +94,7 @@ export interface OnboardingProgressShape {
     rejection_reasons?: string[];
   };
   subscription: {
-    tier: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+    tier: "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
     is_paid: boolean;
     acknowledged: boolean;
   };

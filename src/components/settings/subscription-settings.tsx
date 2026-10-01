@@ -4,28 +4,49 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api/client";
 import useSubscriptionStore from "@/state/subscription-store";
-import { PlanTier, BillingPeriod, getPlansByTier } from "@/mock-data/subscription-dummy-data";
-import type { SubscriptionPlan } from "@/mock-data/subscription-dummy-data";
-
-type SubscriptionPlanWithPriceId = SubscriptionPlan & { priceId: string };
+import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
-import { PRICE_IDS } from "@/constant";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
+import { BillingPeriodToggle } from "@/components/subscription/billing-period-toggle";
+import {
+  PLAN_DISPLAY_NAMES,
+  PREMIUM_PERIOD_LABELS,
+  PREMIUM_PERIOD_RENEWAL,
+  TRIAL_DAYS,
+  formatPlanDate,
+  isLegacyPaidTier,
+  isPremiumBillingPeriod,
+  premiumPriceLabel,
+} from "@/config/subscription";
 
-const TAB_IDS = ["current", "billing", "usage", "fees", "change"] as const;
+const TAB_IDS = ["current", "billing", "usage", "fees"] as const;
 type TabId = (typeof TAB_IDS)[number];
+
+const SUBSCRIPTION_ACTIVATED_EVENT = "quantiva:subscription-activated";
+
+function resolveTab(raw: string | null): TabId {
+  // "?tab=change" used to open the Change Plan tab; there is a single plan now.
+  return (TAB_IDS as readonly string[]).includes(raw ?? "") ? (raw as TabId) : "current";
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === "object" && error !== null) {
+    const e = error as { message?: unknown; response?: { data?: { message?: unknown } } };
+    const fromResponse = e.response?.data?.message;
+    if (typeof fromResponse === "string" && fromResponse.trim()) return fromResponse;
+    if (Array.isArray(fromResponse) && fromResponse.length) return fromResponse.join(", ");
+    if (typeof e.message === "string" && e.message.trim()) return e.message;
+  }
+  return fallback;
+}
 
 export function SubscriptionSettings() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const initialTab: TabId =
-    tabParam === "change" || tabParam === "billing" || tabParam === "usage" || tabParam === "current" || tabParam === "fees"
-      ? tabParam
-      : "current";
 
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
-  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>(() => resolveTab(tabParam));
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [outstandingFees, setOutstandingFees] = useState<{
     has_outstanding: boolean;
@@ -41,15 +62,22 @@ export function SubscriptionSettings() {
     currentSubscription,
     paymentHistory,
     usageStats,
-    allSubscriptions,
-    getDaysUntilNextBilling,
-    isTrialActive,
     getFeatureLimitInfo,
-    getPlansGroupedByTier,
     fetchSubscriptionData,
+    isPremium,
+    isTrialActive,
+    getTrialDaysLeft,
+    isCancelScheduled,
+    getAccessEndsAt,
+    getPremiumPriceLabel,
+    getPremiumSavingsPercent,
+    getCurrentPremiumPrice,
+    selectedBillingPeriod,
+    setSelectedBillingPeriod,
+    isTrialEligible,
   } = useSubscriptionStore();
 
-  const { createCheckout, cancelSubscription } = useSubscription();
+  const { createCheckout, cancelSubscription, resumeSubscription } = useSubscription();
 
   // ─── Trade Fees state ──────────────────────────────────────────────
   const [feeData, setFeeData] = useState<any>(null);
@@ -67,7 +95,7 @@ export function SubscriptionSettings() {
       setFeeData(cur);
       setFeeHistory((hist as any)?.months ?? []);
     } catch {
-      // user may not have fees yet — silent
+      // user may not have fees yet: silent
     } finally {
       setFeeLoading(false);
     }
@@ -80,9 +108,9 @@ export function SubscriptionSettings() {
     }
   }, [activeTab, fetchFeeData]);
 
-  // Open Change Plan tab when coming from Upgrade Now (?tab=change)
+  // Follow ?tab= changes after mount (unknown values, including the retired "change", fall back to "current")
   useEffect(() => {
-    if (tabParam === "change") setActiveTab("change");
+    setActiveTab(resolveTab(tabParam));
   }, [tabParam]);
 
   // Fetch subscription data once when user lands on this page
@@ -92,18 +120,54 @@ export function SubscriptionSettings() {
     fetchSubscriptionData();
   }, [fetchSubscriptionData]);
 
-  const getBillingLabel = (period: BillingPeriod) => {
-    switch (period) {
-      case BillingPeriod.MONTHLY:
-        return "/month";
-      case BillingPeriod.QUARTERLY:
-        return "/3 months";
-      case BillingPeriod.YEARLY:
-        return "/year";
-      default:
-        return "";
-    }
-  };
+  // Refresh when the activation watcher confirms a new Premium subscription
+  useEffect(() => {
+    const onActivated = () => { void fetchSubscriptionData(); };
+    window.addEventListener(SUBSCRIPTION_ACTIVATED_EVENT, onActivated);
+    return () => window.removeEventListener(SUBSCRIPTION_ACTIVATED_EVENT, onActivated);
+  }, [fetchSubscriptionData]);
+
+  const tier = currentSubscription?.tier ?? PlanTier.FREE;
+  const isFreePlan = !isPremium();
+  const isLegacy = isLegacyPaidTier(tier);
+  // Period the user is paying for (paid plans) and the one they are choosing (Free upgrade CTA).
+  const currentPeriod = isPremiumBillingPeriod(currentSubscription?.billing_period)
+    ? currentSubscription!.billing_period
+    : "MONTHLY";
+  const currentPeriodLabel = PREMIUM_PERIOD_LABELS[currentPeriod];
+  const currentPriceLabel = premiumPriceLabel(currentPeriod, getCurrentPremiumPrice());
+  const upgradeAmount = getPremiumPriceLabel(selectedBillingPeriod);
+  const upgradePriceLabel = premiumPriceLabel(selectedBillingPeriod, upgradeAmount);
+  const upgradeRenewal = PREMIUM_PERIOD_RENEWAL[selectedBillingPeriod];
+  const trialActive = isTrialActive();
+  const cancelScheduled = isCancelScheduled();
+  const isAppleBilled = currentSubscription?.billing_provider === "apple";
+  const accessEndsAt = getAccessEndsAt();
+  const trialEndDate = currentSubscription?.trial_end ?? null;
+  const trialDaysLeft = getTrialDaysLeft();
+
+  const statusLabel = (() => {
+    const provider = currentSubscription?.provider_status;
+    if (provider === "past_due") return "Payment issue";
+    if (trialActive || provider === "trialing") return "Trial";
+    const status = currentSubscription?.status ?? "active";
+    if (status === "active") return "Active";
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  })();
+  const statusColor =
+    statusLabel === "Payment issue"
+      ? "text-red-400"
+      : statusLabel === "Trial"
+        ? "text-blue-400"
+        : isFreePlan
+          ? "text-slate-400"
+          : "text-green-400";
+
+  const planTitle = isFreePlan
+    ? "Free Plan"
+    : isLegacy
+      ? PLAN_DISPLAY_NAMES[tier] ?? tier
+      : `Premium Plan, ${currentPeriodLabel}`;
 
   const handleCancelClick = async () => {
     setCancelCheckLoading(true);
@@ -122,215 +186,84 @@ export function SubscriptionSettings() {
     setShowCancelModal(false);
     setOutstandingFees(null);
     cancelSubscription.mutate(
+      {},
       {
-        subscription_id: currentSubscription?.subscription_id || "",
-      },
-      {
-        onSuccess: (data: any) => {
-          console.log("data", data);
-          console.log("Subscription cancelled successfully");
-          toast.success("Subscription cancelled successfully");
+        onSuccess: (data) => {
+          const until = formatPlanDate(data?.access_until ?? data?.current_period_end ?? accessEndsAt);
+          toast.success(
+            until
+              ? `Cancellation scheduled. You keep access until ${until}.`
+              : "Cancellation scheduled. You keep access until the end of your billing period.",
+          );
           fetchSubscriptionData();
         },
         onError: (error: unknown) => {
-          const msg =
-            typeof error === "object" &&
-              error !== null &&
-              "response" in error &&
-              typeof (error as { response?: { data?: { message?: string } } }).response?.data?.message === "string"
-              ? (error as { response: { data: { message: string } } }).response.data.message
-              : "Failed to cancel subscription. Please try again.";
+          const msg = getErrorMessage(error, "Failed to cancel subscription. Please try again.");
           console.error("Failed to cancel subscription:", msg);
-          setLoadingPlanId(null);
           toast.error(msg);
-        },
-        onSettled: () => {
-          setLoadingPlanId(null);
         },
       }
     );
   };
 
-  const renderPlanCard = (plan: SubscriptionPlanWithPriceId, isStaticComingSoon = false) => {
-    const isCurrentPlan = !isStaticComingSoon && currentSubscription?.plan_id === plan.plan_id;
-    const isUpgrade = !isCurrentPlan;
-    const isThisPlanLoading = loadingPlanId === plan.plan_id;
-
-    // Different colors for PRO vs ELITE vs ELITE_PLUS
-    const isElite = plan.tier === PlanTier.ELITE;
-    const isElitePlus = plan.tier === PlanTier.ELITE_PLUS;
-    const borderColor = isCurrentPlan
-      ? isElitePlus
-        ? "border-emerald-400 bg-emerald-500/10"
-        : isElite
-          ? "border-blue-400 bg-blue-500/10"
-          : "border-[var(--primary)] bg-[var(--primary)]/10"
-      : isElitePlus
-        ? "border-[--color-border] hover:border-emerald-400/50 bg-emerald-500/5"
-        : isElite
-          ? "border-[--color-border] hover:border-blue-400/50 bg-blue-500/5"
-          : "border-[--color-border] hover:border-[var(--primary)]/50";
-
-    const buttonColor = isElitePlus
-      ? "bg-emerald-500 text-white hover:bg-emerald-600"
-      : isElite
-        ? "bg-blue-500 text-white hover:bg-blue-600"
-        : "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]";
-
-    const benefits =
-      plan.tier === PlanTier.PRO
-        ? ["5 custom strategies", "Real-time news"]
-        : plan.tier === PlanTier.ELITE_PLUS
-          ? [
-            "Unlimited custom strategies",
-            "Real-time news",
-            "Early access to new upgrades",
-            "Option trading",
-          ]
-          : [
-            "Unlimited custom strategies",
-            "Real-time news",
-            "Early access to new upgrades",
-          ];
-
-    return (
-      <div
-        key={plan.plan_id}
-        className={`flex flex-col min-h-[260px] h-full rounded-lg border-2 p-4 cursor-pointer transition-all ${borderColor}`}
-      >
-        <h4 className="text-sm font-medium text-slate-400 mb-1">{plan.billing_period}</h4>
-        <p className="text-xl sm:text-2xl font-bold text-white mb-2">
-          ${plan.price}
-          <span className="text-sm text-slate-400 font-normal">{getBillingLabel(plan.billing_period)}</span>
-        </p>
-        <div className="min-h-[20px] mb-2">
-          {plan.discount_percent !== "0" && (
-            <p className="text-xs text-green-400">Save {plan.discount_percent}%</p>
-          )}
-        </div>
-        <div className="flex-grow flex flex-col justify-between mt-2">
-          <ul className="space-y-1 text-xs text-slate-300 mb-3">
-            {benefits.map((benefit) => (
-              <li key={benefit} className="flex items-start gap-1">
-                <span className="text-green-400 mt-[1px]">•</span>
-                <span>{benefit}</span>
-              </li>
-            ))}
-          </ul>
-          {/* show discount caption above the button so buttons align */}
-          {!isCurrentPlan && plan.discount_percent !== "0" && (
-            <p className="text-xs text-slate-400 mb-3 text-center">
-              Save {plan.discount_percent}% with this plan
-            </p>
-          )}
-
-          <div className="flex flex-col justify-end">
-            {isCurrentPlan ? (
-              <button
-                disabled
-                className="w-full px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm font-semibold cursor-not-allowed"
-              >
-                Current Plan
-              </button>
-            ) : isStaticComingSoon ? (
-              <button
-                disabled
-                className="w-full px-4 py-2 bg-slate-500/30 text-slate-400 rounded-lg text-sm font-semibold cursor-not-allowed"
-              >
-                Coming Soon
-              </button>
-            ) : (
-              <button
-                className={`w-full px-4 py-2 ${buttonColor} rounded-lg transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed`}
-                onClick={() => handleUpgradePlan({ planId: plan.plan_id, priceId: plan.priceId })}
-                disabled={isThisPlanLoading || createCheckout.isPending}
-              >
-                {isThisPlanLoading ? "Upgrading..." : "Upgrade"}
-              </button>
-            )}
-
-          </div>
-        </div>
-      </div>
+  const handleResumeSubscription = () => {
+    resumeSubscription.mutate(
+      {},
+      {
+        onSuccess: (data) => {
+          const renews = formatPlanDate(data?.current_period_end ?? accessEndsAt);
+          toast.success(
+            renews ? `Premium will renew on ${renews}.` : "Premium will renew at the end of your billing period.",
+          );
+          fetchSubscriptionData();
+        },
+        onError: (error: unknown) => {
+          toast.error(getErrorMessage(error, "Failed to resume subscription. Please try again."));
+        },
+      }
     );
   };
 
-  const getTierColor = (tier: PlanTier) => {
-    switch (tier) {
-      case PlanTier.FREE:
-        return "text-slate-400";
-      case PlanTier.PRO:
-        return "text-[var(--primary)]";
-      case PlanTier.ELITE:
-        return "text-blue-500";
-      case PlanTier.ELITE_PLUS:
-        return "text-emerald-500";
-      default:
-        return "text-white";
+  const startPremiumCheckout = () => {
+    setCheckoutLoading(true);
+    createCheckout.mutate(
+      {
+        billing_period: selectedBillingPeriod,
+        success_url: `${window.location.origin}/dashboard/settings/subscription?checkout=success`,
+        cancel_url: `${window.location.origin}/dashboard/settings/subscription`,
+      },
+      {
+        onSuccess: (data) => {
+          if (data?.url) {
+            window.location.href = data.url;
+          } else {
+            setCheckoutLoading(false);
+            toast.error("Could not start checkout.");
+          }
+        },
+        onError: (error: unknown) => {
+          setCheckoutLoading(false);
+          toast.error(getErrorMessage(error, "Failed to create checkout. Please try again."));
+        },
+      }
+    );
+  };
+
+  const cancelDialogMessage = (() => {
+    const endDate = formatPlanDate(accessEndsAt) || "the end of your billing period";
+    const trialPrefix = trialActive
+      ? `Your free trial ends on ${formatPlanDate(trialEndDate) || endDate}. Cancelling now means you will not be charged. `
+      : "";
+    if (outstandingFees?.has_outstanding) {
+      return `${trialPrefix}Your Premium access continues until ${endDate}. You also have $${outstandingFees.total_fees_usd.toFixed(2)} in outstanding trade fees (${outstandingFees.total_trades} trades in ${outstandingFees.billing_month}); these will be charged to your card. Continue?`;
     }
-  };
+    return `${trialPrefix}Your Premium access continues until ${endDate}. After that your account moves to Free and your card will not be charged again. Trade fees for trades you have already executed are still billed as usual.`;
+  })();
 
-  const getTierBgColor = (tier: PlanTier) => {
-    switch (tier) {
-      case PlanTier.FREE:
-        return "bg-slate-600/10";
-      case PlanTier.PRO:
-        return "bg-[var(--primary)]/10";
-      case PlanTier.ELITE:
-        return "bg-blue-500/10";
-      case PlanTier.ELITE_PLUS:
-        return "bg-emerald-500/10";
-      default:
-        return "bg-slate-500/10";
-    }
-  };
-
-  const handleUpgradePlan = ({ planId, priceId = "123" }: { planId: string, priceId?: string }) => {
-    setLoadingPlanId(planId);
-    const data = {
-      plan_id: planId,
-      price_id: priceId || "price_1QXQ52EzYvKYlo2C0986b63e",
-      cancel_url: `${window.location.origin}/dashboard/settings/subscription`,
-      success_url: `${window.location.origin}/dashboard/settings/subscription`,
-    };
-
-    console.log(data);
-
-    // return 
-
-
-    createCheckout.mutate(data, {
-      onSuccess: (data: any) => {
-        console.log("createCheckout success data", data);
-        console.log("Checkout created successfully");
-        toast.success("Checkout created successfully");
-        window.location.href = data.url;
-      },
-      onError: (error: any) => {
-        console.log("createCheckout error in component (raw):", error);
-
-        const backendMessage =
-          error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.response?.data;
-
-        if (error?.response) {
-          console.log("createCheckout error status:", error.response.status);
-          console.log("createCheckout error data:", error.response.data);
-        }
-
-        console.error("Failed to create checkout:", error);
-        toast.error(
-          backendMessage
-            ? `${backendMessage}`
-            : "Failed to create checkout. Please try again."
-        );
-      },
-      onSettled: () => {
-        setLoadingPlanId(null);
-      },
-    });
-  };
+  const checkoutBusy = checkoutLoading || createCheckout.isPending;
+  const upgradeCta = isTrialEligible()
+    ? `Start ${TRIAL_DAYS}-day free trial`
+    : `Upgrade to Premium for ${upgradePriceLabel}`;
 
   return (
     <div className="w-full h-full overflow-x-hidden">
@@ -353,11 +286,10 @@ export function SubscriptionSettings() {
               { id: "billing", label: "Billing History" },
               { id: "usage", label: "Usage Analytics" },
               { id: "fees", label: "Trade Fees" },
-              { id: "change", label: "Change Plan" },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as TabId)}
                 className={`flex-shrink-0 px-3 sm:px-4 py-3 text-sm sm:text-base font-medium transition-all border-b-2 whitespace-nowrap ${activeTab === tab.id
                     ? "text-[var(--primary)] border-[var(--primary)]"
                     : "text-slate-400 border-transparent hover:text-slate-300"
@@ -374,76 +306,136 @@ export function SubscriptionSettings() {
             {activeTab === "current" && (
               <div className="space-y-6">
                 {/* Current Plan Card */}
-                <div className={`rounded-lg border border-[var(--primary)]/30 ${getTierBgColor(currentSubscription.tier)} p-6`}>
-                  <div className="flex items-center justify-between mb-4">
+                <div className={`rounded-lg border border-[var(--primary)]/30 ${isFreePlan ? "bg-slate-600/10" : "bg-[var(--primary)]/10"} p-6`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                     <div>
-                      <h3 className="text-2xl font-bold text-white mb-1">
-                        {currentSubscription.tier} Plan
-                      </h3>
-                      <p className={`font-semibold ${getTierColor(currentSubscription.tier)}`}>
-                        {currentSubscription.status.toUpperCase()}
-                      </p>
+                      <h3 className="text-2xl font-bold text-white mb-1">{planTitle}</h3>
+                      <p className={`font-semibold ${statusColor}`}>{statusLabel}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {trialActive && !cancelScheduled && (
+                        <span className="inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-300">
+                          Free trial: {trialDaysLeft} {trialDaysLeft === 1 ? "day" : "days"} left
+                        </span>
+                      )}
+                      {cancelScheduled && (
+                        <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
+                          Cancellation scheduled
+                        </span>
+                      )}
+                      {isAppleBilled && (
+                        <span className="inline-flex items-center rounded-full border border-slate-500/30 bg-slate-500/20 px-3 py-1 text-xs font-semibold text-slate-300">
+                          Billed through the App Store
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Plan Details - equal div sizes, aligned content */}
-                  {(() => {
-                    const isFreePlan = currentSubscription.tier === PlanTier.FREE;
-                    const na = "—";
-                    const periodStart = isFreePlan ? na : currentSubscription.current_period_start.toLocaleDateString();
-                    const periodEnd = isFreePlan ? na : currentSubscription.current_period_end.toLocaleDateString();
-                    const nextBilling = isFreePlan ? na : currentSubscription.next_billing_date.toLocaleDateString();
-                    const daysUntil = isFreePlan ? na : `${getDaysUntilNextBilling()} days`;
-                    return (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
-                        {[
-                          { label: "Billing Cycle", value: isFreePlan ? na : currentSubscription.billing_period },
-                          {
-                            label: "Auto-Renewal",
-                            value: isFreePlan ? na : (currentSubscription.auto_renew ? "Enabled ✓" : "Disabled"),
-                          },
-                          { label: "Current Period Start", value: periodStart },
-                          { label: "Current Period End", value: periodEnd },
-                          { label: "Next Billing Date", value: nextBilling },
-                          { label: "Days Until Next Billing", value: daysUntil },
-                        ].map((item) => (
-                          <div
-                            key={item.label}
-                            className="min-h-[56px] flex flex-col justify-center border border-[--color-border]/50 rounded-lg px-3 py-3 bg-[--color-surface]/30"
-                          >
-                            <p className="text-xs text-slate-500 mb-1">{item.label}</p>
-                            <p className="text-white font-semibold">{item.value}</p>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
+                  {isLegacy && (
+                    <div className="mb-4 rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
+                      <p className="text-sm text-blue-300">
+                        Your plan is moving to Premium. Nothing changes this month.
+                      </p>
+                    </div>
+                  )}
 
-                  {/* Trial Badge */}
-                  {isTrialActive() && (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg mb-6">
-                      <span className="text-blue-400 text-sm">
-                        🎯 Trial active - {getDaysUntilNextBilling()} days remaining
-                      </span>
+                  {/* Plan summary */}
+                  {isFreePlan ? (
+                    <div className="mb-6 space-y-4">
+                      <p className="text-sm text-slate-300">
+                        You can view market data and track your portfolio. Upgrade to Premium to execute AI signals,
+                        build unlimited strategies, trade options and join VC Pools.
+                      </p>
+                      <div>
+                        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">Billing period</p>
+                        <BillingPeriodToggle
+                          size="sm"
+                          value={selectedBillingPeriod}
+                          onChange={setSelectedBillingPeriod}
+                          getSavingsPercent={getPremiumSavingsPercent}
+                          disabled={checkoutBusy}
+                        />
+                        <p className="mt-2 text-xs text-slate-400">
+                          {isTrialEligible()
+                            ? `Card required. You will not be charged today. On day ${TRIAL_DAYS + 1} your card is charged $${upgradeAmount} and Premium renews ${upgradeRenewal} unless you cancel first.`
+                            : `Billed ${upgradePriceLabel}. Cancel anytime; you keep access until the end of your billing period.`}
+                        </p>
+                      </div>
+                    </div>
+                  ) : cancelScheduled ? (
+                    <div className="mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                      <p className="text-sm text-amber-200">
+                        Your plan ends on {formatPlanDate(accessEndsAt) || "the end of your billing period"}. You keep full access until then. No further charges.
+                      </p>
+                    </div>
+                  ) : trialActive ? (
+                    <p className="mb-6 text-sm text-slate-300">
+                      Trial ends on {formatPlanDate(trialEndDate) || formatPlanDate(accessEndsAt) || "the end of your trial"}, then {currentPriceLabel}.
+                    </p>
+                  ) : (
+                    <p className="mb-6 text-sm text-slate-300">
+                      Next charge: {currentPriceLabel} on {formatPlanDate(currentSubscription.next_billing_date ?? currentSubscription.current_period_end) || "your next billing date"}.
+                    </p>
+                  )}
+
+                  {/* Period details (paid plans only) */}
+                  {!isFreePlan && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
+                      {[
+                        { label: "Billing Cycle", value: currentPeriodLabel },
+                        {
+                          label: "Auto-Renewal",
+                          value: cancelScheduled ? "Off (ends at period end)" : currentSubscription.auto_renew ? "Enabled" : "Disabled",
+                        },
+                        { label: "Current Period Start", value: formatPlanDate(currentSubscription.current_period_start) || "Not available" },
+                        {
+                          label: cancelScheduled ? "Access Until" : "Current Period End",
+                          value: formatPlanDate(cancelScheduled ? accessEndsAt : currentSubscription.current_period_end) || "Not available",
+                        },
+                      ].map((item) => (
+                        <div
+                          key={item.label}
+                          className="min-h-[56px] flex flex-col justify-center border border-[--color-border]/50 rounded-lg px-3 py-3 bg-[--color-surface]/30"
+                        >
+                          <p className="text-xs text-slate-500 mb-1">{item.label}</p>
+                          <p className="text-white font-semibold">{item.value}</p>
+                        </div>
+                      ))}
                     </div>
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex flex-wrap gap-3">
-                    {/* <button className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-medium">
-                  Upgrade Plan
-                </button>
-                <button className="px-4 py-2 border border-[--color-border] text-white rounded-lg hover:bg-[--color-surface] transition-colors text-sm font-medium">
-                  Manage Auto-Renewal
-                </button> */}
-                    <button
-                      type="button"
-                      onClick={handleCancelClick}
-                      disabled={cancelSubscription.isPending || cancelCheckLoading}
-                      className="px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium"
-                    >
-                      {cancelCheckLoading ? "Checking..." : cancelSubscription.isPending ? "Cancelling..." : "Cancel Subscription"}
-                    </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {isFreePlan ? (
+                      <button
+                        type="button"
+                        onClick={startPremiumCheckout}
+                        disabled={checkoutBusy}
+                        className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {checkoutBusy ? "Loading..." : upgradeCta}
+                      </button>
+                    ) : isAppleBilled ? (
+                      <p className="text-sm text-slate-400">Manage in iOS Settings &gt; Subscriptions</p>
+                    ) : cancelScheduled ? (
+                      <button
+                        type="button"
+                        onClick={handleResumeSubscription}
+                        disabled={resumeSubscription.isPending}
+                        className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {resumeSubscription.isPending ? "Resuming..." : "Resume Premium"}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleCancelClick}
+                        disabled={cancelSubscription.isPending || cancelCheckLoading}
+                        className="px-4 py-2 border border-red-500/30 text-red-400 rounded-lg hover:bg-red-500/10 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {cancelCheckLoading ? "Checking..." : cancelSubscription.isPending ? "Cancelling..." : "Cancel Subscription"}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -570,88 +562,6 @@ export function SubscriptionSettings() {
                 {usageStats[Object.keys(usageStats)[0]].period_end.toLocaleDateString()}
               </p>
             </div> */}
-              </div>
-            )}
-
-            {/* Change Plan Tab */}
-            {activeTab === "change" && (
-              <div className="space-y-6">
-                {/* PRO Plan Group - 3 plans */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3">PRO Plan</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                    {getPlansGroupedByTier()[PlanTier.PRO].map((plan) => {
-                      let priceId = PRICE_IDS.PRO_PLAN_MONTHLY;
-                      if (plan.billing_period === BillingPeriod.QUARTERLY) {
-                        priceId = PRICE_IDS.PRO_PLAN_QUARTERLY;
-                      } else if (plan.billing_period === BillingPeriod.YEARLY) {
-                        priceId = PRICE_IDS.PRO_PLAN_YEARLY;
-                      }
-                      return renderPlanCard({ ...plan, priceId });
-                    })}
-                  </div>
-                </div>
-
-                {/* ELITE Plan Group - 3 plans */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3">ELITE Plan</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                    {getPlansGroupedByTier()[PlanTier.ELITE].map((plan) => {
-                      let priceId = PRICE_IDS.ELITE_PLAN_MONTHLY;
-                      if (plan.billing_period === BillingPeriod.QUARTERLY) {
-                        priceId = PRICE_IDS.ELITE_PLAN_QUARTERLY;
-                      } else if (plan.billing_period === BillingPeriod.YEARLY) {
-                        priceId = PRICE_IDS.ELITE_PLAN_YEARLY;
-                      }
-                      return renderPlanCard({ ...plan, priceId });
-                    })}
-                  </div>
-                </div>
-
-                {/* ELITE Plus Plan Group - uses real DB plans if available, else static coming-soon */}
-                <div>
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3">ELITE Plus Plan</h3>
-                  <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-                    <p className="text-xs sm:text-sm text-amber-200">
-                      <span className="font-semibold">Note:</span> ELITE Plus is recommended for Binance users only.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-                    {(getPlansGroupedByTier()[PlanTier.ELITE_PLUS]?.length ?? 0) > 0
-                      ? getPlansGroupedByTier()[PlanTier.ELITE_PLUS].map((plan) => {
-                          let priceId = "";
-                          if (plan.billing_period === BillingPeriod.MONTHLY) {
-                            priceId = PRICE_IDS.ELITE_PLUS_PLAN_MONTHLY ?? "";
-                          } else if (plan.billing_period === BillingPeriod.QUARTERLY) {
-                            priceId = PRICE_IDS.ELITE_PLUS_PLAN_QUARTERLY ?? "";
-                          } else if (plan.billing_period === BillingPeriod.YEARLY) {
-                            priceId = PRICE_IDS.ELITE_PLUS_PLAN_YEARLY ?? "";
-                          }
-                          return renderPlanCard({ ...plan, priceId });
-                        })
-                      : getPlansByTier(PlanTier.ELITE_PLUS).map((plan) =>
-                          renderPlanCard({ ...plan, priceId: "" }, true),
-                        )}
-                  </div>
-                </div>
-
-                {currentSubscription.tier !== PlanTier.FREE &&
-                  currentSubscription.tier !== PlanTier.ELITE &&
-                  currentSubscription.tier !== PlanTier.ELITE_PLUS && (
-                    <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                      <p className="text-sm text-blue-300">
-                        <span className="font-semibold">💡 Tip:</span> If you upgrade mid-cycle, we'll
-                        prorate your payment based on your remaining days.
-                      </p>
-                    </div>
-                  )}
-
-                {/* Info Box */}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                  <p className="text-sm text-blue-300">
-                    <span className="font-semibold">💡 Tip:</span> Yearly plans offer the best savings with up to 20% discount. Subscribe today and start trading smarter!
-                  </p>
-                </div>
               </div>
             )}
 
@@ -828,14 +738,10 @@ export function SubscriptionSettings() {
 
       <ConfirmationDialog
         isOpen={showCancelModal}
-        title="Cancel Subscription"
-        message={
-          outstandingFees?.has_outstanding
-            ? `You have $${outstandingFees.total_fees_usd.toFixed(4)} in outstanding trade fees (${outstandingFees.total_trades} trades in ${outstandingFees.billing_month}). This amount will be charged to your card upon cancellation. Do you want to proceed?`
-            : "This action will immediately cancel your current subscription. Do you want to continue?"
-        }
-        confirmText={outstandingFees?.has_outstanding ? `Pay $${outstandingFees.total_fees_usd.toFixed(4)} & Cancel` : "Continue"}
-        cancelText="Go Back"
+        title="Cancel Premium?"
+        message={cancelDialogMessage}
+        confirmText="Cancel at period end"
+        cancelText="Keep Premium"
         type="danger"
         onConfirm={handleCancelSubscription}
         onCancel={() => { setShowCancelModal(false); setOutstandingFees(null); }}

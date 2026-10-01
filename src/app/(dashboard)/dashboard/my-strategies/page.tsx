@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { apiRequest } from "@/lib/api/client";
 import { useExchange } from "@/context/ExchangeContext";
 import useSubscriptionStore from "@/state/subscription-store";
-import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { EditStrategyModal } from "@/components/strategies/edit-strategy-modal";
 import { CustomStrategiesPaywall } from "@/components/common/custom-strategies-paywall";
 
@@ -37,12 +36,12 @@ interface UserStrategy {
   metrics: StrategyMetrics;
 }
 
-// Paywall wrapper: Custom Strategies are PRO+ only. FREE users see the
-// upgrade card. Inner component mounts only for PRO+ so its hooks remain
-// consistent across re-renders.
+// Paywall wrapper: Custom Strategies are a Premium feature. FREE users see
+// the upgrade card. Inner component mounts only for Premium so its hooks
+// remain consistent across re-renders.
 export default function MyStrategiesPage() {
-  const { currentSubscription } = useSubscriptionStore();
-  if (currentSubscription && currentSubscription.tier === PlanTier.FREE) {
+  const { currentSubscription, isPremium } = useSubscriptionStore();
+  if (currentSubscription && !isPremium()) {
     return <CustomStrategiesPaywall />;
   }
   return <MyStrategiesPageInner />;
@@ -350,22 +349,6 @@ function MyStrategiesPageInner() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Show more strategies — for PRO users: CTA to upgrade for more */}
-      {!loading && !error && strategies.length > 0 && currentSubscription?.tier === PlanTier.PRO && (
-        <div className="rounded-2xl bg-gradient-to-br from-[var(--primary)]/15 via-[var(--primary-light)]/10 to-transparent p-6 border border-[var(--primary)]/25 text-center">
-          <p className="text-slate-300 mb-3">Want more strategies? Upgrade to Elite for unlimited custom strategies.</p>
-          <Link
-            href="/dashboard/settings/subscription?tab=change"
-            className="inline-flex items-center gap-2 rounded-xl px-5 py-3 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-semibold hover:shadow-xl hover:shadow-[rgba(var(--primary-rgb),0.3)]/30 hover:scale-[1.02] transition-all duration-200 group"
-          >
-            <span>Show more strategies</span>
-            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
         </div>
       )}
 

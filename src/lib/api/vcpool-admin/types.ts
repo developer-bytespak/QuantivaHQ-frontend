@@ -40,7 +40,7 @@ export interface AdminLoginResponse {
 
 export interface SuperAdminUsersFilters {
   search?: string;
-  plan?: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+  plan?: "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
   subscription_status?: "active" | "cancelled" | "trial" | "expired";
   kyc_status?: "pending" | "approved" | "rejected" | "review";
   page?: number;
@@ -52,12 +52,12 @@ export interface SuperAdminUserRow {
   email: string;
   username: string;
   full_name: string | null;
-  current_tier: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+  current_tier: "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
   kyc_status: "pending" | "approved" | "rejected" | "review";
   created_at: string;
   last_active_at: string | null;
   subscription_status: "active" | "cancelled" | "trial" | "expired" | null;
-  subscription_plan: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS" | null;
+  subscription_plan: "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS" | null;
   billing_period: "MONTHLY" | "QUARTERLY" | "YEARLY" | null;
   subscription_period_end: string | null;
   total_invested_usdt: number;
@@ -82,6 +82,7 @@ export interface SuperAdminUsersAnalyticsResponse {
   };
   plan_distribution: {
     FREE: number;
+    PREMIUM?: number;
     PRO: number;
     ELITE: number;
     ELITE_PLUS: number;
@@ -90,7 +91,7 @@ export interface SuperAdminUsersAnalyticsResponse {
     user_id: string;
     email: string;
     full_name: string | null;
-    current_tier: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+    current_tier: "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
     created_at: string;
   }>;
   exchange_connections: {
@@ -113,7 +114,7 @@ export interface SuperAdminUsersAnalyticsResponse {
 
 export interface SuperAdminUsersGrowthFilters {
   year?: number;
-  subscription_plan?: "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+  subscription_plan?: "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
   active_only?: boolean;
 }
 
@@ -127,7 +128,7 @@ export interface SuperAdminUsersGrowthPoint {
 export interface SuperAdminUsersGrowthResponse {
   year: number;
   filters: {
-    subscription_plan: "ALL" | "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+    subscription_plan: "ALL" | "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
     active_only: boolean;
   };
   total_users: number;
@@ -249,7 +250,7 @@ export interface SuperAdminUnifiedFinanceResponse {
   };
   filters: {
     year: number;
-    plan_tier: "ALL" | "PRO" | "ELITE";
+    plan_tier: "ALL" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
     billing_period: "ALL" | "MONTHLY" | "QUARTERLY" | "YEARLY";
     vc_collection_source: "ALL" | "JOIN" | "CANCEL" | "COMPLETION";
   };
@@ -259,7 +260,7 @@ export interface SuperAdminUnifiedFinanceResponse {
 
 export interface SuperAdminUnifiedFinanceFilters {
   year?: number;
-  plan_tier?: "PRO" | "ELITE";
+  plan_tier?: "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
   billing_period?: "MONTHLY" | "QUARTERLY" | "YEARLY";
   vc_collection_source?: "JOIN" | "CANCEL" | "COMPLETION";
 }
@@ -828,7 +829,7 @@ export interface AdminCloseExchangeOrderRequest {
 
 // ---- Super Admin: Upgrade user subscription ----
 
-export type PlanTier = "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+export type PlanTier = "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
 export type BillingPeriod = "MONTHLY" | "QUARTERLY" | "YEARLY";
 
 export interface AdminSuperUpgradeSubscriptionRequest {

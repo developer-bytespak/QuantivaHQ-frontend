@@ -731,8 +731,8 @@ export default function VcPoolDetailPage() {
   if (!canAccessVCPool) {
     return (
       <UpgradeGate
-        title="VC Pool Access is for ELITE and ELITE Plus"
-        description="Pool details and joining are available to ELITE members. Upgrade your plan to view this pool."
+        title="VC Pool Access is a Premium feature"
+        description="Upgrade to Premium to join VC pools."
       />
     );
   }

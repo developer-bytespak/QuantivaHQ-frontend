@@ -16,7 +16,6 @@ import { StockExchangeAutoTradeModal } from "../top-trades/components/stock-exch
 import { ManualTradeModal } from "../paper-trading/components/manual-trade-modal";
 import { StockManualTradeModal } from "../paper-trading/components/stock-manual-trade-modal";
 import useSubscriptionStore from "@/state/subscription-store";
-import { PlanTier } from "@/mock-data/subscription-dummy-data";
 import { CustomStrategiesPaywall } from "@/components/common/custom-strategies-paywall";
 
 // --- Formatting helpers ---
@@ -94,13 +93,13 @@ interface Trade {
   realtime_data?: any;
 }
 
-// Paywall wrapper: Custom Strategies are a PRO+ feature. FREE users see the
-// upgrade card instead of the trading UI. The inner component mounts only for
-// PRO+ tiers so its hooks stay consistent across re-renders (early-returning
+// Paywall wrapper: Custom Strategies are a Premium feature. FREE users see
+// the upgrade card instead of the trading UI. The inner component mounts only
+// for Premium so its hooks stay consistent across re-renders (early-returning
 // before useState/useEffect calls would violate the rules of hooks).
 export default function CustomStrategiesTradingPage() {
-  const { currentSubscription } = useSubscriptionStore();
-  if (currentSubscription && currentSubscription.tier === PlanTier.FREE) {
+  const { currentSubscription, isPremium } = useSubscriptionStore();
+  if (currentSubscription && !isPremium()) {
     return <CustomStrategiesPaywall />;
   }
   return <CustomStrategiesTradingPageInner />;

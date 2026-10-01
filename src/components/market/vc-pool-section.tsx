@@ -88,8 +88,8 @@ export function VCPoolSection() {
   if (!canAccessVCPool) {
     return (
       <UpgradeGate
-        title="VC Pool Access is for ELITE and ELITE Plus"
-        description="Browse curated trading pools created by Quantiva admins. Upgrade to access VC Pools."
+        title="VC Pool Access is a Premium feature"
+        description="Upgrade to Premium to join VC pools."
       />
     );
   }

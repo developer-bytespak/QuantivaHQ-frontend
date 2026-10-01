@@ -150,8 +150,8 @@ export default function TransactionsPage() {
       <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
         <div className="max-w-5xl mx-auto">
           <UpgradeGate
-            title="Transaction History is for ELITE and ELITE Plus"
-            description="Review your VC pool transaction history. Upgrade to access transaction details."
+            title="VC Pool Access is a Premium feature"
+            description="Upgrade to Premium to join VC pools."
           />
         </div>
       </div>

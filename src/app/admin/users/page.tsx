@@ -51,9 +51,15 @@ const ALL_SUMMARY_SECTION_KEYS: UserSummarySectionKey[] =
   SUMMARY_SECTION_OPTIONS.map((opt) => opt.value);
 import { Notification, useNotification } from "@/components/common/notification";
 
-const GROWTH_PLAN_OPTIONS = ["ALL", "FREE", "PRO", "ELITE", "ELITE_PLUS"] as const;
+const GROWTH_PLAN_OPTIONS = ["ALL", "FREE", "PREMIUM", "PRO", "ELITE", "ELITE_PLUS"] as const;
 
-type PlanTier = "FREE" | "PRO" | "ELITE" | "ELITE_PLUS";
+// PRO / ELITE / ELITE_PLUS are legacy paid tiers kept for historical rows.
+type PlanTier = "FREE" | "PREMIUM" | "PRO" | "ELITE" | "ELITE_PLUS";
+const LEGACY_PLAN_TIERS: readonly PlanTier[] = ["PRO", "ELITE", "ELITE_PLUS"];
+const planLabel = (plan: string) =>
+  (LEGACY_PLAN_TIERS as readonly string[]).includes(plan) ? `${plan} (legacy)` : plan;
+// The analytics payload gained a PREMIUM bucket; older responses omit it.
+const premiumCount = (dist: Record<string, number | undefined>) => dist.PREMIUM ?? 0;
 const PLAN_USERS_PAGE_SIZE = 10;
 
 interface PlanUsersState {
@@ -247,6 +253,7 @@ export default function AdminUsersPage() {
   const [activePlanIndex, setActivePlanIndex] = useState<number | null>(null);
   const [planUsers, setPlanUsers] = useState<Record<PlanTier, PlanUsersState>>({
     FREE: EMPTY_PLAN_USERS_STATE,
+    PREMIUM: EMPTY_PLAN_USERS_STATE,
     PRO: EMPTY_PLAN_USERS_STATE,
     ELITE: EMPTY_PLAN_USERS_STATE,
     ELITE_PLUS: EMPTY_PLAN_USERS_STATE,
@@ -381,12 +388,13 @@ export default function AdminUsersPage() {
 
   const planPercentages = useMemo(() => {
     if (!analytics?.summary.total_users) {
-      return { free: 0, pro: 0, elite: 0, elite_plus: 0 };
+      return { free: 0, premium: 0, pro: 0, elite: 0, elite_plus: 0 };
     }
 
     const total = analytics.summary.total_users;
     return {
       free: Math.round((analytics.plan_distribution.FREE / total) * 100),
+      premium: Math.round((premiumCount(analytics.plan_distribution) / total) * 100),
       pro: Math.round((analytics.plan_distribution.PRO / total) * 100),
       elite: Math.round((analytics.plan_distribution.ELITE / total) * 100),
       elite_plus: Math.round((analytics.plan_distribution.ELITE_PLUS / total) * 100),
@@ -400,6 +408,12 @@ export default function AdminUsersPage() {
         value: analytics?.plan_distribution.FREE ?? 0,
         percent: planPercentages.free,
         color: "#94a3b8",
+      },
+      {
+        name: "PREMIUM",
+        value: analytics ? premiumCount(analytics.plan_distribution) : 0,
+        percent: planPercentages.premium,
+        color: "#a855f7",
       },
       {
         name: "PRO",
@@ -786,7 +800,7 @@ export default function AdminUsersPage() {
                           style={{ backgroundColor: item.color }}
                         />
                         <span className="text-sm font-medium text-white">
-                          {item.name}
+                          {planLabel(item.name)}
                         </span>
                         <svg
                           className={`h-3.5 w-3.5 text-slate-400 transition-transform ${

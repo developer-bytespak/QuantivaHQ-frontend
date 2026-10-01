@@ -283,8 +283,8 @@ export default function MyPoolsPage() {
       <div className="min-h-screen bg-[--color-surface] p-4 sm:p-6 overflow-x-hidden">
         <div className="max-w-5xl mx-auto">
           <UpgradeGate
-            title="My Pools is for ELITE and ELITE Plus"
-            description="Track your VC pool memberships and contributions. Upgrade to access My Pools."
+            title="VC Pool Access is a Premium feature"
+            description="Upgrade to Premium to join VC pools."
           />
         </div>
       </div>

@@ -54,7 +54,7 @@ function isStepLocked(p: OnboardingProgressShape, key: StepKey): boolean {
   // KYC, the PERSONAL_INFO-stage emails are cancelled and can never be
   // re-queued. Enforcing order in the UI keeps the funnel intact.
   // Exchange is also enforced server-side by KycVerifiedGuard on
-  // POST /exchanges/connections — the lock here just prevents a 403.
+  // POST /exchanges/connections. The lock here just prevents a 403.
   switch (key) {
     case "personal_info":
       return false;
@@ -230,7 +230,7 @@ export function ActivateAccountWidget() {
     if (isStepLocked(progress, step.key)) return;
     if (step.key === "kyc" && kycState === "pending") return;
     // RETRY-rejected KYC needs the applicant cleared on the backend before
-    // we send the user back into the SDK — otherwise Sumsub refuses to open
+    // we send the user back into the SDK, otherwise Sumsub refuses to open
     // a fresh session on the same applicant.
     if (step.key === "kyc" && kycState === "rejected_retry") {
       setRetryLoading(true);
@@ -246,6 +246,14 @@ export function ActivateAccountWidget() {
     router.push(step.href);
   };
 
+  // The subscription step is next once personal info + KYC are done and the
+  // user has neither subscribed nor chosen to stay on Free.
+  const subscriptionIsNext =
+    !progress.subscription.is_paid &&
+    !progress.subscription.acknowledged &&
+    progress.personal_info.complete &&
+    progress.kyc.status === "approved";
+
   const handleContinueSetup = async () => {
     if (kycState === "rejected_retry") {
       setRetryLoading(true);
@@ -256,6 +264,10 @@ export function ActivateAccountWidget() {
         console.error("[ActivateAccountWidget] Retry prep failed:", err);
         setRetryLoading(false);
       }
+      return;
+    }
+    if (subscriptionIsNext) {
+      router.push(`/onboarding/choose-plan${RETURN_QUERY}`);
       return;
     }
     if (nextStep) {
@@ -282,7 +294,9 @@ export function ActivateAccountWidget() {
     ? retryLoading
       ? "Preparing…"
       : "Retry verification"
-    : "Continue setup";
+    : subscriptionIsNext
+      ? "Start 7-day free trial"
+      : "Continue setup";
 
   const subtext = isRetryVariant
     ? progress.kyc.rejection_reasons?.length
@@ -290,15 +304,13 @@ export function ActivateAccountWidget() {
       : "Your verification failed. Please retry to continue."
     : kycState === "pending"
       ? "We're reviewing your documents. Other steps below are still available."
-      : "Finish a few quick steps to unlock trading and your full dashboard.";
+      : subscriptionIsNext
+        ? "Start your 7-day Premium trial to unlock trading, or stay on Free to view market data and your portfolio."
+        : "Finish a few quick steps to unlock trading and your full dashboard.";
 
-  const showSkipFreeCta =
-    !progress.subscription.is_paid &&
-    !progress.subscription.acknowledged &&
-    progress.personal_info.complete &&
-    progress.kyc.status === "approved";
+  const showSkipFreeCta = subscriptionIsNext;
 
-  // Variant tokens — the RETRY state uses an orange/red accent; the normal
+  // Variant tokens: the RETRY state uses an orange/red accent; the normal
   // state uses the brand primary color. Defined as a small object so each
   // class string stays a static literal that Tailwind's compiler can pick up.
   const accent = isRetryVariant
