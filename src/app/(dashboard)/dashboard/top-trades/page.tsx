@@ -21,6 +21,7 @@ import useSubscriptionStore from "@/state/subscription-store";
 import useOnboardingProgressStore, { isFullyOnboarded } from "@/state/onboarding-progress-store";
 import { getNextOnboardingStepRoute } from "@/lib/auth/flow-router.service";
 import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { TRIAL_DAYS } from "@/config/subscription";
 import { paperTradingDummy } from "@/mock-data/paper-trading-dummy";
 
 // Backend returns 403 with one of these codes when a FREE user tries to
@@ -30,11 +31,15 @@ const PREMIUM_REQUIRED_CODES = [
   "SIGNAL_EXECUTION_REQUIRES_PREMIUM",
   "FREE_SIGNAL_TRADE_QUOTA_EXHAUSTED",
 ];
-const PREMIUM_REQUIRED_MESSAGE =
-  "Signal execution requires the Premium plan. Start your 7-day free trial from Settings to execute Top Trades.";
+/** Fallback gate copy. Trial wording only when the account can still start one. */
+function premiumRequiredMessage(trialEligible: boolean): string {
+  return trialEligible
+    ? `Signal execution requires the Premium plan. Start your ${TRIAL_DAYS}-day free trial from Settings to execute Top Trades.`
+    : "Signal execution requires the Premium plan. Upgrade to Premium from Settings to execute Top Trades.";
+}
 
 /** Returns the user-facing message when `err` is a Premium-required 403, else null. */
-function getPremiumRequiredMessage(err: unknown): string | null {
+function getPremiumRequiredMessage(err: unknown, trialEligible: boolean): string | null {
   const data = (err as { response?: { data?: { code?: string; message?: unknown } } } | null)?.response?.data as
     | { code?: string; message?: string | { code?: string } }
     | undefined;
@@ -42,7 +47,7 @@ function getPremiumRequiredMessage(err: unknown): string | null {
     data?.code ||
     (data?.message && typeof data.message === "object" ? data.message?.code : undefined);
   if (!code || !PREMIUM_REQUIRED_CODES.includes(code)) return null;
-  return typeof data?.message === "string" && data.message ? data.message : PREMIUM_REQUIRED_MESSAGE;
+  return typeof data?.message === "string" && data.message ? data.message : premiumRequiredMessage(trialEligible);
 }
 
 export interface TopTradesPageProps {
@@ -216,7 +221,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const connectionId = propConnectionId ?? ctxConnectionId;
   const connectionType = propConnectionType ?? ctxConnectionType;
   const isStocksConnection = connectionType === "stocks";
-  const { currentSubscription } = useSubscriptionStore();
+  const { currentSubscription, isTrialEligible } = useSubscriptionStore();
   const { progress: onboardingProgress, fetchProgress: fetchOnboardingProgress } = useOnboardingProgressStore();
   // Top Trades is open to all tiers but gated on full onboarding completion.
   // Admin VC-Pool mode (vcPoolId) bypasses the gate.
@@ -224,6 +229,8 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
   const canAccessTopTrades = onboardingComplete;
   // FREE users can browse signals but cannot execute them (Premium-only).
   const isFreeTier = !vcPoolId && currentSubscription?.tier === PlanTier.FREE;
+  // Trial wording is only shown to accounts that can still start a trial.
+  const trialEligible = isTrialEligible();
 
   useEffect(() => {
     if (!vcPoolId && !onboardingProgress) {
@@ -1312,7 +1319,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
         cancelOpenOrders: !isFullClose,
       });
     } catch (err) {
-      const premiumMsg = getPremiumRequiredMessage(err);
+      const premiumMsg = getPremiumRequiredMessage(err, trialEligible);
       if (premiumMsg) {
         setPremiumGateMessage(premiumMsg);
         throw new Error(premiumMsg);
@@ -1339,7 +1346,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
 
   const handleAutoTrade = (trade: any) => {
     if (isFreeTier) {
-      setPremiumGateMessage(PREMIUM_REQUIRED_MESSAGE);
+      setPremiumGateMessage(premiumRequiredMessage(trialEligible));
       return;
     }
     setSelectedSignal(trade);
@@ -1439,13 +1446,15 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
               <span className="font-medium">
-                Signal execution is a Premium feature. Start your 7-day free trial.
+                {trialEligible
+                  ? `Signal execution is a Premium feature. Start your ${TRIAL_DAYS}-day free trial.`
+                  : "Signal execution is a Premium feature."}
               </span>
               <Link
                 href="/dashboard/settings/subscription"
                 className="ml-1 rounded-full bg-[var(--primary)]/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--primary)] hover:bg-[var(--primary)]/30"
               >
-                Start free trial
+                {trialEligible ? `Start ${TRIAL_DAYS}-day free trial` : "Upgrade to Premium"}
               </Link>
             </div>
           )}
@@ -1898,7 +1907,9 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
                           className="flex w-full flex-col items-center justify-center gap-0.5 rounded-xl border border-[var(--primary)]/40 bg-[var(--primary)]/10 px-4 py-2.5 text-center transition-colors hover:bg-[var(--primary)]/20"
                         >
                           <span className="text-xs font-semibold text-[var(--primary)]">Signal execution is a Premium feature.</span>
-                          <span className="text-[11px] text-slate-300">Start your 7-day free trial.</span>
+                          <span className="text-[11px] text-slate-300">
+                            {trialEligible ? `Start ${TRIAL_DAYS}-day free trial` : "Upgrade to Premium"}
+                          </span>
                         </Link>
                       )}
                       {connectionId && !isFreeTier && (
@@ -2234,7 +2245,7 @@ export default function TopTradesPage(props?: TopTradesPageProps) {
             href="/dashboard/settings/subscription"
             className="shrink-0 rounded-md bg-[var(--primary)] px-3 py-1 text-xs font-semibold text-white hover:bg-[var(--primary-hover)]"
           >
-            Upgrade
+            {trialEligible ? `Start ${TRIAL_DAYS}-day free trial` : "Upgrade to Premium"}
           </Link>
           <button
             type="button"

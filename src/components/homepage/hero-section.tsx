@@ -1,42 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { m } from "framer-motion";
-import { getCurrentUser } from "@/lib/api/user";
-import { navigateToDashboard } from "@/lib/auth/flow-router.service";
+import { TRIAL_DAYS } from "@/config/subscription";
 import { scrollToId } from "./motion/smooth-scroll";
+import { useTrialCta } from "./use-trial-cta";
 import { StaggerWords } from "./motion/stagger";
 import { HP_EASE } from "./motion/reveal";
 import { GradientText } from "./motion/gradient-text";
 
 export function HeroSection() {
-  const router = useRouter();
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
-
-  const handleGetStarted = async () => {
-    setIsCheckingAuth(true);
-    try {
-      // Check if user is already authenticated
-      await getCurrentUser();
-      // User is authenticated, send straight to the dashboard.
-      await navigateToDashboard(router);
-    } catch (error: unknown) {
-      // User is not authenticated (or check failed) — either way, sign-up is the destination
-      const err = error as { status?: number; statusCode?: number; message?: string };
-      const isUnauthorized =
-        err?.status === 401 ||
-        err?.statusCode === 401 ||
-        err?.message?.includes("401") ||
-        err?.message?.includes("Unauthorized");
-      if (!isUnauthorized) {
-        console.error("Error checking authentication:", error);
-      }
-      router.push("/onboarding/sign-up?tab=signup");
-    } finally {
-      setIsCheckingAuth(false);
-    }
-  };
+  // Signed out: sign-up. Signed in on Free: choose-plan. Premium: dashboard.
+  const { startTrial, isChecking } = useTrialCta();
 
   return (
     <section className="relative flex min-h-svh items-center justify-center overflow-hidden">
@@ -91,13 +65,13 @@ export function HeroSection() {
           className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4"
         >
           <button
-            onClick={handleGetStarted}
-            disabled={isCheckingAuth}
+            onClick={startTrial}
+            disabled={isChecking}
             className="group relative w-full cursor-pointer overflow-hidden rounded-full bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] px-8 py-4 text-base font-semibold text-white shadow-xl shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-[rgba(var(--primary-rgb),0.45)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100 sm:w-auto"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              {isCheckingAuth ? "Checking..." : "Get Started"}
-              {!isCheckingAuth && (
+              {isChecking ? "Checking..." : `Start your ${TRIAL_DAYS}-day free trial`}
+              {!isChecking && (
                 <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -118,6 +92,16 @@ export function HeroSection() {
             </span>
           </button>
         </m.div>
+
+        {/* Trial reassurance */}
+        <m.p
+          initial={{ opacity: 0.001, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.7, ease: HP_EASE }}
+          className="mt-4 text-xs text-slate-500 sm:text-sm"
+        >
+          No charge for {TRIAL_DAYS} days. Cancel anytime.
+        </m.p>
       </div>
     </section>
   );

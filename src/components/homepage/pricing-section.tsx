@@ -16,6 +16,8 @@ import { HomeSection } from "./motion/home-section";
 import { Stagger, StaggerItem } from "./motion/stagger";
 import { NumberTicker } from "./motion/number-ticker";
 import { scrollToId } from "./motion/smooth-scroll";
+import { TrialStepsStrip } from "./trial-steps-strip";
+import { useTrialCta } from "./use-trial-cta";
 
 interface PricingTier {
   name: string;
@@ -29,11 +31,22 @@ interface PricingTier {
   badge?: string;
   /** Fine print rendered under the CTA. */
   footnote?: string;
+  /** Short reassurance bullets rendered under the footnote, one icon each. */
+  reassurances?: string[];
 }
+
+/** Calendar, cog, shield: paired by index with the reassurance bullets. */
+const REASSURANCE_ICON_PATHS = [
+  "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+  "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
+  "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+];
 
 function PricingCard({ tier, isCurrentPlan }: { tier: PricingTier; isCurrentPlan: boolean }) {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  // Premium card: same auth check, but signed-in Free users land on choose-plan.
+  const { startTrial, isChecking } = useTrialCta();
 
   const handleGetStarted = async () => {
     setIsCheckingAuth(true);
@@ -120,8 +133,8 @@ function PricingCard({ tier, isCurrentPlan }: { tier: PricingTier; isCurrentPlan
         </ul>
 
         <button
-          onClick={handleGetStarted}
-          disabled={isCheckingAuth || isCurrentPlan}
+          onClick={tier.popular ? startTrial : handleGetStarted}
+          disabled={isCheckingAuth || isChecking || isCurrentPlan}
           className={`w-full cursor-pointer rounded-full px-4 py-3 text-sm font-semibold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 ${
             highlighted
               ? "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] hover:scale-[1.02] hover:shadow-xl"
@@ -130,7 +143,7 @@ function PricingCard({ tier, isCurrentPlan }: { tier: PricingTier; isCurrentPlan
                 : "border border-white/15 bg-white/[0.04] text-white hover:border-[var(--primary)]/50 hover:bg-white/[0.08]"
           }`}
         >
-          {isCheckingAuth
+          {isCheckingAuth || isChecking
             ? "Checking..."
             : isCurrentPlan
               ? "Your Current Plan"
@@ -141,6 +154,25 @@ function PricingCard({ tier, isCurrentPlan }: { tier: PricingTier; isCurrentPlan
 
         {tier.footnote && (
           <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-500">{tier.footnote}</p>
+        )}
+
+        {tier.reassurances && tier.reassurances.length > 0 && (
+          <ul className="mt-4 space-y-2 border-t border-white/[0.08] pt-4">
+            {tier.reassurances.map((item, index) => (
+              <li key={item} className="flex items-center gap-2.5 text-xs text-slate-400">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d={REASSURANCE_ICON_PATHS[index % REASSURANCE_ICON_PATHS.length]}
+                    />
+                  </svg>
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
@@ -188,6 +220,11 @@ export function PricingSection() {
         "Early access to new features",
       ],
       footnote: `Card required. Charged $${premiumAmount} after ${TRIAL_DAYS} days, then ${premiumRenewal} unless you cancel.`,
+      reassurances: [
+        `${TRIAL_DAYS} days free, then the plan you pick`,
+        "Cancel anytime from Settings",
+        "Keep access until your trial ends",
+      ],
     },
   ];
 
@@ -223,6 +260,9 @@ export function PricingSection() {
           </StaggerItem>
         ))}
       </Stagger>
+
+      {/* How the trial works */}
+      <TrialStepsStrip />
 
       {/* Additional CTA */}
       <div className="mt-14 text-center">

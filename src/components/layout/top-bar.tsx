@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { authService } from "@/lib/auth/auth.service";
 import { getUserProfile } from "@/lib/api/user";
@@ -120,6 +121,7 @@ function UserProfileSection() {
     getTrialDaysLeft,
     isCancelScheduled,
     getAccessEndsAt,
+    isTrialEligible,
   } = useSubscriptionStore();
   const { isAdmin, isSuperAdmin, setAdminFlags } = useSessionStore();
 
@@ -130,7 +132,7 @@ function UserProfileSection() {
       : `${PLAN_DISPLAY_NAMES[planTier] ?? planTier} Plan`
     : "Free Plan";
   const planSubline = (() => {
-    if (!isPremium()) return "Upgrade";
+    if (!isPremium()) return isTrialEligible() ? "Start free trial" : "Upgrade";
     if (isCancelScheduled()) {
       const ends = formatPlanDateShort(getAccessEndsAt());
       return ends ? `Ends ${ends}` : "Cancellation scheduled";
@@ -356,7 +358,7 @@ function UserProfileSection() {
                 {planSubline && (
                   <span
                     className={`text-[10px] font-normal ${
-                      planSubline === "Upgrade"
+                      !isPremium()
                         ? "text-[var(--primary)]"
                         : isCancelScheduled()
                           ? "text-amber-400"
@@ -569,6 +571,23 @@ function DashboardSwitcher({ headingRef }: { headingRef: React.RefObject<HTMLHea
   );
 }
 
+// Compact trial pill for Free accounts that can still start the 7-day trial.
+// Hidden for Premium, trialing and non-eligible users.
+function TrialPill() {
+  const { currentSubscription, isPremium, isTrialActive, isTrialEligible } = useSubscriptionStore();
+  if (!currentSubscription || isPremium() || isTrialActive() || !isTrialEligible()) return null;
+
+  return (
+    <Link
+      href="/dashboard/settings/subscription"
+      className="hidden sm:inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] transition-all duration-200 hover:opacity-90"
+      style={{ background: "linear-gradient(90deg,#fc4f02,#fda300)" }}
+    >
+      Start free trial
+    </Link>
+  );
+}
+
 export function TopBar() {
   const pathname = usePathname();
   const { hasBothConnections, selectedDashboardType, connectionType } = useExchange();
@@ -590,6 +609,7 @@ export function TopBar() {
         <DashboardSwitcher headingRef={headingRef} />
       </div>
       <div className="flex items-center gap-2 sm:gap-3 sm:gap-4">
+        <TrialPill />
         <QhqBalanceChip />
         <NotificationDropdown />
         <MobileMenuButton />

@@ -4,29 +4,39 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { apiRequest } from "@/lib/api/client";
 import useSubscriptionStore from "@/state/subscription-store";
-import { PlanTier } from "@/mock-data/subscription-dummy-data";
+import { BillingPeriod, PlanTier } from "@/mock-data/subscription-dummy-data";
 import { useSubscription } from "@/hooks/useSubscription";
 import { toast } from "react-toastify";
 import { ConfirmationDialog } from "@/components/common/confirmation-dialog";
 import { BillingPeriodToggle } from "@/components/subscription/billing-period-toggle";
 import {
   PLAN_DISPLAY_NAMES,
+  PREMIUM_BILLING_PERIODS,
   PREMIUM_PERIOD_LABELS,
   PREMIUM_PERIOD_RENEWAL,
+  PREMIUM_PERIOD_SUFFIX,
   TRIAL_DAYS,
   formatPlanDate,
+  formatPremiumAmount,
   isLegacyPaidTier,
   isPremiumBillingPeriod,
   premiumPriceLabel,
 } from "@/config/subscription";
 
-const TAB_IDS = ["current", "billing", "usage", "fees"] as const;
+const TAB_IDS = ["current", "change", "billing", "usage", "fees"] as const;
 type TabId = (typeof TAB_IDS)[number];
 
 const SUBSCRIPTION_ACTIVATED_EVENT = "quantiva:subscription-activated";
 
+/** Short feature list shown on every Change Plan card (one plan, every feature). */
+const PREMIUM_CARD_FEATURES = [
+  "AI signals and auto execution",
+  "Unlimited custom strategies",
+  "Options trading",
+  "VC Pool access",
+] as const;
+
 function resolveTab(raw: string | null): TabId {
-  // "?tab=change" used to open the Change Plan tab; there is a single plan now.
   return (TAB_IDS as readonly string[]).includes(raw ?? "") ? (raw as TabId) : "current";
 }
 
@@ -48,6 +58,12 @@ export function SubscriptionSettings() {
   const [activeTab, setActiveTab] = useState<TabId>(() => resolveTab(tabParam));
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  /** Period the user is checking out for (which Change Plan card shows "Loading..."). */
+  const [checkoutPeriod, setCheckoutPeriod] = useState<BillingPeriod | null>(null);
+  /** Period awaiting confirmation in the "Switch to ... billing?" dialog. */
+  const [pendingPeriod, setPendingPeriod] = useState<BillingPeriod | null>(null);
+  /** Period whose change-period request is in flight. */
+  const [switchingPeriod, setSwitchingPeriod] = useState<BillingPeriod | null>(null);
   const [outstandingFees, setOutstandingFees] = useState<{
     has_outstanding: boolean;
     total_fees_usd: number;
@@ -60,6 +76,7 @@ export function SubscriptionSettings() {
   const hasFetchedRef = useRef(false);
   const {
     currentSubscription,
+    premiumPlans,
     paymentHistory,
     usageStats,
     getFeatureLimitInfo,
@@ -77,7 +94,7 @@ export function SubscriptionSettings() {
     isTrialEligible,
   } = useSubscriptionStore();
 
-  const { createCheckout, cancelSubscription, resumeSubscription } = useSubscription();
+  const { createCheckout, cancelSubscription, resumeSubscription, changeBillingPeriod } = useSubscription();
 
   // ─── Trade Fees state ──────────────────────────────────────────────
   const [feeData, setFeeData] = useState<any>(null);
@@ -108,7 +125,7 @@ export function SubscriptionSettings() {
     }
   }, [activeTab, fetchFeeData]);
 
-  // Follow ?tab= changes after mount (unknown values, including the retired "change", fall back to "current")
+  // Follow ?tab= changes after mount (unknown values fall back to "current")
   useEffect(() => {
     setActiveTab(resolveTab(tabParam));
   }, [tabParam]);
@@ -142,6 +159,7 @@ export function SubscriptionSettings() {
   const trialActive = isTrialActive();
   const cancelScheduled = isCancelScheduled();
   const isAppleBilled = currentSubscription?.billing_provider === "apple";
+  const isAdminComp = currentSubscription?.billing_provider === "admin_override";
   const accessEndsAt = getAccessEndsAt();
   const trialEndDate = currentSubscription?.trial_end ?? null;
   const trialDaysLeft = getTrialDaysLeft();
@@ -224,11 +242,12 @@ export function SubscriptionSettings() {
     );
   };
 
-  const startPremiumCheckout = () => {
+  const startPremiumCheckout = (period: BillingPeriod = selectedBillingPeriod) => {
     setCheckoutLoading(true);
+    setCheckoutPeriod(period);
     createCheckout.mutate(
       {
-        billing_period: selectedBillingPeriod,
+        billing_period: period,
         success_url: `${window.location.origin}/dashboard/settings/subscription?checkout=success`,
         cancel_url: `${window.location.origin}/dashboard/settings/subscription`,
       },
@@ -238,16 +257,70 @@ export function SubscriptionSettings() {
             window.location.href = data.url;
           } else {
             setCheckoutLoading(false);
+            setCheckoutPeriod(null);
             toast.error("Could not start checkout.");
           }
         },
         onError: (error: unknown) => {
           setCheckoutLoading(false);
+          setCheckoutPeriod(null);
           toast.error(getErrorMessage(error, "Failed to create checkout. Please try again."));
         },
       }
     );
   };
+
+  const handleConfirmSwitch = () => {
+    if (!pendingPeriod) return;
+    const period = pendingPeriod;
+    setPendingPeriod(null);
+    setSwitchingPeriod(period);
+    changeBillingPeriod.mutate(
+      { billing_period: period },
+      {
+        onSuccess: (data) => {
+          toast.success(
+            data?.message?.trim() ||
+              `Your plan switches to ${PREMIUM_PERIOD_LABELS[period]} billing at your next billing date.`,
+          );
+          fetchSubscriptionData();
+        },
+        onError: (error: unknown) => {
+          toast.error(getErrorMessage(error, "Failed to change billing period. Please try again."));
+        },
+        onSettled: () => setSwitchingPeriod(null),
+      }
+    );
+  };
+
+  // Change Plan tab: why the switch buttons are locked, if they are.
+  const changePlanNote = (() => {
+    if (isFreePlan) return null;
+    if (isAppleBilled) {
+      return "Your subscription is billed through the App Store. Change it in iOS Settings > Subscriptions.";
+    }
+    if (isAdminComp) return "Your complimentary plan cannot be changed here.";
+    if (cancelScheduled) {
+      return `Your subscription is scheduled to end on ${formatPlanDate(accessEndsAt) || "the end of your billing period"}. Resume it from the Current Plan tab to change billing period.`;
+    }
+    return null;
+  })();
+  const changePlanLocked = changePlanNote !== null;
+
+  const switchDialogTitle = pendingPeriod ? `Switch to ${PREMIUM_PERIOD_LABELS[pendingPeriod]} billing?` : "";
+  const switchDialogMessage = (() => {
+    if (!pendingPeriod) return "";
+    const label = premiumPriceLabel(pendingPeriod, getPremiumPriceLabel(pendingPeriod));
+    if (trialActive) {
+      const endsOn =
+        formatPlanDate(trialEndDate) || formatPlanDate(currentSubscription?.current_period_end) || "the end of your trial";
+      return `Your plan switches to ${label} on ${endsOn}, when your trial ends. Nothing is charged today.`;
+    }
+    const switchOn =
+      formatPlanDate(currentSubscription?.next_billing_date ?? currentSubscription?.current_period_end) ||
+      "your next billing date";
+    return `Your plan switches to ${label} on ${switchOn}. Nothing is charged today.`;
+  })();
 
   const cancelDialogMessage = (() => {
     const endDate = formatPlanDate(accessEndsAt) || "the end of your billing period";
@@ -261,7 +334,8 @@ export function SubscriptionSettings() {
   })();
 
   const checkoutBusy = checkoutLoading || createCheckout.isPending;
-  const upgradeCta = isTrialEligible()
+  const trialEligible = isTrialEligible();
+  const upgradeCta = trialEligible
     ? `Start ${TRIAL_DAYS}-day free trial`
     : `Upgrade to Premium for ${upgradePriceLabel}`;
 
@@ -283,6 +357,7 @@ export function SubscriptionSettings() {
           <div className="flex gap-2 mb-6 border-b border-[--color-border] overflow-x-auto scrollbar-hide pb-px">
             {[
               { id: "current", label: "Current Plan" },
+              { id: "change", label: "Change Plan" },
               { id: "billing", label: "Billing History" },
               { id: "usage", label: "Usage Analytics" },
               { id: "fees", label: "Trade Fees" },
@@ -342,12 +417,15 @@ export function SubscriptionSettings() {
                   {/* Plan summary */}
                   {isFreePlan ? (
                     <div className="mb-6 space-y-4">
-                      <p className="text-sm text-slate-300">
-                        You can view market data and track your portfolio. Upgrade to Premium to execute AI signals,
-                        build unlimited strategies, trade options and join VC Pools.
-                      </p>
                       <div>
-                        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">Billing period</p>
+                        <h4 className="text-lg font-semibold text-white">
+                          {trialEligible ? `Try Premium free for ${TRIAL_DAYS} days` : "Upgrade to Premium"}
+                        </h4>
+                        <p className="mt-1 text-sm text-slate-300">
+                          Execute AI signals, build unlimited strategies, trade options and join VC Pools.
+                        </p>
+                      </div>
+                      <div>
                         <BillingPeriodToggle
                           size="sm"
                           value={selectedBillingPeriod}
@@ -356,8 +434,8 @@ export function SubscriptionSettings() {
                           disabled={checkoutBusy}
                         />
                         <p className="mt-2 text-xs text-slate-400">
-                          {isTrialEligible()
-                            ? `Card required. You will not be charged today. On day ${TRIAL_DAYS + 1} your card is charged $${upgradeAmount} and Premium renews ${upgradeRenewal} unless you cancel first.`
+                          {trialEligible
+                            ? `No charge today. On day ${TRIAL_DAYS + 1} your card is charged $${upgradeAmount} and Premium renews ${upgradeRenewal} unless you cancel first.`
                             : `Billed ${upgradePriceLabel}. Cancel anytime; you keep access until the end of your billing period.`}
                         </p>
                       </div>
@@ -407,14 +485,23 @@ export function SubscriptionSettings() {
                   {/* Action Buttons */}
                   <div className="flex flex-wrap items-center gap-3">
                     {isFreePlan ? (
-                      <button
-                        type="button"
-                        onClick={startPremiumCheckout}
-                        disabled={checkoutBusy}
-                        className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {checkoutBusy ? "Loading..." : upgradeCta}
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startPremiumCheckout()}
+                          disabled={checkoutBusy}
+                          className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {checkoutBusy ? "Loading..." : upgradeCta}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("change")}
+                          className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] underline-offset-4 hover:underline transition-colors"
+                        >
+                          Compare billing periods
+                        </button>
+                      </>
                     ) : isAppleBilled ? (
                       <p className="text-sm text-slate-400">Manage in iOS Settings &gt; Subscriptions</p>
                     ) : cancelScheduled ? (
@@ -438,6 +525,122 @@ export function SubscriptionSettings() {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Change Plan Tab */}
+            {activeTab === "change" && (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Premium billing periods</h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    One plan with every feature. Pick how often you want to be billed.
+                  </p>
+                </div>
+
+                {changePlanNote && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                    <p className="text-sm text-amber-200">{changePlanNote}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {PREMIUM_BILLING_PERIODS.map((raw) => {
+                    const period = raw as BillingPeriod;
+                    const plan = premiumPlans.find((p) => p.billing_period === period) ?? null;
+                    const amount = formatPremiumAmount(plan?.price, period);
+                    const savings = getPremiumSavingsPercent(period);
+                    const periodLabel = PREMIUM_PERIOD_LABELS[period];
+                    const priceLabel = premiumPriceLabel(period, amount);
+                    const isCurrent = !isFreePlan && period === currentPeriod;
+                    const isSwitching = switchingPeriod === period;
+                    const isCheckingOut = checkoutPeriod === period;
+
+                    let buttonLabel: string;
+                    let buttonDisabled: boolean;
+                    let onButtonClick: () => void;
+                    if (isFreePlan) {
+                      buttonLabel = isCheckingOut
+                        ? "Loading..."
+                        : trialEligible
+                          ? `Start ${TRIAL_DAYS}-day free trial`
+                          : `Subscribe for ${priceLabel}`;
+                      buttonDisabled = checkoutBusy;
+                      onButtonClick = () => startPremiumCheckout(period);
+                    } else if (isCurrent) {
+                      buttonLabel = "Current plan";
+                      buttonDisabled = true;
+                      onButtonClick = () => {};
+                    } else {
+                      buttonLabel = isSwitching ? "Switching..." : `Switch to ${periodLabel}`;
+                      buttonDisabled = changePlanLocked || changeBillingPeriod.isPending;
+                      onButtonClick = () => setPendingPeriod(period);
+                    }
+
+                    return (
+                      <div
+                        key={period}
+                        className={`relative flex flex-col rounded-lg border p-5 ${
+                          isCurrent
+                            ? "border-[var(--primary)]/60 bg-[var(--primary)]/10"
+                            : "border-[--color-border] bg-[--color-surface]/30"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-3">
+                          <h4 className="text-base font-semibold text-white">{periodLabel}</h4>
+                          <div className="flex flex-wrap justify-end gap-1.5">
+                            {savings > 0 && (
+                              <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-bold text-emerald-300">
+                                Save {savings}%
+                              </span>
+                            )}
+                            {isCurrent && (
+                              <span className="inline-flex items-center rounded-full border border-[var(--primary)]/40 bg-[var(--primary)]/20 px-2 py-0.5 text-[11px] font-semibold text-[var(--primary)]">
+                                Current plan
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mb-4 flex items-baseline gap-1">
+                          <span className="text-3xl font-bold text-white">${amount}</span>
+                          <span className="text-sm text-slate-400">{PREMIUM_PERIOD_SUFFIX[period]}</span>
+                        </div>
+
+                        <div className="mb-5 flex-1">
+                          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 mb-2">Everything in Premium</p>
+                          <ul className="space-y-1.5 text-sm text-slate-300">
+                            {PREMIUM_CARD_FEATURES.map((feature) => (
+                              <li key={feature} className="flex items-start gap-2">
+                                <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--primary)]" />
+                                <span>{feature}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={onButtonClick}
+                          disabled={buttonDisabled}
+                          className={`w-full px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            isCurrent
+                              ? "border border-[var(--primary)]/40 text-[var(--primary)]"
+                              : "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]"
+                          }`}
+                        >
+                          {buttonLabel}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-xs text-slate-400">
+                  {isFreePlan
+                    ? "Cancel anytime; you keep access until the end of your billing period."
+                    : "Changes take effect at your next billing date. You are never charged twice for the same period."}
+                </p>
               </div>
             )}
 
@@ -745,6 +948,17 @@ export function SubscriptionSettings() {
         type="danger"
         onConfirm={handleCancelSubscription}
         onCancel={() => { setShowCancelModal(false); setOutstandingFees(null); }}
+      />
+
+      <ConfirmationDialog
+        isOpen={pendingPeriod !== null}
+        title={switchDialogTitle}
+        message={switchDialogMessage}
+        confirmText="Switch plan"
+        cancelText="Keep current"
+        type="info"
+        onConfirm={handleConfirmSwitch}
+        onCancel={() => setPendingPeriod(null)}
       />
     </div>
   );

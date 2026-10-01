@@ -32,6 +32,13 @@ const PREMIUM_FEATURES = [
   "Early access to new features",
 ];
 
+/** What a trial-eligible user gets from day one. Shown under the Premium CTA. */
+const TRIAL_INCLUDES = [
+  "Every Premium feature from day one",
+  "AI signals, auto execution, options and VC Pools",
+  `No charge until day ${TRIAL_DAYS + 1}. Cancel anytime from Settings`,
+];
+
 function getErrorMessage(error: unknown, fallback: string): string {
   if (typeof error === "object" && error !== null) {
     const e = error as { message?: unknown; response?: { data?: { message?: unknown } } };
@@ -149,6 +156,11 @@ export default function ChoosePlanPage() {
         <h1 className="mb-1 text-center text-xl font-bold tracking-tight text-white sm:text-2xl">
           Choose your plan
         </h1>
+        {trialEligible && (
+          <p className="mb-1 text-center text-sm font-semibold text-[var(--primary)]">
+            Try everything free for {TRIAL_DAYS} days
+          </p>
+        )}
         <p className="mb-6 text-center text-sm text-slate-400">
           Start free, or unlock everything with Premium.
         </p>
@@ -225,6 +237,21 @@ export default function ChoosePlanPage() {
                   ? `Start ${TRIAL_DAYS}-day free trial`
                   : `Subscribe for ${fullPriceLabel}`}
             </button>
+            {trialEligible && (
+              <div className="mt-4 rounded-lg border border-[var(--primary)]/25 bg-black/30 p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--primary)]">
+                  During your {TRIAL_DAYS}-day trial
+                </p>
+                <ul className="mt-2 space-y-1.5 text-xs text-slate-300">
+                  {TRIAL_INCLUDES.map((item) => (
+                    <li key={item} className="flex items-start gap-2">
+                      <span className="text-green-400">✓</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 

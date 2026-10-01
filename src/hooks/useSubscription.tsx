@@ -1,4 +1,4 @@
-// Subscription mutations (Stripe checkout, cancel at period end, resume)
+// Subscription mutations (Stripe checkout, cancel at period end, resume, change billing period)
 import { useMutation, UseMutationResult } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/api/client";
 import React, { useContext, createContext, ReactNode } from "react";
@@ -36,10 +36,28 @@ export interface ResumeSubscriptionResponse {
     current_period_end: string | null;
 }
 
+export interface ChangeBillingPeriodBody {
+    billing_period: "MONTHLY" | "QUARTERLY" | "YEARLY";
+}
+
+/**
+ * POST /stripe/subscription/change-period. The Stripe price is swapped with no
+ * proration: nothing is charged today, the new amount and interval start on
+ * `effective_on` (current period end, or day 8 during a trial).
+ */
+export interface ChangeBillingPeriodResponse {
+    subscription_id: string;
+    billing_period: "MONTHLY" | "QUARTERLY" | "YEARLY";
+    price: string;
+    effective_on: string | null;
+    message: string;
+}
+
 interface UserContextType {
     createCheckout: UseMutationResult<CreateCheckoutResponse, unknown, CreateCheckoutBody, unknown>;
     cancelSubscription: UseMutationResult<CancelSubscriptionResponse, unknown, Record<string, never> | undefined, unknown>;
     resumeSubscription: UseMutationResult<ResumeSubscriptionResponse, unknown, Record<string, never> | undefined, unknown>;
+    changeBillingPeriod: UseMutationResult<ChangeBillingPeriodResponse, unknown, ChangeBillingPeriodBody, unknown>;
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -84,8 +102,18 @@ export const SubsProvider = ({ children }: { children: ReactNode }) => {
         },
     })
 
+    const changeBillingPeriod = useMutation({
+        mutationFn: async (data: ChangeBillingPeriodBody) => {
+            return apiRequest<ChangeBillingPeriodBody, ChangeBillingPeriodResponse>({
+                path: "/stripe/subscription/change-period",
+                method: "POST",
+                body: data,
+            });
+        },
+    })
+
     return (
-        <UserContext.Provider value={{ createCheckout, cancelSubscription, resumeSubscription }}>
+        <UserContext.Provider value={{ createCheckout, cancelSubscription, resumeSubscription, changeBillingPeriod }}>
             {children}
         </UserContext.Provider>
     );
